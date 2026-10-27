@@ -4,22 +4,30 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame;
 
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Waynestate\Sesame\Clock\SystemClock;
 
 /**
  * The facade an app talks to.
  *
- * It holds a driver, the app's user resolver and the app's session, and it
- * runs the one rule the code holds: every driver ends in
- * `findOrImportUser(Identity)`, and the app owns the session.
+ * It holds a driver, the app's user resolver, the app's session and the
+ * config, and it runs the one rule the code holds: every driver ends in
+ * `findOrImportUser(Identity)`, and the app owns the session. Time is read
+ * through a PSR-20 clock, so the session timeouts are testable.
  */
 final class Sesame
 {
+    private readonly ClockInterface $clock;
+
     public function __construct(
         private readonly Driver $driver,
         private readonly UserResolver $resolver,
         private readonly SessionPort $session,
+        private readonly Config $config,
+        ?ClockInterface $clock = null,
     ) {
+        $this->clock = $clock ?? new SystemClock();
     }
 
     /**
@@ -30,7 +38,9 @@ final class Sesame
      * user it regenerates the session ID before it stores anything, and
      * returns the user. The identity it stores keeps the username, the
      * driver and the time, but not the raw IdP attributes, so the session
-     * stays small and plain. When the resolver returns null the app has
+     * stays small and plain. The timestamps it stores start the session's
+     * clock: the idle timeout counts from the last activity, the absolute
+     * lifetime from the sign-in. When the resolver returns null the app has
      * refused the identity: the session is left untouched, nothing is
      * stored, and null is returned, so a refused identity never ends up
      * signed in.
@@ -52,6 +62,8 @@ final class Sesame
             return null;
         }
 
+        $now = $this->clock->now()->getTimestamp();
+
         $this->session->regenerate();
         $this->session->put('sesame.user', $user);
         // Keep the session small and plain: store the identity without its
@@ -62,6 +74,8 @@ final class Sesame
             $step->identity->driver,
             $step->identity->authenticatedAt,
         ));
+        $this->session->put('sesame.signed_in_at', $now);
+        $this->session->put('sesame.last_seen', $now);
 
         return $user;
     }
@@ -69,11 +83,45 @@ final class Sesame
     /**
      * The app's user for the current session, or null when there is none.
      *
+     * The session is checked against the timeouts before it is trusted: a
+     * session that has been quiet for longer than the idle timeout, or that
+     * has lived for longer than the absolute lifetime, is signed out on the
+     * spot, and a session with a user but no timestamps (one made before
+     * the timeouts existed) counts as expired. Every "is someone signed in"
+     * check goes through here, so a stale session can never pass one check
+     * and fail another.
+     *
      * @return mixed
      */
     public function user(): mixed
     {
-        return $this->session->get('sesame.user');
+        $user = $this->session->get('sesame.user');
+
+        if ($user === null) {
+            return null;
+        }
+
+        $signedInAt = $this->session->get('sesame.signed_in_at');
+        $lastSeen = $this->session->get('sesame.last_seen');
+
+        if (! is_int($signedInAt) || ! is_int($lastSeen)) {
+            $this->signOut();
+
+            return null;
+        }
+
+        $now = $this->clock->now()->getTimestamp();
+
+        if ($now - $lastSeen > $this->config->sessionIdleMinutes * 60
+            || $now - $signedInAt > $this->config->sessionAbsoluteMinutes * 60) {
+            $this->signOut();
+
+            return null;
+        }
+
+        $this->session->put('sesame.last_seen', $now);
+
+        return $user;
     }
 
     /**
@@ -84,9 +132,7 @@ final class Sesame
      */
     public function logout(string $returnTo): ?string
     {
-        $this->session->forget('sesame.user');
-        $this->session->forget('sesame.identity');
-        $this->session->invalidate();
+        $this->signOut();
 
         return $this->driver->logoutUrl($returnTo);
     }
@@ -101,5 +147,18 @@ final class Sesame
     public function safeReturnTo(string $returnTo): string
     {
         return ReturnTo::safe($returnTo, $this->driver->serviceUrl());
+    }
+
+    /**
+     * Clear SESAME's session keys and invalidate the session.
+     *
+     * The one sign-out the logout route and the timeout check both use, so
+     * they can never disagree about whether the session is dead.
+     */
+    private function signOut(): void
+    {
+        $this->session->forget('sesame.user');
+        $this->session->forget('sesame.identity');
+        $this->session->invalidate();
     }
 }

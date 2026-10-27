@@ -49,6 +49,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Session timeouts
+    |--------------------------------------------------------------------------
+    |
+    | How long a signed-in session may live, in minutes. The idle timeout is
+    | the quiet time after which the session is dropped; the absolute
+    | lifetime is the longest a session may live, no matter how active it
+    | is.
+    |
+    */
+
+    'session' => [
+        'idle_minutes' => env('SESAME_SESSION_IDLE_MINUTES', 120),
+        'absolute_minutes' => env('SESAME_SESSION_ABSOLUTE_MINUTES', 720),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Routes
     |--------------------------------------------------------------------------
     |

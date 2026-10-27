@@ -8,10 +8,12 @@ use DateTimeImmutable;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\RecordingDriver;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
@@ -28,6 +30,16 @@ final class SesameTest extends TestCase
         );
     }
 
+    private function config(array $overrides = []): Config
+    {
+        return new Config(...[
+            'driver' => 'fake',
+            'environment' => 'testing',
+            'fakeUsername' => 'jdoe',
+            ...$overrides,
+        ]);
+    }
+
     public function testLoginRegeneratesBeforeItStores(): void
     {
         $log = new EventLog();
@@ -36,14 +48,43 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(),
             $session,
+            $this->config(),
         );
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
         $this->assertSame(
-            ['login', 'regenerate', 'put:sesame.user', 'put:sesame.identity'],
+            [
+                'login',
+                'regenerate',
+                'put:sesame.user',
+                'put:sesame.identity',
+                'put:sesame.signed_in_at',
+                'put:sesame.last_seen',
+            ],
             $log->events,
         );
+    }
+
+    public function testLoginStoresTheSessionTimestamps(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $now = $clock->now()->getTimestamp();
+
+        $this->assertSame($now, $session->store['sesame.signed_in_at']);
+        $this->assertSame($now, $session->store['sesame.last_seen']);
     }
 
     public function testLoginPassesTheExactIdentityAndReturnsTheResolverResult(): void
@@ -55,6 +96,7 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($identity), null, $log),
             $resolver,
             new RecordingSession($log),
+            $this->config(),
         );
 
         $user = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
@@ -71,6 +113,7 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(null),
             $session,
+            $this->config(),
         );
 
         $user = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
@@ -89,6 +132,7 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($identity), null, $log),
             new RecordingResolver(),
             $session,
+            $this->config(),
         );
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
@@ -111,6 +155,7 @@ final class SesameTest extends TestCase
             new RecordingDriver($redirect, null, $log),
             new RecordingResolver(),
             $session,
+            $this->config(),
         );
 
         $result = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
@@ -121,16 +166,25 @@ final class SesameTest extends TestCase
 
     public function testUserReturnsTheStoredUser(): void
     {
+        $clock = new FakeClock();
         $log = new EventLog();
         $session = new RecordingSession($log);
         $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
         $sesame = new Sesame(
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(),
             $session,
+            $this->config(),
+            $clock,
         );
 
+        $clock->advance(60);
+
         $this->assertSame('the-user', $sesame->user());
+        $this->assertSame($clock->now()->getTimestamp(), $session->store['sesame.last_seen']);
     }
 
     public function testUserReturnsNullWhenNothingIsStored(): void
@@ -140,9 +194,114 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(),
             new RecordingSession($log),
+            $this->config(),
         );
 
         $this->assertNull($sesame->user());
+    }
+
+    public function testUserSignsOutWhenTheIdleTimeoutHasPassed(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $clock->advance(120 * 60 + 1);
+
+        $this->assertNull($sesame->user());
+        $this->assertSame(
+            [
+                'get:sesame.user',
+                'get:sesame.signed_in_at',
+                'get:sesame.last_seen',
+                'forget:sesame.user',
+                'forget:sesame.identity',
+                'invalidate',
+            ],
+            $log->events,
+        );
+        $this->assertSame([], $session->store);
+    }
+
+    public function testUserStaysSignedInAtTheIdleBoundary(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $clock->advance(120 * 60);
+
+        $this->assertSame('the-user', $sesame->user());
+    }
+
+    public function testUserSignsOutWhenTheAbsoluteLifetimeHasPassed(): void
+    {
+        // The idle timeout is 120 minutes and the absolute lifetime is 60,
+        // and the user makes a request every 10 minutes, so the idle timeout
+        // never fires: only the absolute lifetime can end the session.
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(['sessionAbsoluteMinutes' => 60]),
+            $clock,
+        );
+
+        for ($i = 0; $i < 6; $i++) {
+            $clock->advance(10 * 60);
+            $this->assertSame('the-user', $sesame->user(), 'Request '.($i + 1).' should still be signed in.');
+        }
+
+        $clock->advance(10 * 60);
+
+        $this->assertNull($sesame->user());
+        $this->assertSame([], $session->store);
+    }
+
+    public function testUserSignsOutWhenTheSessionHasNoTimestamps(): void
+    {
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+        );
+
+        $this->assertNull($sesame->user());
+        $this->assertSame([], $session->store);
     }
 
     public function testLogoutInvalidatesBeforeTheIdpUrlIsBuilt(): void
@@ -153,7 +312,7 @@ final class SesameTest extends TestCase
         $session->put('sesame.identity', $this->identity());
         $log->events = [];
         $driver = new RecordingDriver(new Authenticated($this->identity()), 'http://idp.local/logout', $log);
-        $sesame = new Sesame($driver, new RecordingResolver(), $session);
+        $sesame = new Sesame($driver, new RecordingResolver(), $session, $this->config());
 
         $url = $sesame->logout('http://app.local/');
 
@@ -171,6 +330,7 @@ final class SesameTest extends TestCase
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(),
             new RecordingSession($log),
+            $this->config(),
         );
 
         $this->assertNull($sesame->logout('http://app.local/'));

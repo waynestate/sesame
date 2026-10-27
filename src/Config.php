@@ -12,7 +12,10 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `driver` and `environment` are always required. The `fake` driver adds
  * `fake.username` (required) and `fake.attributes` (default `[]`). The
  * `cas` driver adds `cas.base_url` (required), `cas.service_url` (required)
- * and `cas.protocol` (default `3.0`, only `3.0` or `2.0`).
+ * and `cas.protocol` (default `3.0`, only `3.0` or `2.0`). The session
+ * timeouts are `session.idle_minutes` (default `120`) and
+ * `session.absolute_minutes` (default `720`), both optional positive
+ * integers.
  */
 final readonly class Config
 {
@@ -24,6 +27,8 @@ final readonly class Config
         public ?string $casBaseUrl = null,
         public ?string $casServiceUrl = null,
         public string $casProtocol = '3.0',
+        public int $sessionIdleMinutes = 120,
+        public int $sessionAbsoluteMinutes = 720,
     ) {
     }
 
@@ -58,6 +63,9 @@ final readonly class Config
             }
         }
 
+        $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
+        $sessionAbsoluteMinutes = self::optionalPositiveInt($config, 'session.absolute_minutes', 720);
+
         return new self(
             $driver,
             $environment,
@@ -66,6 +74,8 @@ final readonly class Config
             $casBaseUrl,
             $casServiceUrl,
             $casProtocol,
+            $sessionIdleMinutes,
+            $sessionAbsoluteMinutes,
         );
     }
 
@@ -86,6 +96,31 @@ final readonly class Config
 
         if (! is_string($value) || $value === '') {
             throw new InvalidConfig(sprintf('The config key "%s" must be a non-empty string.', $path));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read an optional positive integer from a dotted path in the config.
+     *
+     * The default is returned when the key is absent; a present key that is
+     * not a positive integer is a config error.
+     */
+    private static function optionalPositiveInt(array $config, string $path, int $default): int
+    {
+        $value = $config;
+
+        foreach (explode('.', $path) as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return $default;
+            }
+
+            $value = $value[$segment];
+        }
+
+        if (! is_int($value) || $value <= 0) {
+            throw new InvalidConfig(sprintf('The config key "%s" must be a positive integer.', $path));
         }
 
         return $value;

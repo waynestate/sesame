@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
@@ -326,12 +327,31 @@ final class CasDriverTest extends TestCase
         $log = new EventLog();
         $session = new RecordingSession($log);
         $resolver = new RecordingResolver('the-user');
-        $sesame = new Sesame($driver, $resolver, $session);
+        $sesame = new Sesame(
+            $driver,
+            $resolver,
+            $session,
+            new Config(
+                driver: 'cas',
+                environment: 'testing',
+                casBaseUrl: self::BASE,
+                casServiceUrl: self::SERVICE,
+            ),
+        );
 
         $user = $sesame->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
         $this->assertSame('the-user', $user);
-        $this->assertSame(['regenerate', 'put:sesame.user', 'put:sesame.identity'], $log->events);
+        $this->assertSame(
+            [
+                'regenerate',
+                'put:sesame.user',
+                'put:sesame.identity',
+                'put:sesame.signed_in_at',
+                'put:sesame.last_seen',
+            ],
+            $log->events,
+        );
         $this->assertSame('the-user', $session->store['sesame.user']);
         $this->assertSame('ab1234', $resolver->identity->username);
     }

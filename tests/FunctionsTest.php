@@ -7,6 +7,7 @@ namespace Waynestate\Sesame\Tests;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\FakeDriver;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Sesame;
@@ -17,12 +18,22 @@ use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 final class FunctionsTest extends TestCase
 {
+    private function config(): Config
+    {
+        return new Config(
+            driver: 'fake',
+            environment: 'local',
+            fakeUsername: 'jdoe',
+        );
+    }
+
     public function testSesameReturnsTheInstanceItWasGiven(): void
     {
         $instance = new Sesame(
             new FakeDriver('local', 'jdoe', []),
             new RecordingResolver(),
             new RecordingSession(new EventLog()),
+            $this->config(),
         );
 
         $this->assertSame($instance, sesame($instance));
@@ -52,6 +63,7 @@ final class FunctionsTest extends TestCase
     public function testSesameLoginStopsTheScriptAfterARedirect(): void
     {
         $body = <<<'PHP'
+use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
@@ -64,6 +76,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Redirect('http://idp.local/login?service=x'), null, $log),
     new RecordingResolver(),
     new RecordingSession($log),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
 );
 sesame($sesame);
 
@@ -87,6 +100,7 @@ PHP;
         $body = <<<'PHP'
 use DateTimeImmutable;
 use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
@@ -100,6 +114,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), 'http://idp.local/logout', $log),
     new RecordingResolver(),
     new RecordingSession($log),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
 );
 sesame($sesame);
 
@@ -159,6 +174,7 @@ PHP;
             new RecordingDriver(new Authenticated($identity), null, new EventLog(), $serviceUrl),
             new RecordingResolver(),
             new RecordingSession(new EventLog()),
+            $this->config(),
         );
     }
 
