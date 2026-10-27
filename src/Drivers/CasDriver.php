@@ -15,6 +15,7 @@ use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\ReturnTo;
 
 /**
  * The CAS driver, CAS 3.0 against Academica.
@@ -96,18 +97,25 @@ final class CasDriver implements Driver
 
     public function logoutUrl(string $returnTo): ?string
     {
-        return $this->base.'/logout?service='.rawurlencode($returnTo);
+        return $this->base.'/logout?service='.rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+    }
+
+    public function serviceUrl(): ?string
+    {
+        return $this->serviceUrl;
     }
 
     /**
-     * The ticket must look like a CAS ticket before it is sent anywhere.
+     * The ticket must look like a CAS service ticket before it is sent anywhere.
+     *
+     * Only ST- service tickets are accepted. Proxy tickets (PT-) and anything
+     * with a query string smuggled in are rejected before any HTTP call.
      */
     private function assertValidTicket(mixed $ticket): void
     {
         if (! is_string($ticket)
-            || $ticket === ''
             || strlen($ticket) > self::MAX_TICKET_LENGTH
-            || preg_match('/^[A-Za-z0-9._\-]+$/', $ticket) !== 1
+            || preg_match('/^ST-[A-Za-z0-9._\-]{1,253}$/', $ticket) !== 1
         ) {
             throw new AuthenticationFailed('The ticket in the request is not a valid CAS ticket.');
         }
@@ -116,16 +124,25 @@ final class CasDriver implements Driver
     /**
      * Read a CAS service response.
      *
-     * Parsed with the CAS namespace, not string matching. External entities
-     * are not loaded: that is the default on PHP 8, and no LIBXML_NOENT is
-     * passed.
+     * Parsed with the CAS namespace, not string matching. A DOCTYPE is
+     * rejected outright, and the document is parsed with LIBXML_NONET so no
+     * external entities are loaded. The success element must be a direct
+     * child of the root serviceResponse.
      */
     private function parse(string $xml): Authenticated
     {
-        libxml_use_internal_errors(true);
-        $doc = simplexml_load_string($xml);
-        libxml_clear_errors();
-        libxml_use_internal_errors(false);
+        if (stripos($xml, '<!DOCTYPE') !== false) {
+            throw new AuthenticationFailed('The CAS server returned a response with a DOCTYPE, which is not allowed.');
+        }
+
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $doc = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
 
         if ($doc === false) {
             throw new AuthenticationFailed('The CAS server returned a response that is not valid XML.');
@@ -133,12 +150,12 @@ final class CasDriver implements Driver
 
         $doc->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
-        $success = $doc->xpath('//cas:authenticationSuccess');
+        $success = $doc->xpath('cas:authenticationSuccess');
 
-        if ($success === []) {
-            $failure = $doc->xpath('//cas:authenticationFailure');
+        if ($success === false || $success === null || $success === []) {
+            $failure = $doc->xpath('cas:authenticationFailure');
 
-            if ($failure !== []) {
+            if ($failure !== false && $failure !== null && $failure !== []) {
                 $code = (string) $failure[0]['code'];
 
                 throw new AuthenticationFailed($code === ''
@@ -153,7 +170,7 @@ final class CasDriver implements Driver
         $successElement->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
         $userNodes = $successElement->xpath('cas:user');
-        $user = $userNodes === [] ? '' : trim((string) $userNodes[0]);
+        $user = ($userNodes === false || $userNodes === null || $userNodes === []) ? '' : trim((string) $userNodes[0]);
 
         if ($user === '') {
             throw new AuthenticationFailed('The CAS success response has no user.');
@@ -163,7 +180,7 @@ final class CasDriver implements Driver
 
         $attributeNodes = $successElement->xpath('cas:attributes');
 
-        if ($attributeNodes !== []) {
+        if ($attributeNodes !== false && $attributeNodes !== null && $attributeNodes !== []) {
             foreach ($attributeNodes[0]->children(self::CAS_NAMESPACE) as $name => $value) {
                 $attributes[(string) $name][] = (string) $value;
             }
@@ -178,11 +195,18 @@ final class CasDriver implements Driver
     }
 
     /**
-     * The URL must be an absolute https:// URL.
+     * The URL must be an absolute https:// URL with a host and no credentials.
      */
     private static function absoluteHttps(string $url, string $key): string
     {
-        if (! str_starts_with($url, 'https://')) {
+        $parts = parse_url($url);
+
+        if ($parts === false
+            || ($parts['scheme'] ?? null) !== 'https'
+            || ($parts['host'] ?? '') === ''
+            || array_key_exists('user', $parts)
+            || array_key_exists('pass', $parts)
+        ) {
             throw new InvalidConfig(sprintf(
                 'The config key "%s" must be an absolute https:// URL, got "%s".',
                 $key,

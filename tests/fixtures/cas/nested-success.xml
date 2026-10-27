@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceResponse xmlns="http://www.yale.edu/tp/cas">
+  <wrapper>
+    <authenticationSuccess>
+      <user>ab1234</user>
+    </authenticationSuccess>
+  </wrapper>
+</serviceResponse>
