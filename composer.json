@@ -18,11 +18,12 @@
         "psr/http-message": "^2.0"
     },
     "require-dev": {
+        "orchestra/testbench": "^10.0 || ^11.0",
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
         "guzzlehttp/guzzle": "A PSR-18 client for the cas driver",
-        "laravel/framework": "For the Laravel adapter (a later release)",
+        "laravel/framework": "For the Laravel adapter",
         "symfony/http-client": "A PSR-18 client for the cas driver"
     },
     "autoload": {
@@ -38,11 +39,21 @@
             "Waynestate\\Sesame\\Tests\\": "tests/"
         }
     },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Waynestate\\Sesame\\Laravel\\SesameServiceProvider"
+            ]
+        }
+    },
     "scripts": {
         "test": "phpunit"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "8.3.0"
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true
