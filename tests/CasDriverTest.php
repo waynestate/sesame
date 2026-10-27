@@ -8,6 +8,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use Nyholm\Psr7\Stream;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
@@ -83,19 +84,35 @@ final class CasDriverTest extends TestCase
         $this->assertSame('ST-1', $query['ticket']);
     }
 
-    public function testRejectsABadTicketBeforeAnyHttpCall(): void
+    #[DataProvider('badTickets')]
+    public function testRejectsABadTicketBeforeAnyHttpCall(string $ticket): void
     {
         $http = new FakeHttpClient();
         $driver = $this->driver($http);
 
         try {
-            $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket='.rawurlencode('ST-1&renew=true')));
+            $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket='.rawurlencode($ticket)));
             $this->fail('Expected AuthenticationFailed.');
         } catch (AuthenticationFailed) {
             // Expected: the ticket fails the pattern before any HTTP call.
         }
 
         $this->assertSame([], $http->requests);
+    }
+
+    /**
+     * Tickets that must be rejected before any HTTP call.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function badTickets(): array
+    {
+        return [
+            'a query string smuggled into the ticket' => ['ST-1&renew=true'],
+            'a proxy ticket' => ['PT-1'],
+            'an empty ticket' => [''],
+            'a ticket that is too long' => ['ST-'.str_repeat('a', 254)],
+        ];
     }
 
     public function testValidateUrlEncodesServiceAndTicket(): void
@@ -174,6 +191,28 @@ final class CasDriverTest extends TestCase
         $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
     }
 
+    public function testXxeWithDoctypeThrowsAuthenticationFailed(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('xxe.xml'))]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('DOCTYPE');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+    }
+
+    public function testANestedSuccessIsNotAccepted(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('nested-success.xml'))]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('neither a success nor a failure');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+    }
+
     public function testA500ResponseThrowsAuthenticationFailed(): void
     {
         $http = new FakeHttpClient([self::response(500, 'boom')]);
@@ -196,6 +235,20 @@ final class CasDriverTest extends TestCase
         $this->expectException(InvalidConfig::class);
 
         new CasDriver(self::BASE, 'http://app.test/login', new FakeHttpClient(), new Psr17Factory());
+    }
+
+    public function testRejectsABaseUrlWithoutAHost(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        new CasDriver('https:///cas', self::SERVICE, new FakeHttpClient(), new Psr17Factory());
+    }
+
+    public function testRejectsABaseUrlWithCredentials(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        new CasDriver('https://user:pass@cas.test/cas', self::SERVICE, new FakeHttpClient(), new Psr17Factory());
     }
 
     public function testRejectsAnUnknownProtocol(): void
@@ -223,6 +276,46 @@ final class CasDriverTest extends TestCase
         $this->assertSame(
             self::BASE.'/logout?service='.rawurlencode('https://app.test/'),
             $driver->logoutUrl('https://app.test/'),
+        );
+    }
+
+    public function testLogoutUrlKeepsAnHttpsReturnToOnTheServiceHost(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode('https://app.test/dashboard'),
+            $driver->logoutUrl('https://app.test/dashboard'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForAnOffHostReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('https://evil.test/'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForAnHttpReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('http://app.test/'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForARelativeReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('/dashboard'),
         );
     }
 

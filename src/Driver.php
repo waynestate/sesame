@@ -34,4 +34,11 @@ interface Driver
      * @param  string  $returnTo  Where to send the user after the provider logs them out.
      */
     public function logoutUrl(string $returnTo): ?string;
+
+    /**
+     * The configured service URL, or null when the driver has none.
+     *
+     * The service URL is the host a logout return-to must stay on.
+     */
+    public function serviceUrl(): ?string;
 }

@@ -18,6 +18,7 @@ final class RecordingDriver implements Driver
         private readonly LoginStep $step,
         private readonly ?string $logoutUrl,
         private readonly EventLog $log,
+        private readonly ?string $serviceUrl = null,
     ) {
     }
 
@@ -38,5 +39,10 @@ final class RecordingDriver implements Driver
         $this->log->record('logoutUrl');
 
         return $this->logoutUrl;
+    }
+
+    public function serviceUrl(): ?string
+    {
+        return $this->serviceUrl;
     }
 }

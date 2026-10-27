@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE serviceResponse [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<serviceResponse xmlns="http://www.yale.edu/tp/cas">
+  <authenticationSuccess>
+    <user>&xxe;</user>
+  </authenticationSuccess>
+</serviceResponse>

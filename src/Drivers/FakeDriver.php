@@ -16,11 +16,20 @@ use Waynestate\Sesame\LoginStep;
  * A driver for local development and tests only.
  *
  * It returns the identity it was built with, every time. It refuses to
- * construct when the environment is production: it throws, it never silently
- * falls back.
+ * construct outside the allowed development environments: it throws, it never
+ * silently falls back. The check is an allowlist, so an environment that is
+ * not explicitly a development one (production, staging, or anything unknown)
+ * can never boot the fake driver.
  */
 final class FakeDriver implements Driver
 {
+    /**
+     * The only environments the fake driver may run in.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_ENVIRONMENTS = ['local', 'development', 'dev', 'testing', 'test'];
+
     /**
      * @param  array<string, list<string>>  $attributes
      */
@@ -29,8 +38,8 @@ final class FakeDriver implements Driver
         private readonly string $username,
         private readonly array $attributes,
     ) {
-        if (strtolower(trim($environment)) === 'production') {
-            throw new FakeDriverInProduction('The fake driver refuses to run in production.');
+        if (! in_array(strtolower(trim($environment)), self::ALLOWED_ENVIRONMENTS, true)) {
+            throw new FakeDriverInProduction('The fake driver only runs in local, development and testing environments.');
         }
     }
 
@@ -50,6 +59,11 @@ final class FakeDriver implements Driver
     }
 
     public function logoutUrl(string $returnTo): ?string
+    {
+        return null;
+    }
+
+    public function serviceUrl(): ?string
     {
         return null;
     }
