@@ -80,6 +80,28 @@ final class SesameTest extends TestCase
         $this->assertSame([], $session->store);
     }
 
+    public function testLoginStoresTheIdentityWithoutItsRawAttributes(): void
+    {
+        $identity = $this->identity();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($identity), null, $log),
+            new RecordingResolver(),
+            $session,
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $stored = $session->store['sesame.identity'];
+
+        $this->assertInstanceOf(Identity::class, $stored);
+        $this->assertSame($identity->username, $stored->username);
+        $this->assertSame($identity->driver, $stored->driver);
+        $this->assertEquals($identity->authenticatedAt, $stored->authenticatedAt);
+        $this->assertSame([], $stored->attributes);
+    }
+
     public function testLoginReturnsARedirectUnchanged(): void
     {
         $redirect = new Redirect('http://idp.local/login?service=x');

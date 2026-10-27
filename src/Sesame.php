@@ -28,9 +28,12 @@ final class Sesame
      * Returns the Redirect unchanged when the user must go to the identity
      * provider. Otherwise it resolves the user. When the resolver returns a
      * user it regenerates the session ID before it stores anything, and
-     * returns the user. When the resolver returns null the app has refused
-     * the identity: the session is left untouched, nothing is stored, and
-     * null is returned, so a refused identity never ends up signed in.
+     * returns the user. The identity it stores keeps the username, the
+     * driver and the time, but not the raw IdP attributes, so the session
+     * stays small and plain. When the resolver returns null the app has
+     * refused the identity: the session is left untouched, nothing is
+     * stored, and null is returned, so a refused identity never ends up
+     * signed in.
      *
      * @return mixed A Redirect, the app's user, or null when the resolver
      *               refused the identity.
@@ -51,7 +54,14 @@ final class Sesame
 
         $this->session->regenerate();
         $this->session->put('sesame.user', $user);
-        $this->session->put('sesame.identity', $step->identity);
+        // Keep the session small and plain: store the identity without its
+        // raw IdP attributes (S6).
+        $this->session->put('sesame.identity', new Identity(
+            $step->identity->username,
+            [],
+            $step->identity->driver,
+            $step->identity->authenticatedAt,
+        ));
 
         return $user;
     }
