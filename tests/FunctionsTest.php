@@ -140,6 +140,7 @@ PHP;
 
         $this->assertSame('https://app.test/login', $sesame->safeReturnTo('/dashboard'));
     }
+
     public function testSafeReturnToComparesHostsWithoutCase(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.example.edu/login');
