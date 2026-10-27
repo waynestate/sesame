@@ -72,7 +72,7 @@ their redirect, so nothing after them runs in that request.
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 3.0 against Academica. |
-| `gateway` | Later. A signed assertion from the Citadel auth gateway, never a bare header. |
+| `gateway` | Later. A signed assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
 
@@ -209,6 +209,22 @@ app()->singleton(
     fn () => new \Symfony\Component\HttpClient\Psr18Client(),
 );
 ```
+
+## Running off Citadel
+
+Open sesame opens the door on any host, not just Citadel. SESAME takes its
+config from the app (env or `config/sesame.php`), keeps no files of its own,
+and has no platform address in code, so a move to OpenShift, Coolify or raw
+Docker is a config change, not a code change. What differs per host:
+
+- The `cas` driver needs outbound HTTPS from the app to the CAS server, and
+  `service_url` must be the public URL users see, behind any proxy.
+- The `gateway` driver trusts only a signed assertion, never a bare header,
+  and its proxy list is config.
+- With more than one replica of the app (OpenShift, Coolify scaling, several
+  containers), the session store must be shared: Redis or a database, never
+  local files. In Laravel, set `SESSION_DRIVER` to `redis` or `database`; in
+  raw PHP, set `session.save_handler` to a shared handler, for example Redis.
 
 ## Moving from wayne-cas
 

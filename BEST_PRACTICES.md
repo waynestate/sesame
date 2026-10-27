@@ -417,7 +417,7 @@ Corrected:
 - S3: the first pass allowed `SameSite=Strict`. Changed to `Lax`, with the reason (S41).
 - S19: the first pass said no document names the CAS login-age attributes. The CAS 3.0 spec names `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`.
 - S38, S39 and the gap list: the first pass said the repo has no `.gitlab-ci.yml`. It has one (PREFLIGHT components pinned to a commit).
-- S39: the Docker matrix omits PHP 8.5, which Citadel offers.
+- S39: the Docker matrix now includes PHP 8.5, and CI runs 8.3, 8.4 and 8.5 through PREFLIGHT.
 - S43 (new) records that the PHP manual itself advises a grace period over `session_regenerate_id(true)`, which the first pass left as an open trade-off.
 
 Checked and found correct: PHP support dates (S37), NIST AAL2 24 hours and 1 hour (S5), the ASVS 5.0 requirement numbers V6.8.1 to V6.8.4, V7.1.1, V7.1.3, V7.2.4, V7.3.1, V7.3.2, V7.4.1, V7.6.1, V9.1.2, V9.1.3, V9.2.1 to V9.2.3, V1.5.1 and V1.5.2, the `ST-` ticket prefix, Guzzle's zero default timeout, and the `__Host-` OWASP recommendation. The rfc6265bis reference is still a draft, as the first pass said.
