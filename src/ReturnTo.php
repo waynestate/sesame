@@ -30,7 +30,8 @@ final class ReturnTo
 
         if ($parts !== false
             && ($parts['scheme'] ?? null) === 'https'
-            && ($parts['host'] ?? null) === parse_url($serviceUrl, PHP_URL_HOST)
+            && isset($parts['host'])
+            && strtolower($parts['host']) === strtolower((string) parse_url($serviceUrl, PHP_URL_HOST))
         ) {
             return $returnTo;
         }

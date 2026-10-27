@@ -140,6 +140,12 @@ PHP;
 
         $this->assertSame('https://app.test/login', $sesame->safeReturnTo('/dashboard'));
     }
+    public function testSafeReturnToComparesHostsWithoutCase(): void
+    {
+        $sesame = $this->sesameWithServiceUrl('https://app.example.edu/login');
+
+        $this->assertSame('https://APP.Example.EDU/after-login', $sesame->safeReturnTo('https://APP.Example.EDU/after-login'));
+    }
 
     /**
      * A Sesame with a recording driver that has no logout URL but a service URL.
