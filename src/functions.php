@@ -70,10 +70,11 @@ if (! function_exists('sesame_login')) {
      * Run a login against the current request.
      *
      * Builds the PSR-7 request from the globals, hands it to the driver, and
-     * when the driver answers with a Redirect sends the 302 and returns null.
-     * When the login completes it returns the app's user.
+     * when the driver answers with a Redirect sends the 302 and stops the
+     * script, so no protected code runs after the redirect. When the login
+     * completes it returns the app's user.
      *
-     * @return mixed The app's user, or null after a redirect.
+     * @return mixed The app's user.
      */
     function sesame_login(): mixed
     {
@@ -82,8 +83,7 @@ if (! function_exists('sesame_login')) {
 
         if ($result instanceof Redirect) {
             header('Location: '.$result->url, true, 302);
-
-            return null;
+            exit;
         }
 
         return $result;
@@ -108,13 +108,15 @@ if (! function_exists('sesame_logout')) {
     /**
      * Log the user out, then send them on.
      *
-     * Invalidates the app session, and redirects to the identity provider's
-     * logout URL when the driver has one, otherwise to `$returnTo`.
+     * Invalidates the app session, redirects to the identity provider's
+     * logout URL when the driver has one, otherwise to `$returnTo`, and stops
+     * the script, so no protected code runs after the redirect.
      */
     function sesame_logout(string $returnTo): void
     {
         $url = sesame()->logout($returnTo);
 
         header('Location: '.($url ?? $returnTo), true, 302);
+        exit;
     }
 }
