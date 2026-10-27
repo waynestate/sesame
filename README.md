@@ -21,7 +21,8 @@ declare(strict_types=1);
 
 require __DIR__.'/vendor/autoload.php';
 
-use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
@@ -29,8 +30,17 @@ use Waynestate\Sesame\UserResolver;
 
 session_start();
 
+$config = Config::fromArray([
+    'driver' => 'fake',
+    'environment' => 'local',
+    'fake' => [
+        'username' => 'jdoe',
+        'attributes' => ['cn' => ['John Doe']],
+    ],
+]);
+
 $sesame = new Sesame(
-    new FakeDriver('local', 'jdoe', ['cn' => ['John Doe']]),
+    DriverFactory::make($config),
     new class implements UserResolver {
         public function findOrImportUser(Identity $identity): mixed
         {
@@ -38,6 +48,7 @@ $sesame = new Sesame(
         }
     },
     new NativeSession(),
+    $config,
 );
 
 sesame($sesame);
@@ -113,6 +124,28 @@ Protocol 3.0 is the default; whether Academica releases attributes on
 `/p3/serviceValidate` is still to be verified, and `cas.protocol: 2.0` is
 the fallback.
 
+## Session timeouts
+
+Open sesame opens the door for a live session; a stale one finds it locked.
+Every signed-in session has two clocks. The idle timeout is the quiet time
+after which the session is dropped, and the absolute lifetime is the longest
+a session may live, no matter how active it is. Both are in minutes, and both
+are checked on every `user()` call, so a stale session is signed out on the
+spot the first time anything asks who is signed in.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
+| `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+
+On login the session stores the sign-in time and the last activity time, and
+`user()` refreshes the last activity time on every call that finds a live
+session. A session made before the timeouts existed (a user, no timestamps)
+counts as expired.
+
+In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and
+`SESAME_SESSION_ABSOLUTE_MINUTES`.
+
 ## Laravel
 
 The Laravel adapter is a service provider that binds the core into the
@@ -135,6 +168,8 @@ Config keys (in `config/sesame.php`):
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `3.0` | `3.0` or `2.0`. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
+| `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
 

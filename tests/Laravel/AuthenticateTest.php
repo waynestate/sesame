@@ -30,7 +30,11 @@ final class AuthenticateTest extends LaravelTestCase
     {
         $this->app['router']->get('/protected', fn () => 'ok')->middleware(['web', 'auth.sesame']);
 
-        $this->withSession(['sesame.user' => 'the-user'])
+        $this->withSession([
+            'sesame.user' => 'the-user',
+            'sesame.signed_in_at' => time(),
+            'sesame.last_seen' => time(),
+        ])
             ->get('/protected')
             ->assertOk()
             ->assertSee('ok');

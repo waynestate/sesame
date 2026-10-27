@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Exception\InvalidConfig;
@@ -151,5 +152,64 @@ final class ConfigTest extends TestCase
                 'protocol' => '1.0',
             ],
         ]);
+    }
+
+    public function testReadsTheSessionTimeouts(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+            'session' => [
+                'idle_minutes' => 30,
+                'absolute_minutes' => 1440,
+            ],
+        ]);
+
+        $this->assertSame(30, $config->sessionIdleMinutes);
+        $this->assertSame(1440, $config->sessionAbsoluteMinutes);
+    }
+
+    public function testSessionTimeoutsDefaultToTwoHoursAndThirtyDays(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+        ]);
+
+        $this->assertSame(120, $config->sessionIdleMinutes);
+        $this->assertSame(720, $config->sessionAbsoluteMinutes);
+    }
+
+    #[DataProvider('badSessionTimeouts')]
+    public function testRejectsAnInvalidSessionTimeout(string $key, int|string $value): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "session.'.$key.'" must be a positive integer.');
+
+        Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+            'session' => [$key => $value],
+        ]);
+    }
+
+    /**
+     * Session timeout values that must be rejected.
+     *
+     * @return array<string, array{string, int|string}>
+     */
+    public static function badSessionTimeouts(): array
+    {
+        return [
+            'an idle timeout of zero' => ['idle_minutes', 0],
+            'a negative idle timeout' => ['idle_minutes', -5],
+            'a string idle timeout' => ['idle_minutes', 'abc'],
+            'an absolute timeout of zero' => ['absolute_minutes', 0],
+            'a negative absolute timeout' => ['absolute_minutes', -5],
+            'a string absolute timeout' => ['absolute_minutes', 'abc'],
+        ];
     }
 }
