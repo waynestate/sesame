@@ -106,14 +106,16 @@ final class CasDriver implements Driver
     }
 
     /**
-     * The ticket must look like a CAS ticket before it is sent anywhere.
+     * The ticket must look like a CAS service ticket before it is sent anywhere.
+     *
+     * Only ST- service tickets are accepted. Proxy tickets (PT-) and anything
+     * with a query string smuggled in are rejected before any HTTP call.
      */
     private function assertValidTicket(mixed $ticket): void
     {
         if (! is_string($ticket)
-            || $ticket === ''
             || strlen($ticket) > self::MAX_TICKET_LENGTH
-            || preg_match('/^[A-Za-z0-9._\-]+$/', $ticket) !== 1
+            || preg_match('/^ST-[A-Za-z0-9._\-]{1,253}$/', $ticket) !== 1
         ) {
             throw new AuthenticationFailed('The ticket in the request is not a valid CAS ticket.');
         }

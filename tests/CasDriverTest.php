@@ -8,6 +8,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use Nyholm\Psr7\Stream;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
@@ -83,19 +84,35 @@ final class CasDriverTest extends TestCase
         $this->assertSame('ST-1', $query['ticket']);
     }
 
-    public function testRejectsABadTicketBeforeAnyHttpCall(): void
+    #[DataProvider('badTickets')]
+    public function testRejectsABadTicketBeforeAnyHttpCall(string $ticket): void
     {
         $http = new FakeHttpClient();
         $driver = $this->driver($http);
 
         try {
-            $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket='.rawurlencode('ST-1&renew=true')));
+            $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket='.rawurlencode($ticket)));
             $this->fail('Expected AuthenticationFailed.');
         } catch (AuthenticationFailed) {
             // Expected: the ticket fails the pattern before any HTTP call.
         }
 
         $this->assertSame([], $http->requests);
+    }
+
+    /**
+     * Tickets that must be rejected before any HTTP call.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function badTickets(): array
+    {
+        return [
+            'a query string smuggled into the ticket' => ['ST-1&renew=true'],
+            'a proxy ticket' => ['PT-1'],
+            'an empty ticket' => [''],
+            'a ticket that is too long' => ['ST-'.str_repeat('a', 254)],
+        ];
     }
 
     public function testValidateUrlEncodesServiceAndTicket(): void
