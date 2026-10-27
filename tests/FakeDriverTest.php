@@ -52,6 +52,48 @@ final class FakeDriverTest extends TestCase
         ];
     }
 
+    #[DataProvider('nonAllowedEnvironments')]
+    public function testRefusesNonAllowedEnvironments(string $environment): void
+    {
+        $this->expectException(FakeDriverInProduction::class);
+
+        new FakeDriver($environment, 'jdoe', []);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonAllowedEnvironments(): array
+    {
+        return [
+            'prod' => ['prod'],
+            'live' => ['live'],
+            'staging' => ['staging'],
+            'qa' => ['qa'],
+            'unknown' => ['unknown'],
+        ];
+    }
+
+    #[DataProvider('developmentEnvironments')]
+    public function testAcceptsDevelopmentEnvironments(string $environment): void
+    {
+        $driver = new FakeDriver($environment, 'jdoe', []);
+
+        $this->assertSame('fake', $driver->name());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function developmentEnvironments(): array
+    {
+        return [
+            'development' => ['development'],
+            'dev' => ['dev'],
+            'test' => ['test'],
+        ];
+    }
+
     public function testLoginAlwaysReturnsAuthenticated(): void
     {
         $driver = new FakeDriver('local', 'jdoe', ['cn' => ['John Doe']]);
