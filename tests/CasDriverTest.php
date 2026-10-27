@@ -226,6 +226,46 @@ final class CasDriverTest extends TestCase
         );
     }
 
+    public function testLogoutUrlKeepsAnHttpsReturnToOnTheServiceHost(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode('https://app.test/dashboard'),
+            $driver->logoutUrl('https://app.test/dashboard'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForAnOffHostReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('https://evil.test/'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForAnHttpReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('http://app.test/'),
+        );
+    }
+
+    public function testLogoutUrlFallsBackToTheServiceUrlForARelativeReturnTo(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+
+        $this->assertSame(
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            $driver->logoutUrl('/dashboard'),
+        );
+    }
+
     public function testSesameLoginWithTheCasDriverRegeneratesAndStores(): void
     {
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);

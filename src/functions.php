@@ -109,14 +109,18 @@ if (! function_exists('sesame_logout')) {
      * Log the user out, then send them on.
      *
      * Invalidates the app session, redirects to the identity provider's
-     * logout URL when the driver has one, otherwise to `$returnTo`, and stops
-     * the script, so no protected code runs after the redirect.
+     * logout URL when the driver has one, otherwise to the safe return-to,
+     * and stops the script, so no protected code runs after the redirect.
+     *
+     * The return-to must be an absolute https URL on the service host;
+     * anything else sends the user to the service URL instead, so a logout
+     * can never be turned into an open redirect.
      */
     function sesame_logout(string $returnTo): void
     {
         $url = sesame()->logout($returnTo);
 
-        header('Location: '.($url ?? $returnTo), true, 302);
+        header('Location: '.($url ?? sesame()->safeReturnTo($returnTo)), true, 302);
         exit;
     }
 }

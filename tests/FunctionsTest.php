@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Tests;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingDriver;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
 
@@ -107,6 +111,48 @@ PHP;
         $output = $this->runChildPhp($this->childScript($body));
 
         $this->assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
+    }
+
+    public function testSafeReturnToKeepsAnHttpsReturnToOnTheServiceHost(): void
+    {
+        $sesame = $this->sesameWithServiceUrl('https://app.test/login');
+
+        $this->assertSame('https://app.test/dashboard', $sesame->safeReturnTo('https://app.test/dashboard'));
+    }
+
+    public function testSafeReturnToFallsBackToTheServiceUrlForAnOffHostReturnTo(): void
+    {
+        $sesame = $this->sesameWithServiceUrl('https://app.test/login');
+
+        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('https://evil.test/'));
+    }
+
+    public function testSafeReturnToFallsBackToTheServiceUrlForAnHttpReturnTo(): void
+    {
+        $sesame = $this->sesameWithServiceUrl('https://app.test/login');
+
+        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('http://app.test/'));
+    }
+
+    public function testSafeReturnToFallsBackToTheServiceUrlForARelativeReturnTo(): void
+    {
+        $sesame = $this->sesameWithServiceUrl('https://app.test/login');
+
+        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('/dashboard'));
+    }
+
+    /**
+     * A Sesame with a recording driver that has no logout URL but a service URL.
+     */
+    private function sesameWithServiceUrl(string $serviceUrl): Sesame
+    {
+        $identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable());
+
+        return new Sesame(
+            new RecordingDriver(new Authenticated($identity), null, new EventLog(), $serviceUrl),
+            new RecordingResolver(),
+            new RecordingSession(new EventLog()),
+        );
     }
 
     /**

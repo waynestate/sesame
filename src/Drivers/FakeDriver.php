@@ -62,4 +62,9 @@ final class FakeDriver implements Driver
     {
         return null;
     }
+
+    public function serviceUrl(): ?string
+    {
+        return null;
+    }
 }

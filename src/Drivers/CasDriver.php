@@ -15,6 +15,7 @@ use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\ReturnTo;
 
 /**
  * The CAS driver, CAS 3.0 against Academica.
@@ -96,7 +97,12 @@ final class CasDriver implements Driver
 
     public function logoutUrl(string $returnTo): ?string
     {
-        return $this->base.'/logout?service='.rawurlencode($returnTo);
+        return $this->base.'/logout?service='.rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+    }
+
+    public function serviceUrl(): ?string
+    {
+        return $this->serviceUrl;
     }
 
     /**

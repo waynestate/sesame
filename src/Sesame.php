@@ -90,4 +90,16 @@ final class Sesame
 
         return $this->driver->logoutUrl($returnTo);
     }
+
+    /**
+     * The safe URL to send the user to after logout.
+     *
+     * The return-to must be an absolute https URL on the service host;
+     * anything else sends the user to the service URL instead, so a logout
+     * can never be turned into an open redirect.
+     */
+    public function safeReturnTo(string $returnTo): string
+    {
+        return ReturnTo::safe($returnTo, $this->driver->serviceUrl());
+    }
 }
