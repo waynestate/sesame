@@ -219,12 +219,16 @@ Docker is a config change, not a code change. What differs per host:
 
 - The `cas` driver needs outbound HTTPS from the app to the CAS server, and
   `service_url` must be the public URL users see, behind any proxy.
-- The `gateway` driver trusts only a signed assertion, never a bare header,
-  and its proxy list is config.
-- With more than one replica of the app (OpenShift, Coolify scaling, several
-  containers), the session store must be shared: Redis or a database, never
-  local files. In Laravel, set `SESSION_DRIVER` to `redis` or `database`; in
-  raw PHP, set `session.save_handler` to a shared handler, for example Redis.
+- The `gateway` driver trusts only a signed assertion, never a bare header.
+  A source address is not enough on its own: on shared ingress (OpenShift's
+  router, Coolify's Traefik) the same proxy carries routes with and without
+  the auth step. The header name and the list of trusted auth hops are config.
+- The session store must be shared: Redis or a database, never local files.
+  Every host overlaps old and new containers during a deploy, and most can run
+  more than one replica, so a file session would drop users mid-login. In
+  Laravel, set `SESSION_DRIVER` to `redis` or `database` (Laravel 13 already
+  defaults to `database`); in raw PHP, set `session.save_handler` to a shared
+  handler, for example Redis.
 
 ## Moving from wayne-cas
 
