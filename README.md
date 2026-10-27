@@ -57,10 +57,58 @@ cookie.
 | Driver | Status |
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
-| `cas` | Later. CAS 3.0 against Academica. |
+| `cas` | Now. CAS 3.0 against Academica. |
 | `gateway` | Later. A signed assertion from the Citadel auth gateway, never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
+
+## The cas driver
+
+The cas driver logs in against a CAS server, CAS 3.0 by default. The base
+URL is required config with no default; for Academica it is
+`https://academica.aws.wayne.edu/cas`.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+
+$config = Config::fromArray([
+    'driver' => 'cas',
+    'environment' => 'production',
+    'cas' => [
+        'base_url' => 'https://academica.aws.wayne.edu/cas',
+        'service_url' => 'https://app.apps.wayne.edu/login',
+    ],
+]);
+
+// Any PSR-18 client works, for example Guzzle.
+$http = new \GuzzleHttp\Client();
+
+$driver = DriverFactory::make($config, $http, new Psr17Factory());
+```
+
+Then build the Sesame facade with the driver, as in the Raw PHP section
+above.
+
+Config keys:
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL. |
+| `cas.service_url` | Yes | none | Where the server sends the user back to. |
+| `cas.protocol` | No | `3.0` | `3.0` or `2.0`. |
+
+The service URL is the configured value only: the driver never reads the
+request's Host or X-Forwarded-* headers to build it.
+
+Protocol 3.0 is the default; whether Academica releases attributes on
+`/p3/serviceValidate` is still to be verified, and `cas.protocol: 2.0` is
+the fallback.
 
 ## Tests
 

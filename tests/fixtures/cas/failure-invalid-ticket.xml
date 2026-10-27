@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceResponse xmlns="http://www.yale.edu/tp/cas">
+  <authenticationFailure code="INVALID_TICKET">Ticket ST-1 not recognized</authenticationFailure>
+</serviceResponse>

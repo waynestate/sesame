@@ -10,15 +10,20 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-simplexml": "*",
         "nyholm/psr7": "^1.8",
         "nyholm/psr7-server": "^1.1",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
         "psr/http-message": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
-        "laravel/framework": "For the Laravel adapter (a later release)"
+        "guzzlehttp/guzzle": "A PSR-18 client for the cas driver",
+        "laravel/framework": "For the Laravel adapter (a later release)",
+        "symfony/http-client": "A PSR-18 client for the cas driver"
     },
     "autoload": {
         "psr-4": {

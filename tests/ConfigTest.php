@@ -83,4 +83,73 @@ final class ConfigTest extends TestCase
             'fake' => ['username' => 'jdoe', 'attributes' => 'nope'],
         ]);
     }
+
+    public function testReadsTheCasSettings(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'protocol' => '2.0',
+            ],
+        ]);
+
+        $this->assertSame('cas', $config->driver);
+        $this->assertSame('https://cas.test/cas', $config->casBaseUrl);
+        $this->assertSame('https://app.test/login', $config->casServiceUrl);
+        $this->assertSame('2.0', $config->casProtocol);
+    }
+
+    public function testCasProtocolDefaultsToThreeZero(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+            ],
+        ]);
+
+        $this->assertSame('3.0', $config->casProtocol);
+    }
+
+    public function testRejectsAMissingCasBaseUrl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => ['service_url' => 'https://app.test/login'],
+        ]);
+    }
+
+    public function testRejectsAMissingCasServiceUrl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => ['base_url' => 'https://cas.test/cas'],
+        ]);
+    }
+
+    public function testRejectsAnInvalidCasProtocol(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'protocol' => '1.0',
+            ],
+        ]);
+    }
 }

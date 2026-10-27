@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceResponse xmlns="http://www.yale.edu/tp/cas">
+  <authenticationSuccess>
+    <user>ab1234</user>
+    <attributes>
+      <mail>ab1234@wayne.edu</mail>
+      <memberOf>cn=students,ou=groups,dc=wayne,dc=edu</memberOf>
+      <memberOf>cn=employees,ou=groups,dc=wayne,dc=edu</memberOf>
+    </attributes>
+  </authenticationSuccess>
+</serviceResponse>

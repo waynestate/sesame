@@ -10,7 +10,9 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * The library's config, read from a plain array.
  *
  * `driver` and `environment` are always required. The `fake` driver adds
- * `fake.username` (required) and `fake.attributes` (default `[]`).
+ * `fake.username` (required) and `fake.attributes` (default `[]`). The
+ * `cas` driver adds `cas.base_url` (required), `cas.service_url` (required)
+ * and `cas.protocol` (default `3.0`, only `3.0` or `2.0`).
  */
 final readonly class Config
 {
@@ -19,6 +21,9 @@ final readonly class Config
         public string $environment,
         public ?string $fakeUsername = null,
         public array $fakeAttributes = [],
+        public ?string $casBaseUrl = null,
+        public ?string $casServiceUrl = null,
+        public string $casProtocol = '3.0',
     ) {
     }
 
@@ -29,6 +34,9 @@ final readonly class Config
 
         $fakeUsername = null;
         $fakeAttributes = [];
+        $casBaseUrl = null;
+        $casServiceUrl = null;
+        $casProtocol = '3.0';
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
@@ -40,7 +48,25 @@ final readonly class Config
             }
         }
 
-        return new self($driver, $environment, $fakeUsername, $fakeAttributes);
+        if ($driver === 'cas') {
+            $casBaseUrl = self::requiredString($config, 'cas.base_url');
+            $casServiceUrl = self::requiredString($config, 'cas.service_url');
+            $casProtocol = $config['cas']['protocol'] ?? '3.0';
+
+            if (! is_string($casProtocol) || ! in_array($casProtocol, ['3.0', '2.0'], true)) {
+                throw new InvalidConfig('The config key "cas.protocol" must be "3.0" or "2.0".');
+            }
+        }
+
+        return new self(
+            $driver,
+            $environment,
+            $fakeUsername,
+            $fakeAttributes,
+            $casBaseUrl,
+            $casServiceUrl,
+            $casProtocol,
+        );
     }
 
     /**
