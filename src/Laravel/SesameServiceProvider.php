@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -24,8 +25,8 @@ use Waynestate\Sesame\UserResolver;
 /**
  * The Laravel adapter.
  *
- * It binds the core's three collaborators (the driver, the app's user
- * resolver and the session) into the container, registers the auth.sesame
+ * It binds the core's collaborators (the driver, the app's user resolver,
+ * the session and the config) into the container, registers the auth.sesame
  * and wayne.cas middleware aliases, and, unless the app has taken the routes
  * over, registers the login and logout routes. It holds no rules of its own:
  * every rule lives in the core.
@@ -63,6 +64,8 @@ class SesameServiceProvider extends ServiceProvider
                 $app->make(Driver::class),
                 $app->make(UserResolver::class),
                 $app->make(LaravelSession::class),
+                $this->coreConfig($app),
+                $this->clock($app),
             );
         });
     }
@@ -127,6 +130,19 @@ class SesameServiceProvider extends ServiceProvider
         }
 
         return new Psr17Factory();
+    }
+
+    /**
+     * The PSR-20 clock the core uses for the session timeouts: the app's
+     * binding when there is one, and the system clock when there is not.
+     */
+    private function clock($app): ?ClockInterface
+    {
+        if ($app->bound(ClockInterface::class)) {
+            return $app->make(ClockInterface::class);
+        }
+
+        return null;
     }
 
     /**
