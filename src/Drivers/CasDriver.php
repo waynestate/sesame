@@ -195,11 +195,18 @@ final class CasDriver implements Driver
     }
 
     /**
-     * The URL must be an absolute https:// URL.
+     * The URL must be an absolute https:// URL with a host and no credentials.
      */
     private static function absoluteHttps(string $url, string $key): string
     {
-        if (! str_starts_with($url, 'https://')) {
+        $parts = parse_url($url);
+
+        if ($parts === false
+            || ($parts['scheme'] ?? null) !== 'https'
+            || ($parts['host'] ?? '') === ''
+            || array_key_exists('user', $parts)
+            || array_key_exists('pass', $parts)
+        ) {
             throw new InvalidConfig(sprintf(
                 'The config key "%s" must be an absolute https:// URL, got "%s".',
                 $key,

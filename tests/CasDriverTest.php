@@ -237,6 +237,20 @@ final class CasDriverTest extends TestCase
         new CasDriver(self::BASE, 'http://app.test/login', new FakeHttpClient(), new Psr17Factory());
     }
 
+    public function testRejectsABaseUrlWithoutAHost(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        new CasDriver('https:///cas', self::SERVICE, new FakeHttpClient(), new Psr17Factory());
+    }
+
+    public function testRejectsABaseUrlWithCredentials(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        new CasDriver('https://user:pass@cas.test/cas', self::SERVICE, new FakeHttpClient(), new Psr17Factory());
+    }
+
     public function testRejectsAnUnknownProtocol(): void
     {
         $this->expectException(InvalidConfig::class);
