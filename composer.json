@@ -1,0 +1,44 @@
+{
+    "name": "waynestate/sesame",
+    "description": "Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Wayne State University, Enterprise Applications"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "psr/http-message": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "laravel/framework": "For the Laravel adapter (a later release)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Waynestate\\Sesame\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Waynestate\\Sesame\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

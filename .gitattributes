@@ -1,0 +1,19 @@
+# What a Composer consumer actually receives.
+#
+# `export-ignore` only affects the dist archive built from a tag. It keeps the
+# package to what the package is: the core, the drivers, the raw-PHP functions
+# and the readme. Nothing here changes what is in the repository.
+
+* text=auto eol=lf
+
+# Windows developer scripts keep CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Not part of the package.
+/tests            export-ignore
+/composer.lock    export-ignore
+/phpunit.xml.dist export-ignore
+/.gitattributes   export-ignore
+/.gitignore       export-ignore
