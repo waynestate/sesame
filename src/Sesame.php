@@ -26,10 +26,14 @@ final class Sesame
      * Handle a login request.
      *
      * Returns the Redirect unchanged when the user must go to the identity
-     * provider. Otherwise it resolves the user, regenerates the session ID
-     * before it stores anything, and returns the user.
+     * provider. Otherwise it resolves the user. When the resolver returns a
+     * user it regenerates the session ID before it stores anything, and
+     * returns the user. When the resolver returns null the app has refused
+     * the identity: the session is left untouched, nothing is stored, and
+     * null is returned, so a refused identity never ends up signed in.
      *
-     * @return mixed A Redirect, or the app's user.
+     * @return mixed A Redirect, the app's user, or null when the resolver
+     *               refused the identity.
      */
     public function login(ServerRequestInterface $request): mixed
     {
@@ -40,6 +44,10 @@ final class Sesame
         }
 
         $user = $this->resolver->findOrImportUser($step->identity);
+
+        if ($user === null) {
+            return null;
+        }
 
         $this->session->regenerate();
         $this->session->put('sesame.user', $user);

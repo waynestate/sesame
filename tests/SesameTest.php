@@ -63,6 +63,23 @@ final class SesameTest extends TestCase
         $this->assertSame('the-user', $user);
     }
 
+    public function testLoginWithANullResolverResultStoresNothing(): void
+    {
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(null),
+            $session,
+        );
+
+        $user = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $this->assertNull($user);
+        $this->assertSame(['login'], $log->events);
+        $this->assertSame([], $session->store);
+    }
+
     public function testLoginReturnsARedirectUnchanged(): void
     {
         $redirect = new Redirect('http://idp.local/login?service=x');
