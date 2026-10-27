@@ -124,16 +124,25 @@ final class CasDriver implements Driver
     /**
      * Read a CAS service response.
      *
-     * Parsed with the CAS namespace, not string matching. External entities
-     * are not loaded: that is the default on PHP 8, and no LIBXML_NOENT is
-     * passed.
+     * Parsed with the CAS namespace, not string matching. A DOCTYPE is
+     * rejected outright, and the document is parsed with LIBXML_NONET so no
+     * external entities are loaded. The success element must be a direct
+     * child of the root serviceResponse.
      */
     private function parse(string $xml): Authenticated
     {
-        libxml_use_internal_errors(true);
-        $doc = simplexml_load_string($xml);
-        libxml_clear_errors();
-        libxml_use_internal_errors(false);
+        if (stripos($xml, '<!DOCTYPE') !== false) {
+            throw new AuthenticationFailed('The CAS server returned a response with a DOCTYPE, which is not allowed.');
+        }
+
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $doc = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
 
         if ($doc === false) {
             throw new AuthenticationFailed('The CAS server returned a response that is not valid XML.');
@@ -141,12 +150,12 @@ final class CasDriver implements Driver
 
         $doc->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
-        $success = $doc->xpath('//cas:authenticationSuccess');
+        $success = $doc->xpath('cas:authenticationSuccess');
 
-        if ($success === []) {
-            $failure = $doc->xpath('//cas:authenticationFailure');
+        if ($success === false || $success === null || $success === []) {
+            $failure = $doc->xpath('cas:authenticationFailure');
 
-            if ($failure !== []) {
+            if ($failure !== false && $failure !== null && $failure !== []) {
                 $code = (string) $failure[0]['code'];
 
                 throw new AuthenticationFailed($code === ''
@@ -161,7 +170,7 @@ final class CasDriver implements Driver
         $successElement->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
         $userNodes = $successElement->xpath('cas:user');
-        $user = $userNodes === [] ? '' : trim((string) $userNodes[0]);
+        $user = ($userNodes === false || $userNodes === null || $userNodes === []) ? '' : trim((string) $userNodes[0]);
 
         if ($user === '') {
             throw new AuthenticationFailed('The CAS success response has no user.');
@@ -171,7 +180,7 @@ final class CasDriver implements Driver
 
         $attributeNodes = $successElement->xpath('cas:attributes');
 
-        if ($attributeNodes !== []) {
+        if ($attributeNodes !== false && $attributeNodes !== null && $attributeNodes !== []) {
             foreach ($attributeNodes[0]->children(self::CAS_NAMESPACE) as $name => $value) {
                 $attributes[(string) $name][] = (string) $value;
             }

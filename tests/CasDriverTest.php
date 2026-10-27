@@ -191,6 +191,28 @@ final class CasDriverTest extends TestCase
         $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
     }
 
+    public function testXxeWithDoctypeThrowsAuthenticationFailed(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('xxe.xml'))]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('DOCTYPE');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+    }
+
+    public function testANestedSuccessIsNotAccepted(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('nested-success.xml'))]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('neither a success nor a failure');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+    }
+
     public function testA500ResponseThrowsAuthenticationFailed(): void
     {
         $http = new FakeHttpClient([self::response(500, 'boom')]);
