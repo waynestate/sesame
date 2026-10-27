@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
+use Psr\Http\Message\ServerRequestInterface;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 
@@ -46,6 +48,22 @@ if (! function_exists('sesame')) {
     }
 }
 
+if (! function_exists('sesame_request')) {
+
+    /**
+     * Build the PSR-7 request for the current request from the globals.
+     *
+     * The PSR-17 factories come from nyholm/psr7, which the library already
+     * requires, so the raw-PHP path needs nothing but the autoloader.
+     */
+    function sesame_request(): ServerRequestInterface
+    {
+        $f = new Psr17Factory();
+
+        return (new ServerRequestCreator($f, $f, $f, $f))->fromGlobals();
+    }
+}
+
 if (! function_exists('sesame_login')) {
 
     /**
@@ -59,7 +77,7 @@ if (! function_exists('sesame_login')) {
      */
     function sesame_login(): mixed
     {
-        $request = (new ServerRequestCreator())->fromGlobals();
+        $request = sesame_request();
         $result = sesame()->login($request);
 
         if ($result instanceof Redirect) {

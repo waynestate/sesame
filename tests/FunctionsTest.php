@@ -24,4 +24,24 @@ final class FunctionsTest extends TestCase
         $this->assertSame($instance, sesame($instance));
         $this->assertSame($instance, sesame());
     }
+
+    public function testSesameRequestBuildsTheRequestFromGlobals(): void
+    {
+        $server = $_SERVER;
+        $get = $_GET;
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/login?ticket=ST-1';
+        $_SERVER['HTTP_HOST'] = 'app.test';
+        $_GET = ['ticket' => 'ST-1'];
+
+        try {
+            $request = sesame_request();
+        } finally {
+            $_SERVER = $server;
+            $_GET = $get;
+        }
+
+        $this->assertSame('ST-1', $request->getQueryParams()['ticket']);
+    }
 }

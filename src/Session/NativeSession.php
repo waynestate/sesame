@@ -45,11 +45,18 @@ final class NativeSession implements SessionPort
         unset($_SESSION[$key]);
     }
 
+    /**
+     * Clear the data and retire the old session ID.
+     *
+     * The ID is regenerated with the old one deleted, so a stolen ID is dead
+     * after logout.
+     */
     public function invalidate(): void
     {
         $this->requireActive();
 
         $_SESSION = [];
+        session_regenerate_id(true);
     }
 
     private function requireActive(): void
