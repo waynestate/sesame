@@ -246,10 +246,10 @@ How the stack holds it: `Documented`. ADR-0004 decision 3 lists the checks. The 
 ## 6. Build and supply chain
 
 ### S37. Support only PHP versions that are not end of life
-The library requires PHP 8.2 or later, and 8.3 or later from 2027-01-01.
+The library requires PHP 8.3 or later.
 Why: EOL PHP gets no security fixes, and session and crypto fixes are part of that.
 Sources: [PHP supported versions](https://www.php.net/supported-versions.php) (checked second pass: 8.2 security support ends 2026-12-31; 8.3 on 2027-12-31; 8.4 on 2028-12-31; 8.5, released 2025-11-20, on 2029-12-31). The version rule is ADR-0003 and ADR-0004.
-How the stack holds it: `Checked`. `composer.json` requires `^8.2`, and PROCTOR's PHP floor check compares an app's floor with `policy.json`. The first pass dates are right: 8.2 loses security support two months from this check, so the 2027-01-01 floor of 8.3 matches php.net.
+How the stack holds it: `Checked`. `composer.json` requires `^8.3`, and PROCTOR's PHP floor check compares an app's floor with `policy.json`. The first pass dates are right: 8.2 loses security support two months from this check, so the 2027-01-01 floor of 8.3 matches php.net.
 
 ### S38. Audit dependencies for known vulnerabilities
 Run a Composer audit in CI and before release.
@@ -261,7 +261,7 @@ How the stack holds it: `Checked`. Second pass correction: the first pass said t
 Run the suite on the lowest and the highest supported PHP.
 Why: session and XML behaviour differ between PHP versions.
 Sources: none specific. The PHP manual notes that session settings change between versions, for example in 8.4.
-How the stack holds it: `Documented`. The README gives Docker commands for 8.2 and 8.4 only. Citadel offers 8.5, and php.net lists it as a supported branch, so 8.5 is missing from the documented matrix. A pipeline file exists now (`.gitlab-ci.yml`, the PREFLIGHT `php-test` component pinned to a commit), but the PHP versions it runs are set inside that component and are not visible in this repo, so this entry stays `Documented` until someone confirms 8.2, 8.4 and 8.5 run. Second pass correction: the first pass said there was no pipeline file.
+How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the PREFLIGHT `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
 
 ### S40. Compatibility shims must not bring back old weaknesses
 The planned wayne-cas and simplecas shims map old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
@@ -331,8 +331,8 @@ Risks in the current code:
 - `src/Drivers/CasDriver.php:136`: the `//` search finds the success element at any depth. Read it as a direct child of the response root.
 - `src/Drivers/CasDriver.php:183-193`: the HTTPS check is a prefix test. `https://` alone, or a URL with user info, passes. Parse the URL and check the host.
 - `README.md:89-90`: the example client has no timeout.
-- Repo: `.gitlab-ci.yml` now exists (corrected in the second pass; it used to say none). Still open: confirm the PHP versions the `php-test` component runs (8.2, 8.4 and 8.5), and read what the `composer-audit` component fails on.
-- `README.md:115-120`: Docker commands cover 8.2 and 8.4, not 8.5.
+- Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
+- `README.md`: Docker commands cover 8.3 and newer.
 - `src/Drivers/CasDriver.php:176`: `authenticatedAt` is the time SESAME received the response. Read `authenticationDate` from the attributes and inject a PSR-20 clock (S46).
 - `src/Drivers/CasDriver.php:72`: the login redirect has no `renew` option and nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed` (S19).
 - `src/functions.php:118`: logout sends no `Cache-Control: no-store` or `Clear-Site-Data` (S44).
