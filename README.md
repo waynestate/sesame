@@ -72,7 +72,7 @@ their redirect, so nothing after them runs in that request.
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 3.0 against Academica. |
-| `gateway` | Later. A signed assertion from the Citadel auth gateway, never a bare header. |
+| `gateway` | Later. A signed assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
 
