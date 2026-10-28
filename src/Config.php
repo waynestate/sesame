@@ -25,7 +25,9 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `gateway.allow_without_replay_guard` (default `false`, a boolean: skip the
  * replay guard, for local development only). The session timeouts are
  * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
- * (default `720`), both optional positive integers.
+ * (default `720`), both optional positive integers. A truthy `slo` (or
+ * `single_logout`) key is rejected: the identity provider does not support
+ * single logout.
  */
 final readonly class Config
 {
@@ -63,6 +65,13 @@ final readonly class Config
     {
         $driver = self::requiredString($config, 'driver');
         $environment = self::requiredString($config, 'environment');
+
+        // The identity provider does not support single logout, so a config
+        // that asks for it is a mistake to fail on at boot, not at the first
+        // logout.
+        if (! empty($config['slo']) || ! empty($config['single_logout'])) {
+            throw new InvalidConfig('Single logout is not supported by the identity provider; remove the slo setting.');
+        }
 
         $fakeUsername = null;
         $fakeAttributes = [];

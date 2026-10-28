@@ -348,6 +348,44 @@ final class ConfigTest extends TestCase
         ];
     }
 
+    public function testRejectsATruthySloSetting(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Single logout is not supported by the identity provider; remove the slo setting.');
+
+        Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+            'slo' => true,
+        ]);
+    }
+
+    public function testRejectsATruthySingleLogoutSetting(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Single logout is not supported by the identity provider; remove the slo setting.');
+
+        Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+            'single_logout' => true,
+        ]);
+    }
+
+    public function testIgnoresAFalsySloSetting(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+            'slo' => false,
+        ]);
+
+        $this->assertSame('fake', $config->driver);
+    }
+
     /**
      * Gateway max-lifetime values that must be rejected.
      *
