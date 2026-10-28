@@ -38,7 +38,7 @@ final class ArrayCache implements CacheInterface
         return $this->items[$key]['value'];
     }
 
-    public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
+    public function set(string $key, mixed $value, int|DateInterval|null $ttl = null): bool
     {
         $this->items[$key] = [
             'value' => $value,
@@ -77,7 +77,7 @@ final class ArrayCache implements CacheInterface
         return $result;
     }
 
-    public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
+    public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         foreach ($values as $key => $value) {
             $this->set((string) $key, $value, $ttl);
@@ -129,7 +129,7 @@ final class ArrayCache implements CacheInterface
         return $expiresAt === null || $expiresAt > $this->clock->now()->getTimestamp();
     }
 
-    private function expiry(null|int|DateInterval $ttl): int|null
+    private function expiry(int|DateInterval|null $ttl): ?int
     {
         if ($ttl === null) {
             return null;
@@ -138,7 +138,7 @@ final class ArrayCache implements CacheInterface
         $now = $this->clock->now();
 
         if ($ttl instanceof DateInterval) {
-            return (new DateTimeImmutable('@'.$now->getTimestamp()))
+            return (new DateTimeImmutable('@' . $now->getTimestamp()))
                 ->add($ttl)
                 ->getTimestamp();
         }

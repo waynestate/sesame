@@ -35,7 +35,7 @@ PHP;
         $output = $this->runChildPhp($this->childScript($body));
         $result = json_decode($output, true);
 
-        $this->assertIsArray($result, 'Child output was not JSON: '.$output);
+        $this->assertIsArray($result, 'Child output was not JSON: ' . $output);
         $this->assertSame(1, $result['status'], 'The session should be destroyed (PHP_SESSION_NONE).');
         $this->assertSame(0, $result['sessionCount'], 'The session data should be cleared.');
         $this->assertFalse($result['oldFileExists'], 'The old session file should be gone.');
@@ -46,9 +46,9 @@ PHP;
      */
     private function childScript(string $body): string
     {
-        $autoloader = dirname(__DIR__).'/vendor/autoload.php';
+        $autoloader = dirname(__DIR__) . '/vendor/autoload.php';
 
-        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
     }
 
     /**
@@ -56,7 +56,7 @@ PHP;
      */
     private function runChildPhp(string $script): string
     {
-        $file = tempnam(sys_get_temp_dir(), 'sesame-child-').'.php';
+        $file = tempnam(sys_get_temp_dir(), 'sesame-child-') . '.php';
         file_put_contents($file, $script);
 
         $process = proc_open(
@@ -70,7 +70,7 @@ PHP;
             $this->fail('Could not start a child PHP process.');
         }
 
-        $output = (string) stream_get_contents($pipes[1]).(string) stream_get_contents($pipes[2]);
+        $output = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
         proc_close($process);

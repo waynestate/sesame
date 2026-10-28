@@ -68,6 +68,6 @@ final class InMemoryReplayGuardTest extends TestCase
 
     private function at(int $offsetSeconds): DateTimeImmutable
     {
-        return $this->clock->now()->modify('+'.$offsetSeconds.' seconds');
+        return $this->clock->now()->modify('+' . $offsetSeconds . ' seconds');
     }
 }

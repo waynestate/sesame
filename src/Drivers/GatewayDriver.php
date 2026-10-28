@@ -208,7 +208,7 @@ final class GatewayDriver implements Driver
 
         try {
             $token = $parser->parse($tokenString);
-        } catch (CannotDecodeContent | InvalidTokenStructure | UnsupportedHeaderFound) {
+        } catch (CannotDecodeContent|InvalidTokenStructure|UnsupportedHeaderFound) {
             throw new AuthenticationFailed(
                 'The signed assertion is not a valid JWT (gateway.invalid_jwt).',
             );
@@ -234,10 +234,11 @@ final class GatewayDriver implements Driver
      */
     private function validate(UnencryptedToken $token): void
     {
-        $leeway = new DateInterval('PT'.$this->leewaySeconds.'S');
+        $leeway = new DateInterval('PT' . $this->leewaySeconds . 'S');
 
         try {
-            (new Validator())->assert($token,
+            (new Validator())->assert(
+                $token,
                 new SignedWith($this->signer, $this->publicKey),
                 new IssuedBy($this->issuer),
                 new PermittedFor($this->audience),
@@ -245,7 +246,7 @@ final class GatewayDriver implements Driver
             );
         } catch (RequiredConstraintsViolated $e) {
             throw new AuthenticationFailed(
-                'The signed assertion was rejected ('.$this->violationReasons($e).').',
+                'The signed assertion was rejected (' . $this->violationReasons($e) . ').',
             );
         }
     }
@@ -357,7 +358,7 @@ final class GatewayDriver implements Driver
             return null;
         }
 
-        return new DateTimeImmutable('@'.$value);
+        return new DateTimeImmutable('@' . $value);
     }
 
     /**

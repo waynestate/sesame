@@ -76,11 +76,11 @@ final class Psr16ReplayGuardTest extends TestCase
     {
         $this->guard->seen('jti-1', $this->at(240));
 
-        $this->assertSame(['sesame.jti.'.hash('sha256', 'jti-1')], $this->cache->keys());
+        $this->assertSame(['sesame.jti.' . hash('sha256', 'jti-1')], $this->cache->keys());
     }
 
     private function at(int $offsetSeconds): DateTimeImmutable
     {
-        return $this->clock->now()->modify('+'.$offsetSeconds.' seconds');
+        return $this->clock->now()->modify('+' . $offsetSeconds . ' seconds');
     }
 }

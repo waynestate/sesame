@@ -46,7 +46,7 @@ final class LoginRouteTest extends LaravelTestCase
     private function casHttpClient(): FakeHttpClient
     {
         $success = (new Response())->withStatus(200)->withBody(
-            Stream::create((string) file_get_contents(__DIR__.'/../fixtures/cas/success.xml')),
+            Stream::create((string) file_get_contents(__DIR__ . '/../fixtures/cas/success.xml')),
         );
 
         return new FakeHttpClient([$success]);

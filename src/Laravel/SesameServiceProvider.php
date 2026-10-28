@@ -37,7 +37,7 @@ class SesameServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/sesame.php', 'sesame');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/sesame.php', 'sesame');
 
         $this->app->singleton(LaravelSession::class, function ($app) {
             return new LaravelSession($app->make(Session::class));
@@ -93,7 +93,7 @@ class SesameServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__.'/../../config/sesame.php' => $this->app->configPath('sesame.php'),
+            __DIR__ . '/../../config/sesame.php' => $this->app->configPath('sesame.php'),
         ], 'sesame-config');
 
         $this->app['router']->aliasMiddleware('auth.sesame', Authenticate::class);

@@ -93,7 +93,7 @@ final class SesameServiceProviderTest extends LaravelTestCase
         $guard = $this->app->make(ReplayGuard::class);
         $this->assertFalse($guard->seen('jti-1', (new DateTimeImmutable())->modify('+240 seconds')));
 
-        $key = 'sesame.jti.'.hash('sha256', 'jti-1');
+        $key = 'sesame.jti.' . hash('sha256', 'jti-1');
         $this->assertTrue($this->app['cache']->store('array')->has($key));
     }
 }

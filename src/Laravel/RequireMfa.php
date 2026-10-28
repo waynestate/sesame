@@ -23,8 +23,7 @@ class RequireMfa
 {
     public function __construct(
         private readonly Sesame $sesame,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next, mixed $seconds = null): Response
     {

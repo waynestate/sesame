@@ -98,7 +98,7 @@ final class CasDriver implements Driver
         $ticket = $request->getQueryParams()['ticket'] ?? null;
 
         if ($ticket === null) {
-            return new Redirect($this->base.'/login?'.http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
+            return new Redirect($this->base . '/login?' . http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
         }
 
         $this->assertValidTicket($ticket);
@@ -107,7 +107,7 @@ final class CasDriver implements Driver
         $query = http_build_query($this->loginQuery() + ['ticket' => $ticket], '', '&', PHP_QUERY_RFC3986);
 
         $response = $this->http->sendRequest(
-            $this->requests->createRequest('GET', $this->base.$path.'?'.$query),
+            $this->requests->createRequest('GET', $this->base . $path . '?' . $query),
         );
 
         if ($response->getStatusCode() !== 200) {
@@ -150,7 +150,7 @@ final class CasDriver implements Driver
 
         // Send the return address as both service= and url=: Academica reads
         // url=, and service= is the CAS-standard parameter name.
-        return $this->base.'/logout?service='.$return.'&url='.$return;
+        return $this->base . '/logout?service=' . $return . '&url=' . $return;
     }
 
     public function serviceUrl(): ?string
@@ -213,7 +213,7 @@ final class CasDriver implements Driver
 
             throw new AuthenticationFailed($code === ''
                 ? 'CAS authentication failed.'
-                : 'CAS authentication failed: '.$code);
+                : 'CAS authentication failed: ' . $code);
         }
 
         $success = $doc->xpath('cas:authenticationSuccess');

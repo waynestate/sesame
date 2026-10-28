@@ -26,8 +26,7 @@ final readonly class MfaResult
     public function __construct(
         public bool $satisfied,
         public string $reason,
-    ) {
-    }
+    ) {}
 
     /**
      * The human form of the result, for a message or a log line.

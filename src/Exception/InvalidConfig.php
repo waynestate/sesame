@@ -9,6 +9,4 @@ use RuntimeException;
 /**
  * The config is missing a key, or a key holds the wrong shape.
  */
-final class InvalidConfig extends RuntimeException
-{
-}
+final class InvalidConfig extends RuntimeException {}

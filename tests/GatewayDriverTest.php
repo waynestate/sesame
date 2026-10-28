@@ -412,7 +412,7 @@ final class GatewayDriverTest extends TestCase
             'iat' => $now->modify('-60 seconds')->getTimestamp(),
             'exp' => $now->modify('+3600 seconds')->getTimestamp(),
         ]));
-        $token = $header.'.'.$payload.'.';
+        $token = $header . '.' . $payload . '.';
 
         $this->assertRejected($driver, $this->request($token), 'gateway.invalid_jwt');
     }

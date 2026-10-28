@@ -27,6 +27,6 @@ final class FakeClock implements ClockInterface
 
     public function advance(int $seconds): void
     {
-        $this->now = $this->now->modify('+'.$seconds.' seconds');
+        $this->now = $this->now->modify('+' . $seconds . ' seconds');
     }
 }

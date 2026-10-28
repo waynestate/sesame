@@ -10,6 +10,4 @@ namespace Waynestate\Sesame;
  * Sealed by convention: the only two shapes are Redirect and Authenticated,
  * and both are final.
  */
-abstract class LoginStep
-{
-}
+abstract class LoginStep {}

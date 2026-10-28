@@ -59,13 +59,13 @@ final class Psr16ReplayGuard implements ReplayGuard
             return false;
         }
 
-        $key = self::KEY_PREFIX.hash('sha256', $jti);
+        $key = self::KEY_PREFIX . hash('sha256', $jti);
 
         if ($this->cache->has($key)) {
             return true;
         }
 
-        $this->cache->set($key, true, new DateInterval('PT'.$ttl.'S'));
+        $this->cache->set($key, true, new DateInterval('PT' . $ttl . 'S'));
 
         return false;
     }

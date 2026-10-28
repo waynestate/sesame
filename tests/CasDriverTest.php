@@ -45,7 +45,7 @@ final class CasDriverTest extends TestCase
 
     private static function fixture(string $name): string
     {
-        return (string) file_get_contents(__DIR__.'/fixtures/cas/'.$name);
+        return (string) file_get_contents(__DIR__ . '/fixtures/cas/' . $name);
     }
 
     /**
@@ -53,18 +53,18 @@ final class CasDriverTest extends TestCase
      */
     private static function successXml(?string $authenticationDate = null): string
     {
-        $date = $authenticationDate === null ? '' : '<authenticationDate>'.$authenticationDate.'</authenticationDate>'."\n      ";
+        $date = $authenticationDate === null ? '' : '<authenticationDate>' . $authenticationDate . '</authenticationDate>' . "\n      ";
 
-        return '<?xml version="1.0" encoding="UTF-8"?>'."\n"
-            .'<serviceResponse xmlns="http://www.yale.edu/tp/cas">'."\n"
-            .'  <authenticationSuccess>'."\n"
-            .'    <user>ab1234</user>'."\n"
-            .'    <attributes>'."\n"
-            .'      <mail>ab1234@wayne.edu</mail>'."\n"
-            .$date
-            .'    </attributes>'."\n"
-            .'  </authenticationSuccess>'."\n"
-            .'</serviceResponse>'."\n";
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<serviceResponse xmlns="http://www.yale.edu/tp/cas">' . "\n"
+            . '  <authenticationSuccess>' . "\n"
+            . '    <user>ab1234</user>' . "\n"
+            . '    <attributes>' . "\n"
+            . '      <mail>ab1234@wayne.edu</mail>' . "\n"
+            . $date
+            . '    </attributes>' . "\n"
+            . '  </authenticationSuccess>' . "\n"
+            . '</serviceResponse>' . "\n";
     }
 
     public function testNoTicketRedirectsToTheCasLogin(): void
@@ -76,7 +76,7 @@ final class CasDriverTest extends TestCase
 
         $this->assertInstanceOf(Redirect::class, $step);
         $this->assertSame(
-            self::BASE.'/login?service='.rawurlencode(self::SERVICE),
+            self::BASE . '/login?service=' . rawurlencode(self::SERVICE),
             $step->url,
         );
         $this->assertSame([], $http->requests);
@@ -98,7 +98,7 @@ final class CasDriverTest extends TestCase
         $this->assertStringContainsString(rawurlencode(self::SERVICE), $redirect->url);
         $this->assertStringNotContainsString('evil.test', $redirect->url);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1', $headers));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1', $headers));
 
         $this->assertInstanceOf(Authenticated::class, $step);
 
@@ -115,7 +115,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver($http);
 
         try {
-            $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket='.rawurlencode($ticket)));
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=' . rawurlencode($ticket)));
             $this->fail('Expected AuthenticationFailed.');
         } catch (AuthenticationFailed) {
             // Expected: the ticket fails the pattern before any HTTP call.
@@ -135,7 +135,7 @@ final class CasDriverTest extends TestCase
             'a query string smuggled into the ticket' => ['ST-1&renew=true'],
             'a proxy ticket' => ['PT-1'],
             'an empty ticket' => [''],
-            'a ticket that is too long' => ['ST-'.str_repeat('a', 254)],
+            'a ticket that is too long' => ['ST-' . str_repeat('a', 254)],
         ];
     }
 
@@ -144,10 +144,10 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1.a_b-c'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1.a_b-c'));
 
         $this->assertSame(
-            self::BASE.'/p3/serviceValidate?service='.rawurlencode(self::SERVICE).'&ticket=ST-1.a_b-c',
+            self::BASE . '/p3/serviceValidate?service=' . rawurlencode(self::SERVICE) . '&ticket=ST-1.a_b-c',
             $http->requests[0]->getUri()->__toString(),
         );
     }
@@ -161,7 +161,7 @@ final class CasDriverTest extends TestCase
 
         $this->assertInstanceOf(Redirect::class, $step);
         $this->assertSame(
-            self::BASE.'/login?'.http_build_query([
+            self::BASE . '/login?' . http_build_query([
                 'service' => self::SERVICE,
                 'renew' => 'true',
             ], '', '&', PHP_QUERY_RFC3986),
@@ -186,7 +186,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http, '3.0', true);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         parse_str($http->requests[0]->getUri()->getQuery(), $query);
 
@@ -200,7 +200,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         parse_str($http->requests[0]->getUri()->getQuery(), $query);
 
@@ -217,7 +217,7 @@ final class CasDriverTest extends TestCase
 
         $this->assertInstanceOf(Redirect::class, $redirect);
         $this->assertSame(
-            self::BASE.'/login?'.http_build_query([
+            self::BASE . '/login?' . http_build_query([
                 'service' => $service,
                 'renew' => 'true',
             ], '', '&', PHP_QUERY_RFC3986),
@@ -227,7 +227,7 @@ final class CasDriverTest extends TestCase
         $driver->login(new ServerRequest('GET', 'https://app.test/?ticket=ST-1'));
 
         $this->assertSame(
-            self::BASE.'/p3/serviceValidate?'.http_build_query([
+            self::BASE . '/p3/serviceValidate?' . http_build_query([
                 'service' => $service,
                 'renew' => 'true',
                 'ticket' => 'ST-1',
@@ -242,7 +242,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00Z'))]);
         $driver = $this->driver($http, '3.0', false, false, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
@@ -254,7 +254,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00.123Z'))]);
         $driver = $this->driver($http, '3.0', false, false, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
@@ -267,7 +267,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml())]);
         $driver = $this->driver($http, '3.0', false, false, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
@@ -279,7 +279,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('not-a-date'))]);
         $driver = $this->driver($http, '3.0', false, false, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
@@ -293,7 +293,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T12:06:00Z'))]);
         $driver = $this->driver($http, '3.0', false, false, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
@@ -304,7 +304,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml())]);
         $driver = $this->driver($http);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame([], $step->identity->amr);
@@ -316,7 +316,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml())]);
         $driver = $this->driver($http, '3.0', false, true);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame(['mfa'], $step->identity->amr);
@@ -328,7 +328,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00Z'))]);
         $driver = $this->driver($http, '3.0', false, true, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authTime->format('Y-m-d\TH:i:sP'));
@@ -345,7 +345,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml())]);
         $driver = $this->driver($http, '3.0', false, true, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertNull($step->identity->authTime);
@@ -364,7 +364,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T12:06:00Z'))]);
         $driver = $this->driver($http, '3.0', false, true, $clock);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertNull($step->identity->authTime);
@@ -379,7 +379,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http);
 
-        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('ab1234', $step->identity->username);
@@ -393,7 +393,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertSame('/cas/p3/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
@@ -403,7 +403,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = $this->driver($http, '2.0');
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
@@ -413,7 +413,7 @@ final class CasDriverTest extends TestCase
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
         $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
@@ -425,7 +425,7 @@ final class CasDriverTest extends TestCase
             self::response(200, self::fixture('failure-invalid-ticket.xml')),
         ]);
         $driver = $this->driver($http);
-        $request = new ServerRequest('GET', self::SERVICE.'?ticket=ST-1');
+        $request = new ServerRequest('GET', self::SERVICE . '?ticket=ST-1');
 
         $first = $driver->login($request);
 
@@ -444,7 +444,7 @@ final class CasDriverTest extends TestCase
 
         $this->expectException(AuthenticationFailed::class);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
     public function testXxeWithDoctypeThrowsAuthenticationFailed(): void
@@ -455,7 +455,7 @@ final class CasDriverTest extends TestCase
         $this->expectException(AuthenticationFailed::class);
         $this->expectExceptionMessage('DOCTYPE');
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
     public function testANestedSuccessIsNotAccepted(): void
@@ -466,25 +466,25 @@ final class CasDriverTest extends TestCase
         $this->expectException(AuthenticationFailed::class);
         $this->expectExceptionMessage('neither a success nor a failure');
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
     public function testAFailureElementWinsOverASuccessElement(): void
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
-            .'<serviceResponse xmlns="http://www.yale.edu/tp/cas">'."\n"
-            .'  <authenticationSuccess>'."\n"
-            .'    <user>ab1234</user>'."\n"
-            .'  </authenticationSuccess>'."\n"
-            .'  <authenticationFailure code="INVALID_TICKET">Ticket ST-1 not recognized</authenticationFailure>'."\n"
-            .'</serviceResponse>'."\n";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<serviceResponse xmlns="http://www.yale.edu/tp/cas">' . "\n"
+            . '  <authenticationSuccess>' . "\n"
+            . '    <user>ab1234</user>' . "\n"
+            . '  </authenticationSuccess>' . "\n"
+            . '  <authenticationFailure code="INVALID_TICKET">Ticket ST-1 not recognized</authenticationFailure>' . "\n"
+            . '</serviceResponse>' . "\n";
         $http = new FakeHttpClient([self::response(200, $xml)]);
         $driver = $this->driver($http);
 
         $this->expectException(AuthenticationFailed::class);
         $this->expectExceptionMessage('INVALID_TICKET');
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
     public function testA500ResponseThrowsAuthenticationFailed(): void
@@ -494,7 +494,7 @@ final class CasDriverTest extends TestCase
 
         $this->expectException(AuthenticationFailed::class);
 
-        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
     public function testRejectsAnHttpBaseUrl(): void
@@ -535,12 +535,12 @@ final class CasDriverTest extends TestCase
     public function testStripsOneTrailingSlashFromTheBaseUrl(): void
     {
         $http = new FakeHttpClient();
-        $driver = new CasDriver(self::BASE.'/', self::SERVICE, $http, new Psr17Factory());
+        $driver = new CasDriver(self::BASE . '/', self::SERVICE, $http, new Psr17Factory());
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
         $this->assertInstanceOf(Redirect::class, $step);
-        $this->assertSame(self::BASE.'/login?service='.rawurlencode(self::SERVICE), $step->url);
+        $this->assertSame(self::BASE . '/login?service=' . rawurlencode(self::SERVICE), $step->url);
     }
 
     public function testLogoutUrlPointsAtTheCasLogout(): void
@@ -548,7 +548,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode('https://app.test/').'&url='.rawurlencode('https://app.test/'),
+            self::BASE . '/logout?service=' . rawurlencode('https://app.test/') . '&url=' . rawurlencode('https://app.test/'),
             $driver->logoutUrl('https://app.test/'),
         );
     }
@@ -569,7 +569,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode('https://app.test/dashboard').'&url='.rawurlencode('https://app.test/dashboard'),
+            self::BASE . '/logout?service=' . rawurlencode('https://app.test/dashboard') . '&url=' . rawurlencode('https://app.test/dashboard'),
             $driver->logoutUrl('https://app.test/dashboard'),
         );
     }
@@ -579,7 +579,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
+            self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('https://evil.test/'),
         );
     }
@@ -589,7 +589,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
+            self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('http://app.test/'),
         );
     }
@@ -599,7 +599,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
+            self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('/dashboard'),
         );
     }
@@ -623,7 +623,7 @@ final class CasDriverTest extends TestCase
             ),
         );
 
-        $user = $sesame->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+        $user = $sesame->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertSame('the-user', $user);
         $this->assertSame(

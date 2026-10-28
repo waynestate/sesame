@@ -3,7 +3,6 @@
 namespace Waynestate\Sesame\WayneCas;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Class ReadOnlyAttributes
@@ -39,7 +38,7 @@ trait ReadOnlyAttributes
     {
         $dirty = [];
 
-        $attributes = array_filter($this->attributes, function($key) {
+        $attributes = array_filter($this->attributes, function ($key) {
             return ! in_array($key, (array) $this->readOnlyAttributes);
         }, ARRAY_FILTER_USE_KEY);
 
@@ -47,8 +46,8 @@ trait ReadOnlyAttributes
             if (! array_key_exists($key, $this->original)) {
                 $dirty[$key] = $value;
             } elseif ($value !== $this->original[$key]) {
-                if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key)) ||
-                    (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
+                if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
+                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
                     $dirty[$key] = $value;
                 }
             }

@@ -17,8 +17,7 @@ final class RecordingResolver implements UserResolver
 
     public function __construct(
         private readonly mixed $user = 'the-user',
-    ) {
-    }
+    ) {}
 
     public function findOrImportUser(Identity $identity): mixed
     {

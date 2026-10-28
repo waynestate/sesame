@@ -16,8 +16,7 @@ final class RecordingSession implements SessionPort
 
     public function __construct(
         private readonly EventLog $log,
-    ) {
-    }
+    ) {}
 
     public function regenerate(): void
     {
@@ -26,20 +25,20 @@ final class RecordingSession implements SessionPort
 
     public function get(string $key): mixed
     {
-        $this->log->record('get:'.$key);
+        $this->log->record('get:' . $key);
 
         return $this->store[$key] ?? null;
     }
 
     public function put(string $key, mixed $value): void
     {
-        $this->log->record('put:'.$key);
+        $this->log->record('put:' . $key);
         $this->store[$key] = $value;
     }
 
     public function forget(string $key): void
     {
-        $this->log->record('forget:'.$key);
+        $this->log->record('forget:' . $key);
         unset($this->store[$key]);
     }
 

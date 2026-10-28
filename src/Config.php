@@ -50,8 +50,7 @@ final readonly class Config
         public array $gatewayTrustedProxies = [],
         public int $gatewayMaxLifetimeSeconds = 300,
         public bool $gatewayAllowWithoutReplayGuard = false,
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $config): self
     {
