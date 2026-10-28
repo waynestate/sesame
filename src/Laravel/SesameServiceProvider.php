@@ -17,6 +17,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
+use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
@@ -41,12 +43,29 @@ class SesameServiceProvider extends ServiceProvider
             return new LaravelSession($app->make(Session::class));
         });
 
+        $this->app->singleton(ReplayGuard::class, function ($app) {
+            $store = $app['config']->get('sesame.gateway.replay_store');
+            $leeway = (int) $app['config']->get('sesame.gateway.leeway_seconds', 30);
+
+            // The guard shares the driver's clock, so the record's TTL is
+            // measured against the same "now" the driver uses to check the
+            // assertion's time claims.
+            return new Psr16ReplayGuard(
+                new LaravelPsr16Cache($app['cache']->store(is_string($store) && $store !== '' ? $store : null)),
+                $leeway,
+                $this->clock($app),
+            );
+        });
+
         $this->app->singleton(Driver::class, function ($app) {
+            $config = $this->coreConfig($app);
+
             return DriverFactory::make(
-                $this->coreConfig($app),
+                $config,
                 $this->httpClient($app),
                 $this->requestFactory($app),
                 $this->clock($app),
+                $config->driver === 'gateway' ? $app->make(ReplayGuard::class) : null,
             );
         });
 

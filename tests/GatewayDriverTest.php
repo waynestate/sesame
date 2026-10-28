@@ -17,7 +17,10 @@ use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Drivers\GatewayDriver;
+use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
+use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Tests\Support\FakeClock;
 
 /**
@@ -494,10 +497,182 @@ final class GatewayDriverTest extends TestCase
         $this->assertRejected($driver, $this->request('not-a-jwt'), 'gateway.invalid_jwt');
     }
 
+    public function testRejectsAMissingJtiClaim(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => null]);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+    }
+
+    public function testRejectsAnEmptyJtiClaim(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => '']);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+    }
+
+    public function testRejectsAnOversizedJtiClaim(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => str_repeat('a', 129)]);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+    }
+
+    public function testAcceptsAMaxLengthJtiClaim(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => str_repeat('a', 128)]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame(self::SUBJECT, $step->identity->username);
+    }
+
+    public function testRejectsAReplayedAssertion(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $guard = new InMemoryReplayGuard(30, $clock);
+        $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, $guard);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
+
+        $step = $driver->login($this->request($token));
+        $this->assertInstanceOf(Authenticated::class, $step);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.replayed_assertion');
+    }
+
+    public function testAcceptsADifferentJtiAfterOneUse(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $guard = new InMemoryReplayGuard(30, $clock);
+        $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, $guard);
+        $first = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'jti-one']);
+        $second = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'jti-two']);
+
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($first)));
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($second)));
+    }
+
+    public function testAcceptsAReusedJtiAfterItsRecordExpires(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $guard = new InMemoryReplayGuard(30, $clock);
+        $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, $guard);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
+
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+
+        // The record lives until exp plus leeway (240 + 30 = 270 seconds).
+        // Move past it, and the same jti is usable again.
+        $clock->advance(271);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
+
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+    }
+
+    public function testAcceptsALifetimeAtTheMaximum(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // The default token lives exactly 300 seconds: the default maximum.
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+    }
+
+    public function testRejectsALifetimeOverTheMaximum(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // exp = now + 241, so the assertion lives 301 seconds: one over the max.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['exp' => $clock->now()->modify('+241 seconds')]);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
+    }
+
+    public function testHonorsACustomMaximumLifetime(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        // A 60-second maximum: the default 300-second assertion exceeds it.
+        $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, null, 60);
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $this->assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
+    }
+
+    public function testFailsClosedWithoutAReplayGuard(): void
+    {
+        $clock = new FakeClock();
+        [, , $publicKey] = $this->keys('ES256');
+
+        $this->expectException(InvalidConfig::class);
+
+        new GatewayDriver(
+            self::HEADER,
+            'ES256',
+            $publicKey,
+            self::ISSUER,
+            self::AUDIENCE,
+            30,
+            self::TRUSTED,
+            $clock,
+            // No replay guard, and no opt-out: the driver refuses to start.
+        );
+    }
+
+    public function testBootsWithoutAReplayGuardWhenAllowed(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        // Constructed directly (not via driver()), so no guard is supplied.
+        $driver = new GatewayDriver(
+            self::HEADER,
+            'ES256',
+            $publicKey,
+            self::ISSUER,
+            self::AUDIENCE,
+            30,
+            self::TRUSTED,
+            $clock,
+            null,
+            300,
+            true,
+        );
+        // With no guard the replay check is skipped, so the same jti passes twice.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
+
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+    }
+
     /**
      * A driver with the given algorithm, public key, trusted proxies and leeway.
+     *
+     * Without an explicit replay guard, the driver gets a fresh in-memory one
+     * (sharing the clock), so the single-use checks are on. The fail-closed
+     * test constructs the driver directly instead.
      */
-    private function driver(FakeClock $clock, string $algorithm, string $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30): GatewayDriver
+    private function driver(FakeClock $clock, string $algorithm, string $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30, ?ReplayGuard $replayGuard = null, int $maxLifetimeSeconds = 300, bool $allowWithoutReplayGuard = false): GatewayDriver
     {
         return new GatewayDriver(
             self::HEADER,
@@ -508,6 +683,9 @@ final class GatewayDriverTest extends TestCase
             $leeway,
             $trustedProxies,
             $clock,
+            $replayGuard ?? new InMemoryReplayGuard($leeway, $clock),
+            $maxLifetimeSeconds,
+            $allowWithoutReplayGuard,
         );
     }
 
@@ -574,7 +752,13 @@ final class GatewayDriverTest extends TestCase
      * A signed token, with the standard claims and any overrides.
      *
      * A claim set to null in $overrides is omitted from the token, so the
-     * missing-claim tests can drop iat, exp or sub.
+     * missing-claim tests can drop iat, exp, sub or jti.
+     *
+     * The default iat is 60 seconds in the past and the default exp is 240
+     * seconds in the future, so the assertion lives exactly 300 seconds: the
+     * driver's default maximum lifetime. A default jti is present and unique
+     * per call, so two different tokens never collide; the replay tests
+     * override it with a fixed value.
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -585,9 +769,10 @@ final class GatewayDriverTest extends TestCase
         $issuer = $this->override($overrides, 'issuer', self::ISSUER);
         $audience = $this->override($overrides, 'audience', self::AUDIENCE);
         $subject = $this->override($overrides, 'subject', self::SUBJECT);
+        $jti = $this->override($overrides, 'jti', uniqid('jti-', true));
         $iat = $this->override($overrides, 'iat', $now->modify('-60 seconds'));
         $nbf = $this->override($overrides, 'nbf', $now->modify('-60 seconds'));
-        $exp = $this->override($overrides, 'exp', $now->modify('+3600 seconds'));
+        $exp = $this->override($overrides, 'exp', $now->modify('+240 seconds'));
         $extra = $this->override($overrides, 'extra', []);
 
         $builder = Builder::new(new JoseEncoder(), ChainedFormatter::withUnixTimestampDates());
@@ -614,6 +799,10 @@ final class GatewayDriverTest extends TestCase
 
         if ($subject !== null) {
             $builder = $builder->relatedTo($subject);
+        }
+
+        if ($jti !== null) {
+            $builder = $builder->identifiedBy($jti);
         }
 
         foreach ($extra as $name => $value) {

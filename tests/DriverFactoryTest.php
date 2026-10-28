@@ -10,7 +10,10 @@ use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Drivers\GatewayDriver;
+use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 
 final class DriverFactoryTest extends TestCase
@@ -76,6 +79,35 @@ final class DriverFactoryTest extends TestCase
         DriverFactory::make($config);
     }
 
+    public function testMakesAGatewayDriver(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig());
+
+        $driver = DriverFactory::make($config, null, null, new FakeClock(), new InMemoryReplayGuard());
+
+        $this->assertInstanceOf(GatewayDriver::class, $driver);
+        $this->assertSame('gateway', $driver->name());
+    }
+
+    public function testGatewayWithoutAReplayGuardFailsClosed(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig());
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('ReplayGuard');
+
+        DriverFactory::make($config);
+    }
+
+    public function testGatewayBootsWithoutAReplayGuardWhenAllowed(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => true]));
+
+        $driver = DriverFactory::make($config);
+
+        $this->assertInstanceOf(GatewayDriver::class, $driver);
+    }
+
     private function casConfig(): Config
     {
         return Config::fromArray([
@@ -86,5 +118,26 @@ final class DriverFactoryTest extends TestCase
                 'service_url' => 'https://app.test/login',
             ],
         ]);
+    }
+
+    /**
+     * A valid gateway config, with any overrides merged into the gateway
+     * section.
+     *
+     * @param  array<string, mixed>  $gateway
+     * @return array<string, mixed>
+     */
+    private function gatewayConfig(array $gateway = []): array
+    {
+        return [
+            'driver' => 'gateway',
+            'environment' => 'local',
+            'gateway' => array_merge([
+                'public_key' => 'public-key',
+                'issuer' => 'https://drawbridge.wayne.edu',
+                'audience' => 'sesame',
+                'trusted_proxies' => ['10.0.0.0/8'],
+            ], $gateway),
+        ];
     }
 }
