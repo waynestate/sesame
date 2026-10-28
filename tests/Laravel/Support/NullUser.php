@@ -11,6 +11,10 @@ namespace Waynestate\Sesame\Tests\Laravel\Support;
  */
 class NullUser
 {
+    /**
+     * @param  string  $accessId
+     * @return mixed
+     */
     public static function findOrImportUser($accessId)
     {
         return null;

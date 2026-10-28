@@ -9,6 +9,7 @@ use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Ecdsa\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token\Builder;
+use OpenSSLAsymmetricKey;
 use Psr\Clock\ClockInterface;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Sesame;
@@ -36,16 +37,18 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     public function testGatewayLoginAuthenticatesFromConfigAlone(): void
     {
         $clock = new FakeClock();
-        $this->app->instance(ClockInterface::class, $clock);
-        $this->app['config']->set('cache.default', 'array');
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app->instance(ClockInterface::class, $clock);
+        $app['config']->set('cache.default', 'array');
 
         [$publicKey, $privateKey] = $this->keyPair();
 
-        $this->app['config']->set('sesame.driver', 'gateway');
-        $this->app['config']->set('sesame.gateway.public_key', $publicKey);
-        $this->app['config']->set('sesame.gateway.issuer', self::ISSUER);
-        $this->app['config']->set('sesame.gateway.audience', self::AUDIENCE);
-        $this->app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
+        $app['config']->set('sesame.driver', 'gateway');
+        $app['config']->set('sesame.gateway.public_key', $publicKey);
+        $app['config']->set('sesame.gateway.issuer', self::ISSUER);
+        $app['config']->set('sesame.gateway.audience', self::AUDIENCE);
+        $app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
 
         $token = $this->buildToken($privateKey, $clock);
 
@@ -55,23 +58,25 @@ final class GatewayLoginRouteTest extends LaravelTestCase
         ]);
 
         $response->assertRedirect('/');
-        $this->assertSame('the-user', $this->app->make(Sesame::class)->user());
-        $this->assertSame('gateway', $this->app['session']->get('sesame.identity')->driver);
+        $this->assertSame('the-user', $app->make(Sesame::class)->user());
+        $this->assertSame('gateway', $app['session']->get('sesame.identity')->driver);
     }
 
     public function testGatewayLoginRejectsAReplayedAssertion(): void
     {
         $clock = new FakeClock();
-        $this->app->instance(ClockInterface::class, $clock);
-        $this->app['config']->set('cache.default', 'array');
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app->instance(ClockInterface::class, $clock);
+        $app['config']->set('cache.default', 'array');
 
         [$publicKey, $privateKey] = $this->keyPair();
 
-        $this->app['config']->set('sesame.driver', 'gateway');
-        $this->app['config']->set('sesame.gateway.public_key', $publicKey);
-        $this->app['config']->set('sesame.gateway.issuer', self::ISSUER);
-        $this->app['config']->set('sesame.gateway.audience', self::AUDIENCE);
-        $this->app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
+        $app['config']->set('sesame.driver', 'gateway');
+        $app['config']->set('sesame.gateway.public_key', $publicKey);
+        $app['config']->set('sesame.gateway.issuer', self::ISSUER);
+        $app['config']->set('sesame.gateway.audience', self::AUDIENCE);
+        $app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
 
         // One assertion, one jti: the first use signs the user in, and the
         // same assertion sent again is a replay.
@@ -95,15 +100,17 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     public function testGatewayLoginRejectsARequestWithoutASignedAssertion(): void
     {
         $clock = new FakeClock();
-        $this->app->instance(ClockInterface::class, $clock);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app->instance(ClockInterface::class, $clock);
 
         [$publicKey] = $this->keyPair();
 
-        $this->app['config']->set('sesame.driver', 'gateway');
-        $this->app['config']->set('sesame.gateway.public_key', $publicKey);
-        $this->app['config']->set('sesame.gateway.issuer', self::ISSUER);
-        $this->app['config']->set('sesame.gateway.audience', self::AUDIENCE);
-        $this->app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
+        $app['config']->set('sesame.driver', 'gateway');
+        $app['config']->set('sesame.gateway.public_key', $publicKey);
+        $app['config']->set('sesame.gateway.issuer', self::ISSUER);
+        $app['config']->set('sesame.gateway.audience', self::AUDIENCE);
+        $app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
 
         // A plain identity header, the way a misbehaving proxy might send
         // one, is not a signed assertion: the gateway driver refuses it.
@@ -123,8 +130,9 @@ final class GatewayLoginRouteTest extends LaravelTestCase
      * config, the private key signs the assertion. Both halves come from the
      * same pair, generated once per test.
      *
-     * @return array{0: string, 1: string} The public key (PEM) and the
-     *                                     private key (PEM).
+     * @return array{0: non-empty-string, 1: non-empty-string} The public key
+     *                                                         (PEM) and the
+     *                                                         private key (PEM).
      */
     private function keyPair(): array
     {
@@ -132,9 +140,16 @@ final class GatewayLoginRouteTest extends LaravelTestCase
             'private_key_type' => OPENSSL_KEYTYPE_EC,
             'curve_name' => 'prime256v1',
         ]);
+        if (! $resource instanceof OpenSSLAsymmetricKey) {
+            $this->fail('Could not generate an EC key.');
+        }
         openssl_pkey_export($resource, $privatePem);
+        $details = openssl_pkey_get_details($resource);
+        if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
+            $this->fail('Could not read the EC public key.');
+        }
 
-        return [openssl_pkey_get_details($resource)['key'], $privatePem];
+        return [$details['key'], $privatePem];
     }
 
     /**
@@ -144,10 +159,16 @@ final class GatewayLoginRouteTest extends LaravelTestCase
      * The assertion lives 300 seconds (iat 60 seconds in the past, exp 240
      * seconds in the future): the driver's default maximum lifetime. A jti is
      * always present; pass one to reuse a fixed value (the replay test does).
+     *
+     * @param  non-empty-string  $privateKey
      */
     private function buildToken(string $privateKey, FakeClock $clock, ?string $jti = null): string
     {
         $now = $clock->now();
+        $jtiValue = $jti ?? uniqid('jti-', true);
+        if ($jtiValue === '') {
+            $this->fail('Could not determine a jti.');
+        }
 
         return Builder::new(new JoseEncoder(), ChainedFormatter::withUnixTimestampDates())
             ->issuedBy(self::ISSUER)
@@ -156,7 +177,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
             ->canOnlyBeUsedAfter($now->modify('-60 seconds'))
             ->expiresAt($now->modify('+240 seconds'))
             ->relatedTo(self::SUBJECT)
-            ->identifiedBy($jti ?? uniqid('jti-', true))
+            ->identifiedBy($jtiValue)
             ->getToken(new Sha256(), InMemory::plainText($privateKey))
             ->toString();
     }
