@@ -88,7 +88,7 @@ on wayne.edu, not just this one.
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 3.0 against Academica. |
-| `gateway` | Later. A signed assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
+| `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
 
@@ -151,6 +151,63 @@ attribute when the server sends one. When it is missing, unparseable, or more
 than five minutes ahead of the driver's clock, the driver uses its own clock
 instead, so a bad value can never push the sign-in time into the future.
 
+## The gateway driver
+
+The gateway driver signs the user in from a signed JWT assertion that the auth
+gateway (DRAWBRIDGE) puts in one header. It verifies the assertion's signature
+against the gateway's public key, then checks the issuer, audience and time
+claims. It never reads a plain identity header — `Remote-User`,
+`X-Remote-User`, or any spelling of them — because a plain header can come from
+anywhere on the shared network. And the request must come from a trusted
+proxy: the direct peer (`REMOTE_ADDR`) must match one of the configured CIDR
+ranges. A valid assertion from an untrusted peer is still rejected.
+
+The algorithm is pinned from config, so a token that claims a different
+algorithm (or `none`) is refused before its signature is even looked at.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+
+$config = Config::fromArray([
+    'driver' => 'gateway',
+    'environment' => 'production',
+    'gateway' => [
+        'public_key' => file_get_contents('/etc/sesame/gateway.pub'),
+        'issuer' => 'https://drawbridge.wayne.edu',
+        'audience' => 'sesame',
+        'trusted_proxies' => ['10.0.0.0/8'],
+    ],
+]);
+
+// The gateway driver needs no HTTP client: it only reads the assertion from
+// the request.
+$driver = DriverFactory::make($config);
+```
+
+Then build the Sesame facade with the driver, as in the Raw PHP section above.
+
+Config keys:
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `gateway.header` | No | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
+| `gateway.algorithm` | No | `ES256` | `ES256`, `RS256` or `EdDSA`. Pinned, so a token that claims another algorithm is refused. |
+| `gateway.public_key` | Yes | none | The gateway's public key: a PEM string (or a path to one) for `ES256` and `RS256`, or a base64-encoded raw key (or a path to one) for `EdDSA`. |
+| `gateway.issuer` | Yes | none | The `iss` claim the assertion must carry. |
+| `gateway.audience` | Yes | none | The `aud` claim the assertion must carry. |
+| `gateway.leeway_seconds` | No | `30` | Clock skew allowed on the `iat`, `nbf` and `exp` checks, in seconds. |
+| `gateway.trusted_proxies` | Yes | none | A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind. |
+
+The assertion must carry `sub`, `iat` and `exp`; the `sub` claim becomes the
+username. The optional `email`, `name` and `affiliations` claims become
+read-only identity attributes. The sign-in time on the identity comes from the
+driver's clock.
+
 ## Session timeouts
 
 Open sesame opens the door for a live session; a stale one finds it locked.
@@ -190,11 +247,18 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 |---|---|---|---|
-| `driver` | `SESAME_DRIVER` | `cas` | `cas` or `fake`. |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway` or `fake`. |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `3.0` | `3.0` or `2.0`. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
+| `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
+| `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
+| `gateway.issuer` | `SESAME_GATEWAY_ISSUER` | none | The `iss` claim the assertion must carry. Required for the gateway driver. |
+| `gateway.audience` | `SESAME_GATEWAY_AUDIENCE` | none | The `aud` claim the assertion must carry. Required for the gateway driver. |
+| `gateway.leeway_seconds` | `SESAME_GATEWAY_LEEWAY_SECONDS` | `30` | Clock skew allowed on the time-claim checks, in seconds. |
+| `gateway.trusted_proxies` | `SESAME_GATEWAY_TRUSTED_PROXIES` | none | Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind. Required for the gateway driver. |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
