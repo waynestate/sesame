@@ -6,6 +6,10 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
+This repository is published from Wayne State University's internal GitLab and
+mirrored here. Changes land there first; Wayne State developers open issues
+and merge requests on the internal project.
+
 ## Install
 
 ```
@@ -311,7 +315,6 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
 
 ## Strongly recommended: a git.wayne.edu instance runner
 
-git.wayne.edu has no runners today, so CI for this repo runs on GitLab. Every
-product in the stack strongly recommends a git.wayne.edu instance runner. The
-case for it is written up in `design/instance-runner-case.md` in the
-coordination repo (`the stack`).
+git.wayne.edu has no runners today, so CI for this repo runs on the test
+GitLab instance. Every product in the stack strongly recommends a
+git.wayne.edu instance runner.
