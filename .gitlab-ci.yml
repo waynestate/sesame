@@ -1,6 +1,7 @@
 # SESAME's pipeline, built from the PREFLIGHT components on this GitLab.
 # Pinned to PREFLIGHT 0.1.0. Never use ~latest.
 # SESAME requires PHP ^8.3, so the test matrix starts at 8.3.
+# composer ci is the contract: the checks below must match what it runs.
 include:
   - component: $CI_SERVER_FQDN/enterprise-apps/preflight/php-test@0.1.0
     inputs:
