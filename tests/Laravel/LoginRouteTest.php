@@ -60,4 +60,19 @@ final class LoginRouteTest extends LaravelTestCase
 
         $this->assertNull($this->app->make(Sesame::class)->user());
     }
+
+    public function testLogoutSendsNoStoreAndClearSiteData(): void
+    {
+        $response = $this->withSession(['sesame.user' => 'the-user'])
+            ->post('/logout');
+
+        $response->assertRedirect('/');
+
+        // The session handling appends its own "private" directive to the
+        // Cache-Control header after the route runs, so assert the no-store
+        // directive is present rather than the whole header equaling it.
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertSame('"cache", "storage"', $response->headers->get('Clear-Site-Data'));
+        $this->assertStringNotContainsString('cookies', (string) $response->headers->get('Clear-Site-Data'));
+    }
 }

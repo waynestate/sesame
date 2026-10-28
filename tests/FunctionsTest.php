@@ -100,14 +100,30 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->loginRouterScript());
 
         try {
-            [$status, $location] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+            [$status, $headers] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
 
         $this->assertSame(302, $status);
-        $this->assertSame('/dashboard', $location);
-        $this->assertStringNotContainsString('ticket', (string) $location);
+        $this->assertSame('/dashboard', $headers['location'] ?? null);
+        $this->assertStringNotContainsString('ticket', (string) ($headers['location'] ?? ''));
+    }
+
+    public function testSesameLogoutSendsNoStoreAndClearSiteData(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
+
+        try {
+            [$status, $headers] = $this->httpGet('http://127.0.0.1:'.$port.'/logout');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        $this->assertSame(302, $status);
+        $this->assertSame('no-store', $headers['cache-control'] ?? null);
+        $this->assertSame('"cache", "storage"', $headers['clear-site-data'] ?? null);
+        $this->assertStringNotContainsString('cookies', $headers['clear-site-data'] ?? '');
     }
 
     public function testSesameLogoutStopsTheScriptAfterARedirect(): void
@@ -275,6 +291,43 @@ PHP;
     }
 
     /**
+     * The router script for the built-in server: it boots SESAME with a
+     * driver that has a logout URL, then runs the raw logout, which must send
+     * the no-store and Clear-Site-Data headers.
+     *
+     * The script runs in the global namespace, so it must not `use` the
+     * global DateTimeImmutable: that import has no effect and PHP prints a
+     * warning for it, which would send output before the logout's headers.
+     */
+    private function logoutRouterScript(): string
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingDriver;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$log = new EventLog();
+$identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable());
+$sesame = new Sesame(
+    new RecordingDriver(new Authenticated($identity), 'http://idp.local/logout', $log),
+    new RecordingResolver(),
+    new RecordingSession($log),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+);
+sesame($sesame);
+
+sesame_logout('http://app.local/');
+PHP;
+
+        return $this->childScript($body);
+    }
+
+    /**
      * Start PHP's built-in server running $script on a free port.
      *
      * @return array{0: resource, 1: int, 2: array<int, resource>, 3: string}
@@ -362,7 +415,8 @@ PHP;
     /**
      * GET $url without following redirects.
      *
-     * @return array{0: int, 1: ?string} The status code and the Location header.
+     * @return array{0: int, 1: array<string, string>} The status code and the
+     *         response headers, keyed by lower-cased header name.
      */
     private function httpGet(string $url): array
     {
@@ -375,22 +429,25 @@ PHP;
         ]]);
 
         @file_get_contents($url, false, $context);
-        $headers = $http_response_header ?? [];
+        $rawHeaders = $http_response_header ?? [];
 
         $status = 0;
 
-        if (isset($headers[0]) && preg_match('#^HTTP/\S+\s+(\d{3})#', $headers[0], $match)) {
+        if (isset($rawHeaders[0]) && preg_match('#^HTTP/\S+\s+(\d{3})#', $rawHeaders[0], $match)) {
             $status = (int) $match[1];
         }
 
-        $location = null;
+        $headers = [];
 
-        foreach ($headers as $header) {
-            if (stripos($header, 'Location:') === 0) {
-                $location = trim(substr($header, 9));
+        foreach ($rawHeaders as $header) {
+            if (strpos($header, ':') === false) {
+                continue;
             }
+
+            [$name, $value] = explode(':', $header, 2);
+            $headers[strtolower(trim($name))] = trim($value);
         }
 
-        return [$status, $location];
+        return [$status, $headers];
     }
 }

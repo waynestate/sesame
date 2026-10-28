@@ -71,6 +71,12 @@ reads the user with `sesame_user()`:
 $user = sesame_user();
 ```
 
+On logout, both paths send `Cache-Control: no-store` and
+`Clear-Site-Data: "cache", "storage"` so a back button or a shared browser
+cannot show a signed-in page; `"cookies"` is left out on purpose, because it
+would clear every cookie on the host and sign the user out of every other app
+on wayne.edu, not just this one.
+
 ## Drivers
 
 | Driver | Status |

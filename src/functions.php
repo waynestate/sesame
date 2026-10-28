@@ -128,6 +128,12 @@ if (! function_exists('sesame_logout')) {
     {
         $url = sesame()->logout($returnTo);
 
+        // Keep the logout response out of any cache and clear the site's
+        // cache and storage. "cookies" is deliberately left out of
+        // Clear-Site-Data: it would clear every cookie on the host, signing
+        // the user out of every other app on wayne.edu, not just this one.
+        header('Cache-Control: no-store', true);
+        header('Clear-Site-Data: "cache", "storage"', true);
         header('Location: '.($url ?? sesame()->safeReturnTo($returnTo)), true, 302);
         exit;
     }
