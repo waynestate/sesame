@@ -7,3 +7,9 @@ include:
     inputs:
       php_versions: ["8.3", "8.4", "8.5"]
   - component: $CI_SERVER_FQDN/enterprise-apps/preflight/composer-audit@0.1.0
+
+composer-ci:
+  image: composer:2.10.3
+  script:
+    - composer install --no-interaction --no-progress --prefer-dist
+    - composer ci
