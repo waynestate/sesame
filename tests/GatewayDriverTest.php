@@ -140,6 +140,18 @@ final class GatewayDriverTest extends TestCase
         $this->assertInstanceOf(Authenticated::class, $step);
     }
 
+    public function testTrustedPeerMatchesTheSecondOfSeveralRanges(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey, ['10.0.0.0/8', '172.16.0.0/12']);
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $step = $driver->login($this->request($token, '172.20.1.5'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+    }
+
     public function testRejectsAnUntrustedPeer(): void
     {
         $clock = new FakeClock();

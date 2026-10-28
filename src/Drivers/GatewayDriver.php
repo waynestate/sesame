@@ -137,7 +137,7 @@ final class GatewayDriver implements Driver
             );
         }
 
-        if (! IpUtils::checkIp($remoteAddr, ...$this->trustedProxies)) {
+        if (! IpUtils::checkIp($remoteAddr, $this->trustedProxies)) {
             throw new AuthenticationFailed(
                 'The request did not come from a trusted gateway proxy (gateway.untrusted_peer).',
             );
