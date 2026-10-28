@@ -72,11 +72,15 @@ if (! function_exists('sesame_login')) {
      * Builds the PSR-7 request from the globals, hands it to the driver, and
      * when the driver answers with a Redirect sends the 302 and stops the
      * script, so no protected code runs after the redirect. When the login
-     * completes it returns the app's user.
+     * completes it sends the 302 to $returnTo and stops the script, so the
+     * ticket never stays in the address bar (it would otherwise end up in
+     * browser history, bookmarks and Referer headers).
      *
-     * @return mixed The app's user.
+     * $returnTo is the page the user wanted, or the app's root. It must be a
+     * relative path on the app's host (for example '/' or '/dashboard'); an
+     * absolute URL would turn the login into an open redirect.
      */
-    function sesame_login(): mixed
+    function sesame_login(string $returnTo = '/'): void
     {
         $request = sesame_request();
         $result = sesame()->login($request);
@@ -86,7 +90,11 @@ if (! function_exists('sesame_login')) {
             exit;
         }
 
-        return $result;
+        // The login has completed (or the resolver refused the identity).
+        // Either way the ticket must not stay in the address bar, so send the
+        // user on to the page they wanted, or the app's root.
+        header('Location: '.$returnTo, true, 302);
+        exit;
     }
 }
 

@@ -53,18 +53,23 @@ $sesame = new Sesame(
 
 sesame($sesame);
 
-// Sends the redirect to the identity provider and stops the script, so the
-// line below runs only when the login has completed.
+// When the login has not completed, sends the redirect to the identity
+// provider and stops the script. When it completes, sends the redirect to
+// the page the user wanted (or the app's root) and stops the script, so the
+// ticket never stays in the address bar.
 sesame_login();
-
-echo 'Signed in as '.sesame_user();
 ```
 
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
 user and identity in it, but it never starts a session and never touches a
 cookie. `sesame_login()` and `sesame_logout()` stop the script after they send
-their redirect, so nothing after them runs in that request.
+their redirect, so nothing after them runs in that request. A protected page
+reads the user with `sesame_user()`:
+
+```php
+$user = sesame_user();
+```
 
 ## Drivers
 

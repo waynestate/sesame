@@ -95,6 +95,21 @@ PHP;
         $this->assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
     }
 
+    public function testSesameLoginRedirectsToTheReturnToAfterACasLogin(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->loginRouterScript());
+
+        try {
+            [$status, $location] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        $this->assertSame(302, $status);
+        $this->assertSame('/dashboard', $location);
+        $this->assertStringNotContainsString('ticket', (string) $location);
+    }
+
     public function testSesameLogoutStopsTheScriptAfterARedirect(): void
     {
         $body = <<<'PHP'
@@ -217,5 +232,165 @@ PHP;
         unlink($file);
 
         return $output;
+    }
+
+    /**
+     * The router script for the built-in server: it boots SESAME with the cas
+     * driver and a fake HTTP client that answers the ticket with a success,
+     * then runs the raw login, which must end in a redirect to the return-to.
+     */
+    private function loginRouterScript(): string
+    {
+        $root = dirname(__DIR__);
+        $autoloader = $root.'/vendor/autoload.php';
+        $fixture = $root.'/tests/fixtures/cas/success.xml';
+
+        $body = <<<'PHP'
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Stream;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\CasDriver;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\FakeHttpClient;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory());
+$sesame = new Sesame(
+    $driver,
+    new RecordingResolver('the-user'),
+    new RecordingSession(new EventLog()),
+    new Config(driver: 'cas', environment: 'testing', casBaseUrl: 'https://cas.test/cas', casServiceUrl: 'https://app.test/login'),
+);
+sesame($sesame);
+sesame_login('/dashboard');
+PHP;
+
+        $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
+
+        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+    }
+
+    /**
+     * Start PHP's built-in server running $script on a free port.
+     *
+     * @return array{0: resource, 1: int, 2: array<int, resource>, 3: string}
+     */
+    private function startServer(string $script): array
+    {
+        $file = tempnam(sys_get_temp_dir(), 'sesame-router-').'.php';
+        file_put_contents($file, $script);
+
+        $port = $this->freePort();
+
+        $process = proc_open(
+            [PHP_BINARY, '-S', '127.0.0.1:'.$port, $file],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
+
+        if (! is_resource($process)) {
+            unlink($file);
+            $this->fail('Could not start the built-in PHP server.');
+        }
+
+        $this->waitForServer($port);
+
+        return [$process, $port, $pipes, $file];
+    }
+
+    /**
+     * Stop the built-in server and remove its router script.
+     *
+     * @param  array<int, resource>  $pipes
+     */
+    private function stopServer($process, array $pipes, string $file): void
+    {
+        // Close the pipes without a blocking read: the server is long-running
+        // and never closes its ends, so stream_get_contents would hang.
+        foreach ($pipes as $pipe) {
+            fclose($pipe);
+        }
+
+        proc_terminate($process);
+        proc_close($process);
+        @unlink($file);
+    }
+
+    /**
+     * A free TCP port on the loopback interface.
+     */
+    private function freePort(): int
+    {
+        $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+
+        if (! is_resource($socket)) {
+            $this->fail('Could not find a free port: '.$errstr);
+        }
+
+        $name = stream_socket_get_name($socket, false);
+        $port = (int) substr($name, strrpos($name, ':') + 1);
+        fclose($socket);
+
+        return $port;
+    }
+
+    /**
+     * Wait until the server on $port accepts connections.
+     */
+    private function waitForServer(int $port): void
+    {
+        $deadline = microtime(true) + 5.0;
+
+        while (microtime(true) < $deadline) {
+            $connection = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.2);
+
+            if ($connection !== false) {
+                fclose($connection);
+                return;
+            }
+
+            usleep(50_000);
+        }
+
+        $this->fail('The built-in PHP server did not become ready on port '.$port.'.');
+    }
+
+    /**
+     * GET $url without following redirects.
+     *
+     * @return array{0: int, 1: ?string} The status code and the Location header.
+     */
+    private function httpGet(string $url): array
+    {
+        $context = stream_context_create(['http' => [
+            'method' => 'GET',
+            'ignore_errors' => true,
+            'follow_location' => 0,
+            'max_redirects' => 0,
+            'timeout' => 5,
+        ]]);
+
+        @file_get_contents($url, false, $context);
+        $headers = $http_response_header ?? [];
+
+        $status = 0;
+
+        if (isset($headers[0]) && preg_match('#^HTTP/\S+\s+(\d{3})#', $headers[0], $match)) {
+            $status = (int) $match[1];
+        }
+
+        $location = null;
+
+        foreach ($headers as $header) {
+            if (stripos($header, 'Location:') === 0) {
+                $location = trim(substr($header, 9));
+            }
+        }
+
+        return [$status, $location];
     }
 }
