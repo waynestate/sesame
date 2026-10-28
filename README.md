@@ -174,13 +174,21 @@ ranges. A valid assertion from an untrusted peer is still rejected.
 The algorithm is pinned from config, so a token that claims a different
 algorithm (or `none`) is refused before its signature is even looked at.
 
+Every assertion is single-use. The driver requires a `jti` claim, refuses an
+assertion that lives longer than `gateway.max_lifetime` seconds, and remembers
+each `jti` it has seen in a replay guard, so a captured assertion cannot be
+played back a second time. The guard is a PSR-16 cache: the Laravel adapter
+wires one up for you, and a raw PHP app passes its own (below).
+
 ```php
 <?php
 
 declare(strict_types=1);
 
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 
 $config = Config::fromArray([
     'driver' => 'gateway',
@@ -194,8 +202,11 @@ $config = Config::fromArray([
 ]);
 
 // The gateway driver needs no HTTP client: it only reads the assertion from
-// the request.
-$driver = DriverFactory::make($config);
+// the request. It does need a replay guard, so a captured assertion cannot be
+// played back a second time. Any PSR-16 cache works (symfony/cache is shown);
+// the Laravel adapter wires one up for you, so you only see this in raw PHP.
+$guard = new Psr16ReplayGuard(new FilesystemAdapter());
+$driver = DriverFactory::make($config, null, null, null, $guard);
 ```
 
 Then build the Sesame facade with the driver, as in the Raw PHP section above.
@@ -211,9 +222,12 @@ Config keys:
 | `gateway.audience` | Yes | none | The `aud` claim the assertion must carry. |
 | `gateway.leeway_seconds` | No | `30` | Clock skew allowed on the `iat`, `nbf` and `exp` checks, in seconds. |
 | `gateway.trusted_proxies` | Yes | none | A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind. |
+| `gateway.max_lifetime` | No | `300` | The longest an assertion may live (`exp` minus `iat`), in seconds. Longer assertions are refused, so a stolen long-lived token is useless. |
+| `gateway.replay_store` | No | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only; raw PHP passes its own PSR-16 cache to the guard). |
+| `gateway.allow_without_replay_guard` | No | `false` | Skip the replay guard entirely. Local development only: a production app must keep replay protection on. |
 
-The assertion must carry `sub`, `iat` and `exp`; the `sub` claim becomes the
-username. The optional `email`, `name` and `affiliations` claims become
+The assertion must carry `sub`, `iat`, `exp` and `jti`; the `sub` claim becomes
+the username. The optional `email`, `name` and `affiliations` claims become
 read-only identity attributes. The sign-in time on the identity comes from the
 driver's clock.
 
@@ -326,6 +340,9 @@ Config keys (in `config/sesame.php`):
 | `gateway.audience` | `SESAME_GATEWAY_AUDIENCE` | none | The `aud` claim the assertion must carry. Required for the gateway driver. |
 | `gateway.leeway_seconds` | `SESAME_GATEWAY_LEEWAY_SECONDS` | `30` | Clock skew allowed on the time-claim checks, in seconds. |
 | `gateway.trusted_proxies` | `SESAME_GATEWAY_TRUSTED_PROXIES` | none | Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind. Required for the gateway driver. |
+| `gateway.max_lifetime` | `SESAME_GATEWAY_MAX_LIFETIME` | `300` | The longest an assertion may live, in seconds. |
+| `gateway.replay_store` | `SESAME_GATEWAY_REPLAY_STORE` | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only). |
+| `gateway.allow_without_replay_guard` | `SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD` | `false` | Skip the replay guard. Local development only. |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
@@ -399,6 +416,10 @@ Docker is a config change, not a code change. What differs per host:
   A source address is not enough on its own: on shared ingress (OpenShift's
   router, Coolify's Traefik) the same proxy carries routes with and without
   the auth step. The header name and the list of trusted auth hops are config.
+  Its replay guard remembers used `jti`s in a cache store, so that store must
+  be shared too (Redis or a database), for the same reason as the session
+  store: a local-file cache would let a replayed assertion pass on another
+  replica.
 - The session store must be shared: Redis or a database, never local files.
   Every host overlaps old and new containers during a deploy, and most can run
   more than one replica, so a file session would drop users mid-login. In
