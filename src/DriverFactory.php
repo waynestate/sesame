@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame;
 
+use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Waynestate\Sesame\Drivers\CasDriver;
@@ -15,7 +16,8 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  *
  * The cas driver talks to a CAS server over HTTP, and this factory cannot
  * build an HTTP client itself: the app passes a PSR-18 client and a PSR-17
- * request factory to make().
+ * request factory to make(). A PSR-20 clock may be passed for the cas
+ * driver's sign-in time; without one it uses the system clock.
  */
 final class DriverFactory
 {
@@ -23,6 +25,7 @@ final class DriverFactory
         Config $config,
         ?ClientInterface $http = null,
         ?RequestFactoryInterface $requests = null,
+        ?ClockInterface $clock = null,
     ): Driver {
         return match ($config->driver) {
             'fake' => new FakeDriver(
@@ -36,6 +39,8 @@ final class DriverFactory
                 self::requiredHttp($http),
                 self::requiredRequests($requests),
                 $config->casProtocol,
+                $config->casRenew,
+                $clock,
             ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),
         };

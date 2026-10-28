@@ -46,6 +46,7 @@ class SesameServiceProvider extends ServiceProvider
                 $this->coreConfig($app),
                 $this->httpClient($app),
                 $this->requestFactory($app),
+                $this->clock($app),
             );
         });
 
@@ -133,8 +134,9 @@ class SesameServiceProvider extends ServiceProvider
     }
 
     /**
-     * The PSR-20 clock the core uses for the session timeouts: the app's
-     * binding when there is one, and the system clock when there is not.
+     * The PSR-20 clock the core uses for the session timeouts and the cas
+     * driver's sign-in time: the app's binding when there is one, and the
+     * system clock when there is not.
      */
     private function clock($app): ?ClockInterface
     {

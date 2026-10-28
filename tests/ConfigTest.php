@@ -154,6 +154,51 @@ final class ConfigTest extends TestCase
         ]);
     }
 
+    public function testReadsCasRenewWhenSet(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'renew' => true,
+            ],
+        ]);
+
+        $this->assertTrue($config->casRenew);
+    }
+
+    public function testCasRenewDefaultsToFalse(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+            ],
+        ]);
+
+        $this->assertFalse($config->casRenew);
+    }
+
+    public function testRejectsANonBooleanCasRenew(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "cas.renew" must be a boolean.');
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'renew' => 'yes',
+            ],
+        ]);
+    }
+
     public function testReadsTheSessionTimeouts(): void
     {
         $config = Config::fromArray([

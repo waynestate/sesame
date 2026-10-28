@@ -127,7 +127,7 @@ How the stack holds it: `Not yet`. CAS carries no state parameter, and `CasDrive
 Support `renew` and read the authentication details the server returns, so a sensitive action can require a recent, direct login.
 Why: SSO may have been satisfied hours ago, or by a remembered login.
 Sources: [CAS Protocol 3.0 (renew, authentication attributes)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html), [ASVS 5.0 V6.8.4](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md) (an app that needs a given strength or recency must check what the IdP returned, and keep a documented fallback if the IdP returns nothing), [ASVS 5.0 V7.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md) (full re-authentication before changing sensitive account attributes; narrower than "any sensitive action").
-How the stack holds it: `Not yet`. There is no `renew` option. Attributes are copied into the identity. Second pass: the CAS 3.0 spec does define the attributes to read: `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` (a remembered login). The first pass said no document names them; the spec does, so the gap is that SESAME and its docs do not use them. The spec says to ignore `gateway` when `renew` is set.
+How the stack holds it: `Enforced`. The `cas.renew` option sends `renew` on the login redirect and the validation request, so an app can require a fresh, direct login; the CAS server refuses a ticket that came from an SSO session with `INVALID_TICKET`. `authenticationDate` is read for the login age (S46). Still open: `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` are not read, so an app cannot yet tell a fresh login from a remembered one. The spec says to ignore `gateway` when `renew` is set.
 
 ### S20. Accept single logout from the CAS server
 When the CAS server ends a user's SSO session, it can POST a logout request to each app. The app should find the session by ticket and end it.
@@ -307,7 +307,7 @@ How the stack holds it: `Not yet`. SESAME does not touch the setting. HELMET's h
 Prefer the IdP's `authenticationDate` over the time SESAME received the response, and give the library a PSR-20 clock instead of calling `new DateTimeImmutable()`.
 Why: `authenticatedAt` is when SESAME saw the response, not when the person signed in. Timeout and re-authentication rules (S5, S19) need the real login age, and a clock you can set makes those rules testable.
 Sources: [CAS Protocol 3.0 (`authenticationDate`)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html), [PSR-20 Clock](https://www.php-fig.org/psr/psr-20/) (defines `ClockInterface::now()` returning a `DateTimeImmutable`; I could not read its status on that page).
-How the stack holds it: `Not yet`. `CasDriver` builds the timestamp with `new DateTimeImmutable()` (`src/Drivers/CasDriver.php:176`).
+How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from the attributes and uses it as the `authenticatedAt` when it is present and parseable; otherwise it falls back to the driver's clock. Time is read through a PSR-20 clock (injected, defaulting to the system clock), and a value more than five minutes ahead of the clock is treated as bad and ignored.
 
 ### S48. Pin shared CI components to a commit
 Include pipeline components by commit SHA, never `~latest`.
@@ -333,8 +333,7 @@ Risks in the current code:
 - `README.md:89-90`: the example client has no timeout.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
-- `src/Drivers/CasDriver.php:176`: `authenticatedAt` is the time SESAME received the response. Read `authenticationDate` from the attributes and inject a PSR-20 clock (S46).
-- `src/Drivers/CasDriver.php:72`: the login redirect has no `renew` option and nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed` (S19).
+- `src/Drivers/CasDriver.php`: nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed`, so an app cannot tell a fresh login from a remembered one (S19).
 - `src/functions.php:118`: logout sends no `Cache-Control: no-store` or `Clear-Site-Data` (S44).
 - `src/Session/NativeSession.php:24`: use a destroy time stamp and grace period at login instead of immediate delete (S43).
 - README client example: add no-redirect and TLS-verify settings, and a timeout (S23, S42).
@@ -344,7 +343,6 @@ Missing practices:
 - A `__Host-` cookie name, set by HELMET.
 - Ticket removal from the URL after login.
 - Single logout, which needs the ticket stored with the session.
-- `renew` support and a documented way to read login age.
 - A logging hook (PSR-3) for authentication events.
 - A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
 - A documented lifetime table for each app, covering app, SESAME and IdP sessions.
@@ -353,7 +351,6 @@ Missing practices:
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, does it support `renew`, and does it send single logout POSTs (S19, S20).
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
 - A cache and `Clear-Site-Data` rule for logout (S44).
-- A PSR-20 clock, and a documented use of the IdP's login time (S46).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
 - Scope of the `oauth2` driver in ADR-0004: resource server only, or also a client that starts logins (S36).
 - A test for the `saml` library choice: feed it a document with a second signature, a DOCTYPE and a namespace trick, and expect rejection (S34, S47).
