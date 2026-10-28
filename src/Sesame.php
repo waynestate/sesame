@@ -68,8 +68,8 @@ final class Sesame
         $this->session->put('sesame.user', $user);
         // Keep the session small and plain: store the identity without its
         // raw IdP attributes (S6), but keep the MFA facts (the sign-in time
-        // and the methods), because requireMfa() reads them back from the
-        // session.
+        // and the methods) and the authentication contexts, because
+        // requireMfa() and hasAuthContext() read them back from the session.
         $this->session->put('sesame.identity', new Identity(
             $step->identity->username,
             [],
@@ -77,6 +77,7 @@ final class Sesame
             $step->identity->authenticatedAt,
             $step->identity->authTime,
             $step->identity->amr,
+            $step->identity->authContexts(),
         ));
         $this->session->put('sesame.signed_in_at', $now);
         $this->session->put('sesame.last_seen', $now);
@@ -159,6 +160,30 @@ final class Sesame
         }
 
         return Mfa::satisfied($identity, $maxAgeSeconds, $this->clock->now());
+    }
+
+    /**
+     * Decide whether the signed-in identity has the given authentication
+     * context.
+     *
+     * The session is checked first, through user(), so a stale session is
+     * signed out before the question is even asked. When there is no user,
+     * or the session has no identity to read, the answer is false: the check
+     * fails closed.
+     */
+    public function hasAuthContext(string $id): bool
+    {
+        if ($this->user() === null) {
+            return false;
+        }
+
+        $identity = $this->session->get('sesame.identity');
+
+        if (! $identity instanceof Identity) {
+            return false;
+        }
+
+        return $identity->hasAuthContext($id);
     }
 
     /**

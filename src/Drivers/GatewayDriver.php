@@ -291,6 +291,7 @@ final class GatewayDriver implements Driver
             $this->clock->now(),
             $this->authTime($claims),
             $this->amr($claims),
+            $this->acrs($claims),
         );
     }
 
@@ -385,6 +386,36 @@ final class GatewayDriver implements Driver
         }
 
         return $methods;
+    }
+
+    /**
+     * The verified authentication contexts, from the assertion's acrs claim.
+     *
+     * The claim is a list of strings, present when the gateway required a
+     * step-up for the path. A missing claim, or a value that is not an array,
+     * yields an empty list, and any entry that is not a string matching the
+     * context id shape (c1 through c99) is dropped: the driver never
+     * invents an authentication context.
+     *
+     * @return list<string>
+     */
+    private function acrs(DataSet $claims): array
+    {
+        $value = $claims->get('acrs');
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $contexts = [];
+
+        foreach ($value as $item) {
+            if (is_string($item) && preg_match('/^c[1-9][0-9]?$/D', $item) === 1) {
+                $contexts[] = $item;
+            }
+        }
+
+        return $contexts;
     }
 
     /**
