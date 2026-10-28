@@ -17,3 +17,7 @@
 /phpunit.xml.dist export-ignore
 /.gitattributes   export-ignore
 /.gitignore       export-ignore
+
+# README art: generated images and their generator, not part of the package.
+/docs/readme export-ignore
+/scripts/readme-art export-ignore
