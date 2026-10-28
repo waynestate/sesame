@@ -132,6 +132,7 @@ Config keys:
 | `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | Yes | none | Where the server sends the user back to. |
 | `cas.protocol` | No | `3.0` | `3.0` or `2.0`. |
+| `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 
 The service URL is the configured value only: the driver never reads the
 request's Host or X-Forwarded-* headers to build it.
@@ -139,6 +140,16 @@ request's Host or X-Forwarded-* headers to build it.
 Protocol 3.0 is the default; whether Academica releases attributes on
 `/p3/serviceValidate` is still to be verified, and `cas.protocol: 2.0` is
 the fallback.
+
+Set `cas.renew` to `true` when the app needs a fresh, direct login rather
+than an existing SSO session. The driver then sends `renew` on the login
+redirect and on the validation request, and the CAS server refuses a ticket
+that came from an SSO session with `INVALID_TICKET`.
+
+The sign-in time on the identity comes from the CAS `authenticationDate`
+attribute when the server sends one. When it is missing, unparseable, or more
+than five minutes ahead of the driver's clock, the driver uses its own clock
+instead, so a bad value can never push the sign-in time into the future.
 
 ## Session timeouts
 
