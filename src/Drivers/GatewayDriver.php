@@ -54,6 +54,13 @@ use Waynestate\Sesame\LoginStep;
  *
  * The algorithm is pinned from config, so a token that claims a different
  * algorithm (or "none") is refused before its signature is even looked at.
+ *
+ * Every assertion is single-use. The gateway signs a fresh assertion for
+ * every request, so a captured one is only dangerous if it can be sent
+ * twice: the driver requires a jti claim, refuses assertions that live
+ * longer than the configured maximum, and hands the jti to a ReplayGuard,
+ * which remembers it for the assertion's lifetime. A second use of the same
+ * jti is a replay and is refused.
  */
 final class GatewayDriver implements Driver
 {
@@ -63,6 +70,11 @@ final class GatewayDriver implements Driver
      * @var list<string>
      */
     private const ALGORITHMS = ['ES256', 'RS256', 'EdDSA'];
+
+    /**
+     * The longest jti the driver accepts, in bytes.
+     */
+    private const MAX_JTI_LENGTH = 128;
 
     /**
      * The optional claims that become read-only identity attributes.
@@ -77,8 +89,14 @@ final class GatewayDriver implements Driver
 
     private readonly ClockInterface $clock;
 
+    private readonly ?ReplayGuard $replayGuard;
+
+    private readonly int $maxLifetimeSeconds;
+
     /**
      * @param  list<string>  $trustedProxies  CIDR ranges (or single IPs) the gateway proxy sits behind.
+     * @param  int  $maxLifetimeSeconds  The longest an assertion may live (exp minus iat), in seconds.
+     * @param  bool  $allowWithoutReplayGuard  Skip the replay guard. For local development only: without a guard, a captured assertion can be replayed until it expires.
      */
     public function __construct(
         private readonly string $header,
@@ -89,10 +107,21 @@ final class GatewayDriver implements Driver
         private readonly int $leewaySeconds,
         private readonly array $trustedProxies,
         ?ClockInterface $clock = null,
+        ?ReplayGuard $replayGuard = null,
+        int $maxLifetimeSeconds = 300,
+        bool $allowWithoutReplayGuard = false,
     ) {
+        if ($replayGuard === null && ! $allowWithoutReplayGuard) {
+            throw new InvalidConfig(
+                'The gateway driver needs a ReplayGuard so a captured assertion cannot be replayed. Pass one to the driver (or to DriverFactory::make()), or set gateway.allow_without_replay_guard to true for local development only.',
+            );
+        }
+
         $this->signer = self::signerFor($algorithm);
         $this->publicKey = self::keyFor($publicKey, $algorithm);
         $this->clock = $clock ?? new SystemClock();
+        $this->replayGuard = $replayGuard;
+        $this->maxLifetimeSeconds = $maxLifetimeSeconds;
     }
 
     public function name(): string
@@ -228,6 +257,9 @@ final class GatewayDriver implements Driver
      * an expiry is not a usable assertion, and a token without a subject has
      * no one to sign in. The subject becomes the username, and the optional
      * email, name and affiliations claims become read-only attributes.
+     *
+     * Before the identity is built, the assertion is checked for single-use:
+     * a usable jti, a bounded lifetime, and no replay (assertSingleUse()).
      */
     private function identity(UnencryptedToken $token): Identity
     {
@@ -250,6 +282,8 @@ final class GatewayDriver implements Driver
             );
         }
 
+        $this->assertSingleUse($claims);
+
         return new Identity(
             $subject,
             $this->attributes($claims),
@@ -258,6 +292,53 @@ final class GatewayDriver implements Driver
             $this->authTime($claims),
             $this->amr($claims),
         );
+    }
+
+    /**
+     * The single-use checks: a usable jti, a bounded lifetime, and no replay.
+     *
+     * The gateway signs a fresh assertion for every request, so a captured
+     * assertion is only dangerous if it can be sent twice. The jti is the
+     * assertion's one-time ID: the first use records it with the replay
+     * guard, and any later use of the same jti is a replay. The lifetime is
+     * bounded (exp minus iat) so a stolen assertion stays useful for only a
+     * short window, and the guard keeps the jti for that window (plus
+     * leeway) after the assertion expires.
+     *
+     * The replay check runs last: an assertion that fails an earlier check
+     * is rejected without consuming its jti, so a rejected token can never
+     * be "used up" by an attacker.
+     */
+    private function assertSingleUse(DataSet $claims): void
+    {
+        $jti = $claims->get(RegisteredClaims::ID);
+
+        if (! is_string($jti) || $jti === '' || strlen($jti) > self::MAX_JTI_LENGTH) {
+            throw new AuthenticationFailed(
+                'The signed assertion has no usable "jti" claim (gateway.missing_jti).',
+            );
+        }
+
+        $issuedAt = $claims->get(RegisteredClaims::ISSUED_AT);
+        $expiresAt = $claims->get(RegisteredClaims::EXPIRATION_TIME);
+
+        if (! $issuedAt instanceof DateTimeImmutable || ! $expiresAt instanceof DateTimeImmutable) {
+            throw new AuthenticationFailed(
+                'The signed assertion has no usable "iat" or "exp" claim (gateway.missing_claim).',
+            );
+        }
+
+        if ($expiresAt->getTimestamp() - $issuedAt->getTimestamp() > $this->maxLifetimeSeconds) {
+            throw new AuthenticationFailed(
+                'The signed assertion lives longer than the configured maximum (gateway.lifetime_too_long).',
+            );
+        }
+
+        if ($this->replayGuard?->seen($jti, $expiresAt) === true) {
+            throw new AuthenticationFailed(
+                'The signed assertion was already used (gateway.replayed_assertion).',
+            );
+        }
     }
 
     /**

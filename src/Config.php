@@ -17,11 +17,14 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `X-Sesame-Assertion`), `gateway.algorithm` (default `ES256`, only
  * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required),
  * `gateway.issuer` (required), `gateway.audience` (required),
- * `gateway.leeway_seconds` (default `30`, a non-negative integer) and
- * `gateway.trusted_proxies` (required, a non-empty array of CIDR ranges).
- * The session timeouts are `session.idle_minutes` (default `120`) and
- * `session.absolute_minutes` (default `720`), both optional positive
- * integers.
+ * `gateway.leeway_seconds` (default `30`, a non-negative integer),
+ * `gateway.trusted_proxies` (required, a non-empty array of CIDR ranges),
+ * `gateway.max_lifetime` (default `300`, a positive integer: the longest an
+ * assertion may live, in seconds) and
+ * `gateway.allow_without_replay_guard` (default `false`, a boolean: skip the
+ * replay guard, for local development only). The session timeouts are
+ * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
+ * (default `720`), both optional positive integers.
  */
 final readonly class Config
 {
@@ -43,6 +46,8 @@ final readonly class Config
         public ?string $gatewayAudience = null,
         public int $gatewayLeewaySeconds = 30,
         public array $gatewayTrustedProxies = [],
+        public int $gatewayMaxLifetimeSeconds = 300,
+        public bool $gatewayAllowWithoutReplayGuard = false,
     ) {
     }
 
@@ -64,6 +69,8 @@ final readonly class Config
         $gatewayAudience = null;
         $gatewayLeewaySeconds = 30;
         $gatewayTrustedProxies = [];
+        $gatewayMaxLifetimeSeconds = 300;
+        $gatewayAllowWithoutReplayGuard = false;
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
@@ -116,6 +123,9 @@ final readonly class Config
                     throw new InvalidConfig('Each entry in "gateway.trusted_proxies" must be a non-empty string.');
                 }
             }
+
+            $gatewayMaxLifetimeSeconds = self::optionalPositiveInt($config, 'gateway.max_lifetime', 300);
+            $gatewayAllowWithoutReplayGuard = self::optionalBool($config, 'gateway.allow_without_replay_guard', false);
         }
 
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
@@ -139,6 +149,8 @@ final readonly class Config
             $gatewayAudience,
             $gatewayLeewaySeconds,
             $gatewayTrustedProxies,
+            $gatewayMaxLifetimeSeconds,
+            $gatewayAllowWithoutReplayGuard,
         );
     }
 

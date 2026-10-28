@@ -10,6 +10,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Drivers\FakeDriver;
 use Waynestate\Sesame\Drivers\GatewayDriver;
+use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
 /**
@@ -21,6 +22,12 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * only reads a signed assertion from the request. A PSR-20 clock may be
  * passed for the cas and gateway drivers' sign-in time; without one they
  * use the system clock.
+ *
+ * The gateway driver also needs a ReplayGuard, so a captured assertion
+ * cannot be replayed: pass one (for example a Psr16ReplayGuard over a PSR-16
+ * cache) as the fifth argument. Without one, the gateway driver refuses to
+ * start, unless the config says gateway.allow_without_replay_guard (local
+ * development only).
  */
 final class DriverFactory
 {
@@ -29,6 +36,7 @@ final class DriverFactory
         ?ClientInterface $http = null,
         ?RequestFactoryInterface $requests = null,
         ?ClockInterface $clock = null,
+        ?ReplayGuard $replayGuard = null,
     ): Driver {
         return match ($config->driver) {
             'fake' => new FakeDriver(
@@ -54,6 +62,9 @@ final class DriverFactory
                 $config->gatewayLeewaySeconds,
                 $config->gatewayTrustedProxies,
                 $clock,
+                $replayGuard,
+                $config->gatewayMaxLifetimeSeconds,
+                $config->gatewayAllowWithoutReplayGuard,
             ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),
         };

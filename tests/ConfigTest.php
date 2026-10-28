@@ -199,6 +199,51 @@ final class ConfigTest extends TestCase
         ]);
     }
 
+    public function testGatewayMaxLifetimeDefaultsToFiveMinutes(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig());
+
+        $this->assertSame(300, $config->gatewayMaxLifetimeSeconds);
+    }
+
+    public function testReadsGatewayMaxLifetime(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig(['max_lifetime' => 60]));
+
+        $this->assertSame(60, $config->gatewayMaxLifetimeSeconds);
+    }
+
+    #[DataProvider('badGatewayMaxLifetimes')]
+    public function testRejectsAnInvalidGatewayMaxLifetime(int|string $value): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "gateway.max_lifetime" must be a positive integer.');
+
+        Config::fromArray($this->gatewayConfig(['max_lifetime' => $value]));
+    }
+
+    public function testGatewayAllowWithoutReplayGuardDefaultsToFalse(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig());
+
+        $this->assertFalse($config->gatewayAllowWithoutReplayGuard);
+    }
+
+    public function testReadsGatewayAllowWithoutReplayGuard(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => true]));
+
+        $this->assertTrue($config->gatewayAllowWithoutReplayGuard);
+    }
+
+    public function testRejectsANonBooleanGatewayAllowWithoutReplayGuard(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "gateway.allow_without_replay_guard" must be a boolean.');
+
+        Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => 'yes']));
+    }
+
     public function testReadsTheSessionTimeouts(): void
     {
         $config = Config::fromArray([
@@ -255,6 +300,41 @@ final class ConfigTest extends TestCase
             'an absolute timeout of zero' => ['absolute_minutes', 0],
             'a negative absolute timeout' => ['absolute_minutes', -5],
             'a string absolute timeout' => ['absolute_minutes', 'abc'],
+        ];
+    }
+
+    /**
+     * Gateway max-lifetime values that must be rejected.
+     *
+     * @return array<string, array{int|string}>
+     */
+    public static function badGatewayMaxLifetimes(): array
+    {
+        return [
+            'a lifetime of zero' => [0],
+            'a negative lifetime' => [-5],
+            'a string lifetime' => ['abc'],
+        ];
+    }
+
+    /**
+     * A valid gateway config, with any overrides merged into the gateway
+     * section.
+     *
+     * @param  array<string, mixed>  $gateway
+     * @return array<string, mixed>
+     */
+    private function gatewayConfig(array $gateway = []): array
+    {
+        return [
+            'driver' => 'gateway',
+            'environment' => 'local',
+            'gateway' => array_merge([
+                'public_key' => 'public-key',
+                'issuer' => 'https://drawbridge.wayne.edu',
+                'audience' => 'sesame',
+                'trusted_proxies' => ['10.0.0.0/8'],
+            ], $gateway),
         ];
     }
 }
