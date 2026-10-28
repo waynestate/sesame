@@ -1,0 +1,19 @@
+# The GitHub mirror's CI. It calls the PREFLIGHT reusable workflow, which runs
+# `composer ci` on each PHP version listed here.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*', '*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    # pin to a PREFLIGHT tag at its first GitHub release
+    uses: waynestate/preflight/.github/workflows/php-package.yml@65711c350bd0ddf637f0933482d7bdae2a9b3c3b
+    with:
+      php-versions: '["8.3","8.4","8.5"]'
+      ci-command: composer ci

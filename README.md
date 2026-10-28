@@ -1,5 +1,11 @@
 # SESAME
 
+[![GitLab pipeline](https://gitlab.example/enterprise-apps/sesame/badges/main/pipeline.svg)](https://gitlab.example/enterprise-apps/sesame/-/pipelines) [![GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml/badge.svg)](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
+
+Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same three checks, so a green build means the same thing on both sides.
+
+Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
+
 SESAME is Wayne State's protocol-neutral auth library. It returns a verified
 identity and leaves the session to the app: every driver ends in the same
 place, the app's `findOrImportUser(Identity)`, and the protocol never holds

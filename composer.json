@@ -50,7 +50,15 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "ci": [
+            "@composer validate --strict",
+            "@test",
+            "@composer audit --locked"
+        ]
+    },
+    "scripts-descriptions": {
+        "ci": "Run every CI check: validate the manifest, run the tests, and audit the locked dependencies."
     },
     "config": {
         "sort-packages": true,
