@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait ReadOnlyAttributes
 {
-    /** @var list<string> */
+    /** @var array<int, string> */
     private $readOnlyAttributes = [];
 
     /**
@@ -47,7 +47,7 @@ trait ReadOnlyAttributes
                 $dirty[$key] = $value;
             } elseif ($value !== $this->original[$key]) {
                 if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
-                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
+                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key))) { // @phpstan-ignore function.alreadyNarrowedType (guard kept for older Laravel versions without originalIsEquivalent)
                     $dirty[$key] = $value;
                 }
             }
