@@ -34,3 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   naming the key when `gateway.public_key`, `gateway.issuer` or
   `gateway.audience` is null or empty, instead of passing an empty string
   into the driver.
+- A truthy `slo` (or `single_logout`) config key is rejected with
+  `InvalidConfig` at boot: the identity provider does not support single
+  logout, so the setting is a mistake to fail on early rather than at the
+  first logout.

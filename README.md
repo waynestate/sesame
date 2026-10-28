@@ -100,7 +100,9 @@ On logout, both paths send `Cache-Control: no-store` and
 `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser
 cannot show a signed-in page; `"cookies"` is left out on purpose, because it
 would clear every cookie on the host and sign the user out of every other app
-on wayne.edu, not just this one.
+on wayne.edu, not just this one. Single logout is not supported — the
+identity provider cannot sign the user out of the app's other sessions — so
+SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 
 ## Drivers
 
