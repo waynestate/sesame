@@ -1,6 +1,10 @@
 {
     "name": "waynestate/sesame",
     "description": "Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.",
+    "homepage": "https://sesame.apps.wayne.edu/",
+    "support": {
+        "source": "https://github.com/waynestate/sesame"
+    },
     "license": "MIT",
     "type": "library",
     "authors": [
