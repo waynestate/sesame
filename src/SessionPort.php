@@ -7,7 +7,7 @@ namespace Waynestate\Sesame;
 /**
  * The app's session, seen through a port.
  *
- * The app always owns its session (ADR-0004). The core talks to it only
+ * The app always owns its session, not the library. The core talks to it only
  * through this port, so the raw-PHP path and the Laravel path agree without
  * either one knowing about the other.
  */

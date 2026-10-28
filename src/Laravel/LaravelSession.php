@@ -10,7 +10,7 @@ use Waynestate\Sesame\SessionPort;
 /**
  * The Laravel session, seen through the core's port.
  *
- * The app owns its session (ADR-0004); this class only forwards the five
+ * The app owns its session, not the library; this class only forwards the five
  * calls the core makes, so the core never sees a Laravel type.
  */
 final class LaravelSession implements SessionPort
