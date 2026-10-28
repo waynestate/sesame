@@ -136,7 +136,11 @@ final class CasDriver implements Driver
 
     public function logoutUrl(string $returnTo): ?string
     {
-        return $this->base.'/logout?service='.rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+        $return = rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+
+        // Send the return address as both service= and url=: Academica reads
+        // url=, and service= is the CAS-standard parameter name.
+        return $this->base.'/logout?service='.$return.'&url='.$return;
     }
 
     public function serviceUrl(): ?string

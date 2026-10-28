@@ -453,9 +453,20 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode('https://app.test/'),
+            self::BASE.'/logout?service='.rawurlencode('https://app.test/').'&url='.rawurlencode('https://app.test/'),
             $driver->logoutUrl('https://app.test/'),
         );
+    }
+
+    public function testLogoutUrlCarriesTheReturnAddressAsBothServiceAndUrl(): void
+    {
+        $driver = $this->driver(new FakeHttpClient());
+        $url = $driver->logoutUrl('https://app.test/dashboard');
+
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame('https://app.test/dashboard', $query['service']);
+        $this->assertSame('https://app.test/dashboard', $query['url']);
     }
 
     public function testLogoutUrlKeepsAnHttpsReturnToOnTheServiceHost(): void
@@ -463,7 +474,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode('https://app.test/dashboard'),
+            self::BASE.'/logout?service='.rawurlencode('https://app.test/dashboard').'&url='.rawurlencode('https://app.test/dashboard'),
             $driver->logoutUrl('https://app.test/dashboard'),
         );
     }
@@ -473,7 +484,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
             $driver->logoutUrl('https://evil.test/'),
         );
     }
@@ -483,7 +494,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
             $driver->logoutUrl('http://app.test/'),
         );
     }
@@ -493,7 +504,7 @@ final class CasDriverTest extends TestCase
         $driver = $this->driver(new FakeHttpClient());
 
         $this->assertSame(
-            self::BASE.'/logout?service='.rawurlencode(self::SERVICE),
+            self::BASE.'/logout?service='.rawurlencode(self::SERVICE).'&url='.rawurlencode(self::SERVICE),
             $driver->logoutUrl('/dashboard'),
         );
     }
