@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Drivers;
 
 use DateInterval;
+use DateTimeImmutable;
 use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer;
@@ -254,7 +255,55 @@ final class GatewayDriver implements Driver
             $this->attributes($claims),
             $this->name(),
             $this->clock->now(),
+            $this->authTime($claims),
+            $this->amr($claims),
         );
+    }
+
+    /**
+     * The verified MFA sign-in time, from the assertion's auth_time claim.
+     *
+     * The claim is an epoch-seconds integer. A missing claim, or a value that
+     * is not a non-negative integer, yields null: the driver never invents a
+     * sign-in time, and a bad value can never push it into the future.
+     */
+    private function authTime(DataSet $claims): ?DateTimeImmutable
+    {
+        $value = $claims->get('auth_time');
+
+        if (! is_int($value) || $value < 0) {
+            return null;
+        }
+
+        return new DateTimeImmutable('@'.$value);
+    }
+
+    /**
+     * The verified authentication methods, from the assertion's amr claim.
+     *
+     * The claim is a list of strings. A missing claim, or a value that is not
+     * an array, yields an empty list, and any non-string entry is dropped:
+     * the driver never invents an authentication method.
+     *
+     * @return list<string>
+     */
+    private function amr(DataSet $claims): array
+    {
+        $value = $claims->get('amr');
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $methods = [];
+
+        foreach ($value as $item) {
+            if (is_string($item) && $item !== '') {
+                $methods[] = $item;
+            }
+        }
+
+        return $methods;
     }
 
     /**

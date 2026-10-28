@@ -67,12 +67,16 @@ final class Sesame
         $this->session->regenerate();
         $this->session->put('sesame.user', $user);
         // Keep the session small and plain: store the identity without its
-        // raw IdP attributes (S6).
+        // raw IdP attributes (S6), but keep the MFA facts (the sign-in time
+        // and the methods), because requireMfa() reads them back from the
+        // session.
         $this->session->put('sesame.identity', new Identity(
             $step->identity->username,
             [],
             $step->identity->driver,
             $step->identity->authenticatedAt,
+            $step->identity->authTime,
+            $step->identity->amr,
         ));
         $this->session->put('sesame.signed_in_at', $now);
         $this->session->put('sesame.last_seen', $now);
