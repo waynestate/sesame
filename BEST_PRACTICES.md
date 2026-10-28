@@ -315,6 +315,14 @@ Why: a moving component can change what your pipeline runs, or what it skips, wi
 Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (commit SHA is the preferred pin; "Avoid using `latest`").
 How the stack holds it: `Documented`. `.gitlab-ci.yml` pins both PREFLIGHT components to one commit SHA and says never to use `~latest`. Nothing checks it, so PROCTOR could flag an unpinned `include:` in any repo.
 
+## 8. MFA
+
+### S49. Require MFA on protected pages, and fail closed
+A protected page can require that the user's MFA is still good, not just that they are signed in. The check reads the identity's `authTime` (when the user last completed MFA) and `amr` (the methods they used), and is satisfied only when the `authTime` is not in the future, is not older than the allowed age, and the `amr` includes an MFA method. When any of those is missing, the check denies the request.
+Why: a signed-in session is not the same as a recently-verified one, and a page that holds sensitive data should ask for proof the user's MFA is still good.
+Sources: [NIST SP 800-63B-4 (step-up authentication)](https://pages.nist.gov/800-63-4/sp800-63b.html), [ASVS 5.0 V6.8.4](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md) (an app that needs a given strength or recency must check what the IdP returned, and keep a documented fallback if the IdP returns nothing).
+How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing `authTime`, a missing MFA method, an age that has passed, or a future `authTime` (`src/Mfa.php`). `Sesame::requireMfa()` answers `NO_AUTH_TIME` when there is no user or no identity in the session (`src/Sesame.php`), and `sesame_require_mfa()` throws `MfaNotSatisfied` on a deny (`src/functions.php`). The gateway driver reads the MFA facts only from the signed assertion's `auth_time` and `amr` claims, and a missing or malformed claim leaves the facts unset, so a claim the gateway did not verify can never satisfy the check (`src/Drivers/GatewayDriver.php`). The cas driver reports no MFA facts, so a cas identity always fails the check. The Laravel `sesame.mfa` middleware applies the same check to a route (`src/Laravel/RequireMfa.php`). Tests: `MfaTest`, `SesameTest::testRequireMfaIsSatisfiedWhenTheIdentityHasRecentMfa`, `GatewayDriverTest::testExtractsAuthTimeAndAmrFromTheAssertion`, `RequireMfaTest`.
+
 ## Gaps for the backlog
 
 Risks in the current code:

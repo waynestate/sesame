@@ -9,9 +9,12 @@ use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\MfaResult;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\RecordingDriver;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
@@ -38,6 +41,65 @@ final class FunctionsTest extends TestCase
 
         $this->assertSame($instance, sesame($instance));
         $this->assertSame($instance, sesame());
+    }
+
+    public function testSesameRequireMfaReturnsTheUserWhenMfaIsSatisfied(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+        sesame($sesame);
+
+        $this->assertSame('the-user', sesame_require_mfa());
+    }
+
+    public function testSesameRequireMfaThrowsWhenMfaIsNotSatisfied(): void
+    {
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+        );
+        sesame($sesame);
+
+        try {
+            sesame_require_mfa();
+            $this->fail('Expected MfaNotSatisfied.');
+        } catch (MfaNotSatisfied $e) {
+            $this->assertFalse($e->result->satisfied);
+            $this->assertSame(MfaResult::NO_AUTH_TIME, $e->result->reason);
+        }
+    }
+
+    private function identity(): Identity
+    {
+        return new Identity(
+            'jdoe',
+            ['cn' => ['John Doe']],
+            'fake',
+            new DateTimeImmutable('2026-10-27T12:00:00+00:00'),
+        );
     }
 
     public function testSesameRequestBuildsTheRequestFromGlobals(): void

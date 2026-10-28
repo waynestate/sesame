@@ -128,6 +128,100 @@ final class GatewayDriverTest extends TestCase
         $this->assertSame('ab1234@wayne.edu', $step->identity->attribute('email'));
     }
 
+    public function testExtractsAuthTimeAndAmrFromTheAssertion(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $authTime = $clock->now()->modify('-60 seconds');
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => [
+                'auth_time' => $authTime->getTimestamp(),
+                'amr' => ['mfa', 'password'],
+            ],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame($authTime->getTimestamp(), $step->identity->authTime?->getTimestamp());
+        $this->assertSame(['mfa', 'password'], $step->identity->amr);
+    }
+
+    public function testAuthTimeAndAmrDefaultToNullAndEmptyWhenTheClaimsAreMissing(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertNull($step->identity->authTime);
+        $this->assertSame([], $step->identity->amr);
+    }
+
+    public function testAuthTimeIsNullWhenTheClaimIsNotAnInteger(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['auth_time' => 'not-an-int'],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertNull($step->identity->authTime);
+    }
+
+    public function testAuthTimeIsNullWhenTheClaimIsNegative(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['auth_time' => -1],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertNull($step->identity->authTime);
+    }
+
+    public function testAmrDropsNonStringAndEmptyEntries(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['amr' => ['mfa', 42, '', null, 'password']],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame(['mfa', 'password'], $step->identity->amr);
+    }
+
+    public function testAmrIsEmptyWhenTheClaimIsNotAnArray(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['amr' => 'mfa'],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame([], $step->identity->amr);
+    }
+
     public function testTrustedPeerMatchesACidrRange(): void
     {
         $clock = new FakeClock();

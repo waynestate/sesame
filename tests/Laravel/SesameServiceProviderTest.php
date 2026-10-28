@@ -29,6 +29,8 @@ final class SesameServiceProviderTest extends LaravelTestCase
         $this->assertTrue(config('sesame.routes'));
         $this->assertSame(120, config('sesame.session.idle_minutes'));
         $this->assertSame(720, config('sesame.session.absolute_minutes'));
+        $this->assertSame(28800, config('sesame.mfa.max_age'));
+        $this->assertSame('deny', config('sesame.mfa.on_failure'));
     }
 
     public function testItRegistersTheLoginAndLogoutRoutes(): void
@@ -44,6 +46,7 @@ final class SesameServiceProviderTest extends LaravelTestCase
         $aliases = $this->app['router']->getMiddleware();
 
         $this->assertArrayHasKey('auth.sesame', $aliases);
+        $this->assertArrayHasKey('sesame.mfa', $aliases);
         $this->assertArrayHasKey('wayne.cas', $aliases);
     }
 

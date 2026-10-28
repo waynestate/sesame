@@ -43,4 +43,24 @@ final class IdentityTest extends TestCase
 
         $this->assertNull($identity->attribute('mail'));
     }
+
+    public function testAuthTimeAndAmrDefaultToNullAndEmpty(): void
+    {
+        $identity = new Identity('jdoe', [], 'gateway', new DateTimeImmutable());
+
+        $this->assertNull($identity->authTime);
+        $this->assertSame([], $identity->amr);
+    }
+
+    public function testAuthTimeAndAmrAreStored(): void
+    {
+        $authenticatedAt = new DateTimeImmutable('2026-10-27T12:00:00+00:00');
+        $authTime = new DateTimeImmutable('2026-10-27T11:59:00+00:00');
+        $amr = ['mfa', 'password'];
+
+        $identity = new Identity('jdoe', [], 'gateway', $authenticatedAt, $authTime, $amr);
+
+        $this->assertSame($authTime, $identity->authTime);
+        $this->assertSame($amr, $identity->amr);
+    }
 }

@@ -17,12 +17,15 @@ final readonly class Identity
 {
     /**
      * @param  array<string, list<string>>  $attributes  Attribute name to its values, in the order the driver returned them.
+     * @param  list<string>  $amr  The authentication methods the identity provider verified for this sign-in.
      */
     public function __construct(
         public string $username,
         public array $attributes,
         public string $driver,
         public DateTimeImmutable $authenticatedAt,
+        public ?DateTimeImmutable $authTime = null,
+        public array $amr = [],
     ) {
         if ($username === '') {
             throw new InvalidArgumentException('An identity needs a non-empty username.');

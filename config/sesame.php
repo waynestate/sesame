@@ -101,6 +101,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | MFA
+    |--------------------------------------------------------------------------
+    |
+    | How long a verified MFA sign-in stays good, in seconds. The default is
+    | eight hours. on_failure is what the sesame.mfa middleware does when the
+    | check fails: "deny" answers 403, and "reauth" sends the user back to
+    | the login route.
+    |
+    */
+
+    'mfa' => [
+        'max_age' => env('SESAME_MFA_MAX_AGE', 28800),
+        'on_failure' => env('SESAME_MFA_ON_FAILURE', 'deny'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Routes
     |--------------------------------------------------------------------------
     |

@@ -78,6 +78,7 @@ class SesameServiceProvider extends ServiceProvider
         ], 'sesame-config');
 
         $this->app['router']->aliasMiddleware('auth.sesame', Authenticate::class);
+        $this->app['router']->aliasMiddleware('sesame.mfa', RequireMfa::class);
         $this->app['router']->aliasMiddleware('wayne.cas', \Waynestate\Sesame\WayneCas\WayneAuthenticate::class);
 
         if ($this->app['config']->get('sesame.routes', true)) {
