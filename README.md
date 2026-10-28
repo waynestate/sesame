@@ -95,8 +95,9 @@ on wayne.edu, not just this one.
 ## The cas driver
 
 The cas driver logs in against a CAS server, CAS 2.0 by default. The base
-URL is required config with no default; for Academica it is
-`https://academica.aws.wayne.edu/cas`.
+URL is required config with no default, and it must include the path the
+CAS server lives under. For Academica, which serves CAS under `/cas`, it is
+`https://login.wayne.edu/cas`.
 
 ```php
 <?php
@@ -111,7 +112,7 @@ $config = Config::fromArray([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://academica.aws.wayne.edu/cas',
+        'base_url' => 'https://login.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/login',
     ],
 ]);
@@ -129,7 +130,7 @@ Config keys:
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
 | `cas.service_url` | Yes | none | Where the server sends the user back to. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |

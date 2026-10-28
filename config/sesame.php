@@ -21,7 +21,8 @@ return [
     | CAS
     |--------------------------------------------------------------------------
     |
-    | The CAS server's base URL (no trailing slash) and the URL the server
+    | The CAS server's base URL (no trailing slash, including the path the
+    | CAS server lives under, for Academica /cas) and the URL the server
     | sends the user back to after verifying them. When service_url is not
     | set, the adapter uses the app's /login route.
     |
