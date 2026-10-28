@@ -40,6 +40,15 @@ use Waynestate\Sesame\ReturnTo;
  * The sign-in time comes from the CAS authenticationDate attribute when the
  * server sends one; otherwise it is the driver's clock. Time is read through
  * a PSR-20 clock, so the future-date guard is testable.
+ *
+ * CAS carries no MFA signal of its own, so by default the identity carries
+ * no MFA facts and the MFA check fails closed. With assume_mfa on, the
+ * driver trusts the CAS server's owner's word that a successful validation
+ * means MFA happened for the user's current SSO session: the identity's amr
+ * then includes "mfa", and its MFA time (authTime) is the
+ * authenticationDate when the server sent one. The driver never invents an
+ * authTime: with no authenticationDate, the MFA time stays unset and the
+ * MFA check answers NO_AUTH_TIME.
  */
 final class CasDriver implements Driver
 {
@@ -58,6 +67,7 @@ final class CasDriver implements Driver
         private readonly RequestFactoryInterface $requests,
         private readonly string $protocol = '2.0',
         private readonly bool $renew = false,
+        private readonly bool $assumeMfa = false,
         ?ClockInterface $clock = null,
     ) {
         $this->base = self::absoluteHttps($baseUrl, 'cas.base_url');
@@ -237,7 +247,47 @@ final class CasDriver implements Driver
             $attributes,
             $this->name(),
             $this->authenticatedAt($attributes),
+            $this->authTime($attributes),
+            $this->amr(),
         ));
+    }
+
+    /**
+     * The identity's MFA time, for the MFA check.
+     *
+     * Only set when assume_mfa is on, and only from the CAS
+     * authenticationDate attribute: the driver never invents one. When the
+     * attribute is absent, unparseable, or more than five minutes ahead of
+     * the driver's clock, the MFA time stays unset and the MFA check
+     * answers NO_AUTH_TIME.
+     */
+    private function authTime(array $attributes): ?DateTimeImmutable
+    {
+        if (! $this->assumeMfa) {
+            return null;
+        }
+
+        return $this->authenticationDate($attributes);
+    }
+
+    /**
+     * The identity's amr list.
+     *
+     * Empty by default: CAS carries no MFA signal, so the MFA check fails
+     * closed. With assume_mfa on, the list includes "mfa" (any other values
+     * it carries are kept).
+     *
+     * @return list<string>
+     */
+    private function amr(): array
+    {
+        $amr = [];
+
+        if ($this->assumeMfa) {
+            $amr[] = 'mfa';
+        }
+
+        return $amr;
     }
 
     /**
@@ -252,13 +302,27 @@ final class CasDriver implements Driver
      */
     private function authenticatedAt(array $attributes): DateTimeImmutable
     {
-        $now = $this->clock->now();
+        return $this->authenticationDate($attributes) ?? $this->clock->now();
+    }
+
+    /**
+     * The CAS authenticationDate attribute, parsed, or null when it is
+     * absent, unparseable, or more than five minutes ahead of the driver's
+     * clock (a clock skew or a bad value).
+     */
+    private function authenticationDate(array $attributes): ?DateTimeImmutable
+    {
         $dates = $attributes['authenticationDate'] ?? [];
         $value = $dates === [] ? null : (string) $dates[0];
-        $parsed = $value === null ? null : $this->parseAuthenticationDate($value);
 
-        if ($parsed === null || $parsed > $now->modify('+5 minutes')) {
-            return $now;
+        if ($value === null) {
+            return null;
+        }
+
+        $parsed = $this->parseAuthenticationDate($value);
+
+        if ($parsed === null || $parsed > $this->clock->now()->modify('+5 minutes')) {
+            return null;
         }
 
         return $parsed;

@@ -199,6 +199,51 @@ final class ConfigTest extends TestCase
         ]);
     }
 
+    public function testReadsCasAssumeMfaWhenSet(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'assume_mfa' => true,
+            ],
+        ]);
+
+        $this->assertTrue($config->casAssumeMfa);
+    }
+
+    public function testCasAssumeMfaDefaultsToFalse(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+            ],
+        ]);
+
+        $this->assertFalse($config->casAssumeMfa);
+    }
+
+    public function testRejectsANonBooleanCasAssumeMfa(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "cas.assume_mfa" must be a boolean.');
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'assume_mfa' => 'yes',
+            ],
+        ]);
+    }
+
     public function testGatewayMaxLifetimeDefaultsToFiveMinutes(): void
     {
         $config = Config::fromArray($this->gatewayConfig());

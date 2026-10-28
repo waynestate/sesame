@@ -140,6 +140,7 @@ Config keys:
 | `cas.service_url` | Yes | none | Where the server sends the user back to. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
+| `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
 
 The service URL is the configured value only: the driver never reads the
 request's Host or X-Forwarded-* headers to build it.
@@ -159,6 +160,17 @@ The sign-in time on the identity comes from the CAS `authenticationDate`
 attribute when the server sends one. When it is missing, unparseable, or more
 than five minutes ahead of the driver's clock, the driver uses its own clock
 instead, so a bad value can never push the sign-in time into the future.
+
+`cas.assume_mfa` is off by default, and it should stay off unless the CAS
+server enforces MFA for every sign-in. A successful CAS validation then means
+MFA happened for the user's current SSO session, and the driver says so on
+the identity: its `amr` includes `mfa`. Ask your CAS server's owner before
+turning it on; a server that enforces MFA only sometimes, or only for some
+users, would make the MFA check pass for sign-ins that never did MFA.
+
+The MFA age still needs a sign-in time, and the driver never invents one: it
+comes from the CAS `authenticationDate` attribute, and when the server does
+not send one, the MFA check fails because there is no sign-in time to age.
 
 ## The gateway driver
 
@@ -307,9 +319,12 @@ if (! $result->satisfied) {
 }
 ```
 
-Only the gateway driver reports MFA facts: it reads them from the signed
-assertion's `auth_time` and `amr` claims. The cas driver reports none, because
-CAS carries no usable MFA signal, so a cas identity always fails the check.
+Only the gateway driver reports MFA facts on its own: it reads them from the
+signed assertion's `auth_time` and `amr` claims. The cas driver reports none
+by default, because CAS carries no usable MFA signal, so a cas identity
+fails the check. With `cas.assume_mfa` on, a cas identity carries `mfa` in
+its `amr` and its MFA time from the CAS `authenticationDate` attribute, so
+the check can pass when the CAS server enforces MFA for every sign-in.
 
 ## Step-up (authentication context)
 
@@ -380,6 +395,7 @@ Config keys (in `config/sesame.php`):
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
+| `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
