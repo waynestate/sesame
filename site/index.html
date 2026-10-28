@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en" data-theme="wsu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SESAME · The way in.</title>
+<meta name="description" content="SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.">
+<meta name="theme-color" content="#0c5449">
+<link rel="icon" href="brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png">
+<!--
+  WayneUI 2.0.8, copied from its documented static path
+  (wayne-ui/apps/site/public/v2) so this page works offline. SESAME re-dresses
+  it in assets/sesame.css: same tokens and floor, a key shop on top.
+-->
+<link rel="stylesheet" href="assets/wayne-ui/wayne-ui.css">
+<link rel="stylesheet" href="assets/sesame.css">
+<script>
+  /* Motion only for people who are happy with it. Everyone else walks into a
+     shop where every key is already cut and the door is already open. */
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    document.documentElement.classList.add("motion");
+  }
+</script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0"><symbol id="key-fake" viewBox="0 0 260 90"><g class="k-body"><path d="M44,8 a17,17 0 0 1 17,17 a17,17 0 0 1 0,40 a17,17 0 0 1 -34,0 a17,17 0 0 1 0,-40 a17,17 0 0 1 17,-17 Z"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">FAKE</text></symbol><symbol id="key-cas" viewBox="0 0 260 90"><g class="k-body"><circle cx="44" cy="45" r="38"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">CAS</text></symbol><symbol id="key-gateway" viewBox="0 0 260 90"><g class="k-body"><rect x="7" y="8" width="76" height="74" rx="16"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">GW</text></symbol><symbol id="key-saml" viewBox="0 0 260 90"><g class="k-body"><path d="M44,5 L79,25 L79,65 L44,85 L9,65 L9,25 Z"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">SAML</text></symbol><symbol id="key-oauth2" viewBox="0 0 260 90"><g class="k-body"><ellipse cx="44" cy="45" rx="40" ry="31"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">OA2</text></symbol></svg>
+<a class="wsu-skip-link" href="#main">Skip to content</a>
+
+<header class="shop-head">
+  <div class="wrap shop-head__row">
+    <a class="brand" href="#main">
+      <img src="brand/sesame-avatar-256.png" width="36" height="36" alt="">
+      <span class="brand__name">SESAME</span>
+    </a>
+    <nav class="shop-nav" aria-label="On this page">
+      <a href="#keys">Keys</a>
+      <a href="#duplicator">Duplicator</a>
+      <a href="#start">Doorways</a>
+      <a href="#rules">Rules</a>
+      <a href="#wayne-cas">wayne-cas</a>
+      <a href="#ring">Key ring</a>
+    </nav>
+    <a class="open-sign" href="#start" aria-label="Open: go to the quick start">
+      <span class="open-sign__strings" aria-hidden="true"></span>
+      <span class="open-sign__face" aria-hidden="true">Open</span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ================================================================ hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero__grid">
+
+      <div class="hero__copy">
+        <p class="stamp">Keys cut while you wait · <code>waynestate/sesame</code> 0.1</p>
+        <h1 class="hero__title" id="hero-title">
+          <span class="wsu-sr-only">SESAME</span>
+          <span class="punch" aria-hidden="true"><span style="--i:0">S</span><span style="--i:1">E</span><span style="--i:2">S</span><span style="--i:3">A</span><span style="--i:4">M</span><span style="--i:5">E</span></span>
+        </h1>
+        <!-- The name, spelled out on a paper key tag. One run of text, every
+             word the same weight and colour, so it reads whole. -->
+        <div class="key-tag">
+          <span class="key-tag__string" aria-hidden="true"></span>
+          <p class="key-tag__card"><span class="key-tag__hole" aria-hidden="true"></span>Single Entry, Sessions App-Managed Everywhere.</p>
+        </div>
+        <p class="hero__tagline">The way in. One lock, any key.</p>
+        <p class="hero__blurb">Wayne State's protocol-neutral auth library for PHP. It hands your app a verified identity and leaves the session to the app: every driver ends in the same place, your app's <code>findOrImportUser(Identity)</code>. Switching driver is a config change, not a code change. Open sesame.</p>
+        <div class="cutline">
+          <code class="cutline__code" id="install-cmd"><span class="t-dim" aria-hidden="true">$ </span>composer require waynestate/sesame</code>
+          <button class="copy-btn" type="button" data-copy="composer require waynestate/sesame">Copy</button>
+        </div>
+        <p class="hero__cta">
+          <a class="wsu-btn wsu-btn--primary wsu-btn--lg tag-btn" href="#keys">Try a key</a>
+          <a class="hero__link" href="#duplicator">Watch one get cut</a>
+        </p>
+      </div>
+
+      <div class="hero__art">
+        <div class="peg-wall" aria-hidden="true"></div>
+        <div class="hero__door">
+          <span class="hero__glow" aria-hidden="true"></span>
+          <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
+          <span class="hero__spill" aria-hidden="true"></span>
+        </div>
+        <span class="hang hang--a" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+        <span class="hang hang--b" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+        <span class="hang hang--c" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+      </div>
+
+    </div>
+    <div class="counter">
+      <div class="wrap counter__row">
+        <p class="counter__note">Service counter. Same door for every key.</p>
+        <button class="bell" type="button" data-bell aria-label="Ring the bell for service">
+          <svg viewBox="0 0 48 40" aria-hidden="true" focusable="false"><path class="bell__dome" d="M6,32 a18,18 0 0 1 36,0 Z"/><rect class="bell__base" x="2" y="32" width="44" height="6" rx="3"/><rect class="bell__knob" x="21" y="8" width="6" height="7" rx="3"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ pegboard -->
+  <section class="section section--keys" id="keys" aria-labelledby="keys-title">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">The pegboard</p>
+        <h2 id="keys-title">One blank per protocol</h2>
+        <p>Five blanks hang on the board, one for each driver. The heads differ; the cut does not. Every key that's cut is cut to the same lock, your app's <code>findOrImportUser(Identity)</code>. Pick one and try the door.</p>
+      </div>
+
+      <div class="shop">
+        <div class="board" role="group" aria-label="Key blanks, one per driver">
+          <!-- Statuses as in README.md, "Drivers". -->
+          <button class="peg" type="button" data-driver="fake" aria-pressed="false" style="--i:0">
+            <span class="peg__hook" aria-hidden="true"></span>
+            <svg class="peg__key" viewBox="0 0 90 260" aria-hidden="true" focusable="false"><use href="#key-fake" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg>
+            <span class="peg__tag"><span class="peg__name">fake</span><span class="peg__status peg__status--local">Local only</span></span>
+          </button>
+          <button class="peg" type="button" data-driver="cas" aria-pressed="true" style="--i:1">
+            <span class="peg__hook" aria-hidden="true"></span>
+            <svg class="peg__key" viewBox="0 0 90 260" aria-hidden="true" focusable="false"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg>
+            <span class="peg__tag"><span class="peg__name">cas</span><span class="peg__status">Now</span></span>
+          </button>
+          <button class="peg" type="button" data-driver="gateway" aria-pressed="false" style="--i:2">
+            <span class="peg__hook" aria-hidden="true"></span>
+            <svg class="peg__key" viewBox="0 0 90 260" aria-hidden="true" focusable="false"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg>
+            <span class="peg__tag"><span class="peg__name">gateway</span><span class="peg__status">Now</span></span>
+          </button>
+          <button class="peg peg--blank" type="button" data-driver="saml" aria-pressed="false" style="--i:3">
+            <span class="peg__hook" aria-hidden="true"></span>
+            <svg class="peg__key" viewBox="0 0 90 260" aria-hidden="true" focusable="false"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg>
+            <span class="peg__tag"><span class="peg__name">saml</span><span class="peg__status peg__status--later">Later</span></span>
+          </button>
+          <button class="peg peg--blank" type="button" data-driver="oauth2" aria-pressed="false" style="--i:4">
+            <span class="peg__hook" aria-hidden="true"></span>
+            <svg class="peg__key" viewBox="0 0 90 260" aria-hidden="true" focusable="false"><use href="#key-oauth2" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg>
+            <span class="peg__tag"><span class="peg__name">oauth2</span><span class="peg__status peg__status--later">Later</span></span>
+          </button>
+        </div>
+
+        <div class="lock is-in is-turned is-open" data-lock data-driver="cas">
+          <div class="door" aria-hidden="true">
+            <div class="door__light"><span class="door__who">ab1234</span><span class="door__in">is in.</span></div>
+            <div class="door__leaf">
+              <span class="door__plate">Your app</span>
+              <span class="door__panel"></span>
+              <span class="door__panel"></span>
+              <span class="door__escutcheon"></span>
+              <span class="door__key"><svg viewBox="0 0 260 90" focusable="false"><use data-lock-key href="#key-cas" width="260" height="90"/></svg></span>
+            </div>
+          </div>
+          <div class="readout">
+            <p class="readout__label">.env</p>
+            <p class="readout__line"><code data-readout-line>SESAME_DRIVER=cas</code></p>
+            <p class="readout__note" data-readout-note aria-live="polite"><strong>cas:</strong> CAS 2.0 by default. The CAS server sends the user back with a ticket; SESAME validates it once, then drops it from the address bar. The door opens.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================== duplicator -->
+  <section class="section section--dup" id="duplicator" aria-labelledby="dup-title">
+    <div class="wrap">
+      <div class="head head--light">
+        <p class="kicker">The duplicator</p>
+        <h2 id="dup-title">Swap the blank. Keep the door.</h2>
+        <p>Re-keying an app from <code>cas</code> to <code>gateway</code>: the machine traces the cut on the key you have and copies it onto a new blank. Scroll, and it runs.</p>
+      </div>
+    </div>
+    <div class="dup" data-dup>
+      <div class="dup__stage">
+        <figure class="wrap dup__grid">
+          <svg class="dup__svg" viewBox="0 0 1000 720" aria-hidden="true" focusable="false"><defs><linearGradient id="dup-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE38A"/><stop offset="1" stop-color="#FFCC33"/></linearGradient><linearGradient id="dup-spill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFCC33" stop-opacity=".55"/><stop offset="1" stop-color="#FFCC33" stop-opacity="0"/></linearGradient><clipPath id="dup-cut"><rect data-cut x="0" y="0" width="260" height="90"/></clipPath><clipPath id="dup-uncut"><rect data-uncut x="260" y="0" width="260" height="90"/></clipPath><clipPath id="dup-type"><rect data-type x="540" y="300" width="380" height="60"/></clipPath></defs><rect class="m-plate" x="30" y="40" width="940" height="330" rx="26"/><rect class="m-rail" x="60" y="104" width="880" height="10" rx="5"/><text class="m-label" x="62" y="84">SESAME · key duplicator · model 0.1</text><rect class="m-jaw" x="198" y="252" width="236" height="34" rx="6"/><circle class="m-bolt" cx="220" cy="269" r="6"/><circle class="m-bolt" cx="412" cy="269" r="6"/><rect class="m-jaw" x="658" y="252" width="236" height="34" rx="6"/><circle class="m-bolt" cx="680" cy="269" r="6"/><circle class="m-bolt" cx="872" cy="269" r="6"/><text class="m-cap" x="70" y="336">cas · the key you have</text><text class="m-cap" x="530" y="336">gateway · a new blank</text><g class="k k--brass" transform="translate(70,170) scale(1.4)"><g class="k-body"><circle cx="44" cy="45" r="38"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">CAS</text></g><g class="m-carriage" data-carriage transform="translate(215.6,-22)"><rect class="m-arm" x="202.2" y="110" width="10" height="70"/><rect class="m-arm" x="662.2" y="110" width="10" height="40"/><g data-tracer transform="translate(0,0.0)"><path class="m-tracer" d="M196.2,176 L218.2,176 L207.2,212.0 Z"/></g><g data-cutter transform="translate(0,0.0)"><g class="m-wheel" style="transform-origin:667.2px 178.0px"><circle class="m-teeth" cx="667.2" cy="178.0" r="33"/><circle class="m-disc" cx="667.2" cy="178.0" r="26"/><circle class="m-hub" cx="667.2" cy="178.0" r="7"/></g><g class="m-chips"><rect class="m-chip" style="--c:0" x="655.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:1" x="660.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:2" x="665.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:3" x="670.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:4" x="675.2" y="214.0" width="3" height="3"/></g></g></g><rect class="m-slot" x="530" y="304" width="372" height="48" rx="8"/><g clip-path="url(#dup-type)"><text class="m-config" data-config x="548" y="336">SESAME_DRIVER=gateway</text></g><path class="d-floor" d="M40,700 H960"/><g class="d-ticket"><rect x="50" y="440" width="212" height="190" rx="10"/><circle class="d-ticket-hole" cx="74" cy="466" r="8"/><text class="d-ticket-no" x="92" y="473">Re-key job 0.1</text><text class="d-ticket-line" x="70" y="520">from  cas</text><text class="d-ticket-line" x="70" y="556">to    gateway</text><text class="d-ticket-line d-ticket-line--small" x="70" y="600">new head, same cut</text></g><path class="d-spill" data-spill d="M420,700 L580,700 L900,712 L240,712 Z" opacity="1"/><rect class="d-frame" x="392" y="392" width="216" height="308" rx="6"/><rect x="400" y="400" width="200" height="300" fill="url(#dup-light)"/><text class="d-in" x="500" y="530" text-anchor="middle">ab1234</text><text class="d-in d-in--small" x="500" y="566" text-anchor="middle">is in.</text><g class="d-leaf" data-leaf transform="translate(600,0) scale(0.12,1) translate(-600,0)"><rect class="d-leaf-face" x="400" y="400" width="200" height="300"/><rect class="d-panel" x="420" y="440" width="160" height="96" rx="4"/><rect class="d-panel" x="420" y="580" width="160" height="96" rx="4"/><text class="d-plate" x="500" y="428" text-anchor="middle">YOUR APP</text><circle class="d-escutcheon" cx="430" cy="558" r="13"/><path class="d-keyhole" d="M430,552 a4,4 0 1 1 0.01,0 Z M428,556 h4 l2,9 h-8 Z"/></g><text class="d-open" data-open x="790" y="560" text-anchor="middle">Open</text><text class="d-open" data-open2 x="790" y="610" text-anchor="middle">sesame.</text><g class="k k--nickel" data-newkey opacity="0" transform="translate(291.4,531.0) scale(0.55) translate(0,45) scale(1,0.3) translate(0,-45)"><g class="k-body"><rect x="7" y="8" width="76" height="74" rx="16"/><rect x="80" y="23" width="20" height="44" rx="4"/></g><path class="k-blade" clip-path="url(#dup-uncut)" d="M98,30 L216,30 L252,49 L244,58 L98,58 Z"/><path class="k-blade k-blade--cut" clip-path="url(#dup-cut)" d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">GW</text></g></svg>
+          <figcaption class="wsu-sr-only">A key duplicator copies the cut of a cas key onto a gateway blank. As it cuts, the config line SESAME_DRIVER=gateway is typed under the new key. The new key goes into the same door, the door opens, and ab1234 is in.</figcaption>
+          <ol class="steps">
+            <li class="step" data-step="0"><span class="step__n" aria-hidden="true">1</span><span class="step__t"><strong>Clamp a gateway blank.</strong> A new head; no cut yet.</span></li>
+            <li class="step" data-step="1"><span class="step__n" aria-hidden="true">2</span><span class="step__t"><strong>Trace the cut.</strong> The tracer follows the cas key and the cutter copies it. Same lock, same cut.</span></li>
+            <li class="step" data-step="2"><span class="step__n" aria-hidden="true">3</span><span class="step__t"><strong>The cut is one config line.</strong> <code>SESAME_DRIVER=gateway</code>, plus the gateway's key, issuer, audience and trusted proxies. No code changes.</span></li>
+            <li class="step" data-step="3"><span class="step__n" aria-hidden="true">4</span><span class="step__t"><strong>Open sesame.</strong> Same door, same <code>findOrImportUser(Identity)</code>. ab1234 is in.</span></li>
+          </ol>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ doorways -->
+  <section class="section section--start" id="start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Three doorways</p>
+        <h2 id="start-title">Same lock, any frame</h2>
+        <p>Raw PHP, Laravel with Blade, or Inertia with Vue. Install it once; the door is the same.</p>
+      </div>
+
+      <div class="install">
+        <p class="install__label">Install <span class="install__os">Windows, macOS and Linux: the same line</span></p>
+        <div class="cutline cutline--wide">
+          <code class="cutline__code"><span class="t-dim" aria-hidden="true">$ </span>composer require waynestate/sesame</code>
+          <button class="copy-btn" type="button" data-copy="composer require waynestate/sesame">Copy</button>
+        </div>
+      </div>
+
+      <div class="tickets">
+        <article class="ticket" style="--i:0">
+          <p class="ticket__no">Job 01</p>
+          <h3>Raw PHP</h3>
+          <p>The app owns the session: start it yourself, and let HELMET set the cookie flags. Then ask SESAME who it is.</p>
+<pre class="ticket__code"><code>session_start();
+// build $sesame (see the README), then:
+sesame($sesame);
+$user = sesame_login();</code></pre>
+          <p class="ticket__foot">Protected pages read <code>sesame_user()</code>. Login and logout stop the script after their redirect.</p>
+        </article>
+
+        <article class="ticket" style="--i:1">
+          <p class="ticket__no">Job 02</p>
+          <h3>Laravel + Blade</h3>
+          <p>The service provider is discovered on its own. Publish the config, then guard a route.</p>
+<pre class="ticket__code"><code>php artisan vendor:publish --tag=sesame-config
+
+Route::get('/dashboard', fn () =&gt; view('dashboard'))
+    -&gt;middleware('auth.sesame');</code></pre>
+          <p class="ticket__foot">Guests go to <code>sesame.login</code>; a JSON guest gets a 401.</p>
+        </article>
+
+        <article class="ticket" style="--i:2">
+          <p class="ticket__no">Job 03</p>
+          <h3>Laravel + Inertia/Vue</h3>
+          <p>The same Laravel adapter. The middleware guards the route before any Vue page is sent.</p>
+<pre class="ticket__code"><code>Route::get('/vault', fn () =&gt; Inertia::render('Vault'))
+    -&gt;middleware(['auth.sesame', 'sesame.mfa']);</code></pre>
+          <p class="ticket__foot"><code>sesame.mfa</code> also asks that the user's MFA is still good.</p>
+        </article>
+      </div>
+
+      <div class="testbench">
+        <div class="testbench__copy">
+          <h3>No PHP on the machine?</h3>
+          <p>Docker runs the suite on every supported PHP. The lines work as written in PowerShell, bash and zsh.</p>
+        </div>
+<pre class="testbench__code"><code>docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
+docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
+docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
+docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================================== rules -->
+  <section class="section section--rules" id="rules" aria-labelledby="rules-title">
+    <div class="wrap rules__grid">
+      <div class="rules-sign">
+        <span class="screw screw--tl" aria-hidden="true"></span><span class="screw screw--tr" aria-hidden="true"></span>
+        <span class="screw screw--bl" aria-hidden="true"></span><span class="screw screw--br" aria-hidden="true"></span>
+        <p class="kicker kicker--gold">Posted by the door</p>
+        <h2 id="rules-title">Shop rules</h2>
+        <!-- From BEST_PRACTICES.md; each rule is held in code (S2, S1, S16,
+             S30/S31, S28, S29, S49) or by README behaviour (logout). -->
+        <ol class="rules">
+          <li><strong>The app owns the session.</strong> SESAME never starts one and never touches a cookie.</li>
+          <li><strong>A new session ID at login,</strong> before anything is stored in it.</li>
+          <li><strong>Fail closed.</strong> A bad answer, bad XML or an empty user ends the login. Nothing falls back to a default user.</li>
+          <li><strong>No bare headers.</strong> The gateway driver reads one signed assertion, from a trusted proxy, and each one works once.</li>
+          <li><strong>The fake key stays home.</strong> It refuses to boot in production.</li>
+          <li><strong>No default locks.</strong> Required settings have no defaults, so nobody is pointed at a server the app owner never chose.</li>
+          <li><strong>MFA fails closed.</strong> No sign-in time, no MFA method, or one that's too old: the request is denied.</li>
+          <li><strong>Logout shuts the door.</strong> <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: "cache", "storage"</code>, so the back button shows nothing.</li>
+        </ol>
+        <p class="rules__more"><a href="https://github.com/waynestate/sesame/blob/main/BEST_PRACTICES.md">Every practice, with its sources</a></p>
+      </div>
+
+      <aside class="hours" aria-labelledby="hours-title">
+        <span class="hours__string" aria-hidden="true"></span>
+        <div class="hours__card">
+          <h3 id="hours-title">Hours</h3>
+          <dl class="hours__list">
+            <div><dt>Idle</dt><dd>120 min</dd></div>
+            <div><dt>Absolute</dt><dd>720 min</dd></div>
+            <div><dt>MFA good for</dt><dd>8 h</dd></div>
+          </dl>
+          <p class="hours__note">Both session clocks are checked on every <code>user()</code> call. A stale session finds the door locked.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ========================================================== wayne-cas -->
+  <section class="section section--xref" id="wayne-cas" aria-labelledby="xref-title">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Cross-reference</p>
+        <h2 id="xref-title">Re-key from wayne-cas</h2>
+        <p>Coming from wayne-cas? You don't rewrite your auth. The shim keeps the old names and behaviour, and says once, in the log, that it's a bridge.</p>
+      </div>
+      <div class="xref wsu-table-wrap">
+        <table class="wsu-table xref__table">
+          <caption class="wsu-sr-only">wayne-cas names and the SESAME names that replace them</caption>
+          <thead>
+            <tr><th scope="col">Old part (wayne-cas)</th><th scope="col">Fits (SESAME)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>wayne-cas.root</code></td><td><code>sesame.cas.base_url</code></td></tr>
+            <tr><td><code>auth.providers.users.model</code></td><td><code>auth.providers.users.model</code>, unchanged</td></tr>
+            <tr><td><code>WayneCasable</code> trait</td><td><code>implements WayneCasable</code> + <code>use ReadOnlyAttributes</code></td></tr>
+            <tr><td><code>WayneAuthenticate</code> middleware</td><td>the <code>wayne.cas</code> middleware alias</td></tr>
+            <tr><td><code>auth()-&gt;login($user)</code></td><td><code>app(Sesame::class)-&gt;user()</code></td></tr>
+            <tr><td><code>use2FA</code></td><td>not carried; the shim logs a warning once when it's on</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ key ring -->
+  <section class="section section--ring" id="ring" aria-labelledby="ring-title">
+    <div class="wrap">
+      <div class="head head--light">
+        <p class="kicker kicker--gold">On the key ring</p>
+        <h2 id="ring-title">SESAME in WELD</h2>
+        <p>One part of Wayne State's app stack. Here's where it sits in a signed-in request, and who else is on the ring.</p>
+      </div>
+
+      <ol class="hand" aria-label="A signed-in request on Citadel">
+        <li class="hand__stop"><img src="assets/marks/drawbridge.png" width="64" height="64" alt=""><span><strong>DRAWBRIDGE</strong> signs the assertion at the edge</span></li>
+        <li class="hand__gap" aria-hidden="true"></li>
+        <li class="hand__stop hand__stop--here"><img src="brand/sesame-avatar-256.png" width="64" height="64" alt=""><span><strong>SESAME</strong> checks it and hands over an identity</span></li>
+        <li class="hand__gap" aria-hidden="true"></li>
+        <li class="hand__stop"><img src="assets/marks/helmet.png" width="64" height="64" alt=""><span><strong>HELMET</strong> hardens the session cookie</span></li>
+        <li class="hand__gap" aria-hidden="true"></li>
+        <li class="hand__stop"><span class="hand__tile"><img src="assets/marks/wayneui.svg" width="40" height="40" alt=""></span><span><strong>WayneUI</strong> renders the signed-in page</span></li>
+      </ol>
+
+      <ul class="ring">
+        <li class="ring__tag"><span class="ring__mark ring__mark--tile"><img src="assets/marks/wayneui.svg" width="36" height="36" alt=""></span><span class="ring__name">WayneUI</span><span class="ring__role">the interface</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/creed.png" width="48" height="48" alt=""><span class="ring__name">CREED</span><span class="ring__role">the written standards</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/proctor.png" width="48" height="48" alt=""><span class="ring__name">PROCTOR</span><span class="ring__role">checks an app against them</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/preflight.png" width="48" height="48" alt=""><span class="ring__name">PREFLIGHT</span><span class="ring__role">shared CI</span></li>
+        <li class="ring__tag ring__tag--here"><img class="ring__mark" src="brand/sesame-avatar-256.png" width="48" height="48" alt=""><span class="ring__name">SESAME</span><span class="ring__role">signs the user in · you are here</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/helmet.png" width="48" height="48" alt=""><span class="ring__name">HELMET</span><span class="ring__role">headers and hardening</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/pinstripe.png" width="48" height="48" alt=""><span class="ring__name">Pinstripe</span><span class="ring__role">the coding standard</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/sourdough.png" width="48" height="48" alt=""><span class="ring__name">Sourdough</span><span class="ring__role">starters you feed</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/weld.png" width="48" height="48" alt=""><span class="ring__name">WELD</span><span class="ring__role">every part, already joined</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/drawbridge.png" width="48" height="48" alt=""><span class="ring__name">DRAWBRIDGE</span><span class="ring__role">the Citadel sign-in gateway</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/squire.png" width="48" height="48" alt=""><span class="ring__name">SQUIRE</span><span class="ring__role">carries the release to Citadel</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/rollcall.png" width="48" height="48" alt=""><span class="ring__name">ROLLCALL</span><span class="ring__role">every app answers “present”</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/advisor.png" width="48" height="48" alt=""><span class="ring__name">ADVISOR</span><span class="ring__role">what applies to your app</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/booster.png" width="48" height="48" alt=""><span class="ring__name">BOOSTER</span><span class="ring__role">keeps your PHP current</span></li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="shop-foot">
+  <div class="wrap shop-foot__row">
+    <p class="shop-foot__brand"><img src="brand/sesame-avatar-256.png" width="40" height="40" alt=""> <span>SESAME · The way in.</span></p>
+    <p class="shop-foot__joke">No key under the mat. We checked.</p>
+    <p class="shop-foot__links"><a href="https://github.com/waynestate/sesame">Source on GitHub</a> · <a href="https://github.com/waynestate/sesame/blob/main/BEST_PRACTICES.md">Best practices</a></p>
+    <p class="shop-foot__org">Wayne State University · Enterprise Applications</p>
+  </div>
+</footer>
+
+<!-- Where the shop talks back. Say the magic words and find out. -->
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/sesame.js" defer></script>
+</body>
+</html>
