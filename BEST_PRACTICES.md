@@ -324,13 +324,8 @@ Risks in the current code:
 - `src/Drivers/FakeDriver.php:32`: only the exact word `production` is refused. Use an allowlist such as `local`, `development` and `testing`.
 - `src/Session/NativeSession.php:54-60`: `invalidate()` leaves an empty session with a new ID and a live cookie. Call `session_destroy()` and expire the cookie.
 - `src/Session/NativeSession.php:24, 59`: `session_regenerate_id(true)` deletes the old session at once. The PHP manual warns this can drop a session on an unstable network. Decide the trade-off and write it down.
-- `src/Drivers/CasDriver.php:97-100` and `src/functions.php:118`: `$returnTo` is not validated.
-- `src/Drivers/CasDriver.php:69-75`: no login binding to the browser.
-- `src/Drivers/CasDriver.php:110`: the ticket pattern accepts any prefix. The CAS spec says service tickets start with `ST-`.
-- `src/Drivers/CasDriver.php:125-128`: no `LIBXML_NONET`, no DOCTYPE rejection, and the error-handling flag is set to `false` rather than restored to its old value.
-- `src/Drivers/CasDriver.php:136`: the `//` search finds the success element at any depth. Read it as a direct child of the response root.
-- `src/Drivers/CasDriver.php:183-193`: the HTTPS check is a prefix test. `https://` alone, or a URL with user info, passes. Parse the URL and check the host.
-- `README.md:89-90`: the example client has no timeout.
+- `src/Drivers/CasDriver.php:86-111`: no login binding to the browser.
+- `README.md:120-121`: the example client has no timeout.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
 - `src/Drivers/CasDriver.php`: nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed`, so an app cannot tell a fresh login from a remembered one (S19).
