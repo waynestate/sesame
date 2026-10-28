@@ -217,6 +217,13 @@ username. The optional `email`, `name` and `affiliations` claims become
 read-only identity attributes. The sign-in time on the identity comes from the
 driver's clock.
 
+The optional `auth_time` and `amr` claims become the identity's MFA facts, for
+`requireMfa()`. `auth_time` is the epoch seconds of the user's last MFA
+sign-in; `amr` is the list of methods they used. A missing or malformed
+`auth_time` leaves the MFA time unset, and a missing or malformed `amr` leaves
+the method list empty, so a claim the gateway did not verify can never satisfy
+the check.
+
 ## Session timeouts
 
 Open sesame opens the door for a live session; a stale one finds it locked.
@@ -238,6 +245,57 @@ counts as expired.
 
 In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and
 `SESAME_SESSION_ABSOLUTE_MINUTES`.
+
+## Requiring MFA
+
+Open sesame opens the door; requiring MFA checks the key is still in the lock.
+A signed-in session is not the same as a recently-verified one, so a protected
+page can ask for proof that the user's MFA is still good, not just that they
+are signed in.
+
+The check reads two facts from the identity: `authTime`, when the user last
+completed MFA, and `amr`, the methods they used. It is satisfied when the
+identity has an `authTime` that is not in the future, is not older than the
+allowed age, and the `amr` includes an MFA method. It fails closed: no
+`authTime`, no MFA method, or an age that has passed all deny the request.
+
+| MFA method | Meaning |
+|---|---|
+| `mfa` | A generic MFA step. |
+| `otp` | A one-time password. |
+| `hwk` | A hardware key. |
+| `swk` | A software key. |
+| `fido` | A FIDO/WebAuthn assertion. |
+| `sms` | A one-time code by SMS. |
+| `pop` | A possession proof. |
+
+The allowed age defaults to eight hours (`28800` seconds). In raw PHP, a
+protected page reads the user and the MFA proof in one call:
+
+```php
+// Throws MfaNotSatisfied when the MFA check is not satisfied.
+$user = sesame_require_mfa();
+```
+
+Or, with a custom max age:
+
+```php
+$user = sesame_require_mfa(3600);
+```
+
+The core method returns the result instead of throwing:
+
+```php
+$result = $sesame->requireMfa();
+
+if (! $result->satisfied) {
+    // $result->reason is a stable code; $result->message() is the human text.
+}
+```
+
+Only the gateway driver reports MFA facts: it reads them from the signed
+assertion's `auth_time` and `amr` claims. The cas driver reports none, because
+CAS carries no usable MFA signal, so a cas identity always fails the check.
 
 ## Laravel
 
@@ -270,6 +328,8 @@ Config keys (in `config/sesame.php`):
 | `gateway.trusted_proxies` | `SESAME_GATEWAY_TRUSTED_PROXIES` | none | Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind. Required for the gateway driver. |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
+| `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
+| `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
 
@@ -291,6 +351,22 @@ Route::get('/dashboard', fn () => view('dashboard'))->middleware('auth.sesame');
 ```
 
 A guest is sent to the login route; a JSON guest gets a 401.
+
+Require MFA on a route with the `sesame.mfa` middleware:
+
+```php
+Route::get('/vault', fn () => view('vault'))->middleware(['auth.sesame', 'sesame.mfa']);
+```
+
+It lets the request through when the signed-in user's MFA is still good, and
+otherwise stops it: a 403 by default, a JSON 403 for JSON requests, and a
+redirect to the login route when `mfa.on_failure` is `reauth`. The allowed age
+comes from the route parameter when there is one, and from `mfa.max_age` when
+there is not:
+
+```php
+Route::get('/vault', fn () => view('vault'))->middleware(['auth.sesame', 'sesame.mfa:3600']);
+```
 
 The app's user is available through the facade:
 

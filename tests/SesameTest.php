@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\MfaResult;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
@@ -334,5 +335,139 @@ final class SesameTest extends TestCase
         );
 
         $this->assertNull($sesame->logout('http://app.local/'));
+    }
+
+    public function testRequireMfaReturnsNoAuthTimeWhenThereIsNoUser(): void
+    {
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+        );
+
+        $result = $sesame->requireMfa();
+
+        $this->assertFalse($result->satisfied);
+        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+    }
+
+    public function testRequireMfaReturnsNoAuthTimeWhenTheSessionHasNoIdentity(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $result = $sesame->requireMfa();
+
+        $this->assertFalse($result->satisfied);
+        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+    }
+
+    public function testRequireMfaIsSatisfiedWhenTheIdentityHasRecentMfa(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $result = $sesame->requireMfa();
+
+        $this->assertTrue($result->satisfied);
+        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+    }
+
+    public function testRequireMfaIsTooOldWhenTheClockMovesPastTheMaxAge(): void
+    {
+        // The session timeouts are raised so that only the MFA age can end the
+        // check: the user is still signed in, but their last MFA sign-in is
+        // older than the default eight-hour max age.
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(['sessionIdleMinutes' => 1000, 'sessionAbsoluteMinutes' => 1000]),
+            $clock,
+        );
+
+        $clock->advance(28800 + 1);
+
+        $result = $sesame->requireMfa();
+
+        $this->assertFalse($result->satisfied);
+        $this->assertSame(MfaResult::TOO_OLD, $result->reason);
+    }
+
+    public function testLoginStoresTheMfaFactsInTheSessionIdentity(): void
+    {
+        $identity = new Identity(
+            'jdoe',
+            ['cn' => ['John Doe']],
+            'gateway',
+            new DateTimeImmutable('2026-10-27T12:00:00+00:00'),
+            new DateTimeImmutable('2026-10-27T11:59:00+00:00'),
+            ['mfa', 'password'],
+        );
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($identity), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $stored = $session->store['sesame.identity'];
+
+        $this->assertInstanceOf(Identity::class, $stored);
+        $this->assertEquals($identity->authTime, $stored->authTime);
+        $this->assertSame($identity->amr, $stored->amr);
     }
 }

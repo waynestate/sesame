@@ -26,9 +26,12 @@ class RequireMfa
     ) {
     }
 
-    public function handle(Request $request, Closure $next, ?int $seconds = null): Response
+    public function handle(Request $request, Closure $next, mixed $seconds = null): Response
     {
-        $maxAge = $seconds ?? (int) config('sesame.mfa.max_age', 28800);
+        // Laravel hands middleware parameters over as strings ("sesame.mfa:60"
+        // arrives as "60"), so the value is cast, not type-hinted: a strict
+        // int hint would reject the string the pipeline sends.
+        $maxAge = $seconds !== null ? (int) $seconds : (int) config('sesame.mfa.max_age', 28800);
 
         $result = $this->sesame->requireMfa($maxAge);
 
