@@ -24,7 +24,7 @@ interface WayneCasable
     /**
      * The read-only attributes for the model, as key => value pairs.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getReadOnlyAttributes(): array;
 }

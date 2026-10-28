@@ -132,6 +132,8 @@ final class CasDriver implements Driver
      * INVALID_TICKET. SESAME relies on the server for that check and adds
      * none of its own, because the spec defines no client-side signal for
      * it.
+     *
+     * @return array<string, string>
      */
     private function loginQuery(): array
     {
@@ -144,7 +146,7 @@ final class CasDriver implements Driver
         return $query;
     }
 
-    public function logoutUrl(string $returnTo): ?string
+    public function logoutUrl(string $returnTo): string
     {
         $return = rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
 
@@ -153,7 +155,7 @@ final class CasDriver implements Driver
         return $this->base . '/logout?service=' . $return . '&url=' . $return;
     }
 
-    public function serviceUrl(): ?string
+    public function serviceUrl(): string
     {
         return $this->serviceUrl;
     }
@@ -260,6 +262,8 @@ final class CasDriver implements Driver
      * attribute is absent, unparseable, or more than five minutes ahead of
      * the driver's clock, the MFA time stays unset and the MFA check
      * answers NO_AUTH_TIME.
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authTime(array $attributes): ?DateTimeImmutable
     {
@@ -299,6 +303,8 @@ final class CasDriver implements Driver
      * unparseable, or more than five minutes ahead of the driver's clock (a
      * clock skew or a bad value), the driver's own now is used instead, so a
      * bad value can never push the sign-in time into the future.
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authenticatedAt(array $attributes): DateTimeImmutable
     {
@@ -309,6 +315,8 @@ final class CasDriver implements Driver
      * The CAS authenticationDate attribute, parsed, or null when it is
      * absent, unparseable, or more than five minutes ahead of the driver's
      * clock (a clock skew or a bad value).
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authenticationDate(array $attributes): ?DateTimeImmutable
     {

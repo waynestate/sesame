@@ -94,6 +94,9 @@ final class GatewayDriver implements Driver
     private readonly int $maxLifetimeSeconds;
 
     /**
+     * @param  non-empty-string  $publicKey  The gateway's public key (PEM, a path to one, or base64 for EdDSA).
+     * @param  non-empty-string  $issuer  The expected issuer (iss claim).
+     * @param  non-empty-string  $audience  The expected audience (aud claim).
      * @param  list<string>  $trustedProxies  CIDR ranges (or single IPs) the gateway proxy sits behind.
      * @param  int  $maxLifetimeSeconds  The longest an assertion may live (exp minus iat), in seconds.
      * @param  bool  $allowWithoutReplayGuard  Skip the replay guard. For local development only: without a guard, a captured assertion can be replayed until it expires.
@@ -181,6 +184,8 @@ final class GatewayDriver implements Driver
      * the proxy spelled it. No other header is ever read: there is no
      * fallback to a plain identity header, because that is the hole this
      * driver exists to close.
+     *
+     * @return non-empty-string
      */
     private function readToken(ServerRequestInterface $request): string
     {
@@ -201,6 +206,8 @@ final class GatewayDriver implements Driver
      * Anything that is not a well-formed JWS — a missing part, a bad
      * encoding, an encrypted token — is rejected here, before any claim is
      * trusted.
+     *
+     * @param non-empty-string $tokenString
      */
     private function parse(string $tokenString): UnencryptedToken
     {
@@ -516,6 +523,8 @@ final class GatewayDriver implements Driver
     /**
      * The public key, from a PEM (or a path to one) for the asymmetric
      * signers, or a base64-encoded raw key (or a path to one) for EdDSA.
+     *
+     * @param non-empty-string $publicKey
      */
     private static function keyFor(string $publicKey, string $algorithm): Key
     {

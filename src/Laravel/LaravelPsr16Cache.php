@@ -49,6 +49,9 @@ final class LaravelPsr16Cache implements CacheInterface
         return $this->repository->getMultiple($keys, $default);
     }
 
+    /**
+     * @param iterable<string, mixed> $values
+     */
     public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         return $this->repository->setMultiple($values, $ttl);

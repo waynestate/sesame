@@ -29,6 +29,10 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  */
 final readonly class Config
 {
+    /**
+     * @param array<string, list<string>> $fakeAttributes
+     * @param list<string> $gatewayTrustedProxies
+     */
     public function __construct(
         public string $driver,
         public string $environment,
@@ -52,6 +56,9 @@ final readonly class Config
         public bool $gatewayAllowWithoutReplayGuard = false,
     ) {}
 
+    /**
+     * @param array<string, mixed> $config
+     */
     public static function fromArray(array $config): self
     {
         $driver = self::requiredString($config, 'driver');
@@ -134,6 +141,10 @@ final readonly class Config
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
         $sessionAbsoluteMinutes = self::optionalPositiveInt($config, 'session.absolute_minutes', 720);
 
+        /**
+         * @var array<string, list<string>> $fakeAttributes
+         * @var list<non-empty-string> $gatewayTrustedProxies
+         */
         return new self(
             $driver,
             $environment,
@@ -160,6 +171,8 @@ final readonly class Config
 
     /**
      * Read a required, non-empty string from a dotted path in the config.
+     *
+     * @param array<string, mixed> $config
      */
     private static function requiredString(array $config, string $path): string
     {
@@ -185,6 +198,8 @@ final readonly class Config
      *
      * The default is returned when the key is absent; a present key that is
      * not a positive integer is a config error.
+     *
+     * @param array<string, mixed> $config
      */
     private static function optionalPositiveInt(array $config, string $path, int $default): int
     {
@@ -212,6 +227,8 @@ final readonly class Config
      * not a non-negative integer is a config error. Unlike
      * optionalPositiveInt(), zero is allowed: a zero leeway is a valid,
      * strict choice.
+     *
+     * @param array<string, mixed> $config
      */
     private static function optionalNonNegativeInt(array $config, string $path, int $default): int
     {
@@ -237,6 +254,8 @@ final readonly class Config
      *
      * The default is returned when the key is absent; a present key that is
      * not a boolean is a config error.
+     *
+     * @param array<string, mixed> $config
      */
     private static function optionalBool(array $config, string $path, bool $default): bool
     {

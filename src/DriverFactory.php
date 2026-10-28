@@ -57,9 +57,9 @@ final class DriverFactory
             'gateway' => new GatewayDriver(
                 $config->gatewayHeader ?? 'X-Sesame-Assertion',
                 $config->gatewayAlgorithm,
-                $config->gatewayPublicKey ?? '',
-                $config->gatewayIssuer ?? '',
-                $config->gatewayAudience ?? '',
+                self::requiredNonEmpty($config->gatewayPublicKey, 'gateway.public_key'),
+                self::requiredNonEmpty($config->gatewayIssuer, 'gateway.issuer'),
+                self::requiredNonEmpty($config->gatewayAudience, 'gateway.audience'),
                 $config->gatewayLeewaySeconds,
                 $config->gatewayTrustedProxies,
                 $clock,
@@ -87,5 +87,19 @@ final class DriverFactory
         }
 
         return $requests;
+    }
+
+    /**
+     * The gateway's public key, issuer and audience must be non-empty strings.
+     *
+     * @return non-empty-string
+     */
+    private static function requiredNonEmpty(?string $value, string $key): string
+    {
+        if ($value === null || $value === '') {
+            throw new InvalidConfig(sprintf('The config key "%s" must be a non-empty string.', $key));
+        }
+
+        return $value;
     }
 }
