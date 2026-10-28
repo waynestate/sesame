@@ -12,7 +12,7 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `driver` and `environment` are always required. The `fake` driver adds
  * `fake.username` (required) and `fake.attributes` (default `[]`). The
  * `cas` driver adds `cas.base_url` (required), `cas.service_url` (required),
- * `cas.protocol` (default `3.0`, only `3.0` or `2.0`) and `cas.renew`
+ * `cas.protocol` (default `2.0`, only `3.0` or `2.0`) and `cas.renew`
  * (default `false`). The `gateway` driver adds `gateway.header` (default
  * `X-Sesame-Assertion`), `gateway.algorithm` (default `ES256`, only
  * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required),
@@ -32,7 +32,7 @@ final readonly class Config
         public array $fakeAttributes = [],
         public ?string $casBaseUrl = null,
         public ?string $casServiceUrl = null,
-        public string $casProtocol = '3.0',
+        public string $casProtocol = '2.0',
         public bool $casRenew = false,
         public int $sessionIdleMinutes = 120,
         public int $sessionAbsoluteMinutes = 720,
@@ -55,7 +55,7 @@ final readonly class Config
         $fakeAttributes = [];
         $casBaseUrl = null;
         $casServiceUrl = null;
-        $casProtocol = '3.0';
+        $casProtocol = '2.0';
         $casRenew = false;
         $gatewayHeader = null;
         $gatewayAlgorithm = 'ES256';
@@ -78,7 +78,7 @@ final readonly class Config
         if ($driver === 'cas') {
             $casBaseUrl = self::requiredString($config, 'cas.base_url');
             $casServiceUrl = self::requiredString($config, 'cas.service_url');
-            $casProtocol = $config['cas']['protocol'] ?? '3.0';
+            $casProtocol = $config['cas']['protocol'] ?? '2.0';
 
             if (! is_string($casProtocol) || ! in_array($casProtocol, ['3.0', '2.0'], true)) {
                 throw new InvalidConfig('The config key "cas.protocol" must be "3.0" or "2.0".');

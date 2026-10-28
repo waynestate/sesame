@@ -87,16 +87,17 @@ on wayne.edu, not just this one.
 | Driver | Status |
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
-| `cas` | Now. CAS 3.0 against Academica. |
+| `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
 
 ## The cas driver
 
-The cas driver logs in against a CAS server, CAS 3.0 by default. The base
-URL is required config with no default; for Academica it is
-`https://academica.aws.wayne.edu/cas`.
+The cas driver logs in against a CAS server, CAS 2.0 by default. The base
+URL is required config with no default, and it must include the path the
+CAS server lives under. For Academica, which serves CAS under `/cas`, it is
+`https://login.wayne.edu/cas`.
 
 ```php
 <?php
@@ -111,7 +112,7 @@ $config = Config::fromArray([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://academica.aws.wayne.edu/cas',
+        'base_url' => 'https://login.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/login',
     ],
 ]);
@@ -129,22 +130,24 @@ Config keys:
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
 | `cas.service_url` | Yes | none | Where the server sends the user back to. |
-| `cas.protocol` | No | `3.0` | `3.0` or `2.0`. |
+| `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 
 The service URL is the configured value only: the driver never reads the
 request's Host or X-Forwarded-* headers to build it.
 
-Protocol 3.0 is the default; whether Academica releases attributes on
-`/p3/serviceValidate` is still to be verified, and `cas.protocol: 2.0` is
-the fallback.
+Protocol 2.0 is the default because Academica is believed to redirect
+cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol`
+to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
 
 Set `cas.renew` to `true` when the app needs a fresh, direct login rather
 than an existing SSO session. The driver then sends `renew` on the login
 redirect and on the validation request, and the CAS server refuses a ticket
-that came from an SSO session with `INVALID_TICKET`.
+that came from an SSO session with `INVALID_TICKET`. Leave it off against
+Academica: it does not issue a ticket for `renew=true` and sends the user
+back to the login page, so a `renew` login loops instead of signing in.
 
 The sign-in time on the identity comes from the CAS `authenticationDate`
 attribute when the server sends one. When it is missing, unparseable, or more
@@ -250,7 +253,7 @@ Config keys (in `config/sesame.php`):
 | `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway` or `fake`. |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
-| `cas.protocol` | `SESAME_CAS_PROTOCOL` | `3.0` | `3.0` or `2.0`. |
+| `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |

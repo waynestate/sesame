@@ -21,12 +21,17 @@ use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\ReturnTo;
 
 /**
- * The CAS driver, CAS 3.0 against Academica.
+ * The CAS driver, CAS 2.0 against Academica by default.
  *
  * The service URL is the configured $serviceUrl only. This driver never
  * reads Host, X-Forwarded-Proto, X-Forwarded-Host or any other request
  * header to build it, which removes the wayne-cas proto trust and the
  * phpCAS X-Forwarded-Port break in one rule.
+ *
+ * The default protocol is 2.0 because Academica is believed to redirect
+ * cookieless /p3/serviceValidate calls to the login page. Set the protocol
+ * to 3.0 (cas.protocol) when a CAS server does release attributes on
+ * /p3/serviceValidate.
  *
  * Ticket replay: the CAS server refuses a reused ticket with
  * INVALID_TICKET. SESAME relies on that and surfaces it as
@@ -51,7 +56,7 @@ final class CasDriver implements Driver
         private readonly string $serviceUrl,
         private readonly ClientInterface $http,
         private readonly RequestFactoryInterface $requests,
-        private readonly string $protocol = '3.0',
+        private readonly string $protocol = '2.0',
         private readonly bool $renew = false,
         ?ClockInterface $clock = null,
     ) {
@@ -131,7 +136,11 @@ final class CasDriver implements Driver
 
     public function logoutUrl(string $returnTo): ?string
     {
-        return $this->base.'/logout?service='.rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+        $return = rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
+
+        // Send the return address as both service= and url=: Academica reads
+        // url=, and service= is the CAS-standard parameter name.
+        return $this->base.'/logout?service='.$return.'&url='.$return;
     }
 
     public function serviceUrl(): ?string
@@ -161,7 +170,8 @@ final class CasDriver implements Driver
      * Parsed with the CAS namespace, not string matching. A DOCTYPE is
      * rejected outright, and the document is parsed with LIBXML_NONET so no
      * external entities are loaded. The success element must be a direct
-     * child of the root serviceResponse.
+     * child of the root serviceResponse. A failure element wins over a
+     * success element: a response carrying both is a failure.
      */
     private function parse(string $xml): Authenticated
     {
@@ -184,19 +194,21 @@ final class CasDriver implements Driver
 
         $doc->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
+        // Check the failure element first so a response that carries both a
+        // failure and a success is treated as a failure.
+        $failure = $doc->xpath('cas:authenticationFailure');
+
+        if ($failure !== false && $failure !== null && $failure !== []) {
+            $code = (string) $failure[0]['code'];
+
+            throw new AuthenticationFailed($code === ''
+                ? 'CAS authentication failed.'
+                : 'CAS authentication failed: '.$code);
+        }
+
         $success = $doc->xpath('cas:authenticationSuccess');
 
         if ($success === false || $success === null || $success === []) {
-            $failure = $doc->xpath('cas:authenticationFailure');
-
-            if ($failure !== false && $failure !== null && $failure !== []) {
-                $code = (string) $failure[0]['code'];
-
-                throw new AuthenticationFailed($code === ''
-                    ? 'CAS authentication failed.'
-                    : 'CAS authentication failed: '.$code);
-            }
-
             throw new AuthenticationFailed('The CAS server returned neither a success nor a failure.');
         }
 

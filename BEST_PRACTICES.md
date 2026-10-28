@@ -103,7 +103,7 @@ How the stack holds it: `Enforced` for the path choice (`cas.protocol` is `3.0` 
 Reject DOCTYPE declarations, never enable entity substitution or DTD loading, and block network access during parsing.
 Why: XML parsers can load files or URLs, or expand entities, from content the sender controls.
 Sources: [OWASP XXE Prevention](https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html), [ASVS 5.0 V1.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x10-V1-Encoding-and-Sanitization.md).
-How the stack holds it: `Documented`. The code comment says it relies on PHP 8 defaults and passes no `LIBXML_NOENT` (`src/Drivers/CasDriver.php:116-128`). It does not pass `LIBXML_NONET`, does not reject a DOCTYPE, and has no test with an XXE payload.
+How the stack holds it: `Enforced`. A DOCTYPE is rejected before parsing (`src/Drivers/CasDriver.php:178-180`), the document is parsed with `LIBXML_NONET` so no external entities are loaded (`src/Drivers/CasDriver.php:185`), and the libxml error flag is restored in a `finally` block (`src/Drivers/CasDriver.php:182-189`). Test: `testXxeWithDoctypeThrowsAuthenticationFailed`.
 
 ### S16. Fail closed on anything unexpected
 A non-200 answer, malformed XML, a failure element, a missing user or an empty user all end the login with `AuthenticationFailed`. Nothing falls back to a default user.
@@ -133,7 +133,7 @@ How the stack holds it: `Partly enforced` (opt-in). The `cas.renew` option sends
 When the CAS server ends a user's SSO session, it can POST a logout request to each app. The app should find the session by ticket and end it.
 Why: otherwise a user who logs out of one app stays signed in to the others.
 Sources: [CAS Protocol 3.0 (single logout, back-channel)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html) (checked second pass: SLO is optional, back-channel POST only with no front-channel in the 3.0 spec, the server ignores errors from the POST, and clients that do not support it ignore it), [phpCAS clustering](https://apereo.atlassian.net/wiki/spaces/CASC/pages/103252534/phpCAS+clustering) (several app nodes need shared session storage so a logout that reaches one node can find sessions made on another), [phpCAS advanced SAML example](https://git.mdrn.pl/piwik-CASLogin.git/blob/HEAD:/CAS/docs/examples/example_advanced_saml11.php) (a mirror; restricts which hosts may send logout requests, because bogus logout XML can tie up the server), [Koha CAS code](https://git.koha-community.org/Koha-community/Koha/src/commit/39e88fc1f77d3926e4beae7353c920098093d5b7/C4/Auth_with_cas.pm) (prior art: stores the ticket with the local session).
-How the stack holds it: `Not yet`. SESAME does not keep the ticket with the session, so it cannot map a logout request to a session. If SLO is built, accept the POST only from the configured CAS host, and never let it read a session the request names directly. SLO needs a server-side session store, so refuse to enable it with a client-side store such as the Laravel `cookie` driver at config time. ADR-0004 says SLO comes "when Academica supports it". The current logout only reaches the IdP from the app that started it.
+How the stack holds it: `Not yet`, and moot against Academica. Academica never sends single logout, back-channel or front-channel, so there is no logout request for SESAME to accept and no ticket to store with the session. A user who logs out of one app stays signed in to the others until their own session ends, so apps rely on their own session lifetime: SESAME's idle and absolute timeouts (S5) end the session on the app's side. If a future CAS server does send SLO, accept the POST only from the configured CAS host, and never let it read a session the request names directly. SLO needs a server-side session store, so refuse to enable it with a client-side store such as the Laravel `cookie` driver at config time. The current logout only reaches the IdP from the app that started it.
 
 ### S21. Never redirect to an address the user supplied, unchecked
 Allow only local paths, or hosts on an allowlist, for the post-login return and the post-logout `service` value.
@@ -324,13 +324,8 @@ Risks in the current code:
 - `src/Drivers/FakeDriver.php:32`: only the exact word `production` is refused. Use an allowlist such as `local`, `development` and `testing`.
 - `src/Session/NativeSession.php:54-60`: `invalidate()` leaves an empty session with a new ID and a live cookie. Call `session_destroy()` and expire the cookie.
 - `src/Session/NativeSession.php:24, 59`: `session_regenerate_id(true)` deletes the old session at once. The PHP manual warns this can drop a session on an unstable network. Decide the trade-off and write it down.
-- `src/Drivers/CasDriver.php:97-100` and `src/functions.php:118`: `$returnTo` is not validated.
-- `src/Drivers/CasDriver.php:69-75`: no login binding to the browser.
-- `src/Drivers/CasDriver.php:110`: the ticket pattern accepts any prefix. The CAS spec says service tickets start with `ST-`.
-- `src/Drivers/CasDriver.php:125-128`: no `LIBXML_NONET`, no DOCTYPE rejection, and the error-handling flag is set to `false` rather than restored to its old value.
-- `src/Drivers/CasDriver.php:136`: the `//` search finds the success element at any depth. Read it as a direct child of the response root.
-- `src/Drivers/CasDriver.php:183-193`: the HTTPS check is a prefix test. `https://` alone, or a URL with user info, passes. Parse the URL and check the host.
-- `README.md:89-90`: the example client has no timeout.
+- `src/Drivers/CasDriver.php:86-111`: no login binding to the browser.
+- `README.md:120-121`: the example client has no timeout.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
 - `src/Drivers/CasDriver.php`: nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed`, so an app cannot tell a fresh login from a remembered one (S19).
@@ -342,13 +337,13 @@ Missing practices:
 - Idle and absolute session timeouts, with a configurable value.
 - A `__Host-` cookie name, set by HELMET.
 - Ticket removal from the URL after login.
-- Single logout, which needs the ticket stored with the session.
+- Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
 - A logging hook (PSR-3) for authentication events.
 - A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
 - A documented lifetime table for each app, covering app, SESAME and IdP sessions.
 - Tests: XXE payload, null resolver result, replayed gateway assertion once that driver exists.
 - Choose the signing scheme for `gateway`, and the SAML library for `saml` (D-001, D-002).
-- Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, does it support `renew`, and does it send single logout POSTs (S19, S20).
+- Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20).
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
 - A cache and `Clear-Site-Data` rule for logout (S44).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).

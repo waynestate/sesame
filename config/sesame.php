@@ -21,16 +21,22 @@ return [
     | CAS
     |--------------------------------------------------------------------------
     |
-    | The CAS server's base URL (no trailing slash) and the URL the server
+    | The CAS server's base URL (no trailing slash, including the path the
+    | CAS server lives under, for Academica /cas) and the URL the server
     | sends the user back to after verifying them. When service_url is not
     | set, the adapter uses the app's /login route.
+    |
+    | protocol is 2.0 by default: Academica is believed to redirect
+    | cookieless /p3/serviceValidate calls to the login page. Set it to 3.0
+    | when a CAS server releases attributes on /p3/serviceValidate.
     |
     */
 
     'cas' => [
         'base_url' => env('SESAME_CAS_BASE_URL'),
         'service_url' => env('SESAME_CAS_SERVICE_URL'),
-        'protocol' => env('SESAME_CAS_PROTOCOL', '3.0'),
+        'protocol' => env('SESAME_CAS_PROTOCOL', '2.0'),
+        // Leave off against Academica: it issues no ticket for renew=true.
         'renew' => env('SESAME_CAS_RENEW', false),
     ],
 

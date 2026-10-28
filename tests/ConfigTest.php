@@ -103,7 +103,7 @@ final class ConfigTest extends TestCase
         $this->assertSame('2.0', $config->casProtocol);
     }
 
-    public function testCasProtocolDefaultsToThreeZero(): void
+    public function testCasProtocolDefaultsToTwoZero(): void
     {
         $config = Config::fromArray([
             'driver' => 'cas',
@@ -114,7 +114,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('3.0', $config->casProtocol);
+        $this->assertSame('2.0', $config->casProtocol);
     }
 
     public function testRejectsAMissingCasBaseUrl(): void
