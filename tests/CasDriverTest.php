@@ -10,6 +10,7 @@ use Nyholm\Psr7\ServerRequest;
 use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
@@ -19,6 +20,7 @@ use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
@@ -29,9 +31,9 @@ final class CasDriverTest extends TestCase
 
     private const SERVICE = 'https://app.test/login';
 
-    private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false): CasDriver
+    private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false, ?ClockInterface $clock = null): CasDriver
     {
-        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew);
+        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew, $clock);
     }
 
     private static function response(int $status, string $body): ResponseInterface
@@ -42,6 +44,25 @@ final class CasDriverTest extends TestCase
     private static function fixture(string $name): string
     {
         return (string) file_get_contents(__DIR__.'/fixtures/cas/'.$name);
+    }
+
+    /**
+     * A CAS success response, with an optional authenticationDate attribute.
+     */
+    private static function successXml(?string $authenticationDate = null): string
+    {
+        $date = $authenticationDate === null ? '' : '<authenticationDate>'.$authenticationDate.'</authenticationDate>'."\n      ";
+
+        return '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+            .'<serviceResponse xmlns="http://www.yale.edu/tp/cas">'."\n"
+            .'  <authenticationSuccess>'."\n"
+            .'    <user>ab1234</user>'."\n"
+            .'    <attributes>'."\n"
+            .'      <mail>ab1234@wayne.edu</mail>'."\n"
+            .$date
+            .'    </attributes>'."\n"
+            .'  </authenticationSuccess>'."\n"
+            .'</serviceResponse>'."\n";
     }
 
     public function testNoTicketRedirectsToTheCasLogin(): void
@@ -211,6 +232,69 @@ final class CasDriverTest extends TestCase
             ], '', '&', PHP_QUERY_RFC3986),
             $http->requests[0]->getUri()->__toString(),
         );
+    }
+
+    public function testAuthenticatedAtComesFromAuthenticationDate(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00Z'))]);
+        $driver = $this->driver($http, '3.0', false, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+    }
+
+    public function testAuthenticatedAtParsesFractionalSeconds(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00.123Z'))]);
+        $driver = $this->driver($http, '3.0', false, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        $this->assertSame('123000', $step->identity->authenticatedAt->format('u'));
+    }
+
+    public function testAuthenticatedAtFallsBackToNowWhenTheDateIsMissing(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml())]);
+        $driver = $this->driver($http, '3.0', false, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+    }
+
+    public function testAuthenticatedAtFallsBackToNowWhenTheDateIsGarbage(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml('not-a-date'))]);
+        $driver = $this->driver($http, '3.0', false, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+    }
+
+    public function testAuthenticatedAtFallsBackToNowWhenTheDateIsTooFarInTheFuture(): void
+    {
+        $clock = new FakeClock();
+        // The clock reads 2026-10-27T12:00:00+00:00; 12:06:00 is six minutes
+        // ahead, past the five-minute guard.
+        $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T12:06:00Z'))]);
+        $driver = $this->driver($http, '3.0', false, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testSuccessParsesUserAndAttributes(): void

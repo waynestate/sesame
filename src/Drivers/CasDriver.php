@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Drivers;
 
 use DateTimeImmutable;
+use Exception;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
@@ -28,6 +31,10 @@ use Waynestate\Sesame\ReturnTo;
  * Ticket replay: the CAS server refuses a reused ticket with
  * INVALID_TICKET. SESAME relies on that and surfaces it as
  * AuthenticationFailed.
+ *
+ * The sign-in time comes from the CAS authenticationDate attribute when the
+ * server sends one; otherwise it is the driver's clock. Time is read through
+ * a PSR-20 clock, so the future-date guard is testable.
  */
 final class CasDriver implements Driver
 {
@@ -37,6 +44,8 @@ final class CasDriver implements Driver
 
     private string $base;
 
+    private readonly ClockInterface $clock;
+
     public function __construct(
         string $baseUrl,
         private readonly string $serviceUrl,
@@ -44,6 +53,7 @@ final class CasDriver implements Driver
         private readonly RequestFactoryInterface $requests,
         private readonly string $protocol = '3.0',
         private readonly bool $renew = false,
+        ?ClockInterface $clock = null,
     ) {
         $this->base = self::absoluteHttps($baseUrl, 'cas.base_url');
 
@@ -59,6 +69,8 @@ final class CasDriver implements Driver
                 $protocol,
             ));
         }
+
+        $this->clock = $clock ?? new SystemClock();
     }
 
     public function name(): string
@@ -212,8 +224,50 @@ final class CasDriver implements Driver
             $user,
             $attributes,
             $this->name(),
-            new DateTimeImmutable(),
+            $this->authenticatedAt($attributes),
         ));
+    }
+
+    /**
+     * The time the identity was authenticated, for the Identity.
+     *
+     * The CAS 3.0 spec (Appendix A) lets the server send an
+     * authenticationDate attribute, an ISO 8601 date-time. When it is present
+     * and parseable, it is the authenticatedAt. When it is missing,
+     * unparseable, or more than five minutes ahead of the driver's clock (a
+     * clock skew or a bad value), the driver's own now is used instead, so a
+     * bad value can never push the sign-in time into the future.
+     */
+    private function authenticatedAt(array $attributes): DateTimeImmutable
+    {
+        $now = $this->clock->now();
+        $dates = $attributes['authenticationDate'] ?? [];
+        $value = $dates === [] ? null : (string) $dates[0];
+        $parsed = $value === null ? null : $this->parseAuthenticationDate($value);
+
+        if ($parsed === null || $parsed > $now->modify('+5 minutes')) {
+            return $now;
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * Parse an ISO 8601 date-time with a time zone, with optional fractional
+     * seconds, into a DateTimeImmutable. Returns null when the value does not
+     * match the shape or does not parse.
+     */
+    private function parseAuthenticationDate(string $value): ?DateTimeImmutable
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/', $value) !== 1) {
+            return null;
+        }
+
+        try {
+            return new DateTimeImmutable($value);
+        } catch (Exception) {
+            return null;
+        }
     }
 
     /**
