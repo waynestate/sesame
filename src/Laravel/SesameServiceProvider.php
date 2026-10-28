@@ -166,7 +166,16 @@ class SesameServiceProvider extends ServiceProvider
             $router->post('/logout', function () {
                 $url = $this->app->make(Sesame::class)->logout(url('/'));
 
-                return $url !== null ? redirect($url) : redirect('/');
+                // Keep the logout response out of any cache and clear the
+                // site's cache and storage. "cookies" is deliberately left
+                // out of Clear-Site-Data: it would clear every cookie on the
+                // host, signing the user out of every other app on
+                // wayne.edu, not just this one.
+                $response = $url !== null ? redirect($url) : redirect('/');
+
+                return $response
+                    ->header('Cache-Control', 'no-store')
+                    ->header('Clear-Site-Data', '"cache", "storage"');
             })->name('sesame.logout');
         });
     }

@@ -71,19 +71,53 @@ if (! function_exists('sesame_login')) {
      *
      * Builds the PSR-7 request from the globals, hands it to the driver, and
      * when the driver answers with a Redirect sends the 302 and stops the
-     * script, so no protected code runs after the redirect. When the login
-     * completes it returns the app's user.
+     * script, so no protected code runs after the redirect.
      *
-     * @return mixed The app's user.
+     * A request that already has a user and no ticket returns that user
+     * without calling the driver, so a page that calls sesame_login() on
+     * every request cannot bounce the signed-in user back to the identity
+     * provider in a loop.
+     *
+     * When a ticket completes the login, the user is sent to the driver's
+     * service URL, which has no ticket, and the script stops, so the ticket
+     * never stays in the address bar (it would otherwise end up in browser
+     * history, bookmarks and Referer headers). When the driver has no
+     * service URL, the user is returned without a redirect.
+     *
+     * When the resolver refuses the identity, null is returned and no
+     * redirect is sent: the ticket is single-use, so leaving it in that one
+     * refused URL is harmless.
+     *
+     * @return mixed The app's user, or null when the resolver refused the
+     *               identity.
      */
     function sesame_login(): mixed
     {
         $request = sesame_request();
+        $ticket = $request->getQueryParams()['ticket'] ?? null;
+
+        if ($ticket === null) {
+            $user = sesame()->user();
+
+            if ($user !== null) {
+                return $user;
+            }
+        }
+
         $result = sesame()->login($request);
 
         if ($result instanceof Redirect) {
             header('Location: '.$result->url, true, 302);
             exit;
+        }
+
+        if ($ticket !== null && $result !== null) {
+            $serviceUrl = sesame()->serviceUrl();
+
+            if ($serviceUrl !== null) {
+                header('Location: '.$serviceUrl, true, 302);
+                exit;
+            }
         }
 
         return $result;
@@ -120,6 +154,12 @@ if (! function_exists('sesame_logout')) {
     {
         $url = sesame()->logout($returnTo);
 
+        // Keep the logout response out of any cache and clear the site's
+        // cache and storage. "cookies" is deliberately left out of
+        // Clear-Site-Data: it would clear every cookie on the host, signing
+        // the user out of every other app on wayne.edu, not just this one.
+        header('Cache-Control: no-store', true);
+        header('Clear-Site-Data: "cache", "storage"', true);
         header('Location: '.($url ?? sesame()->safeReturnTo($returnTo)), true, 302);
         exit;
     }
