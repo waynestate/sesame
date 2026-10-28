@@ -144,7 +144,9 @@ to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
 Set `cas.renew` to `true` when the app needs a fresh, direct login rather
 than an existing SSO session. The driver then sends `renew` on the login
 redirect and on the validation request, and the CAS server refuses a ticket
-that came from an SSO session with `INVALID_TICKET`.
+that came from an SSO session with `INVALID_TICKET`. Leave it off against
+Academica: it does not issue a ticket for `renew=true` and sends the user
+back to the login page, so a `renew` login loops instead of signing in.
 
 The sign-in time on the identity comes from the CAS `authenticationDate`
 attribute when the server sends one. When it is missing, unparseable, or more
