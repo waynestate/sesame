@@ -95,7 +95,7 @@ PHP;
         $this->assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
     }
 
-    public function testSesameLoginRedirectsToTheReturnToAfterACasLogin(): void
+    public function testSesameLoginRedirectsToTheServiceUrlAfterACasLogin(): void
     {
         [$process, $port, $pipes, $file] = $this->startServer($this->loginRouterScript());
 
@@ -106,8 +106,66 @@ PHP;
         }
 
         $this->assertSame(302, $status);
-        $this->assertSame('/dashboard', $headers['location'] ?? null);
+        $this->assertSame('https://app.test/login', $headers['location'] ?? null);
         $this->assertStringNotContainsString('ticket', (string) ($headers['location'] ?? ''));
+    }
+
+    public function testSesameLoginDoesNotRedirectAgainOnTheNextRequestInTheSameSession(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->loopGuardRouterScript());
+
+        try {
+            [$firstStatus, $firstHeaders] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+
+            $cookie = $this->sessionCookie($firstHeaders);
+            $this->assertNotNull($cookie);
+
+            [$status, $headers, $body] = $this->httpGet(
+                'http://127.0.0.1:'.$port.'/login',
+                ['Cookie: '.$cookie],
+            );
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        $this->assertSame(302, $firstStatus);
+        $this->assertSame('https://app.test/login', $firstHeaders['location'] ?? null);
+
+        $this->assertSame(200, $status);
+        $this->assertArrayNotHasKey('location', $headers);
+        $this->assertStringContainsString('USER:', $body);
+        $this->assertStringContainsString("'the-user'", $body);
+        $this->assertStringContainsString('HTTP:0', $body);
+    }
+
+    public function testSesameLoginReturnsTheUserFromTheFakeDriverWithoutARedirect(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->fakeDriverRouterScript());
+
+        try {
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:'.$port.'/login');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        $this->assertSame(200, $status);
+        $this->assertArrayNotHasKey('location', $headers);
+        $this->assertSame("USER:'the-user'", $body);
+    }
+
+    public function testSesameLoginReturnsNullWhenTheResolverRefusesATicket(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->refusedResolverRouterScript());
+
+        try {
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        $this->assertSame(200, $status);
+        $this->assertArrayNotHasKey('location', $headers);
+        $this->assertSame('RESULT:NULL', $body);
     }
 
     public function testSesameLogoutSendsNoStoreAndClearSiteData(): void
@@ -253,7 +311,8 @@ PHP;
     /**
      * The router script for the built-in server: it boots SESAME with the cas
      * driver and a fake HTTP client that answers the ticket with a success,
-     * then runs the raw login, which must end in a redirect to the return-to.
+     * then runs the raw login, which must end in a redirect to the service
+     * URL.
      */
     private function loginRouterScript(): string
     {
@@ -282,7 +341,129 @@ $sesame = new Sesame(
     new Config(driver: 'cas', environment: 'testing', casBaseUrl: 'https://cas.test/cas', casServiceUrl: 'https://app.test/login'),
 );
 sesame($sesame);
-sesame_login('/dashboard');
+sesame_login();
+PHP;
+
+        $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
+
+        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+    }
+
+    /**
+     * The router script for the loop-guard test: it boots SESAME with the cas
+     * driver, a fake HTTP client and the native session, then runs the raw
+     * login. A ticket-less request from a signed-in session must return the
+     * user without a redirect and without another CAS HTTP call.
+     */
+    private function loopGuardRouterScript(): string
+    {
+        $root = dirname(__DIR__);
+        $autoloader = $root.'/vendor/autoload.php';
+        $fixture = $root.'/tests/fixtures/cas/success.xml';
+
+        $body = <<<'PHP'
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Stream;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\CasDriver;
+use Waynestate\Sesame\Session\NativeSession;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\FakeHttpClient;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+
+session_start();
+
+$success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
+$http = new FakeHttpClient([$success]);
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', $http, new Psr17Factory());
+$sesame = new Sesame(
+    $driver,
+    new RecordingResolver('the-user'),
+    new NativeSession(),
+    new Config(driver: 'cas', environment: 'testing', casBaseUrl: 'https://cas.test/cas', casServiceUrl: 'https://app.test/login'),
+);
+sesame($sesame);
+
+$user = sesame_login();
+
+if ($user !== null) {
+    echo 'USER:'.var_export($user, true).';HTTP:'.count($http->requests);
+}
+PHP;
+
+        $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
+
+        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+    }
+
+    /**
+     * The router script for the fake-driver test: it boots SESAME with the
+     * fake driver, whose service URL is null, then runs the raw login, which
+     * must return the user without a redirect.
+     */
+    private function fakeDriverRouterScript(): string
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$sesame = new Sesame(
+    new FakeDriver('local', 'jdoe', []),
+    new RecordingResolver('the-user'),
+    new RecordingSession(new EventLog()),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+);
+sesame($sesame);
+
+$user = sesame_login();
+
+echo 'USER:'.var_export($user, true);
+PHP;
+
+        return $this->childScript($body);
+    }
+
+    /**
+     * The router script for the refused-resolver test: it boots SESAME with
+     * the cas driver and a resolver that returns null, then runs the raw
+     * login with a ticket, which must return null without a redirect.
+     */
+    private function refusedResolverRouterScript(): string
+    {
+        $root = dirname(__DIR__);
+        $autoloader = $root.'/vendor/autoload.php';
+        $fixture = $root.'/tests/fixtures/cas/success.xml';
+
+        $body = <<<'PHP'
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Stream;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\CasDriver;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\FakeHttpClient;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory());
+$sesame = new Sesame(
+    $driver,
+    new RecordingResolver(null),
+    new RecordingSession(new EventLog()),
+    new Config(driver: 'cas', environment: 'testing', casBaseUrl: 'https://cas.test/cas', casServiceUrl: 'https://app.test/login'),
+);
+sesame($sesame);
+
+$result = sesame_login();
+
+echo 'RESULT:'.var_export($result, true);
 PHP;
 
         $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
@@ -415,20 +596,28 @@ PHP;
     /**
      * GET $url without following redirects.
      *
-     * @return array{0: int, 1: array<string, string>} The status code and the
-     *         response headers, keyed by lower-cased header name.
+     * @param  list<string>  $requestHeaders  Extra request headers, one per list item.
+     * @return array{0: int, 1: array<string, string>, 2: string} The status
+     *         code, the response headers keyed by lower-cased header name,
+     *         and the response body.
      */
-    private function httpGet(string $url): array
+    private function httpGet(string $url, array $requestHeaders = []): array
     {
-        $context = stream_context_create(['http' => [
+        $http = [
             'method' => 'GET',
             'ignore_errors' => true,
             'follow_location' => 0,
             'max_redirects' => 0,
             'timeout' => 5,
-        ]]);
+        ];
 
-        @file_get_contents($url, false, $context);
+        if ($requestHeaders !== []) {
+            $http['header'] = implode("\r\n", $requestHeaders);
+        }
+
+        $context = stream_context_create(['http' => $http]);
+
+        $body = @file_get_contents($url, false, $context);
         $rawHeaders = $http_response_header ?? [];
 
         $status = 0;
@@ -448,6 +637,23 @@ PHP;
             $headers[strtolower(trim($name))] = trim($value);
         }
 
-        return [$status, $headers];
+        return [$status, $headers, (string) $body];
+    }
+
+    /**
+     * The first set-cookie header, trimmed to the name=value pair a Cookie
+     * request header needs.
+     *
+     * @param  array<string, string>  $headers
+     */
+    private function sessionCookie(array $headers): ?string
+    {
+        $setCookie = $headers['set-cookie'] ?? null;
+
+        if ($setCookie === null) {
+            return null;
+        }
+
+        return trim(explode(';', $setCookie, 2)[0]);
     }
 }

@@ -81,6 +81,14 @@ final class Sesame
     }
 
     /**
+     * The driver's configured service URL, or null when the driver has none.
+     */
+    public function serviceUrl(): ?string
+    {
+        return $this->driver->serviceUrl();
+    }
+
+    /**
      * The app's user for the current session, or null when there is none.
      *
      * The session is checked against the timeouts before it is trusted: a

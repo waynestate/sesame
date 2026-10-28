@@ -54,10 +54,11 @@ $sesame = new Sesame(
 sesame($sesame);
 
 // When the login has not completed, sends the redirect to the identity
-// provider and stops the script. When it completes, sends the redirect to
-// the page the user wanted (or the app's root) and stops the script, so the
-// ticket never stays in the address bar.
-sesame_login();
+// provider and stops the script. When a ticket completes it, sends the
+// redirect to the driver's service URL and stops the script, so the ticket
+// never stays in the address bar. When the user is already signed in and
+// the request has no ticket, returns the user.
+$user = sesame_login();
 ```
 
 The app owns the session: start it with `session_start()`, and let HELMET set
