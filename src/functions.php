@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Http\Message\ServerRequestInterface;
+use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 
@@ -134,6 +135,32 @@ if (! function_exists('sesame_user')) {
     function sesame_user(): mixed
     {
         return sesame()->user();
+    }
+}
+
+if (! function_exists('sesame_require_mfa')) {
+
+    /**
+     * Require that the signed-in user's MFA is still good.
+     *
+     * Runs the MFA check against the current session. When it is satisfied,
+     * the app's user is returned, so a protected page can read the user and
+     * the MFA proof in one call. When it is not, MfaNotSatisfied is thrown,
+     * carrying the result with the stable reason and the human message.
+     *
+     * @return mixed The app's user, when the MFA check is satisfied.
+     *
+     * @throws MfaNotSatisfied When the MFA check is not satisfied.
+     */
+    function sesame_require_mfa(int $maxAgeSeconds = 28800): mixed
+    {
+        $result = sesame()->requireMfa($maxAgeSeconds);
+
+        if (! $result->satisfied) {
+            throw new MfaNotSatisfied($result);
+        }
+
+        return sesame_user();
     }
 }
 

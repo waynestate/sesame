@@ -137,6 +137,31 @@ final class Sesame
     }
 
     /**
+     * Decide whether the signed-in user's MFA is still good.
+     *
+     * The session is checked first, through user(), so a stale session is
+     * signed out before the MFA question is even asked. When there is no
+     * user, or the session has no identity to read, the answer is
+     * NO_AUTH_TIME: the check fails closed. Otherwise the identity's MFA
+     * facts are evaluated against the allowed age, using the same clock the
+     * session timeouts use.
+     */
+    public function requireMfa(int $maxAgeSeconds = 28800): MfaResult
+    {
+        if ($this->user() === null) {
+            return new MfaResult(false, MfaResult::NO_AUTH_TIME);
+        }
+
+        $identity = $this->session->get('sesame.identity');
+
+        if (! $identity instanceof Identity) {
+            return new MfaResult(false, MfaResult::NO_AUTH_TIME);
+        }
+
+        return Mfa::satisfied($identity, $maxAgeSeconds, $this->clock->now());
+    }
+
+    /**
      * Log the user out of the app, then point at the identity provider.
      *
      * The app session is invalidated before the provider's URL is built, so a
