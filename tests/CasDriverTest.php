@@ -29,9 +29,9 @@ final class CasDriverTest extends TestCase
 
     private const SERVICE = 'https://app.test/login';
 
-    private function driver(FakeHttpClient $http, string $protocol = '3.0'): CasDriver
+    private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false): CasDriver
     {
-        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol);
+        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew);
     }
 
     private static function response(int $status, string $body): ResponseInterface
@@ -125,6 +125,90 @@ final class CasDriverTest extends TestCase
 
         $this->assertSame(
             self::BASE.'/p3/serviceValidate?service='.rawurlencode(self::SERVICE).'&ticket=ST-1.a_b-c',
+            $http->requests[0]->getUri()->__toString(),
+        );
+    }
+
+    public function testLoginRedirectCarriesRenewWhenEnabled(): void
+    {
+        $http = new FakeHttpClient();
+        $driver = $this->driver($http, '3.0', true);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE));
+
+        $this->assertInstanceOf(Redirect::class, $step);
+        $this->assertSame(
+            self::BASE.'/login?'.http_build_query([
+                'service' => self::SERVICE,
+                'renew' => 'true',
+            ], '', '&', PHP_QUERY_RFC3986),
+            $step->url,
+        );
+        $this->assertSame([], $http->requests);
+    }
+
+    public function testLoginRedirectHasNoRenewWhenDisabled(): void
+    {
+        $http = new FakeHttpClient();
+        $driver = $this->driver($http);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE));
+
+        $this->assertInstanceOf(Redirect::class, $step);
+        $this->assertStringNotContainsString('renew', $step->url);
+    }
+
+    public function testValidateRequestCarriesRenewWhenEnabled(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = $this->driver($http, '3.0', true);
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        parse_str($http->requests[0]->getUri()->getQuery(), $query);
+
+        $this->assertSame(self::SERVICE, $query['service']);
+        $this->assertSame('ST-1', $query['ticket']);
+        $this->assertSame('true', $query['renew']);
+    }
+
+    public function testValidateRequestHasNoRenewWhenDisabled(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = $this->driver($http);
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        parse_str($http->requests[0]->getUri()->getQuery(), $query);
+
+        $this->assertArrayNotHasKey('renew', $query);
+    }
+
+    public function testRenewUrlsEncodeWithTheSameQueryBuilder(): void
+    {
+        $service = 'https://app.test/login?next=/a b&c=d';
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = new CasDriver(self::BASE, $service, $http, new Psr17Factory(), '3.0', true);
+
+        $redirect = $driver->login(new ServerRequest('GET', 'https://app.test/'));
+
+        $this->assertInstanceOf(Redirect::class, $redirect);
+        $this->assertSame(
+            self::BASE.'/login?'.http_build_query([
+                'service' => $service,
+                'renew' => 'true',
+            ], '', '&', PHP_QUERY_RFC3986),
+            $redirect->url,
+        );
+
+        $driver->login(new ServerRequest('GET', 'https://app.test/?ticket=ST-1'));
+
+        $this->assertSame(
+            self::BASE.'/p3/serviceValidate?'.http_build_query([
+                'service' => $service,
+                'renew' => 'true',
+                'ticket' => 'ST-1',
+            ], '', '&', PHP_QUERY_RFC3986),
             $http->requests[0]->getUri()->__toString(),
         );
     }

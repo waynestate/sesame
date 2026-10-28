@@ -36,6 +36,7 @@ final class DriverFactory
                 self::requiredHttp($http),
                 self::requiredRequests($requests),
                 $config->casProtocol,
+                $config->casRenew,
             ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),
         };

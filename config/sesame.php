@@ -31,6 +31,7 @@ return [
         'base_url' => env('SESAME_CAS_BASE_URL'),
         'service_url' => env('SESAME_CAS_SERVICE_URL'),
         'protocol' => env('SESAME_CAS_PROTOCOL', '3.0'),
+        'renew' => env('SESAME_CAS_RENEW', false),
     ],
 
     /*

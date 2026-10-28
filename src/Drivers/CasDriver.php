@@ -43,6 +43,7 @@ final class CasDriver implements Driver
         private readonly ClientInterface $http,
         private readonly RequestFactoryInterface $requests,
         private readonly string $protocol = '3.0',
+        private readonly bool $renew = false,
     ) {
         $this->base = self::absoluteHttps($baseUrl, 'cas.base_url');
 
@@ -70,16 +71,13 @@ final class CasDriver implements Driver
         $ticket = $request->getQueryParams()['ticket'] ?? null;
 
         if ($ticket === null) {
-            return new Redirect($this->base.'/login?service='.rawurlencode($this->serviceUrl));
+            return new Redirect($this->base.'/login?'.http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
         }
 
         $this->assertValidTicket($ticket);
 
         $path = $this->protocol === '3.0' ? '/p3/serviceValidate' : '/serviceValidate';
-        $query = http_build_query([
-            'service' => $this->serviceUrl,
-            'ticket' => $ticket,
-        ], '', '&', PHP_QUERY_RFC3986);
+        $query = http_build_query($this->loginQuery() + ['ticket' => $ticket], '', '&', PHP_QUERY_RFC3986);
 
         $response = $this->http->sendRequest(
             $this->requests->createRequest('GET', $this->base.$path.'?'.$query),
@@ -93,6 +91,30 @@ final class CasDriver implements Driver
         }
 
         return $this->parse((string) $response->getBody());
+    }
+
+    /**
+     * The query parameters for the /login redirect and the /serviceValidate
+     * request, built with the same http_build_query call so both URLs encode
+     * identically.
+     *
+     * With renew on, both carry renew=true. The CAS 3.0 spec (section 2.1.1)
+     * says the server then requires primary credentials instead of the SSO
+     * session, and section 2.5.1 says /serviceValidate fails for a ticket
+     * issued from an SSO session; section 2.5.3 names that error
+     * INVALID_TICKET. SESAME relies on the server for that check and adds
+     * none of its own, because the spec defines no client-side signal for
+     * it.
+     */
+    private function loginQuery(): array
+    {
+        $query = ['service' => $this->serviceUrl];
+
+        if ($this->renew) {
+            $query['renew'] = 'true';
+        }
+
+        return $query;
     }
 
     public function logoutUrl(string $returnTo): ?string
