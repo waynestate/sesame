@@ -87,14 +87,14 @@ on wayne.edu, not just this one.
 | Driver | Status |
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
-| `cas` | Now. CAS 3.0 against Academica. |
+| `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Later. JWT bearer tokens. |
 
 ## The cas driver
 
-The cas driver logs in against a CAS server, CAS 3.0 by default. The base
+The cas driver logs in against a CAS server, CAS 2.0 by default. The base
 URL is required config with no default; for Academica it is
 `https://academica.aws.wayne.edu/cas`.
 
@@ -131,15 +131,15 @@ Config keys:
 |---|---|---|---|
 | `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | Yes | none | Where the server sends the user back to. |
-| `cas.protocol` | No | `3.0` | `3.0` or `2.0`. |
+| `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 
 The service URL is the configured value only: the driver never reads the
 request's Host or X-Forwarded-* headers to build it.
 
-Protocol 3.0 is the default; whether Academica releases attributes on
-`/p3/serviceValidate` is still to be verified, and `cas.protocol: 2.0` is
-the fallback.
+Protocol 2.0 is the default because Academica is believed to redirect
+cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol`
+to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
 
 Set `cas.renew` to `true` when the app needs a fresh, direct login rather
 than an existing SSO session. The driver then sends `renew` on the login
@@ -250,7 +250,7 @@ Config keys (in `config/sesame.php`):
 | `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway` or `fake`. |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
-| `cas.protocol` | `SESAME_CAS_PROTOCOL` | `3.0` | `3.0` or `2.0`. |
+| `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |

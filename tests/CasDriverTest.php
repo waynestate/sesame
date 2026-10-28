@@ -331,6 +331,16 @@ final class CasDriverTest extends TestCase
         $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
 
+    public function testTheDefaultProtocolIsTwoAndValidatesAgainstServiceValidate(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
+    }
+
     public function testAReplayedTicketFailsOnTheSecondUse(): void
     {
         $http = new FakeHttpClient([

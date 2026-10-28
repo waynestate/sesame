@@ -21,12 +21,17 @@ use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\ReturnTo;
 
 /**
- * The CAS driver, CAS 3.0 against Academica.
+ * The CAS driver, CAS 2.0 against Academica by default.
  *
  * The service URL is the configured $serviceUrl only. This driver never
  * reads Host, X-Forwarded-Proto, X-Forwarded-Host or any other request
  * header to build it, which removes the wayne-cas proto trust and the
  * phpCAS X-Forwarded-Port break in one rule.
+ *
+ * The default protocol is 2.0 because Academica is believed to redirect
+ * cookieless /p3/serviceValidate calls to the login page. Set the protocol
+ * to 3.0 (cas.protocol) when a CAS server does release attributes on
+ * /p3/serviceValidate.
  *
  * Ticket replay: the CAS server refuses a reused ticket with
  * INVALID_TICKET. SESAME relies on that and surfaces it as
@@ -51,7 +56,7 @@ final class CasDriver implements Driver
         private readonly string $serviceUrl,
         private readonly ClientInterface $http,
         private readonly RequestFactoryInterface $requests,
-        private readonly string $protocol = '3.0',
+        private readonly string $protocol = '2.0',
         private readonly bool $renew = false,
         ?ClockInterface $clock = null,
     ) {
