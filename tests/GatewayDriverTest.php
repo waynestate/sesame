@@ -225,6 +225,88 @@ final class GatewayDriverTest extends TestCase
         $this->assertSame([], $step->identity->amr);
     }
 
+    public function testExtractsAcrsFromTheAssertion(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['acrs' => ['c1']],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame(['c1'], $step->identity->authContexts());
+        $this->assertTrue($step->identity->hasAuthContext('c1'));
+    }
+
+    public function testAcrsIsEmptyWhenTheClaimIsMissing(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame([], $step->identity->authContexts());
+        $this->assertFalse($step->identity->hasAuthContext('c1'));
+    }
+
+    public function testAcrsIsEmptyWhenTheClaimIsNotAnArray(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['acrs' => 'c1'],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame([], $step->identity->authContexts());
+    }
+
+    public function testAcrsDropsMalformedEntries(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // c1 and c99 are the only entries of the right shape (c1 through c99):
+        // c0 and c100 are out of range, C1 is the wrong case, x1 is the wrong
+        // letter, and the rest are not strings at all.
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['acrs' => ['c1', 'c0', 'c100', 'C1', 'x1', '', 42, null, 'c99']],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame(['c1', 'c99'], $step->identity->authContexts());
+    }
+
+    public function testAcrsDoesNotSatisfyADifferentContext(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        $token = $this->buildToken($signer, $privateKey, $clock, [
+            'extra' => ['acrs' => ['c2', 'c10']],
+        ]);
+
+        $step = $driver->login($this->request($token));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertTrue($step->identity->hasAuthContext('c2'));
+        $this->assertTrue($step->identity->hasAuthContext('c10'));
+        // c1 is a prefix of c10, but the check is membership, not a prefix
+        // match.
+        $this->assertFalse($step->identity->hasAuthContext('c1'));
+    }
+
     public function testTrustedPeerMatchesACidrRange(): void
     {
         $clock = new FakeClock();

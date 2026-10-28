@@ -63,4 +63,48 @@ final class IdentityTest extends TestCase
         $this->assertSame($authTime, $identity->authTime);
         $this->assertSame($amr, $identity->amr);
     }
+
+    public function testAuthContextsDefaultToEmpty(): void
+    {
+        $identity = new Identity('jdoe', [], 'gateway', new DateTimeImmutable());
+
+        $this->assertSame([], $identity->authContexts());
+        $this->assertFalse($identity->hasAuthContext('c1'));
+    }
+
+    public function testAuthContextsAreStored(): void
+    {
+        $identity = new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            new DateTimeImmutable(),
+            null,
+            ['mfa'],
+            ['c1', 'c10'],
+        );
+
+        $this->assertSame(['c1', 'c10'], $identity->authContexts());
+    }
+
+    public function testHasAuthContextIsMembershipNotEquality(): void
+    {
+        // An identity that verified c2 and c10 has c2, has c10, and does not
+        // have c1: the check is a membership test, never an equality on the
+        // whole list (and never a prefix match).
+        $identity = new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            new DateTimeImmutable(),
+            null,
+            [],
+            ['c2', 'c10'],
+        );
+
+        $this->assertTrue($identity->hasAuthContext('c2'));
+        $this->assertTrue($identity->hasAuthContext('c10'));
+        $this->assertFalse($identity->hasAuthContext('c1'));
+        $this->assertFalse($identity->hasAuthContext('c3'));
+    }
 }

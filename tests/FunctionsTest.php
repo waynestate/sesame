@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Exception\AuthContextNotSatisfied;
 use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\MfaResult;
@@ -89,6 +90,94 @@ final class FunctionsTest extends TestCase
         } catch (MfaNotSatisfied $e) {
             $this->assertFalse($e->result->satisfied);
             $this->assertSame(MfaResult::NO_AUTH_TIME, $e->result->reason);
+        }
+    }
+
+    public function testSesameRequireContextReturnsTheUserWhenTheIdentityHasTheContext(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+            ['c1'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+        sesame($sesame);
+
+        $this->assertSame('the-user', sesame_require_context('c1'));
+    }
+
+    public function testSesameRequireContextThrowsWhenTheIdentityLacksTheContext(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+            ['c2'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+        sesame($sesame);
+
+        try {
+            sesame_require_context('c1');
+            $this->fail('Expected AuthContextNotSatisfied.');
+        } catch (AuthContextNotSatisfied $e) {
+            $this->assertSame('c1', $e->context);
+            $this->assertSame(
+                'The signed-in identity does not have the required authentication context "c1".',
+                $e->getMessage(),
+            );
+        }
+    }
+
+    public function testSesameRequireContextThrowsWhenThereIsNoUser(): void
+    {
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+        );
+        sesame($sesame);
+
+        try {
+            sesame_require_context('c1');
+            $this->fail('Expected AuthContextNotSatisfied.');
+        } catch (AuthContextNotSatisfied $e) {
+            $this->assertSame('c1', $e->context);
         }
     }
 

@@ -470,4 +470,98 @@ final class SesameTest extends TestCase
         $this->assertEquals($identity->authTime, $stored->authTime);
         $this->assertSame($identity->amr, $stored->amr);
     }
+
+    public function testLoginStoresTheAuthContextsInTheSessionIdentity(): void
+    {
+        $identity = new Identity(
+            'jdoe',
+            ['cn' => ['John Doe']],
+            'gateway',
+            new DateTimeImmutable('2026-10-27T12:00:00+00:00'),
+            new DateTimeImmutable('2026-10-27T11:59:00+00:00'),
+            ['mfa'],
+            ['c1', 'c10'],
+        );
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($identity), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $stored = $session->store['sesame.identity'];
+
+        $this->assertInstanceOf(Identity::class, $stored);
+        $this->assertSame(['c1', 'c10'], $stored->authContexts());
+    }
+
+    public function testHasAuthContextIsFalseWhenThereIsNoUser(): void
+    {
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+        );
+
+        $this->assertFalse($sesame->hasAuthContext('c1'));
+    }
+
+    public function testHasAuthContextIsFalseWhenTheSessionHasNoIdentity(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $this->assertFalse($sesame->hasAuthContext('c1'));
+    }
+
+    public function testHasAuthContextIsTrueWhenTheIdentityHasTheContext(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.identity', new Identity(
+            'jdoe',
+            [],
+            'gateway',
+            $clock->now(),
+            $clock->now(),
+            ['mfa'],
+            ['c2', 'c10'],
+        ));
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $this->assertTrue($sesame->hasAuthContext('c2'));
+        $this->assertTrue($sesame->hasAuthContext('c10'));
+        // c1 is a prefix of c10, but the check is membership, not a prefix
+        // match.
+        $this->assertFalse($sesame->hasAuthContext('c1'));
+    }
 }
