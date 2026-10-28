@@ -9,6 +9,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Drivers\FakeDriver;
+use Waynestate\Sesame\Drivers\GatewayDriver;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
 /**
@@ -16,8 +17,10 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  *
  * The cas driver talks to a CAS server over HTTP, and this factory cannot
  * build an HTTP client itself: the app passes a PSR-18 client and a PSR-17
- * request factory to make(). A PSR-20 clock may be passed for the cas
- * driver's sign-in time; without one it uses the system clock.
+ * request factory to make(). The gateway driver needs no HTTP client: it
+ * only reads a signed assertion from the request. A PSR-20 clock may be
+ * passed for the cas and gateway drivers' sign-in time; without one they
+ * use the system clock.
  */
 final class DriverFactory
 {
@@ -40,6 +43,16 @@ final class DriverFactory
                 self::requiredRequests($requests),
                 $config->casProtocol,
                 $config->casRenew,
+                $clock,
+            ),
+            'gateway' => new GatewayDriver(
+                $config->gatewayHeader ?? 'X-Sesame-Assertion',
+                $config->gatewayAlgorithm,
+                $config->gatewayPublicKey ?? '',
+                $config->gatewayIssuer ?? '',
+                $config->gatewayAudience ?? '',
+                $config->gatewayLeewaySeconds,
+                $config->gatewayTrustedProxies,
                 $clock,
             ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),
