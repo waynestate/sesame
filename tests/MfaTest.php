@@ -22,6 +22,9 @@ final class MfaTest extends TestCase
         return new DateTimeImmutable(self::NOW);
     }
 
+    /**
+     * @param  list<string>  $amr
+     */
     private function identity(?string $offset, array $amr): Identity
     {
         $authTime = $offset === null ? null : (new DateTimeImmutable(self::NOW))->modify($offset);

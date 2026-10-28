@@ -31,6 +31,9 @@ final class SesameTest extends TestCase
         );
     }
 
+    /**
+     * @param array<string, mixed> $overrides
+     */
     private function config(array $overrides = []): Config
     {
         return new Config(...[
