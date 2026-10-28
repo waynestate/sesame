@@ -258,7 +258,7 @@ PHP;
 
         $this->assertSame(302, $status);
         $this->assertSame('https://app.test/login', $headers['location'] ?? null);
-        $this->assertStringNotContainsString('ticket', (string) ($headers['location'] ?? ''));
+        $this->assertStringNotContainsString('ticket', $headers['location']);
     }
 
     public function testSesameLoginDoesNotRedirectAgainOnTheNextRequestInTheSameSession(): void
@@ -332,7 +332,7 @@ PHP;
         $this->assertSame(302, $status);
         $this->assertSame('no-store', $headers['cache-control'] ?? null);
         $this->assertSame('"cache", "storage"', $headers['clear-site-data'] ?? null);
-        $this->assertStringNotContainsString('cookies', $headers['clear-site-data'] ?? '');
+        $this->assertStringNotContainsString('cookies', $headers['clear-site-data']);
     }
 
     public function testSesameLogoutStopsTheScriptAfterARedirect(): void
@@ -690,7 +690,8 @@ PHP;
     /**
      * Stop the built-in server and remove its router script.
      *
-     * @param  array<int, resource>  $pipes
+     * @param  resource             $process
+     * @param  array<int, resource> $pipes
      */
     private function stopServer($process, array $pipes, string $file): void
     {
@@ -717,6 +718,11 @@ PHP;
         }
 
         $name = stream_socket_get_name($socket, false);
+
+        if (! is_string($name)) {
+            $this->fail('Could not determine the port of the test socket.');
+        }
+
         $port = (int) substr($name, strrpos($name, ':') + 1);
         fclose($socket);
 
@@ -768,8 +774,11 @@ PHP;
 
         $context = stream_context_create(['http' => $http]);
 
+        // Pre-define so a failed request leaves an empty list instead of an
+        // undefined variable; the http wrapper overwrites it on success.
+        $http_response_header = [];
         $body = @file_get_contents($url, false, $context);
-        $rawHeaders = $http_response_header ?? [];
+        $rawHeaders = $http_response_header;
 
         $status = 0;
 
