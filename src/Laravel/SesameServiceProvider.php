@@ -106,7 +106,7 @@ class SesameServiceProvider extends ServiceProvider
         $router->aliasMiddleware('sesame.context', RequireAuthContext::class);
         $router->aliasMiddleware('wayne.cas', \Waynestate\Sesame\WayneCas\WayneAuthenticate::class);
 
-        if ($this->app->make(Repository::class)->get('sesame.routes', true)) {
+        if ((bool) $this->app->make(Repository::class)->get('sesame.routes', true)) {
             $this->routes();
         }
     }
