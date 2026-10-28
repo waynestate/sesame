@@ -392,6 +392,24 @@ final class CasDriverTest extends TestCase
         $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
     }
 
+    public function testAFailureElementWinsOverASuccessElement(): void
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+            .'<serviceResponse xmlns="http://www.yale.edu/tp/cas">'."\n"
+            .'  <authenticationSuccess>'."\n"
+            .'    <user>ab1234</user>'."\n"
+            .'  </authenticationSuccess>'."\n"
+            .'  <authenticationFailure code="INVALID_TICKET">Ticket ST-1 not recognized</authenticationFailure>'."\n"
+            .'</serviceResponse>'."\n";
+        $http = new FakeHttpClient([self::response(200, $xml)]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('INVALID_TICKET');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+    }
+
     public function testA500ResponseThrowsAuthenticationFailed(): void
     {
         $http = new FakeHttpClient([self::response(500, 'boom')]);

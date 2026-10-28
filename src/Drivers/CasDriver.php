@@ -170,7 +170,8 @@ final class CasDriver implements Driver
      * Parsed with the CAS namespace, not string matching. A DOCTYPE is
      * rejected outright, and the document is parsed with LIBXML_NONET so no
      * external entities are loaded. The success element must be a direct
-     * child of the root serviceResponse.
+     * child of the root serviceResponse. A failure element wins over a
+     * success element: a response carrying both is a failure.
      */
     private function parse(string $xml): Authenticated
     {
@@ -193,19 +194,21 @@ final class CasDriver implements Driver
 
         $doc->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
+        // Check the failure element first so a response that carries both a
+        // failure and a success is treated as a failure.
+        $failure = $doc->xpath('cas:authenticationFailure');
+
+        if ($failure !== false && $failure !== null && $failure !== []) {
+            $code = (string) $failure[0]['code'];
+
+            throw new AuthenticationFailed($code === ''
+                ? 'CAS authentication failed.'
+                : 'CAS authentication failed: '.$code);
+        }
+
         $success = $doc->xpath('cas:authenticationSuccess');
 
         if ($success === false || $success === null || $success === []) {
-            $failure = $doc->xpath('cas:authenticationFailure');
-
-            if ($failure !== false && $failure !== null && $failure !== []) {
-                $code = (string) $failure[0]['code'];
-
-                throw new AuthenticationFailed($code === ''
-                    ? 'CAS authentication failed.'
-                    : 'CAS authentication failed: '.$code);
-            }
-
             throw new AuthenticationFailed('The CAS server returned neither a success nor a failure.');
         }
 
