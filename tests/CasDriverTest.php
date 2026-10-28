@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Tests;
 
+use DateTimeImmutable;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
@@ -17,6 +18,7 @@ use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Mfa;
 use Waynestate\Sesame\MfaResult;
 use Waynestate\Sesame\Redirect;
@@ -331,6 +333,7 @@ final class CasDriverTest extends TestCase
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertInstanceOf(DateTimeImmutable::class, $step->identity->authTime);
         $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authTime->format('Y-m-d\TH:i:sP'));
 
         $result = Mfa::satisfied($step->identity, 28800, $clock->now());
@@ -637,6 +640,7 @@ final class CasDriverTest extends TestCase
             $log->events,
         );
         $this->assertSame('the-user', $session->store['sesame.user']);
+        $this->assertInstanceOf(Identity::class, $resolver->identity);
         $this->assertSame('ab1234', $resolver->identity->username);
     }
 }

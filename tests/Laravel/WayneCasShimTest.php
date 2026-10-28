@@ -83,7 +83,9 @@ final class WayneCasShimTest extends LaravelTestCase
 
     public function testItAnswersAnAjaxGuestWith403(): void
     {
-        $this->app['router']->get('/wp', fn() => 'ok')->middleware(['web', 'wayne.cas']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/wp', fn() => 'ok')->middleware(['web', 'wayne.cas']);
 
         $this->get('/wp', ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(403);
     }

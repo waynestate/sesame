@@ -77,6 +77,9 @@ final class ArrayCache implements CacheInterface
         return $result;
     }
 
+    /**
+     * @param iterable<string, mixed> $values
+     */
     public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         foreach ($values as $key => $value) {

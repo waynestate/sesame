@@ -22,17 +22,21 @@ final class LoginRouteTest extends LaravelTestCase
 {
     public function testLoginStoresTheUserAndRedirectsHome(): void
     {
+        $app = $this->app;
+        $this->assertNotNull($app);
         $this->get('/login')->assertRedirect('/');
 
-        $this->assertSame('the-user', $this->app->make(Sesame::class)->user());
+        $this->assertSame('the-user', $app->make(Sesame::class)->user());
     }
 
     public function testLoginDropsTheTicketFromTheRedirectAfterACasLogin(): void
     {
-        $this->app['config']->set('sesame.driver', 'cas');
-        $this->app['config']->set('sesame.cas.base_url', 'https://cas.test/cas');
-        $this->app['config']->set('sesame.cas.service_url', 'https://app.test/login');
-        $this->app->instance(ClientInterface::class, $this->casHttpClient());
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['config']->set('sesame.driver', 'cas');
+        $app['config']->set('sesame.cas.base_url', 'https://cas.test/cas');
+        $app['config']->set('sesame.cas.service_url', 'https://app.test/login');
+        $app->instance(ClientInterface::class, $this->casHttpClient());
 
         $response = $this->get('/login?ticket=ST-1');
 
@@ -54,11 +58,13 @@ final class LoginRouteTest extends LaravelTestCase
 
     public function testLogoutClearsTheUserAndRedirectsHome(): void
     {
+        $app = $this->app;
+        $this->assertNotNull($app);
         $this->withSession(['sesame.user' => 'the-user'])
             ->post('/logout')
             ->assertRedirect('/');
 
-        $this->assertNull($this->app->make(Sesame::class)->user());
+        $this->assertNull($app->make(Sesame::class)->user());
     }
 
     public function testLogoutSendsNoStoreAndClearSiteData(): void

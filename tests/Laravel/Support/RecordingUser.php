@@ -20,6 +20,10 @@ class RecordingUser
         self::$calls = [];
     }
 
+    /**
+     * @param  string  $accessId
+     * @return string
+     */
     public static function findOrImportUser($accessId)
     {
         self::$calls[] = $accessId;

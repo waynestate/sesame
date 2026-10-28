@@ -20,7 +20,9 @@ final class RequireMfaTest extends LaravelTestCase
 {
     public function testItLetsARequestThroughWhenMfaIsSatisfied(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->withSession($this->signedInWithMfa())
             ->get('/protected')
@@ -30,7 +32,9 @@ final class RequireMfaTest extends LaravelTestCase
 
     public function testItAnswers403WhenTheSessionHasNoIdentity(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->withSession([
             'sesame.user' => 'the-user',
@@ -43,14 +47,18 @@ final class RequireMfaTest extends LaravelTestCase
 
     public function testItAnswers403WhenThereIsNoUser(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->get('/protected')->assertStatus(403);
     }
 
     public function testItAnswersAJson403WhenMfaIsNotSatisfied(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->getJson('/protected')
             ->assertStatus(403)
@@ -59,8 +67,10 @@ final class RequireMfaTest extends LaravelTestCase
 
     public function testItRedirectsToLoginWhenOnFailureIsReauth(): void
     {
-        $this->app['config']->set('sesame.mfa.on_failure', 'reauth');
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['config']->set('sesame.mfa.on_failure', 'reauth');
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->get('/protected')->assertRedirect(route('sesame.login'));
     }
@@ -69,8 +79,10 @@ final class RequireMfaTest extends LaravelTestCase
     {
         // The user's last MFA sign-in was 30 seconds ago: inside a 120-second
         // max age, outside a 10-second one.
-        $this->app['router']->get('/wide', fn() => 'ok')->middleware(['web', 'sesame.mfa:120']);
-        $this->app['router']->get('/narrow', fn() => 'ok')->middleware(['web', 'sesame.mfa:10']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/wide', fn() => 'ok')->middleware(['web', 'sesame.mfa:120']);
+        $app['router']->get('/narrow', fn() => 'ok')->middleware(['web', 'sesame.mfa:10']);
 
         $session = $this->signedInWithMfa(new DateTimeImmutable('-30 seconds'));
 

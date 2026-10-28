@@ -19,7 +19,9 @@ final class RequireAuthContextTest extends LaravelTestCase
 {
     public function testItLetsARequestThroughWhenTheIdentityHasTheContext(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
 
         $this->withSession($this->signedInWith(['c1']))
             ->get('/protected')
@@ -29,7 +31,9 @@ final class RequireAuthContextTest extends LaravelTestCase
 
     public function testItAnswers403WhenTheIdentityLacksTheContext(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
 
         $this->withSession($this->signedInWith(['c2']))
             ->get('/protected')
@@ -38,7 +42,9 @@ final class RequireAuthContextTest extends LaravelTestCase
 
     public function testItAnswers403WhenTheSessionHasNoIdentity(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
 
         $this->withSession([
             'sesame.user' => 'the-user',
@@ -51,14 +57,18 @@ final class RequireAuthContextTest extends LaravelTestCase
 
     public function testItAnswers403WhenThereIsNoUser(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
 
         $this->get('/protected')->assertStatus(403);
     }
 
     public function testItAnswersAJson403WhenTheIdentityLacksTheContext(): void
     {
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context:c1']);
 
         $this->withSession($this->signedInWith(['c2']))
             ->getJson('/protected')
@@ -70,7 +80,9 @@ final class RequireAuthContextTest extends LaravelTestCase
     {
         // No context named, no context satisfied: the middleware fails
         // closed.
-        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context']);
+        $app = $this->app;
+        $this->assertNotNull($app);
+        $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.context']);
 
         $this->withSession($this->signedInWith(['c1']))
             ->get('/protected')
