@@ -21,8 +21,7 @@ class WayneAuthenticate
 {
     public function __construct(
         private readonly Sesame $sesame,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {

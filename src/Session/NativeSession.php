@@ -61,8 +61,14 @@ final class NativeSession implements SessionPort
         $_SESSION = [];
 
         $params = session_get_cookie_params();
+        $name = session_name();
+
+        if ($name === false) {
+            throw new LogicException('The active session has no name.');
+        }
+
         setcookie(
-            session_name(),
+            $name,
             '',
             [
                 'expires' => time() - 42000,

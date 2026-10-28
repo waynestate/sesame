@@ -52,7 +52,7 @@ final class Sesame
     {
         $step = $this->driver->login($request);
 
-        if ($step instanceof Redirect) {
+        if (! $step instanceof Authenticated) {
             return $step;
         }
 

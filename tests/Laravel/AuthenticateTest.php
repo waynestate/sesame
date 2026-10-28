@@ -14,21 +14,21 @@ final class AuthenticateTest extends LaravelTestCase
 {
     public function testItSendsAGuestToTheLoginRoute(): void
     {
-        $this->app['router']->get('/protected', fn () => 'ok')->middleware(['web', 'auth.sesame']);
+        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->get('/protected')->assertRedirect(route('sesame.login'));
     }
 
     public function testItAnswersAJsonGuestWith401(): void
     {
-        $this->app['router']->get('/protected', fn () => 'ok')->middleware(['web', 'auth.sesame']);
+        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->getJson('/protected')->assertStatus(401);
     }
 
     public function testItLetsAnAuthenticatedRequestThrough(): void
     {
-        $this->app['router']->get('/protected', fn () => 'ok')->middleware(['web', 'auth.sesame']);
+        $this->app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->withSession([
             'sesame.user' => 'the-user',

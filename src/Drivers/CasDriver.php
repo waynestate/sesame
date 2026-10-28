@@ -98,7 +98,7 @@ final class CasDriver implements Driver
         $ticket = $request->getQueryParams()['ticket'] ?? null;
 
         if ($ticket === null) {
-            return new Redirect($this->base.'/login?'.http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
+            return new Redirect($this->base . '/login?' . http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
         }
 
         $this->assertValidTicket($ticket);
@@ -107,7 +107,7 @@ final class CasDriver implements Driver
         $query = http_build_query($this->loginQuery() + ['ticket' => $ticket], '', '&', PHP_QUERY_RFC3986);
 
         $response = $this->http->sendRequest(
-            $this->requests->createRequest('GET', $this->base.$path.'?'.$query),
+            $this->requests->createRequest('GET', $this->base . $path . '?' . $query),
         );
 
         if ($response->getStatusCode() !== 200) {
@@ -132,6 +132,8 @@ final class CasDriver implements Driver
      * INVALID_TICKET. SESAME relies on the server for that check and adds
      * none of its own, because the spec defines no client-side signal for
      * it.
+     *
+     * @return array<string, string>
      */
     private function loginQuery(): array
     {
@@ -144,16 +146,16 @@ final class CasDriver implements Driver
         return $query;
     }
 
-    public function logoutUrl(string $returnTo): ?string
+    public function logoutUrl(string $returnTo): string
     {
         $return = rawurlencode(ReturnTo::safe($returnTo, $this->serviceUrl));
 
         // Send the return address as both service= and url=: Academica reads
         // url=, and service= is the CAS-standard parameter name.
-        return $this->base.'/logout?service='.$return.'&url='.$return;
+        return $this->base . '/logout?service=' . $return . '&url=' . $return;
     }
 
-    public function serviceUrl(): ?string
+    public function serviceUrl(): string
     {
         return $this->serviceUrl;
     }
@@ -213,7 +215,7 @@ final class CasDriver implements Driver
 
             throw new AuthenticationFailed($code === ''
                 ? 'CAS authentication failed.'
-                : 'CAS authentication failed: '.$code);
+                : 'CAS authentication failed: ' . $code);
         }
 
         $success = $doc->xpath('cas:authenticationSuccess');
@@ -260,6 +262,8 @@ final class CasDriver implements Driver
      * attribute is absent, unparseable, or more than five minutes ahead of
      * the driver's clock, the MFA time stays unset and the MFA check
      * answers NO_AUTH_TIME.
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authTime(array $attributes): ?DateTimeImmutable
     {
@@ -299,6 +303,8 @@ final class CasDriver implements Driver
      * unparseable, or more than five minutes ahead of the driver's clock (a
      * clock skew or a bad value), the driver's own now is used instead, so a
      * bad value can never push the sign-in time into the future.
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authenticatedAt(array $attributes): DateTimeImmutable
     {
@@ -309,6 +315,8 @@ final class CasDriver implements Driver
      * The CAS authenticationDate attribute, parsed, or null when it is
      * absent, unparseable, or more than five minutes ahead of the driver's
      * clock (a clock skew or a bad value).
+     *
+     * @param array<string, list<string>> $attributes
      */
     private function authenticationDate(array $attributes): ?DateTimeImmutable
     {

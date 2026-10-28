@@ -11,6 +11,5 @@ final class Authenticated extends LoginStep
 {
     public function __construct(
         public readonly Identity $identity,
-    ) {
-    }
+    ) {}
 }

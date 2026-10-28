@@ -22,7 +22,9 @@
         "symfony/http-foundation": "^6.4 || ^7.4"
     },
     "require-dev": {
+        "laravel/pint": "^1.32",
         "orchestra/testbench": "^10.0 || ^11.0",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
@@ -52,14 +54,19 @@
     },
     "scripts": {
         "test": "phpunit",
+        "lint": "pint --test",
+        "fix": "pint",
+        "analyse": "phpstan analyse --memory-limit=1G",
         "ci": [
             "@composer validate --strict",
             "@test",
+            "@lint",
+            "@analyse",
             "@composer audit --locked"
         ]
     },
     "scripts-descriptions": {
-        "ci": "Run every CI check: validate the manifest, run the tests, and audit the locked dependencies."
+        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, and audit the locked dependencies."
     },
     "config": {
         "sort-packages": true,

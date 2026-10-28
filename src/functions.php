@@ -109,7 +109,7 @@ if (! function_exists('sesame_login')) {
         $result = sesame()->login($request);
 
         if ($result instanceof Redirect) {
-            header('Location: '.$result->url, true, 302);
+            header('Location: ' . $result->url, true, 302);
             exit;
         }
 
@@ -117,7 +117,7 @@ if (! function_exists('sesame_login')) {
             $serviceUrl = sesame()->serviceUrl();
 
             if ($serviceUrl !== null) {
-                header('Location: '.$serviceUrl, true, 302);
+                header('Location: ' . $serviceUrl, true, 302);
                 exit;
             }
         }
@@ -213,7 +213,7 @@ if (! function_exists('sesame_logout')) {
         // the user out of every other app on wayne.edu, not just this one.
         header('Cache-Control: no-store', true);
         header('Clear-Site-Data: "cache", "storage"', true);
-        header('Location: '.($url ?? sesame()->safeReturnTo($returnTo)), true, 302);
+        header('Location: ' . ($url ?? sesame()->safeReturnTo($returnTo)), true, 302);
         exit;
     }
 }

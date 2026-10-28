@@ -22,15 +22,14 @@ final class LaravelPsr16Cache implements CacheInterface
 {
     public function __construct(
         private readonly Repository $repository,
-    ) {
-    }
+    ) {}
 
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->repository->get($key, $default);
     }
 
-    public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
+    public function set(string $key, mixed $value, int|DateInterval|null $ttl = null): bool
     {
         return $this->repository->set($key, $value, $ttl);
     }
@@ -50,7 +49,10 @@ final class LaravelPsr16Cache implements CacheInterface
         return $this->repository->getMultiple($keys, $default);
     }
 
-    public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
+    /**
+     * @param iterable<string, mixed> $values
+     */
+    public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         return $this->repository->setMultiple($values, $ttl);
     }

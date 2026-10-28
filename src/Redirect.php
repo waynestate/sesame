@@ -11,6 +11,5 @@ final class Redirect extends LoginStep
 {
     public function __construct(
         public readonly string $url,
-    ) {
-    }
+    ) {}
 }

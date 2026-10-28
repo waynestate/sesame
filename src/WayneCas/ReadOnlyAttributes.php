@@ -3,7 +3,6 @@
 namespace Waynestate\Sesame\WayneCas;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Class ReadOnlyAttributes
@@ -17,15 +16,15 @@ use Illuminate\Support\Facades\DB;
  */
 trait ReadOnlyAttributes
 {
-    /** @var array */
+    /** @var array<int, string> */
     private $readOnlyAttributes = [];
 
     /**
      * Get an array of attribute => attributeValue pairs that will be read-only for the Eloquent model.
      * Attributes can be native to the model (i.e. part of the database table).
      *
-     * @param array $persistedAttributes
-     * @return array
+     * @param array<string, mixed> $persistedAttributes
+     * @return array<string, mixed>
      */
     abstract protected function getReadOnlyAttributes($persistedAttributes);
 
@@ -33,13 +32,13 @@ trait ReadOnlyAttributes
      * Get the attributes that have been changed since last sync.
      * We exclude the read-only attributes so they won't trigger a database call if changed.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getDirty()
     {
         $dirty = [];
 
-        $attributes = array_filter($this->attributes, function($key) {
+        $attributes = array_filter($this->attributes, function ($key) {
             return ! in_array($key, (array) $this->readOnlyAttributes);
         }, ARRAY_FILTER_USE_KEY);
 
@@ -47,8 +46,8 @@ trait ReadOnlyAttributes
             if (! array_key_exists($key, $this->original)) {
                 $dirty[$key] = $value;
             } elseif ($value !== $this->original[$key]) {
-                if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key)) ||
-                    (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
+                if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
+                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key))) { // @phpstan-ignore function.alreadyNarrowedType (guard kept for older Laravel versions without originalIsEquivalent)
                     $dirty[$key] = $value;
                 }
             }
@@ -58,8 +57,8 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param Builder $query
-     * @param $attributes
+     * @param Builder<static> $query
+     * @param array<string, mixed> $attributes
      * @return mixed
      */
     protected function insertAndSetId(Builder $query, $attributes)
@@ -95,8 +94,8 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param array $attributes
-     * @param array $connection
+     * @param array<string, mixed> $attributes
+     * @param string|\UnitEnum|null $connection
      * @return mixed
      */
     public function newFromBuilder($attributes = [], $connection = null)
@@ -118,7 +117,8 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param $readOnlyAttributes
+     * @param array<int, string> $readOnlyAttributes
+     * @return void
      */
     public function setReadOnlyAttributes($readOnlyAttributes)
     {

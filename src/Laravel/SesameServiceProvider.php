@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Laravel;
 
 use GuzzleHttp\Client;
+use Illuminate\Config\Repository;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
+use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\ServiceProvider;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
@@ -37,7 +41,7 @@ class SesameServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/sesame.php', 'sesame');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/sesame.php', 'sesame');
 
         $this->app->singleton(LaravelSession::class, function ($app) {
             return new LaravelSession($app->make(Session::class));
@@ -93,15 +97,16 @@ class SesameServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__.'/../../config/sesame.php' => $this->app->configPath('sesame.php'),
+            __DIR__ . '/../../config/sesame.php' => $this->app->configPath('sesame.php'),
         ], 'sesame-config');
 
-        $this->app['router']->aliasMiddleware('auth.sesame', Authenticate::class);
-        $this->app['router']->aliasMiddleware('sesame.mfa', RequireMfa::class);
-        $this->app['router']->aliasMiddleware('sesame.context', RequireAuthContext::class);
-        $this->app['router']->aliasMiddleware('wayne.cas', \Waynestate\Sesame\WayneCas\WayneAuthenticate::class);
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('auth.sesame', Authenticate::class);
+        $router->aliasMiddleware('sesame.mfa', RequireMfa::class);
+        $router->aliasMiddleware('sesame.context', RequireAuthContext::class);
+        $router->aliasMiddleware('wayne.cas', \Waynestate\Sesame\WayneCas\WayneAuthenticate::class);
 
-        if ($this->app['config']->get('sesame.routes', true)) {
+        if ($this->app->make(Repository::class)->get('sesame.routes', true)) {
             $this->routes();
         }
     }
@@ -112,14 +117,14 @@ class SesameServiceProvider extends ServiceProvider
      * The environment comes from the app, and the cas service_url falls back
      * to the app's /login route when the app has not set one.
      */
-    private function coreConfig($app): Config
+    private function coreConfig(Application $app): Config
     {
-        $config = $app['config']->get('sesame', []);
+        $config = $app->make(Repository::class)->get('sesame', []);
 
         $config['environment'] = $app->environment();
 
         if (($config['cas']['service_url'] ?? null) === null) {
-            $config['cas']['service_url'] = $app['url']->to('/login');
+            $config['cas']['service_url'] = $app->make(UrlGenerator::class)->to('/login');
         }
 
         return Config::fromArray($config);
@@ -129,7 +134,7 @@ class SesameServiceProvider extends ServiceProvider
      * The PSR-18 client the cas driver uses: the app's binding when there is
      * one, Guzzle when it is installed, and nothing when there is neither.
      */
-    private function httpClient($app): ?ClientInterface
+    private function httpClient(Application $app): ?ClientInterface
     {
         if ($app->bound(ClientInterface::class)) {
             return $app->make(ClientInterface::class);
@@ -145,7 +150,7 @@ class SesameServiceProvider extends ServiceProvider
     /**
      * The PSR-17 request factory the cas driver uses.
      */
-    private function requestFactory($app): RequestFactoryInterface
+    private function requestFactory(Application $app): RequestFactoryInterface
     {
         if ($app->bound(RequestFactoryInterface::class)) {
             return $app->make(RequestFactoryInterface::class);
@@ -159,7 +164,7 @@ class SesameServiceProvider extends ServiceProvider
      * driver's sign-in time: the app's binding when there is one, and the
      * system clock when there is not.
      */
-    private function clock($app): ?ClockInterface
+    private function clock(Application $app): ?ClockInterface
     {
         if ($app->bound(ClockInterface::class)) {
             return $app->make(ClockInterface::class);
@@ -173,7 +178,7 @@ class SesameServiceProvider extends ServiceProvider
      */
     private function routes(): void
     {
-        $router = $this->app['router'];
+        $router = $this->app->make(Router::class);
 
         $router->group(['middleware' => 'web'], function () use ($router) {
             $router->get('/login', function (Request $request) {

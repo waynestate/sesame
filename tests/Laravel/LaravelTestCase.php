@@ -35,7 +35,7 @@ abstract class LaravelTestCase extends TestCase
         /** @var \Illuminate\Contracts\Config\Repository $config */
         $config = $app['config'];
 
-        $config->set('app.key', 'base64:'.base64_encode(str_repeat('0', 32)));
+        $config->set('app.key', 'base64:' . base64_encode(str_repeat('0', 32)));
 
         $config->set('sesame.driver', 'fake');
         $config->set('sesame.fake.username', 'jdoe');

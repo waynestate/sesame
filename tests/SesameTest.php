@@ -279,7 +279,7 @@ final class SesameTest extends TestCase
 
         for ($i = 0; $i < 6; $i++) {
             $clock->advance(10 * 60);
-            $this->assertSame('the-user', $sesame->user(), 'Request '.($i + 1).' should still be signed in.');
+            $this->assertSame('the-user', $sesame->user(), 'Request ' . ($i + 1) . ' should still be signed in.');
         }
 
         $clock->advance(10 * 60);

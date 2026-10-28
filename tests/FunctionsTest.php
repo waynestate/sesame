@@ -251,7 +251,7 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->loginRouterScript());
 
         try {
-            [$status, $headers] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+            [$status, $headers] = $this->httpGet('http://127.0.0.1:' . $port . '/login?ticket=ST-1');
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
@@ -266,14 +266,14 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->loopGuardRouterScript());
 
         try {
-            [$firstStatus, $firstHeaders] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+            [$firstStatus, $firstHeaders] = $this->httpGet('http://127.0.0.1:' . $port . '/login?ticket=ST-1');
 
             $cookie = $this->sessionCookie($firstHeaders);
             $this->assertNotNull($cookie);
 
             [$status, $headers, $body] = $this->httpGet(
-                'http://127.0.0.1:'.$port.'/login',
-                ['Cookie: '.$cookie],
+                'http://127.0.0.1:' . $port . '/login',
+                ['Cookie: ' . $cookie],
             );
         } finally {
             $this->stopServer($process, $pipes, $file);
@@ -294,7 +294,7 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->fakeDriverRouterScript());
 
         try {
-            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:'.$port.'/login');
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:' . $port . '/login');
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
@@ -309,7 +309,7 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->refusedResolverRouterScript());
 
         try {
-            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:'.$port.'/login?ticket=ST-1');
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:' . $port . '/login?ticket=ST-1');
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
@@ -324,7 +324,7 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
 
         try {
-            [$status, $headers] = $this->httpGet('http://127.0.0.1:'.$port.'/logout');
+            [$status, $headers] = $this->httpGet('http://127.0.0.1:' . $port . '/logout');
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
@@ -423,9 +423,9 @@ PHP;
      */
     private function childScript(string $body): string
     {
-        $autoloader = dirname(__DIR__).'/vendor/autoload.php';
+        $autoloader = dirname(__DIR__) . '/vendor/autoload.php';
 
-        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
     }
 
     /**
@@ -436,7 +436,7 @@ PHP;
      */
     private function runChildPhp(string $script): string
     {
-        $file = tempnam(sys_get_temp_dir(), 'sesame-child-').'.php';
+        $file = tempnam(sys_get_temp_dir(), 'sesame-child-') . '.php';
         file_put_contents($file, $script);
 
         $process = proc_open(
@@ -450,7 +450,7 @@ PHP;
             $this->fail('Could not start a child PHP process.');
         }
 
-        $output = (string) stream_get_contents($pipes[1]).(string) stream_get_contents($pipes[2]);
+        $output = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
         proc_close($process);
@@ -468,8 +468,8 @@ PHP;
     private function loginRouterScript(): string
     {
         $root = dirname(__DIR__);
-        $autoloader = $root.'/vendor/autoload.php';
-        $fixture = $root.'/tests/fixtures/cas/success.xml';
+        $autoloader = $root . '/vendor/autoload.php';
+        $fixture = $root . '/tests/fixtures/cas/success.xml';
 
         $body = <<<'PHP'
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -497,7 +497,7 @@ PHP;
 
         $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
 
-        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
     }
 
     /**
@@ -509,8 +509,8 @@ PHP;
     private function loopGuardRouterScript(): string
     {
         $root = dirname(__DIR__);
-        $autoloader = $root.'/vendor/autoload.php';
-        $fixture = $root.'/tests/fixtures/cas/success.xml';
+        $autoloader = $root . '/vendor/autoload.php';
+        $fixture = $root . '/tests/fixtures/cas/success.xml';
 
         $body = <<<'PHP'
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -545,7 +545,7 @@ PHP;
 
         $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
 
-        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
     }
 
     /**
@@ -587,8 +587,8 @@ PHP;
     private function refusedResolverRouterScript(): string
     {
         $root = dirname(__DIR__);
-        $autoloader = $root.'/vendor/autoload.php';
-        $fixture = $root.'/tests/fixtures/cas/success.xml';
+        $autoloader = $root . '/vendor/autoload.php';
+        $fixture = $root . '/tests/fixtures/cas/success.xml';
 
         $body = <<<'PHP'
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -619,7 +619,7 @@ PHP;
 
         $body = str_replace('__FIXTURE__', var_export($fixture, true), $body);
 
-        return "<?php\ndeclare(strict_types=1);\nrequire ".var_export($autoloader, true).";\n\n".$body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
     }
 
     /**
@@ -666,13 +666,13 @@ PHP;
      */
     private function startServer(string $script): array
     {
-        $file = tempnam(sys_get_temp_dir(), 'sesame-router-').'.php';
+        $file = tempnam(sys_get_temp_dir(), 'sesame-router-') . '.php';
         file_put_contents($file, $script);
 
         $port = $this->freePort();
 
         $process = proc_open(
-            [PHP_BINARY, '-S', '127.0.0.1:'.$port, $file],
+            [PHP_BINARY, '-S', '127.0.0.1:' . $port, $file],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
         );
@@ -713,7 +713,7 @@ PHP;
         $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
 
         if (! is_resource($socket)) {
-            $this->fail('Could not find a free port: '.$errstr);
+            $this->fail('Could not find a free port: ' . $errstr);
         }
 
         $name = stream_socket_get_name($socket, false);
@@ -741,7 +741,7 @@ PHP;
             usleep(50_000);
         }
 
-        $this->fail('The built-in PHP server did not become ready on port '.$port.'.');
+        $this->fail('The built-in PHP server did not become ready on port ' . $port . '.');
     }
 
     /**

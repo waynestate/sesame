@@ -13,6 +13,4 @@ use RuntimeException;
  * answer could not be read. The message never carries the provider's raw
  * body.
  */
-final class AuthenticationFailed extends RuntimeException
-{
-}
+final class AuthenticationFailed extends RuntimeException {}

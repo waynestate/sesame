@@ -19,8 +19,7 @@ final class RecordingDriver implements Driver
         private readonly ?string $logoutUrl,
         private readonly EventLog $log,
         private readonly ?string $serviceUrl = null,
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {

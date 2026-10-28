@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
@@ -106,6 +107,49 @@ final class DriverFactoryTest extends TestCase
         $driver = DriverFactory::make($config);
 
         $this->assertInstanceOf(GatewayDriver::class, $driver);
+    }
+
+    /**
+     * The gateway's public key, issuer and audience must be non-empty strings.
+     *
+     * Config::fromArray() already rejects these, so the factory's own guard is
+     * exercised by building a Config directly with the value left empty or
+     * missing.
+     *
+     * @return array<string, array{0: string, 1: string|null, 2: string|null, 3: string|null}>
+     */
+    public static function gatewayEmptyOrMissingKeyProvider(): array
+    {
+        return [
+            'empty public key' => ['gateway.public_key', '', 'https://drawbridge.wayne.edu', 'sesame'],
+            'missing public key' => ['gateway.public_key', null, 'https://drawbridge.wayne.edu', 'sesame'],
+            'empty issuer' => ['gateway.issuer', 'public-key', '', 'sesame'],
+            'missing issuer' => ['gateway.issuer', 'public-key', null, 'sesame'],
+            'empty audience' => ['gateway.audience', 'public-key', 'https://drawbridge.wayne.edu', ''],
+            'missing audience' => ['gateway.audience', 'public-key', 'https://drawbridge.wayne.edu', null],
+        ];
+    }
+
+    #[DataProvider('gatewayEmptyOrMissingKeyProvider')]
+    public function testGatewayWithAnEmptyOrMissingKeyNamesTheKey(
+        string $key,
+        ?string $publicKey,
+        ?string $issuer,
+        ?string $audience,
+    ): void {
+        $config = new Config(
+            driver: 'gateway',
+            environment: 'local',
+            gatewayPublicKey: $publicKey,
+            gatewayIssuer: $issuer,
+            gatewayAudience: $audience,
+            gatewayTrustedProxies: ['10.0.0.0/8'],
+        );
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage(sprintf('The config key "%s" must be a non-empty string.', $key));
+
+        DriverFactory::make($config);
     }
 
     private function casConfig(): Config

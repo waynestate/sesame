@@ -17,8 +17,7 @@ final class LaravelSession implements SessionPort
 {
     public function __construct(
         private readonly Session $session,
-    ) {
-    }
+    ) {}
 
     public function regenerate(): void
     {

@@ -13,8 +13,9 @@ use DateTimeImmutable;
  * identity satisfies MFA only when the identity provider reported a sign-in
  * time (auth_time), that time is recent enough, and the sign-in used an MFA
  * method (amr). Anything the provider did not report is treated as missing,
- * so the check fails closed: a driver that carries no MFA facts (the cas
- * driver today) is always denied.
+ * so the check fails closed: a driver that carries no MFA facts is always
+ * denied. The cas driver carries none by default, so it is denied until
+ * cas.assume_mfa is on.
  */
 final class Mfa
 {

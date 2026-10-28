@@ -12,6 +12,4 @@ use RuntimeException;
  * It refuses rather than fall back: a fake identity in production is a hole,
  * not a convenience.
  */
-final class FakeDriverInProduction extends RuntimeException
-{
-}
+final class FakeDriverInProduction extends RuntimeException {}

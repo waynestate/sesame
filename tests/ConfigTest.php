@@ -321,7 +321,7 @@ final class ConfigTest extends TestCase
     public function testRejectsAnInvalidSessionTimeout(string $key, int|string $value): void
     {
         $this->expectException(InvalidConfig::class);
-        $this->expectExceptionMessage('The config key "session.'.$key.'" must be a positive integer.');
+        $this->expectExceptionMessage('The config key "session.' . $key . '" must be a positive integer.');
 
         Config::fromArray([
             'driver' => 'fake',

@@ -22,8 +22,7 @@ class RequireAuthContext
 {
     public function __construct(
         private readonly Sesame $sesame,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next, mixed $context = null): Response
     {
