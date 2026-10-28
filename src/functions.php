@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Http\Message\ServerRequestInterface;
+use Waynestate\Sesame\Exception\AuthContextNotSatisfied;
 use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
@@ -158,6 +159,31 @@ if (! function_exists('sesame_require_mfa')) {
 
         if (! $result->satisfied) {
             throw new MfaNotSatisfied($result);
+        }
+
+        return sesame_user();
+    }
+}
+
+if (! function_exists('sesame_require_context')) {
+
+    /**
+     * Require that the signed-in identity has the given authentication
+     * context.
+     *
+     * Runs the context check against the current session. When the identity
+     * has the context, the app's user is returned, so a protected page can
+     * read the user and the context proof in one call. When it does not,
+     * AuthContextNotSatisfied is thrown, carrying the context id.
+     *
+     * @return mixed The app's user, when the identity has the context.
+     *
+     * @throws AuthContextNotSatisfied When the identity lacks the context.
+     */
+    function sesame_require_context(string $id): mixed
+    {
+        if (! sesame()->hasAuthContext($id)) {
+            throw new AuthContextNotSatisfied($id);
         }
 
         return sesame_user();

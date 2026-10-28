@@ -311,6 +311,54 @@ Only the gateway driver reports MFA facts: it reads them from the signed
 assertion's `auth_time` and `amr` claims. The cas driver reports none, because
 CAS carries no usable MFA signal, so a cas identity always fails the check.
 
+## Step-up (authentication context)
+
+Open sesame opens the door; step-up checks the user actually walked through
+the right one. When the gateway requires a step-up for a path, it says so in
+the signed assertion's `acrs` claim, a list of authentication context ids
+(`c1` through `c99`). The gateway driver reads that claim and keeps only the
+ids of the right shape; anything else is dropped, and a missing or malformed
+claim is not an error, it is simply no step-up.
+
+The contexts live on the identity, and the check is membership, never a
+prefix match: an identity with `c2` and `c10` satisfies `c2` and `c10`, but
+not `c1`.
+
+```php
+$identity->authContexts();      // list<string>, e.g. ['c1']
+$identity->hasAuthContext('c1'); // bool
+```
+
+In raw PHP, a protected page reads the user and the context proof in one
+call:
+
+```php
+// Throws AuthContextNotSatisfied when the identity lacks the context.
+$user = sesame_require_context('c1');
+```
+
+The core method returns a bool instead of throwing:
+
+```php
+if (! $sesame->hasAuthContext('c1')) {
+    // The signed-in identity does not have the required context.
+}
+```
+
+In Laravel the `sesame.context` middleware does the same check on a route:
+
+```php
+Route::get('/vault', [VaultController::class, 'index'])
+    ->middleware(['web', 'auth.sesame', 'sesame.context:c1']);
+```
+
+A request without the context gets a 403, or a JSON 403 with a `message` for
+JSON requests. A route that names no context fails closed.
+
+Only the gateway driver reports authentication contexts, because only the
+gateway performs step-up. A cas identity has none, so a cas identity always
+fails the check.
+
 ## Laravel
 
 The Laravel adapter is a service provider that binds the core into the
