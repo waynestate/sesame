@@ -47,7 +47,7 @@ trait ReadOnlyAttributes
                 $dirty[$key] = $value;
             } elseif ($value !== $this->original[$key]) {
                 if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
-                    || ! $this->originalIsEquivalent($key)) {
+                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
                     $dirty[$key] = $value;
                 }
             }
@@ -117,9 +117,10 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param list<string> $readOnlyAttributes
+     * @param array<int, string> $readOnlyAttributes
+     * @return void
      */
-    public function setReadOnlyAttributes(array $readOnlyAttributes): void
+    public function setReadOnlyAttributes($readOnlyAttributes)
     {
         $this->readOnlyAttributes = $readOnlyAttributes;
     }
