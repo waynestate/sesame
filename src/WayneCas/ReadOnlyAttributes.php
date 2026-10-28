@@ -16,15 +16,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait ReadOnlyAttributes
 {
-    /** @var array */
+    /** @var list<string> */
     private $readOnlyAttributes = [];
 
     /**
      * Get an array of attribute => attributeValue pairs that will be read-only for the Eloquent model.
      * Attributes can be native to the model (i.e. part of the database table).
      *
-     * @param array $persistedAttributes
-     * @return array
+     * @param array<string, mixed> $persistedAttributes
+     * @return array<string, mixed>
      */
     abstract protected function getReadOnlyAttributes($persistedAttributes);
 
@@ -32,7 +32,7 @@ trait ReadOnlyAttributes
      * Get the attributes that have been changed since last sync.
      * We exclude the read-only attributes so they won't trigger a database call if changed.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getDirty()
     {
@@ -47,7 +47,7 @@ trait ReadOnlyAttributes
                 $dirty[$key] = $value;
             } elseif ($value !== $this->original[$key]) {
                 if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
-                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key, $value))) {
+                    || ! $this->originalIsEquivalent($key)) {
                     $dirty[$key] = $value;
                 }
             }
@@ -57,8 +57,8 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param Builder $query
-     * @param $attributes
+     * @param Builder<static> $query
+     * @param array<string, mixed> $attributes
      * @return mixed
      */
     protected function insertAndSetId(Builder $query, $attributes)
@@ -94,8 +94,8 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param array $attributes
-     * @param array $connection
+     * @param array<string, mixed> $attributes
+     * @param string|\UnitEnum|null $connection
      * @return mixed
      */
     public function newFromBuilder($attributes = [], $connection = null)
@@ -117,9 +117,9 @@ trait ReadOnlyAttributes
     }
 
     /**
-     * @param $readOnlyAttributes
+     * @param list<string> $readOnlyAttributes
      */
-    public function setReadOnlyAttributes($readOnlyAttributes)
+    public function setReadOnlyAttributes(array $readOnlyAttributes): void
     {
         $this->readOnlyAttributes = $readOnlyAttributes;
     }

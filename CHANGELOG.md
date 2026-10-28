@@ -30,3 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   identity's `amr` includes `mfa`, and its MFA time comes from the CAS
   `authenticationDate` attribute; without one, the MFA check fails with
   `NO_AUTH_TIME` instead of inventing a sign-in time.
+- `DriverFactory::make()` with the gateway driver throws `InvalidConfig`
+  naming the key when `gateway.public_key`, `gateway.issuer` or
+  `gateway.audience` is null or empty, instead of passing an empty string
+  into the driver.
