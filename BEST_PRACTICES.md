@@ -103,7 +103,7 @@ How the stack holds it: `Enforced` for the path choice (`cas.protocol` is `3.0` 
 Reject DOCTYPE declarations, never enable entity substitution or DTD loading, and block network access during parsing.
 Why: XML parsers can load files or URLs, or expand entities, from content the sender controls.
 Sources: [OWASP XXE Prevention](https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html), [ASVS 5.0 V1.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x10-V1-Encoding-and-Sanitization.md).
-How the stack holds it: `Documented`. The code comment says it relies on PHP 8 defaults and passes no `LIBXML_NOENT` (`src/Drivers/CasDriver.php:116-128`). It does not pass `LIBXML_NONET`, does not reject a DOCTYPE, and has no test with an XXE payload.
+How the stack holds it: `Enforced`. A DOCTYPE is rejected before parsing (`src/Drivers/CasDriver.php:178-180`), the document is parsed with `LIBXML_NONET` so no external entities are loaded (`src/Drivers/CasDriver.php:185`), and the libxml error flag is restored in a `finally` block (`src/Drivers/CasDriver.php:182-189`). Test: `testXxeWithDoctypeThrowsAuthenticationFailed`.
 
 ### S16. Fail closed on anything unexpected
 A non-200 answer, malformed XML, a failure element, a missing user or an empty user all end the login with `AuthenticationFailed`. Nothing falls back to a default user.
