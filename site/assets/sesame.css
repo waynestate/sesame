@@ -837,3 +837,6 @@ a.tag-btn:hover { background: var(--green-deep); }
   .xref__table td:nth-child(2) { margin-top: 6px; padding-left: 22px; position: relative; }
   .xref__table td:nth-child(2)::before { content: "↳"; position: absolute; left: 2px; color: var(--brass-dark); font-weight: 900; }
 }
+
+/* A door shuts faster than it swings open, so a new key never sees the old visitor. */
+.lock:not(.is-open) .door__leaf { transition-duration: .3s; }

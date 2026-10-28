@@ -105,7 +105,7 @@
     }
     lock.classList.remove("is-in", "is-turned", "is-open", "is-stuck");
     void lock.offsetWidth; // start from the closed door
-    later(function () { lock.classList.add("is-in"); }, 380);
+    later(function () { lock.classList.add("is-in"); }, 420);
     if (d.opens) {
       later(function () { lock.classList.add("is-turned"); }, 900);
       later(function () { lock.classList.add("is-open"); }, 1300);

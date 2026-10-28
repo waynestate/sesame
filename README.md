@@ -12,6 +12,8 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
+Front page: [`site/index.html`](site/index.html), a static page you can open in a browser or serve from `site/`.
+
 This repository is published from Wayne State University's internal GitLab and
 mirrored here. Changes land there first; Wayne State developers open issues
 and merge requests on the internal project.
