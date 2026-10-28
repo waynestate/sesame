@@ -133,7 +133,7 @@ How the stack holds it: `Partly enforced` (opt-in). The `cas.renew` option sends
 When the CAS server ends a user's SSO session, it can POST a logout request to each app. The app should find the session by ticket and end it.
 Why: otherwise a user who logs out of one app stays signed in to the others.
 Sources: [CAS Protocol 3.0 (single logout, back-channel)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html) (checked second pass: SLO is optional, back-channel POST only with no front-channel in the 3.0 spec, the server ignores errors from the POST, and clients that do not support it ignore it), [phpCAS clustering](https://apereo.atlassian.net/wiki/spaces/CASC/pages/103252534/phpCAS+clustering) (several app nodes need shared session storage so a logout that reaches one node can find sessions made on another), [phpCAS advanced SAML example](https://git.mdrn.pl/piwik-CASLogin.git/blob/HEAD:/CAS/docs/examples/example_advanced_saml11.php) (a mirror; restricts which hosts may send logout requests, because bogus logout XML can tie up the server), [Koha CAS code](https://git.koha-community.org/Koha-community/Koha/src/commit/39e88fc1f77d3926e4beae7353c920098093d5b7/C4/Auth_with_cas.pm) (prior art: stores the ticket with the local session).
-How the stack holds it: `Not yet`. SESAME does not keep the ticket with the session, so it cannot map a logout request to a session. If SLO is built, accept the POST only from the configured CAS host, and never let it read a session the request names directly. SLO needs a server-side session store, so refuse to enable it with a client-side store such as the Laravel `cookie` driver at config time. ADR-0004 says SLO comes "when Academica supports it". The current logout only reaches the IdP from the app that started it.
+How the stack holds it: `Not yet`, and moot against Academica. Academica never sends single logout, back-channel or front-channel, so there is no logout request for SESAME to accept and no ticket to store with the session. A user who logs out of one app stays signed in to the others until their own session ends, so apps rely on their own session lifetime: SESAME's idle and absolute timeouts (S5) end the session on the app's side. If a future CAS server does send SLO, accept the POST only from the configured CAS host, and never let it read a session the request names directly. SLO needs a server-side session store, so refuse to enable it with a client-side store such as the Laravel `cookie` driver at config time. The current logout only reaches the IdP from the app that started it.
 
 ### S21. Never redirect to an address the user supplied, unchecked
 Allow only local paths, or hosts on an allowlist, for the post-login return and the post-logout `service` value.
@@ -342,13 +342,13 @@ Missing practices:
 - Idle and absolute session timeouts, with a configurable value.
 - A `__Host-` cookie name, set by HELMET.
 - Ticket removal from the URL after login.
-- Single logout, which needs the ticket stored with the session.
+- Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
 - A logging hook (PSR-3) for authentication events.
 - A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
 - A documented lifetime table for each app, covering app, SESAME and IdP sessions.
 - Tests: XXE payload, null resolver result, replayed gateway assertion once that driver exists.
 - Choose the signing scheme for `gateway`, and the SAML library for `saml` (D-001, D-002).
-- Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, does it support `renew`, and does it send single logout POSTs (S19, S20).
+- Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20).
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
 - A cache and `Clear-Site-Data` rule for logout (S44).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
