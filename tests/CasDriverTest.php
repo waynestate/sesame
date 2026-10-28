@@ -17,6 +17,8 @@ use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Mfa;
+use Waynestate\Sesame\MfaResult;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
@@ -31,9 +33,9 @@ final class CasDriverTest extends TestCase
 
     private const SERVICE = 'https://app.test/login';
 
-    private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false, ?ClockInterface $clock = null): CasDriver
+    private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false, bool $assumeMfa = false, ?ClockInterface $clock = null): CasDriver
     {
-        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew, $clock);
+        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew, $assumeMfa, $clock);
     }
 
     private static function response(int $status, string $body): ResponseInterface
@@ -238,7 +240,7 @@ final class CasDriverTest extends TestCase
     {
         $clock = new FakeClock();
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00Z'))]);
-        $driver = $this->driver($http, '3.0', false, $clock);
+        $driver = $this->driver($http, '3.0', false, false, $clock);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
@@ -250,7 +252,7 @@ final class CasDriverTest extends TestCase
     {
         $clock = new FakeClock();
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00.123Z'))]);
-        $driver = $this->driver($http, '3.0', false, $clock);
+        $driver = $this->driver($http, '3.0', false, false, $clock);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
@@ -263,7 +265,7 @@ final class CasDriverTest extends TestCase
     {
         $clock = new FakeClock();
         $http = new FakeHttpClient([self::response(200, self::successXml())]);
-        $driver = $this->driver($http, '3.0', false, $clock);
+        $driver = $this->driver($http, '3.0', false, false, $clock);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
@@ -275,7 +277,7 @@ final class CasDriverTest extends TestCase
     {
         $clock = new FakeClock();
         $http = new FakeHttpClient([self::response(200, self::successXml('not-a-date'))]);
-        $driver = $this->driver($http, '3.0', false, $clock);
+        $driver = $this->driver($http, '3.0', false, false, $clock);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
@@ -289,12 +291,87 @@ final class CasDriverTest extends TestCase
         // The clock reads 2026-10-27T12:00:00+00:00; 12:06:00 is six minutes
         // ahead, past the five-minute guard.
         $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T12:06:00Z'))]);
-        $driver = $this->driver($http, '3.0', false, $clock);
+        $driver = $this->driver($http, '3.0', false, false, $clock);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
 
         $this->assertInstanceOf(Authenticated::class, $step);
         $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+    }
+
+    public function testAmrHasNoMfaWhenAssumeMfaIsOff(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::successXml())]);
+        $driver = $this->driver($http);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame([], $step->identity->amr);
+        $this->assertNull($step->identity->authTime);
+    }
+
+    public function testAmrHasMfaWhenAssumeMfaIsOn(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::successXml())]);
+        $driver = $this->driver($http, '3.0', false, true);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame(['mfa'], $step->identity->amr);
+    }
+
+    public function testAssumeMfaWithARecentAuthenticationDateSatisfiesMfa(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T11:59:00Z'))]);
+        $driver = $this->driver($http, '3.0', false, true, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authTime->format('Y-m-d\TH:i:sP'));
+
+        $result = Mfa::satisfied($step->identity, 28800, $clock->now());
+
+        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        $this->assertTrue($result->satisfied);
+    }
+
+    public function testAssumeMfaWithoutAnAuthenticationDateHasNoAuthTime(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::successXml())]);
+        $driver = $this->driver($http, '3.0', false, true, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertNull($step->identity->authTime);
+
+        $result = Mfa::satisfied($step->identity, 28800, $clock->now());
+
+        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        $this->assertFalse($result->satisfied);
+    }
+
+    public function testAssumeMfaWithAFutureAuthenticationDateHasNoAuthTime(): void
+    {
+        $clock = new FakeClock();
+        // The clock reads 2026-10-27T12:00:00+00:00; 12:06:00 is six minutes
+        // ahead, past the five-minute guard.
+        $http = new FakeHttpClient([self::response(200, self::successXml('2026-10-27T12:06:00Z'))]);
+        $driver = $this->driver($http, '3.0', false, true, $clock);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE.'?ticket=ST-1'));
+
+        $this->assertInstanceOf(Authenticated::class, $step);
+        $this->assertNull($step->identity->authTime);
+
+        $result = Mfa::satisfied($step->identity, 28800, $clock->now());
+
+        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
     }
 
     public function testSuccessParsesUserAndAttributes(): void

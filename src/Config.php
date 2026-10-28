@@ -12,8 +12,9 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `driver` and `environment` are always required. The `fake` driver adds
  * `fake.username` (required) and `fake.attributes` (default `[]`). The
  * `cas` driver adds `cas.base_url` (required), `cas.service_url` (required),
- * `cas.protocol` (default `2.0`, only `3.0` or `2.0`) and `cas.renew`
- * (default `false`). The `gateway` driver adds `gateway.header` (default
+ * `cas.protocol` (default `2.0`, only `3.0` or `2.0`), `cas.renew` (default
+ * `false`) and `cas.assume_mfa` (default `false`). The `gateway` driver adds
+ * `gateway.header` (default
  * `X-Sesame-Assertion`), `gateway.algorithm` (default `ES256`, only
  * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required),
  * `gateway.issuer` (required), `gateway.audience` (required),
@@ -37,6 +38,7 @@ final readonly class Config
         public ?string $casServiceUrl = null,
         public string $casProtocol = '2.0',
         public bool $casRenew = false,
+        public bool $casAssumeMfa = false,
         public int $sessionIdleMinutes = 120,
         public int $sessionAbsoluteMinutes = 720,
         public ?string $gatewayHeader = null,
@@ -62,6 +64,7 @@ final readonly class Config
         $casServiceUrl = null;
         $casProtocol = '2.0';
         $casRenew = false;
+        $casAssumeMfa = false;
         $gatewayHeader = null;
         $gatewayAlgorithm = 'ES256';
         $gatewayPublicKey = null;
@@ -92,6 +95,7 @@ final readonly class Config
             }
 
             $casRenew = self::optionalBool($config, 'cas.renew', false);
+            $casAssumeMfa = self::optionalBool($config, 'cas.assume_mfa', false);
         }
 
         if ($driver === 'gateway') {
@@ -140,6 +144,7 @@ final readonly class Config
             $casServiceUrl,
             $casProtocol,
             $casRenew,
+            $casAssumeMfa,
             $sessionIdleMinutes,
             $sessionAbsoluteMinutes,
             $gatewayHeader,

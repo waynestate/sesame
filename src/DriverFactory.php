@@ -51,6 +51,7 @@ final class DriverFactory
                 self::requiredRequests($requests),
                 $config->casProtocol,
                 $config->casRenew,
+                $config->casAssumeMfa,
                 $clock,
             ),
             'gateway' => new GatewayDriver(

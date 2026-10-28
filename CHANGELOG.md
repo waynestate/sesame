@@ -25,3 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context parameter fails closed.
 - `AuthContextNotSatisfied`, the exception for a failed context check,
   carrying the context id.
+- `cas.assume_mfa` (default `false`): when the CAS server enforces MFA for
+  every sign-in, a successful validation then counts as an MFA sign-in. The
+  identity's `amr` includes `mfa`, and its MFA time comes from the CAS
+  `authenticationDate` attribute; without one, the MFA check fails with
+  `NO_AUTH_TIME` instead of inventing a sign-in time.

@@ -38,6 +38,9 @@ return [
         'protocol' => env('SESAME_CAS_PROTOCOL', '2.0'),
         // Leave off against Academica: it issues no ticket for renew=true.
         'renew' => env('SESAME_CAS_RENEW', false),
+        // On only when the CAS server enforces MFA for every sign-in: a
+        // successful validation then counts as an MFA sign-in.
+        'assume_mfa' => env('SESAME_CAS_ASSUME_MFA', false),
     ],
 
     /*
