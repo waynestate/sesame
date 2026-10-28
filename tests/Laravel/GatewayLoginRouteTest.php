@@ -37,6 +37,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     {
         $clock = new FakeClock();
         $this->app->instance(ClockInterface::class, $clock);
+        $this->app['config']->set('cache.default', 'array');
 
         [$publicKey, $privateKey] = $this->keyPair();
 
@@ -56,6 +57,39 @@ final class GatewayLoginRouteTest extends LaravelTestCase
         $response->assertRedirect('/');
         $this->assertSame('the-user', $this->app->make(Sesame::class)->user());
         $this->assertSame('gateway', $this->app['session']->get('sesame.identity')->driver);
+    }
+
+    public function testGatewayLoginRejectsAReplayedAssertion(): void
+    {
+        $clock = new FakeClock();
+        $this->app->instance(ClockInterface::class, $clock);
+        $this->app['config']->set('cache.default', 'array');
+
+        [$publicKey, $privateKey] = $this->keyPair();
+
+        $this->app['config']->set('sesame.driver', 'gateway');
+        $this->app['config']->set('sesame.gateway.public_key', $publicKey);
+        $this->app['config']->set('sesame.gateway.issuer', self::ISSUER);
+        $this->app['config']->set('sesame.gateway.audience', self::AUDIENCE);
+        $this->app['config']->set('sesame.gateway.trusted_proxies', ['10.0.0.0/8']);
+
+        // One assertion, one jti: the first use signs the user in, and the
+        // same assertion sent again is a replay.
+        $token = $this->buildToken($privateKey, $clock, 'fixed-jti');
+
+        $this->call('GET', '/login', [], [], [], [
+            'REMOTE_ADDR' => '10.1.2.3',
+            'HTTP_X_SESAME_ASSERTION' => $token,
+        ])->assertRedirect('/');
+
+        $this->withoutExceptionHandling();
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessageMatches('/gateway\.replayed_assertion/');
+
+        $this->call('GET', '/login', [], [], [], [
+            'REMOTE_ADDR' => '10.1.2.3',
+            'HTTP_X_SESAME_ASSERTION' => $token,
+        ]);
     }
 
     public function testGatewayLoginRejectsARequestWithoutASignedAssertion(): void
@@ -106,8 +140,12 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     /**
      * A signed ES256 assertion, the way the DRAWBRIDGE gateway would send
      * one, valid against the given clock.
+     *
+     * The assertion lives 300 seconds (iat 60 seconds in the past, exp 240
+     * seconds in the future): the driver's default maximum lifetime. A jti is
+     * always present; pass one to reuse a fixed value (the replay test does).
      */
-    private function buildToken(string $privateKey, FakeClock $clock): string
+    private function buildToken(string $privateKey, FakeClock $clock, ?string $jti = null): string
     {
         $now = $clock->now();
 
@@ -116,8 +154,9 @@ final class GatewayLoginRouteTest extends LaravelTestCase
             ->permittedFor(self::AUDIENCE)
             ->issuedAt($now->modify('-60 seconds'))
             ->canOnlyBeUsedAfter($now->modify('-60 seconds'))
-            ->expiresAt($now->modify('+3600 seconds'))
+            ->expiresAt($now->modify('+240 seconds'))
             ->relatedTo(self::SUBJECT)
+            ->identifiedBy($jti ?? uniqid('jti-', true))
             ->getToken(new Sha256(), InMemory::plainText($privateKey))
             ->toString();
     }

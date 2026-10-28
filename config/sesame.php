@@ -70,6 +70,13 @@ return [
     | EdDSA. trusted_proxies is a comma-separated list of CIDR ranges (or
     | single IPs) the gateway proxy sits behind.
     |
+    | Every assertion is single-use. The driver requires a jti claim, refuses
+    | assertions that live longer than max_lifetime (seconds), and remembers
+    | each used jti in a cache so a captured assertion cannot be replayed.
+    | replay_store names the cache store the jtis are kept in (null uses the
+    | app's default store). allow_without_replay_guard skips the replay guard
+    | entirely: local development only, never in production.
+    |
     */
 
     'gateway' => [
@@ -80,6 +87,9 @@ return [
         'audience' => env('SESAME_GATEWAY_AUDIENCE'),
         'leeway_seconds' => env('SESAME_GATEWAY_LEEWAY_SECONDS', 30),
         'trusted_proxies' => array_filter(array_map('trim', explode(',', (string) env('SESAME_GATEWAY_TRUSTED_PROXIES', '')))),
+        'max_lifetime' => env('SESAME_GATEWAY_MAX_LIFETIME', 300),
+        'replay_store' => env('SESAME_GATEWAY_REPLAY_STORE'),
+        'allow_without_replay_guard' => env('SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD', false),
     ],
 
     /*

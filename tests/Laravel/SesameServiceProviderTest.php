@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Tests\Laravel;
 
+use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 use Waynestate\Sesame\Driver;
+use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
+use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Laravel\LaravelSession;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Laravel\Support\TestUserResolver;
@@ -71,5 +74,26 @@ final class SesameServiceProviderTest extends LaravelTestCase
             $clock->now()->getTimestamp(),
             $this->app->make(LaravelSession::class)->get('sesame.signed_in_at'),
         );
+    }
+
+    public function testItResolvesAReplayGuard(): void
+    {
+        $this->app['config']->set('cache.default', 'array');
+
+        $this->assertInstanceOf(Psr16ReplayGuard::class, $this->app->make(ReplayGuard::class));
+    }
+
+    public function testItUsesTheConfiguredReplayStore(): void
+    {
+        // The default store is pointed elsewhere; the guard must still write
+        // to the store named in sesame.gateway.replay_store.
+        $this->app['config']->set('cache.default', 'file');
+        $this->app['config']->set('sesame.gateway.replay_store', 'array');
+
+        $guard = $this->app->make(ReplayGuard::class);
+        $this->assertFalse($guard->seen('jti-1', (new DateTimeImmutable())->modify('+240 seconds')));
+
+        $key = 'sesame.jti.'.hash('sha256', 'jti-1');
+        $this->assertTrue($this->app['cache']->store('array')->has($key));
     }
 }
