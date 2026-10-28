@@ -1,6 +1,6 @@
 # SESAME
 
-[![GitLab pipeline](https://gitlab.example/enterprise-apps/sesame/badges/main/pipeline.svg)](https://gitlab.example/enterprise-apps/sesame/-/pipelines) [![GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml/badge.svg)](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
+[![GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml/badge.svg)](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
 
 Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same three checks, so a green build means the same thing on both sides.
 
