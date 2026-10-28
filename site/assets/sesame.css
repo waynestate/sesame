@@ -840,3 +840,13 @@ a.tag-btn:hover { background: var(--green-deep); }
 
 /* A door shuts faster than it swings open, so a new key never sees the old visitor. */
 .lock:not(.is-open) .door__leaf { transition-duration: .3s; }
+
+/* Part names in the stack list link to each part's own front page. They keep
+   this page's colours; the underline is the only new thing. */
+.part-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .18em;
+}
+.part-link:hover { text-decoration-thickness: 2px; }
