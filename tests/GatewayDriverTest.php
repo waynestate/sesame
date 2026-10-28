@@ -14,6 +14,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256 as RsaSha256;
 use Lcobucci\JWT\Token\Builder;
 use Nyholm\Psr7\ServerRequest;
+use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Drivers\GatewayDriver;
@@ -743,8 +744,10 @@ final class GatewayDriverTest extends TestCase
         // With no guard the replay check is skipped, so the same jti passes twice.
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
 
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+        $first = $driver->login($this->request($token));
+        $this->assertInstanceOf(Authenticated::class, $first);
+        $second = $driver->login($this->request($token));
+        $this->assertInstanceOf(Authenticated::class, $second);
     }
 
     /**
@@ -753,6 +756,9 @@ final class GatewayDriverTest extends TestCase
      * Without an explicit replay guard, the driver gets a fresh in-memory one
      * (sharing the clock), so the single-use checks are on. The fail-closed
      * test constructs the driver directly instead.
+     *
+     * @param  non-empty-string  $publicKey
+     * @param  list<string>      $trustedProxies
      */
     private function driver(FakeClock $clock, string $algorithm, string $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30, ?ReplayGuard $replayGuard = null, int $maxLifetimeSeconds = 300, bool $allowWithoutReplayGuard = false): GatewayDriver
     {
@@ -775,7 +781,8 @@ final class GatewayDriverTest extends TestCase
      * The signer, the private key (for signing) and the public key (for the
      * driver) for the given algorithm.
      *
-     * @return array{0: Signer, 1: Key, 2: string}
+     * @param  'ES256'|'RS256'|'EdDSA'  $algorithm
+     * @return array{0: Signer, 1: Key, 2: non-empty-string}
      */
     private function keys(string $algorithm): array
     {
@@ -787,7 +794,7 @@ final class GatewayDriverTest extends TestCase
     }
 
     /**
-     * @return array{0: Signer, 1: Key, 2: string}
+     * @return array{0: Signer, 1: Key, 2: non-empty-string}
      */
     private function es256Keys(): array
     {
@@ -795,14 +802,20 @@ final class GatewayDriverTest extends TestCase
             'private_key_type' => OPENSSL_KEYTYPE_EC,
             'curve_name' => 'prime256v1',
         ]);
+        if (! $resource instanceof OpenSSLAsymmetricKey) {
+            $this->fail('Could not generate an EC key.');
+        }
         openssl_pkey_export($resource, $privatePem);
-        $publicPem = openssl_pkey_get_details($resource)['key'];
+        $details = openssl_pkey_get_details($resource);
+        if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
+            $this->fail('Could not read the EC public key.');
+        }
 
-        return [new Sha256(), InMemory::plainText($privatePem), $publicPem];
+        return [new Sha256(), InMemory::plainText($privatePem), $details['key']];
     }
 
     /**
-     * @return array{0: Signer, 1: Key, 2: string}
+     * @return array{0: Signer, 1: Key, 2: non-empty-string}
      */
     private function rsaKeys(): array
     {
@@ -810,23 +823,30 @@ final class GatewayDriverTest extends TestCase
             'private_key_bits' => 2048,
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         ]);
+        if (! $resource instanceof OpenSSLAsymmetricKey) {
+            $this->fail('Could not generate an RSA key.');
+        }
         openssl_pkey_export($resource, $privatePem);
-        $publicPem = openssl_pkey_get_details($resource)['key'];
+        $details = openssl_pkey_get_details($resource);
+        if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
+            $this->fail('Could not read the RSA public key.');
+        }
 
-        return [new RsaSha256(), InMemory::plainText($privatePem), $publicPem];
+        return [new RsaSha256(), InMemory::plainText($privatePem), $details['key']];
     }
 
     /**
-     * @return array{0: Signer, 1: Key, 2: string}
+     * @return array{0: Signer, 1: Key, 2: non-empty-string}
      */
     private function eddsaKeys(): array
     {
         $keypair = sodium_crypto_sign_keypair();
+        $publicKey = base64_encode(sodium_crypto_sign_publickey($keypair));
 
         return [
             new Eddsa(),
             InMemory::plainText(sodium_crypto_sign_secretkey($keypair)),
-            base64_encode(sodium_crypto_sign_publickey($keypair)),
+            $publicKey,
         ];
     }
 
