@@ -154,7 +154,10 @@ class SesameServiceProvider extends ServiceProvider
         }
 
         if (class_exists(Client::class)) {
-            return new Client();
+            // Redirects off: SESAME never follows a redirect from an issuer,
+            // a token endpoint or a key set (PSR-18 sendRequest() already
+            // ignores them; this covers send() too).
+            return new Client(['allow_redirects' => false]);
         }
 
         return null;

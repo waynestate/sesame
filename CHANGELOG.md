@@ -25,7 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in
   `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver
   as attributes. Optional logout through Entra with
-  `post_logout_redirect_uri`. See "The oidc driver (Entra sign-in)".
+  `post_logout_redirect_uri`. Token, discovery and key-set requests never
+  follow a redirect: a 3xx answer is an error (`oidc.token_redirect`,
+  `oidc.discovery_unavailable`, `oidc.jwks_unavailable`), so the code,
+  verifier and secret cannot be resent elsewhere. See "The oidc driver
+  (Entra sign-in)".
 - The oidc driver stands on `league/oauth2-client` (suggested, not
   required; a clear error names the install command when it is missing)
   for the OAuth mechanics, and on SESAME's own firebase/php-jwt key-set
@@ -43,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Laravel: the Guzzle client SESAME builds when the app binds none has
+  redirects off.
 - `DriverFactory::make()` takes the app session as an optional seventh
   argument (the oidc driver needs it).
 - `JwksProvider` takes the algorithm per key lookup and a reason prefix,

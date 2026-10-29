@@ -139,8 +139,12 @@ final class OidcDriver implements Driver, RemembersReturnTo
         // league/oauth2-client sends the token request through Guzzle. When
         // the app's PSR-18 client is Guzzle, it is used for that too, so one
         // client (and one set of timeouts and TLS settings) serves every
-        // call. Otherwise a Guzzle client is built that does not follow
-        // redirects and gives up after ten seconds.
+        // call; LeagueProvider turns redirects off on each token request
+        // whatever that client's own setting is. Otherwise a Guzzle client
+        // is built that does not follow redirects and gives up after ten
+        // seconds. Discovery and the key set go through PSR-18
+        // sendRequest(), which never follows redirects in Guzzle, and both
+        // treat any answer but 2xx (200 for discovery) as a failure.
         $this->tokenHttp = $http instanceof GuzzleClientInterface
             ? $http
             : new GuzzleClient(['allow_redirects' => false, 'connect_timeout' => 5, 'timeout' => 10]);
@@ -375,6 +379,9 @@ final class OidcDriver implements Driver, RemembersReturnTo
             $reason = preg_match(self::ERROR_CODE_PATTERN, $error) === 1 ? $error : 'error';
 
             throw new AuthenticationFailed(sprintf('The token endpoint refused the code (oidc.token_exchange: %s).', $reason));
+        } catch (AuthenticationFailed $e) {
+            // Raised by SESAME itself (a redirect answer), with a safe message.
+            throw new AuthenticationFailed($e->getMessage());
         } catch (\Throwable) {
             throw new AuthenticationFailed('The token endpoint could not be used (oidc.token_exchange).');
         }

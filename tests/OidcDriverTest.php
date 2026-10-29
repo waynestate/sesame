@@ -477,6 +477,50 @@ final class OidcDriverTest extends TestCase
         $this->assertRejected('oidc.token_exchange: invalid_grant', fn(): mixed => $driver->login($this->request($callback)));
     }
 
+    public function testATokenEndpointRedirectIsAnErrorAndIsNotFollowed(): void
+    {
+        $this->op->redirects[FakeOpenIdProvider::TOKEN_URL] = [307, 'https://elsewhere.example.test/steal'];
+
+        // The fake's Guzzle client follows redirects by default (allow_redirects
+        // is on for send()), so this also proves the per-request override.
+        $this->assertRejected('oidc.token_redirect', fn(): mixed => $this->signIn($this->driver()));
+
+        foreach ($this->op->requests as $request) {
+            self::assertNotSame('elsewhere.example.test', $request->getUri()->getHost(), 'The redirect was followed.');
+        }
+    }
+
+    public function testATokenRedirectIsRefusedEvenWhenTheAppClientFollowsRedirects(): void
+    {
+        $this->op->redirects[FakeOpenIdProvider::TOKEN_URL] = [302, 'https://elsewhere.example.test/steal'];
+        $client = $this->op->client(['allow_redirects' => ['max' => 5]]);
+
+        $this->assertRejected('oidc.token_redirect', fn(): mixed => $this->signIn($this->driver(http: $client)));
+
+        foreach ($this->op->requests as $request) {
+            self::assertNotSame('elsewhere.example.test', $request->getUri()->getHost());
+        }
+    }
+
+    public function testADiscoveryRedirectIsNotFollowed(): void
+    {
+        $this->op->redirects[FakeOpenIdProvider::ISSUER . '/.well-known/openid-configuration'] = [301, 'https://elsewhere.example.test/.well-known/openid-configuration'];
+
+        $this->assertRejected('oidc.discovery_unavailable', fn(): mixed => $this->start($this->driver()));
+        self::assertCount(1, $this->op->requests);
+    }
+
+    public function testAKeySetRedirectIsNotFollowed(): void
+    {
+        $this->op->redirects[FakeOpenIdProvider::JWKS_URL] = [307, 'https://elsewhere.example.test/keys'];
+
+        $this->assertRejected('oidc.jwks_unavailable', fn(): mixed => $this->signIn($this->driver()));
+
+        foreach ($this->op->requests as $request) {
+            self::assertNotSame('elsewhere.example.test', $request->getUri()->getHost());
+        }
+    }
+
     public function testATokenResponseWithoutAnIdTokenIsRejected(): void
     {
         $this->op->tokenResponse = ['token_type' => 'Bearer', 'access_token' => 'x'];

@@ -473,7 +473,9 @@ How a sign-in runs:
    the verifier and the client secret, and validates the ID token: signature
    against the JWKS (RS256 by default, never `none` or HMAC), `iss` exactly,
    `aud` is the client id, `azp` when present, `exp`, `nbf` and `iat` with a
-   60-second leeway, and the `nonce`.
+   60-second leeway, and the `nonce`. No request to the provider (token,
+   discovery, key set) follows a redirect: a 3xx answer fails the sign-in,
+   so the code, the verifier and the secret are never resent elsewhere.
 3. The identity goes to the app's `findOrImportUser(Identity)`, and the core
    regenerates the session ID, as for every driver. The access token and the
    ID token are never stored.

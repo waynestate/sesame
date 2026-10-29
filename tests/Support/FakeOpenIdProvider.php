@@ -77,6 +77,9 @@ final class FakeOpenIdProvider
     /** @var array<string, mixed>|null A token response to send instead of the normal one. */
     public ?array $tokenResponse = null;
 
+    /** @var array<string, array{int, string}> Endpoint URL => [3xx status, Location] to answer instead. */
+    public array $redirects = [];
+
     /** @var array<string, mixed>|null A discovery document to send instead of the normal one. */
     public ?array $discoveryDocument = null;
 
@@ -88,9 +91,13 @@ final class FakeOpenIdProvider
     ) {}
 
     /**
-     * A Guzzle client (PSR-18 too) whose every request lands here.
+     * A Guzzle client (PSR-18 too) whose every request lands here. The
+     * handler stack includes Guzzle's redirect middleware, so extra options
+     * can make it follow redirects the way an app's client might.
+     *
+     * @param array<string, mixed> $options
      */
-    public function client(): Client
+    public function client(array $options = []): Client
     {
         $handler = function (RequestInterface $request): PromiseInterface {
             $this->requests[] = $request;
@@ -98,7 +105,7 @@ final class FakeOpenIdProvider
             return Create::promiseFor($this->handle($request));
         };
 
-        return new Client(['handler' => HandlerStack::create($handler), 'http_errors' => false]);
+        return new Client(array_merge(['handler' => HandlerStack::create($handler), 'http_errors' => false], $options));
     }
 
     /**
@@ -203,6 +210,12 @@ final class FakeOpenIdProvider
     private function handle(RequestInterface $request): Response
     {
         $uri = (string) $request->getUri();
+
+        if (isset($this->redirects[$uri])) {
+            [$status, $location] = $this->redirects[$uri];
+
+            return new Response($status, ['Location' => $location]);
+        }
 
         if ($uri === self::ISSUER . '/.well-known/openid-configuration') {
             $this->discoveryFetches++;
