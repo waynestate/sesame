@@ -721,6 +721,25 @@ final class OidcDriverTest extends TestCase
         self::assertArrayNotHasKey('roles', $this->signIn($this->driver())->identity->attributes);
     }
 
+    public function testAnExactClaimBesideANamespacedOneIsAmbiguousAndGrantsNothing(): void
+    {
+        // The fake already sends an exact "wsuRoles"; a namespaced one beside it
+        // must not let either win.
+        $this->op->claimOverrides = ['http://schemas.example.test/claims/wsuRoles' => ['admin']];
+
+        $identity = $this->signIn($this->driver())->identity;
+
+        self::assertArrayNotHasKey('roles', $identity->attributes);
+        self::assertArrayNotHasKey('wsuRoles', $identity->attributes);
+    }
+
+    public function testAnAmbiguousUsernameClaimFailsTheSignIn(): void
+    {
+        $this->op->claimOverrides = ['extn.accessid' => 'zz9999'];
+
+        $this->assertRejected('oidc.missing_claim', fn(): mixed => $this->signIn($this->driver()));
+    }
+
     public function testTheRolesClaimNameIsConfigurable(): void
     {
         $this->op->claimOverrides = ['groupsForApp' => ['a', 'b', 7]];

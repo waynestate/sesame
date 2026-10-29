@@ -509,7 +509,9 @@ The roles claim (`oidc.roles_claim`,
 default `wsuRoles`) becomes the `roles` attribute; a mapped claim that
 arrives under a custom-claim namespace
 (`http://schemas.example.test/claims/wsuRoles` or `extn.wsuRoles`) is found
-by its short name, and two candidates count as none. `oidc.claims` (default
+by its short name. The exact name and the namespaced forms are counted
+together: two or more candidates (an exact `wsuRoles` beside a namespaced
+one, say) count as none. `oidc.claims` (default
 `wsuRoles,accessid`) lists the claims passed to the resolver under their own
 names, so `$identity->attributes['wsuRoles']` works. `iss`, `sub`, `oid`,
 `tid`, `email`, `name` and `preferred_username` are attributes too; key the

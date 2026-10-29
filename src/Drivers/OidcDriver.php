@@ -612,22 +612,22 @@ final class OidcDriver implements Driver, RemembersReturnTo
      * One claim by name. A claim mapped through a custom-claim namespace
      * may arrive under a longer name (for example
      * "http://schemas.example.test/claims/wsuRoles" or "extn.wsuRoles"):
-     * when the exact name is absent, a single claim whose name ends in
-     * "/<name>" or ".<name>" is used. Two or more such claims are
-     * ambiguous, and none is used.
+     * the candidates are the claim with the exact name and every claim
+     * whose name ends in "/<name>" or ".<name>", counted together. Exactly
+     * one candidate is used; two or more (for example an exact "wsuRoles"
+     * beside a namespaced one) are ambiguous, and none is used, so a second
+     * claim can never quietly decide which roles count.
      *
      * @param array<string, mixed> $claims
      */
     private static function claim(array $claims, string $name): mixed
     {
-        if (array_key_exists($name, $claims)) {
-            return $claims[$name];
-        }
-
         $matches = [];
 
         foreach ($claims as $key => $value) {
-            if (str_ends_with($key, '/' . $name) || str_ends_with($key, '.' . $name)) {
+            $key = (string) $key;
+
+            if ($key === $name || str_ends_with($key, '/' . $name) || str_ends_with($key, '.' . $name)) {
                 $matches[] = $value;
             }
         }
