@@ -72,7 +72,12 @@ class SesameServiceProvider extends ServiceProvider
                 $this->requestFactory($app),
                 $this->clock($app),
                 $config->driver === 'gateway' ? $app->make(ReplayGuard::class) : null,
-                $config->driver === 'oauth2' ? $this->jwksCache($app) : null,
+                match ($config->driver) {
+                    'oauth2' => $this->jwksCache($app, 'sesame.oauth2.jwks_store'),
+                    'oidc' => $this->jwksCache($app, 'sesame.oidc.cache_store'),
+                    default => null,
+                },
+                $config->driver === 'oidc' ? $app->make(LaravelSession::class) : null,
             );
         });
 
@@ -130,6 +135,10 @@ class SesameServiceProvider extends ServiceProvider
             $config['cas']['service_url'] = $app->make(UrlGenerator::class)->to('/login');
         }
 
+        if (($config['driver'] ?? null) === 'oidc' && ($config['oidc']['redirect_uri'] ?? null) === null) {
+            $config['oidc']['redirect_uri'] = $app->make(UrlGenerator::class)->to('/login/callback');
+        }
+
         return Config::fromArray($config);
     }
 
@@ -152,16 +161,17 @@ class SesameServiceProvider extends ServiceProvider
     }
 
     /**
-     * The PSR-16 cache the oauth2 driver keeps its fetched key set in: the
-     * app's configured store, or the default store when none is named.
+     * The PSR-16 cache the oauth2 and oidc drivers keep their fetched key
+     * set (and, for oidc, the discovery document) in: the app's store named
+     * by $key, or the default store when none is named.
      */
-    private function jwksCache(Application $app): CacheInterface
+    private function jwksCache(Application $app, string $key): CacheInterface
     {
-        $store = $app->make(Repository::class)->get('sesame.oauth2.jwks_store');
+        $store = $app->make(Repository::class)->get($key);
         $cache = $app->make(CacheManager::class)->store(is_string($store) && $store !== '' ? $store : null);
 
         if (! $cache instanceof \Illuminate\Cache\Repository) {
-            throw new InvalidConfig('The sesame.oauth2.jwks_store cache store must be a standard Laravel cache store.');
+            throw new InvalidConfig(sprintf('The %s cache store must be a standard Laravel cache store.', $key));
         }
 
         return new LaravelPsr16Cache($cache);
@@ -200,16 +210,30 @@ class SesameServiceProvider extends ServiceProvider
     {
         $router = $this->app->make(Router::class);
 
-        $router->group(['middleware' => 'web'], function () use ($router) {
-            $router->get('/login', function (Request $request) {
-                $result = $this->app->make(Sesame::class)->login($this->toPsr7($request));
+        $oidc = $this->app->make(Repository::class)->get('sesame.driver') === 'oidc';
+
+        $router->group(['middleware' => 'web'], function () use ($router, $oidc) {
+            $login = function (Request $request) {
+                $sesame = $this->app->make(Sesame::class);
+                $result = $sesame->login($this->toPsr7($request));
 
                 if ($result instanceof Redirect) {
                     return redirect($result->url);
                 }
 
-                return redirect()->intended('/');
-            })->name('sesame.login');
+                // The oidc driver remembers a checked return-to (same host
+                // as the redirect URI); every other driver uses the page
+                // auth.sesame saved before it sent the guest to sign in.
+                $returnTo = $sesame->returnTo();
+
+                return $returnTo !== null ? redirect($returnTo) : redirect()->intended('/');
+            };
+
+            $router->get('/login', $login)->name('sesame.login');
+
+            if ($oidc) {
+                $router->get('/login/callback', $login)->name('sesame.callback');
+            }
 
             $router->post('/logout', function () {
                 $url = $this->app->make(Sesame::class)->logout(url('/'));

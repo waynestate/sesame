@@ -9,7 +9,9 @@ use Waynestate\Sesame\Support\Setting;
 | and oauth2.jwks_url) resolve through Setting::get(): the environment
 | wins, and when it is empty the private waynestate/playbook package
 | supplies the university's values (see the README, "WSU values
-| (PLAYBOOK)"). Every other setting stays environment-only.
+| (PLAYBOOK)"). Every other setting stays environment-only. The oidc
+| settings also resolve through Setting::get(), except the client secret,
+| which is read from the environment and never from the playbook.
 */
 
 return [
@@ -22,7 +24,9 @@ return [
     | The protocol SESAME uses to verify identities: "cas" for the
     | university's CAS server, "gateway" for signed assertions from the
     | DRAWBRIDGE gateway, "oauth2" for JWT bearer tokens from an identity
-    | provider (Microsoft Entra ID first), or "fake" for local development.
+    | provider (Microsoft Entra ID first), "oidc" for browser sign-in with
+    | OpenID Connect (Microsoft Entra ID first), or "fake" for local
+    | development.
     |
     */
 
@@ -149,6 +153,59 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | OIDC driver
+    |--------------------------------------------------------------------------
+    |
+    | Browser sign-in with OpenID Connect: the authorization code flow with
+    | PKCE, the ID token checked against the issuer's key set. Needs
+    | league/oauth2-client (composer require league/oauth2-client).
+    |
+    | issuer falls back to SESAME_OAUTH2_ISSUER when SESAME_OIDC_ISSUER is
+    | unset. redirect_uri defaults to the app's /login/callback route, and
+    | must be registered on the Entra app registration as a Web redirect
+    | URI. client_secret is read from the environment only.
+    |
+    | No prompt and no max_age are sent by default, so an existing Entra
+    | session signs the user in silently. A login request with step_up=1
+    | adds the step_up parameters below.
+    |
+    | claims lists the ID token claims passed through to the user resolver
+    | as identity attributes (comma-separated). post_logout_redirect_uri,
+    | when set, sends the user through the provider's end-session endpoint
+    | on logout.
+    |
+    */
+
+    'oidc' => [
+        'issuer' => Setting::get('SESAME_OIDC_ISSUER') ?? Setting::get('SESAME_OAUTH2_ISSUER'),
+        'client_id' => Setting::get('SESAME_OIDC_CLIENT_ID'),
+        'client_secret' => Setting::env('SESAME_OIDC_CLIENT_SECRET'),
+        'redirect_uri' => Setting::get('SESAME_OIDC_REDIRECT_URI'),
+        'scopes' => Setting::get('SESAME_OIDC_SCOPES') ?? 'openid profile email',
+        'client_auth' => Setting::get('SESAME_OIDC_CLIENT_AUTH') ?? 'client_secret_post',
+        'username_claim' => Setting::get('SESAME_OIDC_USERNAME_CLAIM') ?? 'accessid',
+        'username_fallback' => env('SESAME_OIDC_USERNAME_FALLBACK', true),
+        'roles_claim' => Setting::get('SESAME_OIDC_ROLES_CLAIM') ?? 'wsuRoles',
+        'claims' => Setting::get('SESAME_OIDC_CLAIMS') ?? 'wsuRoles,accessid',
+        'assume_mfa' => env('SESAME_OIDC_ASSUME_MFA', false),
+        'leeway_seconds' => env('SESAME_OIDC_LEEWAY_SECONDS', 60),
+        'post_logout_redirect_uri' => Setting::get('SESAME_OIDC_POST_LOGOUT_REDIRECT_URI'),
+        'authorization_endpoint' => Setting::get('SESAME_OIDC_AUTHORIZATION_ENDPOINT'),
+        'token_endpoint' => Setting::get('SESAME_OIDC_TOKEN_ENDPOINT'),
+        'jwks_uri' => Setting::get('SESAME_OIDC_JWKS_URI'),
+        'end_session_endpoint' => Setting::get('SESAME_OIDC_END_SESSION_ENDPOINT'),
+        'cache_ttl_seconds' => env('SESAME_OIDC_CACHE_TTL_SECONDS', 3600),
+        'cache_store' => env('SESAME_OIDC_CACHE_STORE'),
+        'step_up' => [
+            'prompt' => env('SESAME_OIDC_STEP_UP_PROMPT', 'login'),
+            'max_age' => env('SESAME_OIDC_STEP_UP_MAX_AGE'),
+            'acr_values' => env('SESAME_OIDC_STEP_UP_ACR_VALUES'),
+            'claims' => env('SESAME_OIDC_STEP_UP_CLAIMS'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Session timeouts
     |--------------------------------------------------------------------------
     |
@@ -187,7 +244,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | When true, the adapter registers GET /login (sesame.login) and
-    | POST /logout (sesame.logout). Set to false to keep the routes in the
+    | POST /logout (sesame.logout), and, for the oidc driver,
+    | GET /login/callback (sesame.callback). Set to false to keep the routes in the
     | app's own route file; the auth.sesame middleware still points at the
     | sesame.login route name.
     |
