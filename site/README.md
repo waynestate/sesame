@@ -13,7 +13,7 @@ anywhere (Citadel, any web server, or `python -m http.server` inside `site/` for
 - base: WayneUI 2.0.8, copied from its static path into `assets/wayne-ui/` (tokens, Lato, buttons, table, skip link,
   sr-only), then re-dressed in `assets/sesame.css`.
 - the keys: every key on the page is drawn in inline SVG. They all carry one bitting, the lock's profile (your app's
-  `findOrImportUser(Identity)`); only the heads differ, one per driver. `saml` and `oauth2` hang as uncut blanks.
+  `findOrImportUser(Identity)`); only the heads differ, one per driver. `saml` hangs as an uncut blank.
 - magic: **the duplicator.** Scroll, and a gateway blank is clamped beside the cas key, the tracer follows the cas
   cut while the cutter copies it, and the cut types `SESAME_DRIVER=gateway` into the slot as it goes. The new key
   travels to the same door, turns, and the door opens: ab1234 is in. Open sesame.

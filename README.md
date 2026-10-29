@@ -404,7 +404,7 @@ key id, never anything the token itself carries. After the signature, the
 driver checks the issuer, audience, expiry and not-before claims (with a
 leeway), then any required scopes and roles.
 
-Microsoft Entra ID is the first planned issuer. Point `issuer` and `jwks_url`
+Microsoft Entra ID is the first supported issuer. Point `issuer` and `jwks_url`
 at the tenant's v2.0 endpoints (the `issuer` and `jwks_uri` values in the
 tenant's discovery document) and `audience` at the app's client id. Any other
 RS256 issuer works with the same settings.

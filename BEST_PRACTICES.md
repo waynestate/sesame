@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-10-28. The `fake`, `cas` and `gateway` drivers exist; `saml` and `oauth2` are design only, so their practices are tagged by what is written down, not by what runs.
+The tags describe the repo as it stands on 2026-10-29. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist; `saml` is design only, so its practices are tagged by what is written down, not by what runs.
 
 ## 1. Sessions
 
@@ -264,7 +264,7 @@ Sources: none specific. The PHP manual notes that session settings change betwee
 How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the Preflight `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
 
 ### S40. Compatibility shims must not bring back old weaknesses
-The planned wayne-cas and simplecas shims map old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
+The wayne-cas shim (`src/WayneCas/`) maps old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
 Why: the old clients have these faults, and a shim that copies behaviour copies the faults.
 Sources: [ASVS 5.0 V6.8](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md).
 How the stack holds it: `Documented`. The stack's auth design says the shims are thin adapters with no rules. They are not built.
@@ -350,12 +350,12 @@ Missing practices:
 - A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
 - A documented lifetime table for each app, covering app, SESAME and IdP sessions.
 - Tests: XXE payload, null resolver result.
-- Choose the signing scheme for `gateway`, and the SAML library for `saml` (both still open questions).
+- Choose the SAML library for `saml` (still open). The `gateway` signing scheme is settled: `ES256`, `RS256` or `EdDSA`, pinned in config.
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20). Answered by the CAS owner: a CAS answer means MFA happened for the session (the opt-in `cas.assume_mfa`), and the server will add `authenticationDate`, the session-creation instant in UTC.
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
 - A cache and `Clear-Site-Data` rule for logout (S44).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
-- Scope of the `oauth2` driver in the stack's auth design: resource server only, or also a client that starts logins (S36).
+- Resolved: the `oauth2` driver is resource-server only; the `oidc` driver (0.2.0) starts browser logins.
 - A test for the `saml` library choice: feed it a document with a second signature, a DOCTYPE and a namespace trick, and expect rejection (S34, S47).
 - Check whether the CERT Polska CVE-2026-15243 advisory affects any PHP CAS client the old `wayne-cas` package or its shim wraps. The advisory names only the Java and Jasig clients.
 

@@ -70,8 +70,8 @@
       note: "<strong>gateway:</strong> a signed JWT assertion from DRAWBRIDGE, in one header, from a trusted proxy. Never a bare header, and each assertion works once. The door opens." },
     saml: { line: null, opens: false,
       note: "<strong>saml:</strong> later, as a direct SAML service provider. The blank hangs on the board, but it isn't cut yet, so it won't turn." },
-    oauth2: { line: null, opens: false,
-      note: "<strong>oauth2:</strong> later, for JWT bearer tokens. Not cut yet, so it won't turn." }
+    oauth2: { line: "SESAME_DRIVER=oauth2", opens: true,
+      note: "<strong>oauth2:</strong> a JWT bearer token, checked against the issuer's key set (Entra first). For APIs. The door opens." }
   };
 
   var lock = $("[data-lock]");

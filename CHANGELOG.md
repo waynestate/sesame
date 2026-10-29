@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Changed: project names written as words except acronyms.
+- Fixed: stale capability claims in the site and docs.
 
 ## [0.2.0] - 2026-10-29
 
