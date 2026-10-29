@@ -39,7 +39,7 @@ use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 
 /**
- * The gateway driver: signed JWT assertions from the DRAWBRIDGE gateway.
+ * The gateway driver: signed JWT assertions from the Drawbridge gateway.
  *
  * "Open Sesame", but only the real magic word gets the door. The driver
  * reads one configured header that holds a signed JWT, verifies its
