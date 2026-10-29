@@ -38,6 +38,17 @@ and merge requests on the internal project.
 composer require waynestate/sesame
 ```
 
+### Which driver for my app?
+
+| Situation | Driver | Entra registration |
+|---|---|---|
+| App on Citadel today | `cas` | None. |
+| App on Citadel once Drawbridge is live | `gateway` | None per app (Drawbridge holds it once). |
+| App off Citadel or an API with its own audience | `oidc` or `oauth2` | Its own registration. |
+| Local development | `fake` | None. |
+
+The recommended path on Citadel is the `gateway` driver behind Drawbridge. Drawbridge is Wayne State's auth gateway: the browser signs in once at the gateway, which passes the app a signed assertion that the `gateway` driver verifies. Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration.
+
 ### WSU values (Playbook)
 
 Open sesame, minus the incantation. Four settings carry Wayne State's shared
@@ -224,10 +235,10 @@ session at logout. Laravel apps use Laravel's own CSRF token instead: the
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
+| `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
-| `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs `league/oauth2-client`. |
+| `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
 ### The cas driver
 
@@ -304,6 +315,8 @@ comes from the CAS `authenticationDate` attribute, and when the server does
 not send one, the MFA check fails because there is no sign-in time to age.
 
 ### The gateway driver
+
+This is the recommended path on Citadel: Drawbridge is not live yet, but once it is, every app behind it uses this driver and needs no Entra registration of its own.
 
 The gateway driver signs the user in from a signed JWT assertion that the auth
 gateway (Drawbridge) puts in one header. It verifies the assertion's signature
@@ -456,6 +469,8 @@ issuer, a non-2xx answer, or an empty or malformed key set all refuse the
 sign-in rather than let it through.
 
 ### The oidc driver (Entra sign-in)
+
+> This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
 
 Open sesame, said straight to Entra. The oidc driver signs a person in
 through the browser with OpenID Connect: the authorization code flow with
