@@ -21,7 +21,7 @@ use Waynestate\Sesame\Tests\Support\FakeClock;
  * Switching from the cas driver to the gateway driver is a config-only
  * change: the same service provider, the same routes, the same middleware.
  * The test sets sesame.driver to "gateway", points the gateway config at a
- * test key, and signs a request the way the DRAWBRIDGE gateway would. A
+ * test key, and signs a request the way the Drawbridge gateway would. A
  * request that carries a valid signed assertion (and no CAS ticket) signs
  * the user in; if the driver were still cas, the same request would be
  * redirected to the CAS server instead.
@@ -153,7 +153,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     }
 
     /**
-     * A signed ES256 assertion, the way the DRAWBRIDGE gateway would send
+     * A signed ES256 assertion, the way the Drawbridge gateway would send
      * one, valid against the given clock.
      *
      * The assertion lives 300 seconds (iat 60 seconds in the past, exp 240

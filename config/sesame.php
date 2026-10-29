@@ -9,7 +9,7 @@ use Waynestate\Sesame\Support\Setting;
 | and oauth2.jwks_url) resolve through Setting::get(): the environment
 | wins, and when it is empty the private waynestate/playbook package
 | supplies the university's values (see the README, "WSU values
-| (PLAYBOOK)"). Every other setting stays environment-only. The oidc
+| (Playbook)"). Every other setting stays environment-only. The oidc
 | settings also resolve through Setting::get(), except the client secret,
 | which is read from the environment and never from the playbook.
 */
@@ -23,7 +23,7 @@ return [
     |
     | The protocol SESAME uses to verify identities: "cas" for the
     | university's CAS server, "gateway" for signed assertions from the
-    | DRAWBRIDGE gateway, "oauth2" for JWT bearer tokens from an identity
+    | Drawbridge gateway, "oauth2" for JWT bearer tokens from an identity
     | provider (Microsoft Entra ID first), "oidc" for browser sign-in with
     | OpenID Connect (Microsoft Entra ID first), or "fake" for local
     | development.
@@ -78,7 +78,7 @@ return [
     | Gateway driver
     |--------------------------------------------------------------------------
     |
-    | The DRAWBRIDGE gateway signs each request with a JWT assertion and
+    | The Drawbridge gateway signs each request with a JWT assertion and
     | sends it in one header. The driver verifies the signature against the
     | gateway's public key and checks the issuer, audience and time claims.
     | It never reads a plain identity header, and the request must come from
