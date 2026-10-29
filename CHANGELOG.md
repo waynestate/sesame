@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The CAS driver reads `serviceValidate` responses by namespace URI instead
+  of prefix: a body that binds the `cas:` prefix to a different namespace
+  can no longer be read as a success, while a body that binds another
+  prefix (or none) to the real CAS namespace keeps working.
+
 ## [0.1.1] (2026-10-29)
 
 ### Added
