@@ -41,7 +41,7 @@ use Waynestate\Sesame\LoginStep;
 /**
  * The gateway driver: signed JWT assertions from the DRAWBRIDGE gateway.
  *
- * "Open Sesame" — but only the real magic word gets the door. The driver
+ * "Open Sesame", but only the real magic word gets the door. The driver
  * reads one configured header that holds a signed JWT, verifies its
  * signature against the gateway's public key, and checks the issuer,
  * audience and time claims. It never reads a plain identity header
@@ -203,8 +203,8 @@ final class GatewayDriver implements Driver
     /**
      * Parse the assertion into a plain (unencrypted) JWT.
      *
-     * Anything that is not a well-formed JWS — a missing part, a bad
-     * encoding, an encrypted token — is rejected here, before any claim is
+     * Anything that is not a well-formed JWS (a missing part, a bad
+     * encoding, an encrypted token) is rejected here, before any claim is
      * trusted.
      *
      * @param non-empty-string $tokenString
