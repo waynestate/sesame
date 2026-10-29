@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-29
+
 - Changed: the proof page moves to a private site that needs a Wayne State sign-in.
 
 ### Added
