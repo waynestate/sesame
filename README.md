@@ -59,7 +59,8 @@ beats the playbook, and an empty one counts as unset.
 
 The playbook is never required. It sits in `suggest`, not `require`, and
 SESAME runs fine without it, reading these four from the environment alone.
-Get it through Composer, or by cloning:
+Get it through Composer, fetch the values into a `.env.playbook` file, or
+clone the repository:
 
 **Composer.** Add the repository to your `composer.json`:
 
@@ -80,11 +81,27 @@ composer require waynestate/playbook
 Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as
 an `http-basic` entry, so later installs do not ask again.
 
+**curl (Linux, macOS).**
+
+```
+curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -o .env.playbook
+```
+
+**PowerShell (Windows).**
+
+```powershell
+Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -OutFile .env.playbook
+```
+
 **A clone.** When the app keeps its private dependencies by hand:
 
 ```
 git clone https://git.wayne.edu/enterprise-apps/playbook.git
 ```
+
+The token is your own: `read_api` for curl, `read_repository` for clone and Composer.
+
+PLAYBOOK is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access.
 
 Raw-PHP apps that build their config by hand can resolve a value the same
 way the Laravel config does:
