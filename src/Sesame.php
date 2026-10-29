@@ -86,6 +86,18 @@ final class Sesame
     }
 
     /**
+     * Where to send the user after the sign-in that just completed, or null
+     * when the driver remembers none.
+     *
+     * Only drivers that implement RemembersReturnTo (the oidc driver) answer;
+     * the value has already passed the ReturnTo rule.
+     */
+    public function returnTo(): ?string
+    {
+        return $this->driver instanceof RemembersReturnTo ? $this->driver->returnTo() : null;
+    }
+
+    /**
      * The driver's configured service URL, or null when the driver has none.
      */
     public function serviceUrl(): ?string

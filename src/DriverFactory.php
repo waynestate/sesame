@@ -12,6 +12,7 @@ use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Drivers\FakeDriver;
 use Waynestate\Sesame\Drivers\GatewayDriver;
 use Waynestate\Sesame\Drivers\OAuth2Driver;
+use Waynestate\Sesame\Drivers\OidcDriver;
 use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
@@ -34,6 +35,14 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * The oauth2 driver fetches the issuer's key set over HTTP and keeps it in
  * a cache: pass a PSR-16 cache as the sixth argument. Without one, the
  * oauth2 driver refuses to start.
+ *
+ * The oidc driver signs the user in through the browser, so it keeps its
+ * state, nonce and PKCE verifier in the app's session: pass the app's
+ * SessionPort as the seventh argument. It fetches the discovery document
+ * and the key set over HTTP (the PSR-18 client and PSR-17 factory), and
+ * keeps both in the PSR-16 cache when one is passed (sixth argument),
+ * otherwise in process memory. It also needs league/oauth2-client, which
+ * SESAME suggests but does not require.
  */
 final class DriverFactory
 {
@@ -44,6 +53,7 @@ final class DriverFactory
         ?ClockInterface $clock = null,
         ?ReplayGuard $replayGuard = null,
         ?CacheInterface $jwksCache = null,
+        ?SessionPort $session = null,
     ): Driver {
         return match ($config->driver) {
             'fake' => new FakeDriver(
@@ -88,6 +98,14 @@ final class DriverFactory
                 $config->oauth2JwksCacheTtlSeconds,
                 $clock,
             ),
+            'oidc' => new OidcDriver(
+                $config->oidc ?? throw new InvalidConfig('The oidc driver needs the "oidc" config block.'),
+                $http ?? throw new InvalidConfig('The oidc driver needs a PSR-18 client for discovery, the key set and the token request. Pass $http to DriverFactory::make().'),
+                self::requiredRequests($requests),
+                $session ?? throw new InvalidConfig('The oidc driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().'),
+                $jwksCache,
+                $clock,
+            ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),
         };
     }
@@ -104,7 +122,7 @@ final class DriverFactory
     private static function requiredRequests(?RequestFactoryInterface $requests): RequestFactoryInterface
     {
         if ($requests === null) {
-            throw new InvalidConfig('The cas and oauth2 drivers need a PSR-17 request factory. Pass $requests to DriverFactory::make().');
+            throw new InvalidConfig('The cas, oauth2 and oidc drivers need a PSR-17 request factory. Pass $requests to DriverFactory::make().');
         }
 
         return $requests;

@@ -90,15 +90,27 @@ if (! function_exists('sesame_login')) {
      * redirect is sent: the ticket is single-use, so leaving it in that one
      * refused URL is harmless.
      *
+     * The oidc driver's callback (a request with state and a code or an
+     * error) counts as a ticket here: it always goes to the driver, and a
+     * completed sign-in is sent on to the checked return-to the sign-in
+     * began with, or to the service URL. A request with step_up=1 always
+     * goes to the driver too, so a signed-in user can be asked for a fresh
+     * sign-in.
+     *
      * @return mixed The app's user, or null when the resolver refused the
      *               identity.
      */
     function sesame_login(): mixed
     {
         $request = sesame_request();
-        $ticket = $request->getQueryParams()['ticket'] ?? null;
+        $query = $request->getQueryParams();
+        $ticket = $query['ticket'] ?? null;
 
-        if ($ticket === null) {
+        if ($ticket === null && isset($query['state']) && (isset($query['code']) || isset($query['error']))) {
+            $ticket = $query['state'];
+        }
+
+        if ($ticket === null && ! isset($query['step_up'])) {
             $user = sesame()->user();
 
             if ($user !== null) {
@@ -114,7 +126,7 @@ if (! function_exists('sesame_login')) {
         }
 
         if ($ticket !== null && $result !== null) {
-            $serviceUrl = sesame()->serviceUrl();
+            $serviceUrl = sesame()->returnTo() ?? sesame()->serviceUrl();
 
             if ($serviceUrl !== null) {
                 header('Location: ' . $serviceUrl, true, 302);
