@@ -739,6 +739,10 @@ defaults it to the app's `/login` route when it is not set.
 When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning
 once and leaves the 2FA to the app.
 
+## Proof
+
+Proof runs against real Wayne State applications are on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in.
+
 ## Tests
 
 Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](MAINTAINING.md).
