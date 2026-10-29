@@ -963,3 +963,8 @@ li.hand__stop:has(.part-link:hover) img { transform: translateY(-2px); }
   .ar-prompt__actions, .ar-cmd, .ar-prompt__more, .agent-card { display: none; }
   .ar-prompt.is-collapsed .ar-prompt__text { max-height: none; -webkit-mask-image: none; mask-image: none; }
 }
+
+/* Where this piece sits in the stack: a line of counter fine print under the
+   cut line, in the centred hero. No motion. */
+.stack-note { max-width: 34rem; margin: 16px auto 20px; font-size: .92rem; color: var(--ink-muted); }
+.stack-note strong { font-weight: 700; color: var(--ink); }

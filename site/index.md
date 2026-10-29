@@ -20,6 +20,8 @@ Wayne State's protocol-neutral auth library for PHP. It hands your app a verifie
 
 `$ composer require waynestate/sesame`
 
+**Already included in [WELD](https://weld.apps.wayne.edu/) and in every [Sourdough](https://sourdough.apps.wayne.edu/) app.** Use SESAME on its own to add sign-in to an app you already have.
+
 [Try a key](https://sesame.apps.wayne.edu/#keys) [Watch one get cut](https://sesame.apps.wayne.edu/#duplicator)
 
 Service counter. Same door for every key.
