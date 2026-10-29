@@ -194,6 +194,29 @@ on wayne.edu, not just this one. Single logout is not supported, the
 identity provider cannot sign the user out of the app's other sessions, so
 SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 
+**Logout is POST-only, with a CSRF token.** `sesame_logout()` runs only for
+a POST whose body carries the session's `sesame_logout_token`; a GET
+answers 405 (`Allow: POST`) and a POST without the right token answers 403,
+and both leave the session alone. So another site cannot sign the user out
+with an image, a link or a forged form. Put the token in the sign-out form:
+
+```php
+<form method="post" action="/logout.php">
+  <input type="hidden" name="sesame_logout_token" value="<?= sesame_logout_token() ?>">
+  <button>Sign out</button>
+</form>
+```
+
+```php
+// logout.php
+sesame_logout('https://app.example.test/');
+```
+
+The token lives in the session, is made on first use and dies with the
+session at logout. Laravel apps use Laravel's own CSRF token instead: the
+`POST /logout` route is in the `web` middleware group, so a form needs
+`@csrf`.
+
 ## Drivers
 
 | Driver | Status |
@@ -845,7 +868,7 @@ The routes, when `routes` is true:
 | Method | Path | Name |
 |---|---|---|
 | `GET` | `/login` | `sesame.login` |
-| `POST` | `/logout` | `sesame.logout` |
+| `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
 | `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout

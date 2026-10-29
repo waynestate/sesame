@@ -324,7 +324,7 @@ PHP;
         [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
 
         try {
-            [$status, $headers] = $this->httpGet('http://127.0.0.1:' . $port . '/logout');
+            [$status, $headers] = $this->httpPost('http://127.0.0.1:' . $port . '/logout', ['sesame_logout_token' => str_repeat('ab', 32)]);
         } finally {
             $this->stopServer($process, $pipes, $file);
         }
@@ -333,6 +333,56 @@ PHP;
         self::assertSame('no-store', $headers['cache-control'] ?? null);
         self::assertSame('"cache", "storage"', $headers['clear-site-data'] ?? null);
         self::assertStringNotContainsString('cookies', $headers['clear-site-data']);
+    }
+
+    public function testSesameLogoutRefusesAGetAndKeepsTheSession(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
+
+        try {
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:' . $port . '/logout');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(405, $status);
+        self::assertSame('POST', $headers['allow'] ?? null);
+        self::assertArrayNotHasKey('location', $headers);
+        self::assertStringContainsString('SESSION_KEPT', $body);
+    }
+
+    public function testSesameLogoutRefusesAPostWithoutTheRightToken(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
+
+        try {
+            [$missingStatus, $missingHeaders, $missingBody] = $this->httpPost('http://127.0.0.1:' . $port . '/logout', []);
+            [$wrongStatus, $wrongHeaders, $wrongBody] = $this->httpPost('http://127.0.0.1:' . $port . '/logout', ['sesame_logout_token' => str_repeat('cd', 32)]);
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(403, $missingStatus);
+        self::assertArrayNotHasKey('location', $missingHeaders);
+        self::assertStringContainsString('SESSION_KEPT', $missingBody);
+        self::assertSame(403, $wrongStatus);
+        self::assertArrayNotHasKey('location', $wrongHeaders);
+        self::assertStringContainsString('SESSION_KEPT', $wrongBody);
+    }
+
+    public function testSesameLogoutWithTheTokenClearsTheSession(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->logoutRouterScript());
+
+        try {
+            [$status, $headers, $body] = $this->httpPost('http://127.0.0.1:' . $port . '/logout', ['sesame_logout_token' => str_repeat('ab', 32)]);
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(302, $status);
+        self::assertSame('http://idp.local/logout', $headers['location'] ?? null);
+        self::assertStringContainsString('SESSION_CLEARED', $body);
     }
 
     public function testSesameLogoutStopsTheScriptAfterARedirect(): void
@@ -358,6 +408,8 @@ $sesame = new Sesame(
 );
 sesame($sesame);
 
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_POST['sesame_logout_token'] = $sesame->logoutToken();
 sesame_logout('http://app.local/');
 
 echo 'CONTINUED_AFTER_REDIRECT';
@@ -645,13 +697,21 @@ use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 $log = new EventLog();
 $identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable());
+$session = new RecordingSession($log);
+// The token the logout form would carry, as sesame_logout_token() made it.
+$session->store['sesame.logout_token'] = str_repeat('ab', 32);
+$session->store['sesame.user'] = 'jdoe';
 $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), 'http://idp.local/logout', $log),
     new RecordingResolver(),
-    new RecordingSession($log),
+    $session,
     new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
 );
 sesame($sesame);
+
+register_shutdown_function(static function () use ($session): void {
+    echo isset($session->store['sesame.user']) ? 'SESSION_KEPT' : 'SESSION_CLEARED';
+});
 
 sesame_logout('http://app.local/');
 PHP;
@@ -766,8 +826,28 @@ PHP;
      */
     private function httpGet(string $url, array $requestHeaders = []): array
     {
+        return $this->httpRequest('GET', $url, $requestHeaders);
+    }
+
+    /**
+     * POST a form to $url without following redirects.
+     *
+     * @param  array<string, string>  $form
+     * @return array{0: int, 1: array<string, string>, 2: string}
+     */
+    private function httpPost(string $url, array $form): array
+    {
+        return $this->httpRequest('POST', $url, ['Content-Type: application/x-www-form-urlencoded'], http_build_query($form));
+    }
+
+    /**
+     * @param  list<string>  $requestHeaders
+     * @return array{0: int, 1: array<string, string>, 2: string}
+     */
+    private function httpRequest(string $method, string $url, array $requestHeaders = [], ?string $content = null): array
+    {
         $http = [
-            'method' => 'GET',
+            'method' => $method,
             'ignore_errors' => true,
             'follow_location' => 0,
             'max_redirects' => 0,
@@ -776,6 +856,10 @@ PHP;
 
         if ($requestHeaders !== []) {
             $http['header'] = implode("\r\n", $requestHeaders);
+        }
+
+        if ($content !== null) {
+            $http['content'] = $content;
         }
 
         $context = stream_context_create(['http' => $http]);

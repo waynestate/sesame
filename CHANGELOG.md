@@ -52,6 +52,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Raw PHP: `sesame_logout()` is POST-only with a CSRF token. It runs only
+  when the POST body's `sesame_logout_token` matches the session's token
+  (new `sesame_logout_token()`, `Sesame::logoutToken()` and
+  `Sesame::isLogoutToken()`); a GET answers 405 and a bad token 403, and
+  neither touches the session. Apps must change a logout link to a POST
+  form carrying the token. The Laravel `POST /logout` route stays in the
+  `web` group and so under Laravel's CSRF check, now covered by a test.
+
 - Laravel: the Guzzle client SESAME builds when the app binds none has
   redirects off.
 - `ReturnTo` (every driver's login and logout return-to) now requires the

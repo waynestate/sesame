@@ -308,6 +308,34 @@ final class SesameTest extends TestCase
         self::assertSame([], $session->store);
     }
 
+    public function testTheLogoutTokenIsStableForASessionAndChecked(): void
+    {
+        $session = new RecordingSession(new EventLog());
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, new EventLog()),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+        );
+
+        self::assertFalse($sesame->isLogoutToken('anything'), 'A session without a token accepts nothing.');
+        self::assertFalse($sesame->isLogoutToken(''));
+
+        $token = $sesame->logoutToken();
+
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token);
+        self::assertSame($token, $sesame->logoutToken());
+        self::assertSame($token, $session->store[Sesame::LOGOUT_TOKEN_KEY]);
+        self::assertTrue($sesame->isLogoutToken($token));
+        self::assertFalse($sesame->isLogoutToken(strtoupper($token)));
+        self::assertFalse($sesame->isLogoutToken(null));
+        self::assertFalse($sesame->isLogoutToken([$token]));
+
+        $sesame->logout('http://app.local/');
+
+        self::assertFalse($sesame->isLogoutToken($token), 'Logout spends the token with the session.');
+    }
+
     public function testLogoutInvalidatesBeforeTheIdpUrlIsBuilt(): void
     {
         $log = new EventLog();
