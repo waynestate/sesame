@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5f2651414db5472cf26a6492b9a56235",
+    "content-hash": "057ce22b21dacbf350c2f8818f67a2d3",
     "packages": [
         {
             "name": "lcobucci/jwt",
@@ -9529,16 +9529,16 @@
         },
         {
             "name": "waynestate/pinstripe",
-            "version": "dev-main",
+            "version": "0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waynestate/pinstripe.git",
-                "reference": "eb54a86b5735c4798c823421f7482abb427d4d48"
+                "reference": "e6d399c95976be53d6f9aa9c8dca494eadc5685f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/eb54a86b5735c4798c823421f7482abb427d4d48",
-                "reference": "eb54a86b5735c4798c823421f7482abb427d4d48",
+                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/e6d399c95976be53d6f9aa9c8dca494eadc5685f",
+                "reference": "e6d399c95976be53d6f9aa9c8dca494eadc5685f",
                 "shasum": ""
             },
             "require": {
@@ -9560,7 +9560,6 @@
                 "larastan/larastan": "^3.13 (Laravel apps: include phpstan/laravel.neon)",
                 "rector/rector": "^2.8 (apps: use rector/base.php from your rector.php)"
             },
-            "default-branch": true,
             "bin": [
                 "bin/pinstripe-baseline"
             ],
@@ -9580,14 +9579,12 @@
                 "issues": "https://github.com/waynestate/pinstripe/issues",
                 "source": "https://github.com/waynestate/pinstripe"
             },
-            "time": "2026-10-29T03:11:28+00:00"
+            "time": "2026-10-29T03:28:00+00:00"
         }
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "waynestate/pinstripe": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
