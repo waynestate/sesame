@@ -301,7 +301,7 @@ final readonly class Config
         if ($setting !== null) {
             return sprintf(
                 'Missing required setting %s. Set it in the environment, or install waynestate/playbook (see the README).',
-                $setting
+                $setting,
             );
         }
 

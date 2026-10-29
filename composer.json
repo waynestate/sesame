@@ -51,7 +51,10 @@
     "autoload-dev": {
         "psr-4": {
             "Waynestate\\Sesame\\Tests\\": "tests/"
-        }
+        },
+        "files": [
+            "tests/Support/PlaybookStub.php"
+        ]
     },
     "extra": {
         "laravel": {
