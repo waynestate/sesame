@@ -577,6 +577,25 @@ defaults it to the app's `/login` route when it is not set.
 When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning
 once and leaves the 2FA to the app.
 
+## Proof
+
+**75 sign-ins and 75 CAS answers run through SESAME on 2026-10-28: 149 passed, 1 tool error.**
+
+- **75 round trips.** A raw PHP app on `php -S`, no network, a cookie jar: protected page, login redirect, ticket
+  back, one validation call, signed in, MFA reason, logout, signed out. Every option was crossed: the fake driver in
+  five environments, and the cas driver over protocol 2.0 and 3.0, `assume_mfa`, four `authenticationDate` cases,
+  `renew`, and a safe or foreign return-to. 75 of 75 ended where they should. MFA passed only for a recent sign-in
+  with `assume_mfa` on (8 of 8); all 32 foreign return-to addresses were refused.
+- **75 CAS answers** through `CasDriver::login` with a stub HTTP client: successes in every shape, every failure
+  code, DOCTYPE and XXE attempts, non-XML, HTTP errors, empty users and malformed tickets. 74 of 75 were right.
+
+The one wrong answer: a response whose `cas:` prefix was bound to a different namespace was read as a success. It
+could only come from the trusted CAS server over HTTPS, but the parser promises a namespace check, and the fix is
+queued with a test for that exact response. No real account, password or ticket was used. Breakdown, command and
+limits: [`site/proof.html`](site/proof.html).
+
+No key under the mat. We checked 150 times.
+
 ## Tests
 
 Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](MAINTAINING.md).
