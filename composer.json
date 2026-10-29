@@ -31,7 +31,7 @@
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
-        "waynestate/pinstripe": "dev-main"
+        "waynestate/pinstripe": "^0.1"
     },
     "suggest": {
         "guzzlehttp/guzzle": "A PSR-18 client for the cas driver",
