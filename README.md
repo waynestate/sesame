@@ -491,16 +491,26 @@ requires a fresh `auth_time` (not before the sign-in started, and within
 `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
 
 **Identity.** The username comes from `oidc.username_claim` (default
-`accessid`, the UPN's prefix) and falls back to the part of
-`preferred_username` before the `@`. The roles claim (`oidc.roles_claim`,
+`accessid`, the UPN's prefix). When the token has no such claim, the
+sign-in fails with `oidc.missing_claim` and the error names the settings to
+change. `oidc.username_fallback` (off by default) uses the part of
+`preferred_username` before the `@` instead.
+
+> **Warning:** `preferred_username` can be changed by the user or an admin
+> (a renamed UPN, a guest account), so a fallback username is no stable
+> account key. Turn the fallback on only when the app keys its users on
+> something else (`iss` plus `sub`, or `tid` plus `oid`).
+
+The roles claim (`oidc.roles_claim`,
 default `wsuRoles`) becomes the `roles` attribute; a mapped claim that
 arrives under a custom-claim namespace
 (`http://schemas.example.test/claims/wsuRoles` or `extn.wsuRoles`) is found
 by its short name, and two candidates count as none. `oidc.claims` (default
 `wsuRoles,accessid`) lists the claims passed to the resolver under their own
-names, so `$identity->attributes['wsuRoles']` works. `sub`, `oid`, `tid`,
-`email`, `name` and `preferred_username` are attributes too; key the app's
-users by `oid` or `sub` (S24).
+names, so `$identity->attributes['wsuRoles']` works. `iss`, `sub`, `oid`,
+`tid`, `email`, `name` and `preferred_username` are attributes too; key the
+app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the
+username alone.
 
 **MFA.** `auth_time` becomes the identity's MFA time and `amr` its methods,
 with the cas driver's rules: the driver never invents a sign-in time, and
@@ -605,7 +615,7 @@ right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 | `oidc.scopes` | `SESAME_OIDC_SCOPES` | `openid profile email` | `openid` is always added. |
 | `oidc.client_auth` | `SESAME_OIDC_CLIENT_AUTH` | `client_secret_post` | Or `client_secret_basic`. |
 | `oidc.username_claim` | `SESAME_OIDC_USERNAME_CLAIM` | `accessid` | The claim the username comes from. |
-| `oidc.username_fallback` | `SESAME_OIDC_USERNAME_FALLBACK` | `true` | Use the `preferred_username` prefix when the claim is missing. |
+| `oidc.username_fallback` | `SESAME_OIDC_USERNAME_FALLBACK` | `false` | Opt in to the `preferred_username` prefix when the claim is missing. `preferred_username` is user-changeable; see the warning above. |
 | `oidc.roles_claim` | `SESAME_OIDC_ROLES_CLAIM` | `wsuRoles` | The claim that becomes the `roles` attribute; namespaced forms are found. |
 | `oidc.claims` | `SESAME_OIDC_CLAIMS` | `wsuRoles,accessid` | Claims passed to the resolver as attributes under their own names. |
 | `oidc.assume_mfa` | `SESAME_OIDC_ASSUME_MFA` | `false` | Count a sign-in as MFA when Conditional Access enforces it for the app. |

@@ -169,6 +169,10 @@ return [
     | session signs the user in silently. A login request with step_up=1
     | adds the step_up parameters below.
     |
+    | username_fallback (off by default) uses the preferred_username prefix
+    | when username_claim is missing. preferred_username is user-changeable,
+    | so key accounts on iss plus sub, or tid plus oid, if you turn it on.
+    |
     | claims lists the ID token claims passed through to the user resolver
     | as identity attributes (comma-separated). post_logout_redirect_uri,
     | when set, sends the user through the provider's end-session endpoint
@@ -184,7 +188,7 @@ return [
         'scopes' => Setting::get('SESAME_OIDC_SCOPES') ?? 'openid profile email',
         'client_auth' => Setting::get('SESAME_OIDC_CLIENT_AUTH') ?? 'client_secret_post',
         'username_claim' => Setting::get('SESAME_OIDC_USERNAME_CLAIM') ?? 'accessid',
-        'username_fallback' => env('SESAME_OIDC_USERNAME_FALLBACK', true),
+        'username_fallback' => env('SESAME_OIDC_USERNAME_FALLBACK', false),
         'roles_claim' => Setting::get('SESAME_OIDC_ROLES_CLAIM') ?? 'wsuRoles',
         'claims' => Setting::get('SESAME_OIDC_CLAIMS') ?? 'wsuRoles,accessid',
         'assume_mfa' => env('SESAME_OIDC_ASSUME_MFA', false),

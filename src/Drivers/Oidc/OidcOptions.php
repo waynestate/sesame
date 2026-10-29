@@ -60,7 +60,7 @@ final readonly class OidcOptions
         public array $algorithms = ['RS256'],
         public int $leewaySeconds = 60,
         public string $usernameClaim = 'accessid',
-        public bool $usernameFallback = true,
+        public bool $usernameFallback = false,
         public string $rolesClaim = 'wsuRoles',
         public bool $assumeMfa = false,
         public ?string $postLogoutRedirectUri = null,
@@ -149,7 +149,7 @@ final readonly class OidcOptions
 
         $leeway = self::int($oidc, 'leeway_seconds', 60, 0, 300);
         $usernameClaim = self::optionalString($oidc, 'username_claim') ?? 'accessid';
-        $usernameFallback = self::bool($oidc, 'username_fallback', true);
+        $usernameFallback = self::bool($oidc, 'username_fallback', false);
         $rolesClaim = self::optionalString($oidc, 'roles_claim') ?? 'wsuRoles';
         $assumeMfa = self::bool($oidc, 'assume_mfa', false);
 

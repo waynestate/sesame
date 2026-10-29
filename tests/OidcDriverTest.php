@@ -656,18 +656,43 @@ final class OidcDriverTest extends TestCase
         self::assertSame(['a', 'b'], $identity->attributes['roles']);
     }
 
-    public function testTheUsernameFallsBackToThePreferredUsernamePrefix(): void
+    public function testTheUsernameFallsBackToThePreferredUsernamePrefixOnlyWhenOptedIn(): void
     {
         $this->op->claimRemovals = ['accessid'];
 
-        self::assertSame('ab1234', $this->signIn($this->driver())->identity->username);
+        self::assertSame('ab1234', $this->signIn($this->driver(['username_fallback' => true]))->identity->username);
     }
 
-    public function testWithoutTheFallbackAMissingUsernameClaimIsRejected(): void
+    public function testTheUsernameFallbackIsOffByDefault(): void
+    {
+        self::assertFalse(OidcOptions::fromArray($this->settings())->usernameFallback);
+        $this->op->claimRemovals = ['accessid'];
+
+        try {
+            $this->signIn($this->driver());
+            self::fail('A sign-in without the username claim must fail by default.');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringContainsString('oidc.missing_claim', $e->getMessage());
+            self::assertStringContainsString('SESAME_OIDC_USERNAME_FALLBACK', $e->getMessage());
+            self::assertStringContainsString('SESAME_OIDC_USERNAME_CLAIM', $e->getMessage());
+        }
+    }
+
+    public function testWithTheFallbackOffAMissingUsernameClaimIsRejected(): void
     {
         $this->op->claimRemovals = ['accessid'];
 
         $this->assertRejected('oidc.missing_claim', fn(): mixed => $this->signIn($this->driver(['username_fallback' => false])));
+    }
+
+    public function testIssuerSubjectTenantAndObjectIdReachTheResolver(): void
+    {
+        $identity = $this->signIn($this->driver())->identity;
+
+        self::assertSame([FakeOpenIdProvider::ISSUER], $identity->attributes['iss']);
+        self::assertSame(['subject-123'], $identity->attributes['sub']);
+        self::assertSame(['tenant-for-tests'], $identity->attributes['tid']);
+        self::assertSame(['object-456'], $identity->attributes['oid']);
     }
 
     public function testTheUsernameClaimIsConfigurable(): void

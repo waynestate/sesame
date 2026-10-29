@@ -62,8 +62,11 @@ use Waynestate\Sesame\SessionPort;
  * parameters (prompt=login by default, and optionally max_age, acr_values
  * and claims), and its callback then requires a fresh auth_time.
  *
- * The username comes from one configurable claim (accessid by default),
- * falling back to the part of preferred_username before the "@". The roles
+ * The username comes from one configurable claim (accessid by default).
+ * Falling back to the part of preferred_username before the "@" is an
+ * opt-in (oidc.username_fallback), because users can change
+ * preferred_username. iss, sub, tid and oid are passed to the resolver so
+ * apps can key accounts on issuer plus sub, or tenant plus oid. The roles
  * claim (wsuRoles by default) becomes the "roles" attribute, the claims
  * the app lists in oidc.claims (wsuRoles and accessid by default) are
  * passed through under their own names, and auth_time
@@ -85,7 +88,7 @@ final class OidcDriver implements Driver, RemembersReturnTo
      *
      * @var list<string>
      */
-    private const ATTRIBUTE_CLAIMS = ['sub', 'oid', 'tid', 'email', 'name', 'preferred_username'];
+    private const ATTRIBUTE_CLAIMS = ['iss', 'sub', 'oid', 'tid', 'email', 'name', 'preferred_username'];
 
     /**
      * The OAuth 2.0 error codes are ASCII words; anything else from the
@@ -494,8 +497,10 @@ final class OidcDriver implements Driver, RemembersReturnTo
     }
 
     /**
-     * The username: the configured claim, or, when it is missing and the
-     * fallback is on, the part of preferred_username before the "@".
+     * The username: the configured claim, or, when it is missing and the app
+     * opted in to the fallback, the part of preferred_username before the
+     * "@". The fallback is off by default: preferred_username is a value the
+     * user (or an admin) can change, so it is no stable account key.
      *
      * @param array<string, mixed> $claims
      */
@@ -518,7 +523,10 @@ final class OidcDriver implements Driver, RemembersReturnTo
         $value = trim($value);
 
         if ($value === '' || strlen($value) > 256 || preg_match('/[\x00-\x20\x7F]/', $value) === 1) {
-            throw new AuthenticationFailed(sprintf('The ID token has no usable "%s" claim (oidc.missing_claim).', $this->options->usernameClaim));
+            throw new AuthenticationFailed(sprintf(
+                'The ID token has no usable "%s" claim (oidc.missing_claim). Map the claim on the app registration, set SESAME_OIDC_USERNAME_CLAIM (oidc.username_claim) to a claim the token carries, or opt in to SESAME_OIDC_USERNAME_FALLBACK (oidc.username_fallback), which uses the user-changeable preferred_username.',
+                $this->options->usernameClaim,
+            ));
         }
 
         return $value;

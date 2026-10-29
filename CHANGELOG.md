@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age`
   by default (silent SSO); `step_up=1` adds the configured step-up
   parameters and requires a fresh `auth_time`. Username from `accessid`
-  with a `preferred_username` fallback, roles from `wsuRoles`, MFA from
+  (the `preferred_username` fallback is an opt-in, off by default, because
+  users can change that claim), `iss`, `sub`, `tid` and `oid` passed to
+  the resolver as stable account keys, roles from `wsuRoles`, MFA from
   `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in
   `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver
   as attributes. Optional logout through Entra with
