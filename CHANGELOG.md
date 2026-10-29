@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed: project names written as words except acronyms.
 - Fixed: stale capability claims in the site and docs.
+- Changed: the site shows the oidc driver.
 
 ## [0.2.0] - 2026-10-29
 
