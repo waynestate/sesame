@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Static analysis now runs PHPStan level 8 with the Pinstripe strict preset
-  (`phpstan/phpstan-strict-rules`). Every finding was fixed in place; no
-  behaviour changed.
+- Static analysis now includes Pinstripe's `phpstan/strict.neon` preset
+  from the `waynestate/pinstripe` dev dependency instead of the hand-copied
+  settings: PHPStan level 8, deprecation checks on, strict rules stay on.
+  No behaviour changed.

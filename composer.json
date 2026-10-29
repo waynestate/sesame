@@ -30,7 +30,8 @@
         "orchestra/testbench": "^10.0 || ^11.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "phpunit/phpunit": "^11.5"
+        "phpunit/phpunit": "^11.5",
+        "waynestate/pinstripe": "dev-main"
     },
     "suggest": {
         "guzzlehttp/guzzle": "A PSR-18 client for the cas driver",
@@ -77,6 +78,9 @@
         "sort-packages": true,
         "platform": {
             "php": "8.3.0"
+        },
+        "allow-plugins": {
+            "phpstan/extension-installer": true
         }
     },
     "minimum-stability": "stable",
