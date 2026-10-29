@@ -170,10 +170,10 @@ h3 { font-size: 1.2rem; font-weight: 900; }
   display: flex; flex-direction: column; align-items: center;
   padding-bottom: clamp(40px, 6vw, 72px);
 }
-.hero__copy { position: relative; z-index: 2; width: 100%; text-align: center; }
+.hero__copy { position: relative; z-index: 2; width: 100%; text-align: center; margin-top: 20px; }
 .stamp {
   display: inline-block; margin: 0 0 18px;
-  font-family: var(--mono); font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  font-family: var(--mono); font-size: .875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--slate); border: 2px dashed var(--slate); border-radius: 6px; padding: 6px 10px;
 }
 .stamp code { background: none; padding: 0; text-transform: none; letter-spacing: 0; font-size: 1em; }
@@ -226,6 +226,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .cutline__code {
   flex: 1 1 auto; min-width: 0; color: #f4f1ea; padding: 14px 16px;
   font-size: .95rem; overflow-wrap: anywhere; background: none;
+  text-align: left; /* the box centres, the command reads from the left */
 }
 .copy-btn {
   flex: none; border: 0; cursor: pointer; font: inherit; font-weight: 900;
@@ -469,8 +470,10 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .m-hub { fill: var(--slate); }
 .m-chip { fill: var(--brass); opacity: 0; }
 .m-slot { fill: #16211e; stroke: #4e6862; stroke-width: 2; }
-.m-config { font-family: var(--mono); font-size: 25px; font-weight: 700; fill: var(--gold); }
+.m-config { font-family: var(--mono); font-size: 25px; font-weight: 700; fill: var(--gold); color: var(--gold); }
 .k--brass { --k: var(--brass); --kd: var(--brass-dark); --hole: var(--slate); }
+/* axe reads the CSS color property for SVG text, not fill. */
+.k--brass .k-stamp { fill: #3d2e08; color: #3d2e08; opacity: 1; }
 .k--nickel { --k: var(--nickel); --kd: var(--nickel-dark); --hole: var(--slate); }
 .k-blade { fill: var(--k); stroke: var(--kd); stroke-width: 2.5; stroke-linejoin: round; }
 .k-blade--cut { fill: #dfe4e2; }
