@@ -57,7 +57,25 @@
 
   <!-- ================================================================ hero -->
   <section class="hero" aria-labelledby="hero-title">
-    <div class="wrap hero__grid">
+    <div class="wrap hero__stage">
+
+      <!-- The doorway: the mark stands open at the top of the page, and the
+           light that spills from it runs down behind the name and the words. -->
+      <div class="hero__door">
+        <span class="hero__glow" aria-hidden="true"></span>
+        <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
+      </div>
+      <span class="hero__spill" aria-hidden="true"></span>
+
+      <!-- The shop's working keys, off the board and onto the rails by the
+           door: two on the left, one on the right. The cas key gets company. -->
+      <span class="hang-rail hang-rail--left" aria-hidden="true">
+        <span class="hang hang--a" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+        <span class="hang hang--b" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+      </span>
+      <span class="hang-rail hang-rail--right" aria-hidden="true">
+        <span class="hang hang--c" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+      </span>
 
       <div class="hero__copy">
         <p class="stamp">Keys cut while you wait · <code>waynestate/sesame</code> 0.1</p>
@@ -81,18 +99,6 @@
           <a class="wsu-btn wsu-btn--primary wsu-btn--lg tag-btn" href="#keys">Try a key</a>
           <a class="hero__link" href="#duplicator">Watch one get cut</a>
         </p>
-      </div>
-
-      <div class="hero__art">
-        <div class="peg-wall" aria-hidden="true"></div>
-        <div class="hero__door">
-          <span class="hero__glow" aria-hidden="true"></span>
-          <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
-          <span class="hero__spill" aria-hidden="true"></span>
-        </div>
-        <span class="hang hang--a" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
-        <span class="hang hang--b" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
-        <span class="hang hang--c" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
       </div>
 
     </div>
@@ -213,7 +219,7 @@
           <p class="ticket__no">Job 01</p>
           <h3>Raw PHP</h3>
           <p>The app owns the session: start it yourself, and let HELMET set the cookie flags. Then ask SESAME who it is.</p>
-<pre class="ticket__code"><code>session_start();
+<pre class="ticket__code" tabindex="0"><code>session_start();
 // build $sesame (see the README), then:
 sesame($sesame);
 $user = sesame_login();</code></pre>
@@ -224,7 +230,7 @@ $user = sesame_login();</code></pre>
           <p class="ticket__no">Job 02</p>
           <h3>Laravel + Blade</h3>
           <p>The service provider is discovered on its own. Publish the config, then guard a route.</p>
-<pre class="ticket__code"><code>php artisan vendor:publish --tag=sesame-config
+<pre class="ticket__code" tabindex="0"><code>php artisan vendor:publish --tag=sesame-config
 
 Route::get('/dashboard', fn () =&gt; view('dashboard'))
     -&gt;middleware('auth.sesame');</code></pre>
@@ -235,7 +241,7 @@ Route::get('/dashboard', fn () =&gt; view('dashboard'))
           <p class="ticket__no">Job 03</p>
           <h3>Laravel + Inertia/Vue</h3>
           <p>The same Laravel adapter. The middleware guards the route before any Vue page is sent.</p>
-<pre class="ticket__code"><code>Route::get('/vault', fn () =&gt; Inertia::render('Vault'))
+<pre class="ticket__code" tabindex="0"><code>Route::get('/vault', fn () =&gt; Inertia::render('Vault'))
     -&gt;middleware(['auth.sesame', 'sesame.mfa']);</code></pre>
           <p class="ticket__foot"><code>sesame.mfa</code> also asks that the user's MFA is still good.</p>
         </article>
@@ -246,7 +252,7 @@ Route::get('/dashboard', fn () =&gt; view('dashboard'))
           <h3>No PHP on the machine?</h3>
           <p>Docker runs the suite on every supported PHP. The lines work as written in PowerShell, bash and zsh.</p>
         </div>
-<pre class="testbench__code"><code>docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
+<pre class="testbench__code" tabindex="0"><code>docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></pre>
