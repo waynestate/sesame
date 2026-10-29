@@ -76,11 +76,16 @@
             "@test",
             "@lint",
             "@analyse",
+            "@site:agent-ready-check",
             "@composer audit --locked"
-        ]
+        ],
+        "site:agent-ready": "php bin/agent-ready.php",
+        "site:agent-ready-check": "php bin/agent-ready.php --check"
     },
     "scripts-descriptions": {
-        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, and audit the locked dependencies."
+        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, check the agent-ready files, and audit the locked dependencies.",
+        "site:agent-ready": "Rewrite the Markdown twins, llms.txt, llms-full.txt, robots.txt and sitemap.xml in site/ (Squire's agent-ready kit).",
+        "site:agent-ready-check": "Fail when the agent-ready files are stale, a page lacks its Markdown link, a prompt drifts from the docs, or the kit was edited here."
     },
     "config": {
         "sort-packages": true,

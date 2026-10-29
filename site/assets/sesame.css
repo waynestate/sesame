@@ -890,3 +890,76 @@ li.hand__stop img { transition: transform 160ms ease, filter 160ms ease; }
 li.ring__tag:has(.part-link:hover) img,
 li.hand__stop:has(.part-link:hover) img { transform: translateY(-2px); }
 }
+
+/* ----------------------------------------------------- 16. agent-ready kit */
+/* Squire's agent-ready.css lays out the prompt blocks and the page menu; this
+   maps its tokens onto the key shop. Each prompt is a tear-off work order:
+   paper stock with a punched top edge and a dashed tear line, the order typed
+   on slate like the job tickets, and the command panel the green counter.
+   Duplicate keys while you wait; duplicate prompts while you don't. */
+:root {
+  --ar-bg: var(--paper);
+  --ar-ink: var(--ink);
+  --ar-muted: var(--ink-muted);
+  --ar-rule: rgba(49, 72, 66, .22);
+  --ar-accent: var(--green);
+  --ar-on-accent: #fff;
+  --ar-focus: var(--green);
+  --ar-code-bg: var(--slate);
+  --ar-code-ink: var(--cream);
+  --ar-term-bg: var(--green-deep);
+  --ar-term-ink: var(--cream);
+  --ar-display: var(--sign);
+  --ar-body: var(--wsu-font-family-body);
+  --ar-mono: var(--mono);
+  --ar-radius: 4px;
+  --ar-shadow: var(--shadow);
+}
+
+.ar-prompt {
+  border: 0; padding-top: 38px;
+  /* the job ticket's punched edge */
+  -webkit-mask: radial-gradient(circle 7px at 50% 0, transparent 98%, #000) top / 22px 100% repeat-x;
+          mask: radial-gradient(circle 7px at 50% 0, transparent 98%, #000) top / 22px 100% repeat-x;
+}
+.ar-prompt::before { content: ""; position: absolute; left: 0; right: 0; top: 18px; border-top: 2px dashed rgba(49, 72, 66, .35); }
+.ar-prompt__glyph {
+  width: 2.6rem; height: 2.6rem; border: 2px solid var(--brass-dark); border-radius: 50%;
+  font-family: var(--sign); font-weight: 400; font-size: .95rem; letter-spacing: 0;
+  color: var(--ink); background: var(--brass);
+}
+.ar-prompt__kicker { font-weight: 700; letter-spacing: .14em; color: var(--slate); }
+.ar-prompt__title { font-weight: 400; color: var(--green); font-size: clamp(1.15rem, 2.4vw, 1.4rem); line-height: 1.15; }
+.ar-prompt__text { border: 0; border-radius: 8px; font-size: .82rem; }
+.ar-prompt__more { color: var(--green); }
+.ar-btn--primary { box-shadow: 0 3px 0 var(--green-deep); }
+.ar-btn--primary:hover { background: var(--green-deep); box-shadow: 0 3px 0 #04201c; }
+.ar-chip[aria-expanded="true"] { border-color: var(--green); box-shadow: inset 0 -3px 0 var(--brass); }
+.ar-cmd { border-top: 6px solid var(--gold); }
+.ar-cmd .ar-btn { border-color: var(--gold); color: var(--gold); }
+.ar-cmd .ar-seg__btn[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+.ar-cmd .ar-seg { border-color: rgba(244, 241, 234, .55); }
+.ar-cmd :focus-visible { outline-color: var(--gold); }
+@media (prefers-reduced-motion: no-preference) {
+  .motion .ar-btn--primary:active { transform: translateY(3px); box-shadow: 0 0 0 var(--green-deep); }
+}
+
+/* The shop's card in the window: where an agent reads this page. */
+.agent-card { margin-top: 1.4rem; padding-top: .7rem; border-top: 2px dashed rgba(49, 72, 66, .3); gap: .1rem 1.1rem; }
+.agent-card .ar-page__label { font-weight: 700; letter-spacing: .16em; color: var(--slate); }
+.agent-card .ar-page__list { gap: 0 1.1rem; }
+.agent-card .ar-page__link, .agent-card .ar-page__btn { color: var(--green); font-weight: 700; }
+.agent-card .ar-status { flex-basis: 100%; font-family: var(--mono); font-size: .8rem; color: var(--ink-muted); }
+
+/* Work orders. */
+.section--orders { background: var(--peg); border-top: 1px solid rgba(49, 72, 66, .15); }
+.orders { display: grid; gap: clamp(18px, 2.4vw, 28px); }
+.orders > * { min-width: 0; }
+.orders__title { margin: 12px 0 0; font-family: var(--mono); font-weight: 700; font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--slate); }
+.orders .ar-prompt:not(.ar-prompt--lead) { --ar-preview-lines: 6; }
+.orders__fine { margin: 0; max-width: 46rem; color: var(--ink-muted); }
+
+@media print {
+  .ar-prompt__actions, .ar-cmd, .ar-prompt__more, .agent-card { display: none; }
+  .ar-prompt.is-collapsed .ar-prompt__text { max-height: none; -webkit-mask-image: none; mask-image: none; }
+}

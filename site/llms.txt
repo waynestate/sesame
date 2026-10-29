@@ -1,0 +1,47 @@
+# SESAME
+
+> SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.
+
+**The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
+key ever gets to keep the door.
+
+Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
+
+Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
+
+SESAME is Wayne State's protocol-neutral auth library. It returns a verified
+identity and leaves the session to the app: every driver ends in the same
+place, the app's `findOrImportUser(Identity)`, and the protocol never holds
+the session. Switching driver is a config change with no code change. Open
+sesame.
+
+Front page: [`site/index.html`](https://github.com/waynestate/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://github.com/waynestate/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
+
+This repository is published from Wayne State University's internal GitLab and
+mirrored here. Changes land there first; Wayne State developers open issues
+and merge requests on the internal project.
+
+Every page below is Markdown. The HTML pages send the same Markdown to a client that asks for `text/markdown`. Written by Squire's agent-ready kit from the README and the pages; do not edit.
+
+## Pages
+
+- [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.
+
+## Prompts
+
+- [Get started with SESAME](https://sesame.apps.wayne.edu/#prompt-get-started): Which doorway the app is, which key it needs, and the smallest plan to sign people in with a verified identity. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a raw PHP app](https://sesame.apps.wayne.edu/#prompt-raw-php): The core wired by hand: config, the driver, a user resolver, the app's own session, and a logout that only a POST can ring. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a Laravel app with Blade](https://sesame.apps.wayne.edu/#prompt-laravel-blade): The adapter the Laravel way: published config, a user resolver, the auth.sesame middleware and a CSRF-guarded sign-out. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a Laravel app with Inertia and Vue](https://sesame.apps.wayne.edu/#prompt-laravel-inertia): The same adapter. The middleware guards each route before any Vue page is sent, and the user reaches Vue as a prop. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [Move a Laravel app from wayne-cas to SESAME](https://sesame.apps.wayne.edu/#prompt-wayne-cas): The shim keeps the old names, so the move is a mapping, not a rewrite. The agent lists every part before it swaps one. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+
+## Source
+
+- [README](https://github.com/waynestate/sesame/blob/HEAD/README.md): the project's README, with install, commands and checks
+- [Everything in one file](https://sesame.apps.wayne.edu/llms-full.txt): the README and every page above, as one Markdown file
+
+## Optional
+
+- [ADVISOR](https://advisor.apps.wayne.edu/llms.txt): the stack's MCP server: read-only tools that answer from CREED's policy and the parts' docs instead of from memory
+- [WELD](https://weld.apps.wayne.edu/llms.txt): the Wayne State application stack: every part, and the reference app

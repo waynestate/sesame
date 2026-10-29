@@ -10,6 +10,10 @@
 <title>SESAME: The way in.</title>
 <meta name="description" content="SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.">
 <meta name="theme-color" content="#0c5449">
+<link rel="canonical" href="https://sesame.apps.wayne.edu/">
+<!-- For agents (ADR-0019): this page as Markdown, beside it. bin/agent-ready.php writes it from
+     Squire's kit, and the front controller also sends it to any client that asks for text/markdown. -->
+<link rel="alternate" type="text/markdown" href="index.md">
 <link rel="icon" href="brand/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png">
 <!--
@@ -18,6 +22,7 @@
   it in assets/sesame.css: same tokens and floor, a key shop on top.
 -->
 <link rel="stylesheet" href="assets/wayne-ui/wayne-ui.css">
+<link rel="stylesheet" href="assets/agent-ready.css">
 <link rel="stylesheet" href="assets/sesame.css">
 <script>
   /* Motion only for people who are happy with it. Everyone else walks into a
@@ -43,6 +48,7 @@
       <a href="#start">Doorways</a>
       <a href="#rules">Rules</a>
       <a href="#wayne-cas">wayne-cas</a>
+      <a href="#agents">Agents</a>
       <a href="#ring">Key ring</a>
       <a href="https://proof.apps.wayne.edu/sesame/">Proof</a>
     </nav>
@@ -99,6 +105,17 @@
           <a class="wsu-btn wsu-btn--primary wsu-btn--lg tag-btn" href="#keys">Try a key</a>
           <a class="hero__link" href="#duplicator">Watch one get cut</a>
         </p>
+
+        <!-- The card in the shop window: where an agent reads this page. The script adds Copy page
+             as Markdown and Open in ChatGPT; without it, the plain links still work. -->
+        <nav class="ar-page agent-card" aria-labelledby="agent-card-label" data-ar-page>
+          <p class="ar-page__label" id="agent-card-label">For your agent</p>
+          <ul class="ar-page__list">
+            <li><a class="ar-page__link" href="#agents">Have an agent cut it</a></li>
+            <li><a class="ar-page__link" href="index.md" type="text/markdown">This page as Markdown</a></li>
+            <li><a class="ar-page__link" href="llms.txt">llms.txt</a></li>
+          </ul>
+        </nav>
       </div>
 
     </div>
@@ -265,6 +282,183 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></
     </div>
   </section>
 
+  <!-- ========================================================= work orders -->
+  <!-- The prompts. Each is a work order the reader hands to their own agent: role, task, the
+       app's constraints, the output wanted, and a standing order to ask before guessing. The text
+       is plain HTML, so an agent reading this page (or index.md) gets it without the script;
+       agent-ready.js only adds the buttons. Keep the commands in step with the README:
+       bin/agent-ready.php --check fails a prompt that runs a command the docs do not. -->
+  <section class="section section--orders" id="agents" aria-labelledby="agents-title">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Work orders</p>
+        <h2 id="agents-title">Have your agent cut it</h2>
+        <p>Five work orders, ready for the coding agent you already use. Copy one, or run it straight in OpenCode, Claude Code, Codex or ChatGPT. Each one says which lock it is for, what the agent may not touch, and to ask at the counter before it guesses.</p>
+      </div>
+
+      <div class="orders">
+        <section class="ar-prompt ar-prompt--lead" id="prompt-get-started" aria-labelledby="prompt-get-started-title" data-ar-prompt>
+          <header class="ar-prompt__head">
+            <span class="ar-prompt__glyph" aria-hidden="true">00</span>
+            <div>
+              <p class="ar-prompt__kicker">Work order 00 · Any PHP app</p>
+              <h3 class="ar-prompt__title" id="prompt-get-started-title">Get started with SESAME</h3>
+              <p class="ar-prompt__desc">Which doorway the app is, which key it needs, and the smallest plan to sign people in with a verified identity.</p>
+            </div>
+          </header>
+          <pre class="ar-prompt__text"><code>You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
+
+Read first:
+- https://sesame.apps.wayne.edu/llms.txt, the index of SESAME's pages, each one as Markdown. Fetch the pages you need; do not work from memory.
+- This app's composer.json and composer.lock, its entry scripts or routes, and how it handles users and sessions today.
+- ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame, and list_stack_rules for the auth chapter. If it is not connected, say so and work from the pages. How to add it: https://advisor.apps.wayne.edu/llms.txt
+
+Task:
+1. Say which kind of app this is: raw PHP, Laravel with Blade, or Laravel with Inertia and Vue. If it uses wayne-cas today, say so: SESAME has a shim for that.
+2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, gateway only behind the auth gateway. Say why.
+3. List the settings that driver needs and where each value comes from: the environment, or the Playbook.
+4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
+
+Constraints:
+- The app owns the session. SESAME never starts one and never sets a cookie; never ask it to.
+- Fail closed: no default user, no fallback login, no bare header trusted as an identity.
+- The fake driver is for local work only; it refuses to boot in production.
+- Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access. SESAME runs without it, from the environment alone.
+- Never put a secret, a token or a key in a committed file.
+- Ask me before you guess, and before you touch anything that deploys.
+
+Output: the app kind, the driver and why, a settings table (setting, where it comes from, value or ask), the plan, then your questions.</code></pre>
+        </section>
+
+        <h3 class="orders__title">Or pick your doorway</h3>
+        <section class="ar-prompt" id="prompt-raw-php" aria-labelledby="prompt-raw-php-title" data-ar-prompt>
+          <header class="ar-prompt__head">
+            <span class="ar-prompt__glyph" aria-hidden="true">01</span>
+            <div>
+              <p class="ar-prompt__kicker">Work order 01 · Raw PHP</p>
+              <h3 class="ar-prompt__title" id="prompt-raw-php-title">SESAME in a raw PHP app</h3>
+              <p class="ar-prompt__desc">The core wired by hand: config, the driver, a user resolver, the app's own session, and a logout that only a POST can ring.</p>
+            </div>
+          </header>
+          <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a raw PHP app (no framework) at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack.
+
+Read first:
+- https://sesame.apps.wayne.edu/llms.txt, then the README's Raw PHP section and the section for the driver this app needs.
+- This app's composer.json, its front controller or entry scripts, and where it calls session_start().
+- ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame, and list_stack_rules with permutation raw-php for the auth rules. If it is not connected, say so and work from the pages.
+
+Task:
+1. Install with `composer require waynestate/sesame`.
+2. Build Config, the driver from DriverFactory, a UserResolver whose findOrImportUser(Identity) returns this app's user, and NativeSession, as the README shows; then call sesame() once.
+3. Sign in with sesame_login(), read the user on protected pages with sesame_user(), and sign out with a POST form that carries sesame_logout_token().
+4. Show me each file you would change before you write it.
+
+Constraints:
+- Start the session yourself, before SESAME. Set session.gc_maxlifetime to at least SESAME's idle timeout (7200 for the default 120 minutes), or PHP ends sessions after 24 quiet minutes.
+- Logout is POST only, with the token. Never make it a GET link.
+- Read the CAS base URL and the other settings from the environment, or with Setting::get; never hard-code them.
+- Ask me before you guess, and before you touch anything that deploys.
+
+Output: the changes as a diff per file, then how to try it locally with the fake driver, then your questions.</code></pre>
+        </section>
+
+        <section class="ar-prompt" id="prompt-laravel-blade" aria-labelledby="prompt-laravel-blade-title" data-ar-prompt>
+          <header class="ar-prompt__head">
+            <span class="ar-prompt__glyph" aria-hidden="true">02</span>
+            <div>
+              <p class="ar-prompt__kicker">Work order 02 · Laravel and Blade</p>
+              <h3 class="ar-prompt__title" id="prompt-laravel-blade-title">SESAME in a Laravel app with Blade</h3>
+              <p class="ar-prompt__desc">The adapter the Laravel way: published config, a user resolver, the auth.sesame middleware and a CSRF-guarded sign-out.</p>
+            </div>
+          </header>
+          <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a Laravel app that renders its pages with Blade, at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack; its Laravel adapter is a discovered service provider that holds no rules of its own.
+
+Read first:
+- https://sesame.apps.wayne.edu/llms.txt, then the README's Laravel section and the section for the driver this app needs.
+- This app's composer.json, config/, routes/web.php, its User model, .env.example and config/session.php.
+- ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame, and list_stack_rules with permutation laravel-blade for the auth rules. If it is not connected, say so and work from the pages.
+
+Task:
+1. Install with `composer require waynestate/sesame` and publish the config with `php artisan vendor:publish --tag=sesame-config`.
+2. Write the user resolver class and name it in SESAME_USER_RESOLVER. Add every setting the driver needs to .env.example, with no real values.
+3. Guard the app's routes with auth.sesame (and sesame.mfa where MFA is required), and give the layout a sign-out form that posts to /logout with @csrf.
+4. Show me the whole diff before you write it.
+
+Constraints:
+- Keep the adapter's sesame.login route name, even if the app takes the routes over.
+- The session store must be shared (database or redis), never local files.
+- The cas and oauth2 drivers need a PSR-18 client: Guzzle if the app has it, or a bound client.
+- Ask me before you guess, and before you touch migrations or anything that deploys.
+
+Output: the diff, the .env.example lines, then your questions.</code></pre>
+        </section>
+
+        <section class="ar-prompt" id="prompt-laravel-inertia" aria-labelledby="prompt-laravel-inertia-title" data-ar-prompt>
+          <header class="ar-prompt__head">
+            <span class="ar-prompt__glyph" aria-hidden="true">03</span>
+            <div>
+              <p class="ar-prompt__kicker">Work order 03 · Laravel, Inertia and Vue</p>
+              <h3 class="ar-prompt__title" id="prompt-laravel-inertia-title">SESAME in a Laravel app with Inertia and Vue</h3>
+              <p class="ar-prompt__desc">The same adapter. The middleware guards each route before any Vue page is sent, and the user reaches Vue as a prop.</p>
+            </div>
+          </header>
+          <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a Laravel app with Inertia and Vue, at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack. The Laravel adapter guards routes on the server, so a page that needs a signed-in user is never sent to a guest.
+
+Read first:
+- https://sesame.apps.wayne.edu/llms.txt, then the README's Laravel section and the section for the driver this app needs.
+- This app's composer.json, config/, routes/web.php, its User model, .env.example, and the Inertia middleware that shares props (often HandleInertiaRequests).
+- ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame, and list_stack_rules with permutation laravel-inertia-vue for the auth rules. If it is not connected, say so and work from the pages.
+
+Task:
+1. Install with `composer require waynestate/sesame` and publish the config with `php artisan vendor:publish --tag=sesame-config`.
+2. Write the user resolver class and name it in SESAME_USER_RESOLVER. Add every setting the driver needs to .env.example, with no real values.
+3. Guard the Inertia routes with auth.sesame (and sesame.mfa where MFA is required). Share only the user fields the Vue pages need, never the whole identity.
+4. Sign out with a POST to /logout that carries Laravel's CSRF token. Check how this app's Inertia setup sends that token before you rely on it.
+5. Show me the whole diff before you write it.
+
+Constraints:
+- Authorization lives on the server. A Vue component may hide a button; it never decides who gets in.
+- Keep the adapter's sesame.login route name. The session store must be shared (database or redis).
+- Ask me before you guess, and before you touch migrations, the build, or anything that deploys.
+
+Output: the diff, the .env.example lines, then your questions.</code></pre>
+        </section>
+
+        <section class="ar-prompt" id="prompt-wayne-cas" aria-labelledby="prompt-wayne-cas-title" data-ar-prompt>
+          <header class="ar-prompt__head">
+            <span class="ar-prompt__glyph" aria-hidden="true">04</span>
+            <div>
+              <p class="ar-prompt__kicker">Work order 04 · Re-key from wayne-cas</p>
+              <h3 class="ar-prompt__title" id="prompt-wayne-cas-title">Move a Laravel app from wayne-cas to SESAME</h3>
+              <p class="ar-prompt__desc">The shim keeps the old names, so the move is a mapping, not a rewrite. The agent lists every part before it swaps one.</p>
+            </div>
+          </header>
+          <pre class="ar-prompt__text"><code>You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. SESAME ships a wayne-cas shim that keeps the old names and behaviour and logs once that it is a deprecated bridge.
+
+Read first:
+- https://sesame.apps.wayne.edu/llms.txt, then the README's Moving from wayne-cas section and its mapping table.
+- This app's composer.json, config/wayne-cas.php if there is one, the User model, the routes and middleware that use WayneAuthenticate, and every call to auth()-&gt;login().
+- ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame. If it is not connected, say so and work from the pages.
+
+Task:
+1. List every wayne-cas part the app uses, with the file and line, and the SESAME part that replaces it from the mapping table.
+2. Plan the move: install with `composer require waynestate/sesame`, set sesame.cas.base_url from wayne-cas.root, make the User model implement WayneCasable with the ReadOnlyAttributes trait, and swap the middleware for the wayne.cas alias.
+3. Say whether the app turns use2FA on. The shim does not carry it; it logs a warning and leaves 2FA to the app. Ask me what should replace it.
+4. Change nothing yet.
+
+Constraints:
+- Keep the model's static findOrImportUser: the shim finds the user the way wayne-cas did.
+- Remove wayne-cas only after the app signs in through SESAME, never in the same step.
+- Ask me before you guess, and before you touch anything that deploys.
+
+Output: the parts table (wayne-cas part, file and line, SESAME part), the plan as numbered steps, then your questions.</code></pre>
+        </section>
+
+        <p class="orders__fine">The agent reads the same pages you do: <a href="llms.txt">llms.txt</a> lists them, <a href="llms-full.txt">llms-full.txt</a> holds them in one file, and this page has a <a href="index.md" type="text/markdown">Markdown twin</a>. Nothing here phones home; the buttons only copy text or open the tool you picked. No key ever gets to keep the door, and no agent does either.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- =============================================================== rules -->
   <section class="section section--rules" id="rules" aria-labelledby="rules-title">
     <div class="wrap rules__grid">
@@ -382,6 +576,7 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></
 <!-- Where the shop talks back. Say the magic words and find out. -->
 <div class="toast" role="status" aria-live="polite"></div>
 
+<script src="assets/agent-ready.js" defer></script>
 <script src="assets/sesame.js" defer></script>
 </body>
 </html>
