@@ -423,6 +423,30 @@ final class OidcDriverTest extends TestCase
         self::assertSame(2, $this->op->jwksFetches, 'No second refresh within the cooldown.');
     }
 
+    public function testAKeyRotatedRightAfterTheColdFetchIsPickedUpAtOnce(): void
+    {
+        $driver = $this->driver();
+        $this->op->publishedKid = 'old-kid';
+        $this->op->headerOverrides = ['kid' => 'old-kid'];
+        $this->signIn($driver);
+        self::assertSame(1, $this->op->jwksFetches);
+
+        // No clock advance: the cold fetch did not start the cooldown.
+        $this->op->publishedKid = 'new-kid';
+        $this->op->headerOverrides = ['kid' => 'new-kid'];
+
+        self::assertInstanceOf(Authenticated::class, $this->signIn($driver));
+        self::assertSame(2, $this->op->jwksFetches);
+    }
+
+    public function testAnUnknownKidOnTheColdFetchIsNotFetchedTwiceInOneCall(): void
+    {
+        $this->op->headerOverrides = ['kid' => 'a-key-nobody-published'];
+
+        $this->assertRejected('oidc.unknown_key', fn(): mixed => $this->signIn($this->driver()));
+        self::assertSame(1, $this->op->jwksFetches);
+    }
+
     public function testARotatedKeyIsPickedUpByTheRefresh(): void
     {
         $driver = $this->driver();

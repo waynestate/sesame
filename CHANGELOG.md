@@ -63,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   argument (the oidc driver needs it).
 - `JwksProvider` takes the algorithm per key lookup and a reason prefix,
   so the oauth2 and oidc drivers share it.
+- `JwksProvider`: the first (cold) key-set fetch no longer starts the
+  one-minute refetch cooldown, so a key rotated just after it is picked up
+  by the next unknown key id (oauth2 and oidc).
 
 ## [0.1.3] - 2026-10-29
 

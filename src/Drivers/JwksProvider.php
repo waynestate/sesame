@@ -75,10 +75,14 @@ final readonly class JwksProvider
         $justFetched = false;
 
         if ($set === null) {
-            // Cold start: no cached set yet, so fetch and keep one.
+            // Cold start: no cached set yet, so fetch and keep one. The cold
+            // fetch does not start the refetch cooldown: a key rotated just
+            // after it must still be picked up by the next unknown kid,
+            // not refused for a minute. A failing issuer is still not
+            // hammered, because a failed fetch throws before anything is
+            // kept, and each request makes at most one cold fetch.
             $set = $this->fetch();
             $this->store($set);
-            $this->markRefetched();
             $justFetched = true;
         }
 
@@ -90,7 +94,8 @@ final readonly class JwksProvider
 
         // An unknown key id means the cached set may be stale: the issuer
         // rotated its keys. Refetch once, at most once per minute, then fail
-        // closed rather than trust a key nobody published.
+        // closed rather than trust a key nobody published. A set fetched in
+        // this very call is as fresh as it gets, so it is not fetched again.
         if ($justFetched || $this->recentlyRefetched()) {
             return null;
         }

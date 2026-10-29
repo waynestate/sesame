@@ -452,29 +452,35 @@ final class OAuth2DriverTest extends TestCase
 
     public function testAnUnknownKeyIdRefetchesAtMostOncePerMinute(): void
     {
-        // Both answers hold only key A: the refetch finds nothing new.
+        // Every answer holds only key A: the refetches find nothing new.
         [, $jwkA] = self::keyPair('a');
         [$privateKeyB] = self::keyPair('b');
 
         $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
         $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
+        $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
 
         $token = $this->token($privateKeyB, self::KID_B);
 
+        // The cold fetch: one request, and no second fetch in the same call.
         $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
-
-        // The first fetch already marked the window, so a second bad token
-        // within it costs no request at all.
-        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
-
         self::assertCount(1, $this->http->requests);
+
+        // The cold fetch does not start the cooldown, so the next unknown
+        // kid may refetch once, and that refetch marks the window.
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        self::assertCount(2, $this->http->requests);
+
+        // Within the window, a further bad token costs no request at all.
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        self::assertCount(2, $this->http->requests);
 
         // After the window, the provider may refetch again.
         $this->clock->advance(61);
 
         $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
-        self::assertCount(2, $this->http->requests);
+        self::assertCount(3, $this->http->requests);
     }
 
     public function testAStaleCachedSetIsRefreshedWhenTheIssuerRotates(): void

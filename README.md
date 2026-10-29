@@ -439,7 +439,8 @@ optional `auth_time` and `amr` claims become the identity's MFA facts, for
 The key set is fetched once and kept for `oauth2.jwks_cache_ttl_seconds`. When
 a token carries a key id the cached set does not know, the provider refetches
 the set once, and at most once a minute, so a rotated key is picked up without
-hammering the issuer. Everything about the fetch fails closed: an unreachable
+hammering the issuer. The first fetch does not start that minute, so a key
+rotated just after it is still picked up at once. Everything about the fetch fails closed: an unreachable
 issuer, a non-2xx answer, or an empty or malformed key set all refuse the
 sign-in rather than let it through.
 
