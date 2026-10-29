@@ -25,7 +25,7 @@ the session. Switching driver is a config change with no code change. Open
 sesame.
 
 Front page: [`site/index.html`](site/index.html), a static page you can open in a browser or serve from `site/`.
-On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](deploy/): a SQUIRE kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
 This repository is published from Wayne State University's internal GitLab and
 mirrored here. Changes land there first; Wayne State developers open issues
@@ -37,7 +37,7 @@ and merge requests on the internal project.
 composer require waynestate/sesame
 ```
 
-## WSU values (PLAYBOOK)
+## WSU values (Playbook)
 
 Open sesame, minus the incantation. Four settings carry Wayne State's shared
 values: where the CAS server lives, and who signs the gateway and oauth2
@@ -104,7 +104,7 @@ Citadel environment). SESAME does not read `.env.playbook` itself.
 
 The token is your own: `read_api` for curl, `read_repository` for clone and Composer.
 
-PLAYBOOK is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access.
+Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access.
 
 Raw-PHP apps that build their config by hand can resolve a value the same
 way the Laravel config does:
@@ -318,7 +318,7 @@ not send one, the MFA check fails because there is no sign-in time to age.
 ## The gateway driver
 
 The gateway driver signs the user in from a signed JWT assertion that the auth
-gateway (DRAWBRIDGE) puts in one header. It verifies the assertion's signature
+gateway (Drawbridge) puts in one header. It verifies the assertion's signature
 against the gateway's public key, then checks the issuer, audience and time
 claims. It never reads a plain identity header: `Remote-User`,
 `X-Remote-User`, or any spelling of them, because a plain header can come from
@@ -472,7 +472,7 @@ sign-in rather than let it through.
 Open sesame, said straight to Entra. The oidc driver signs a person in
 through the browser with OpenID Connect: the authorization code flow with
 PKCE (S256), the ID token checked against the issuer's key set. It is the
-Entra-direct path beside `cas` and `gateway` (DRAWBRIDGE), and it
+Entra-direct path beside `cas` and `gateway` (Drawbridge), and it
 needs `league/oauth2-client`, which SESAME suggests but does not require:
 
 ```
@@ -1049,12 +1049,12 @@ git.wayne.edu instance runner.
   <a href="https://github.com/waynestate/sesame" title="SESAME"><img src="docs/readme/cast/sesame.png" width="40" alt="SESAME"></a>
   <a href="https://github.com/waynestate/helmet" title="HELMET"><img src="docs/readme/cast/helmet.png" width="40" alt="HELMET"></a>
   <a href="https://github.com/waynestate/sourdough" title="Sourdough"><img src="docs/readme/cast/sourdough.png" width="40" alt="Sourdough"></a>
-  <a href="https://github.com/waynestate/squire" title="SQUIRE"><img src="docs/readme/cast/squire.png" width="40" alt="SQUIRE"></a>
-  <a href="https://github.com/waynestate/preflight" title="PREFLIGHT"><img src="docs/readme/cast/preflight.png" width="40" alt="PREFLIGHT"></a>
+  <a href="https://github.com/waynestate/squire" title="Squire"><img src="docs/readme/cast/squire.png" width="40" alt="Squire"></a>
+  <a href="https://github.com/waynestate/preflight" title="Preflight"><img src="docs/readme/cast/preflight.png" width="40" alt="Preflight"></a>
   <a href="https://github.com/waynestate/pinstripe" title="Pinstripe"><img src="docs/readme/cast/pinstripe.png" width="40" alt="Pinstripe"></a>
-  <a href="https://github.com/waynestate/booster" title="BOOSTER"><img src="docs/readme/cast/booster.png" width="40" alt="BOOSTER"></a>
-  <a href="https://github.com/waynestate/rollcall" title="ROLLCALL"><img src="docs/readme/cast/rollcall.png" width="40" alt="ROLLCALL"></a>
-  <a href="https://github.com/waynestate/drawbridge" title="DRAWBRIDGE"><img src="docs/readme/cast/drawbridge.png" width="40" alt="DRAWBRIDGE"></a>
+  <a href="https://github.com/waynestate/booster" title="Booster"><img src="docs/readme/cast/booster.png" width="40" alt="Booster"></a>
+  <a href="https://github.com/waynestate/rollcall" title="Rollcall"><img src="docs/readme/cast/rollcall.png" width="40" alt="Rollcall"></a>
+  <a href="https://github.com/waynestate/drawbridge" title="Drawbridge"><img src="docs/readme/cast/drawbridge.png" width="40" alt="Drawbridge"></a>
   <a href="https://github.com/waynestate/advisor" title="ADVISOR"><img src="docs/readme/cast/advisor.png" width="40" alt="ADVISOR"></a>
   <a href="https://github.com/waynestate/weld" title="WELD"><img src="docs/readme/cast/weld.png" width="40" alt="WELD"></a>
 </div>

@@ -255,13 +255,13 @@ How the stack holds it: `Checked`. `composer.json` requires `^8.3`, and PROCTOR'
 Run a Composer audit in CI and before release.
 Why: auth code pulls in HTTP and XML packages whose bugs are your bugs.
 Sources: [Packagist, Composer 2.9](https://blog.packagist.com/composer-2-9/) (released 2025-11-13: updates that would install a package version with a known advisory are blocked by default, setting `audit.block-insecure`; `audit.block-abandoned` is off by default), [GitLab dependency scanning](https://docs.gitlab.com/user/application_security/dependency_scanning/) (an Ultimate-tier feature, per its page).
-How the stack holds it: `Checked`. Second pass correction: the first pass said the SESAME repo has no CI file. `.gitlab-ci.yml` now exists and includes the PREFLIGHT `php-test` and `composer-audit` components. In apps, PROCTOR's `ComposerAuditCheck` also checks. Because Composer 2.9 blocks advisory-hit versions by default, an advisory published later can fail an install or update, so write down who may add an audit ignore and for how long. A disputed advisory (the `firebase/php-jwt` case above) is the test of that rule. Nothing in the repo says what the components check, so read PREFLIGHT before relying on it. GitLab's dependency scanning needs Ultimate and I do not know the tier of the WSU instance, so `composer audit` stays the base check.
+How the stack holds it: `Checked`. Second pass correction: the first pass said the SESAME repo has no CI file. `.gitlab-ci.yml` now exists and includes the Preflight `php-test` and `composer-audit` components. In apps, PROCTOR's `ComposerAuditCheck` also checks. Because Composer 2.9 blocks advisory-hit versions by default, an advisory published later can fail an install or update, so write down who may add an audit ignore and for how long. A disputed advisory (the `firebase/php-jwt` case above) is the test of that rule. Nothing in the repo says what the components check, so read Preflight before relying on it. GitLab's dependency scanning needs Ultimate and I do not know the tier of the WSU instance, so `composer audit` stays the base check.
 
 ### S39. Run the tests on every supported PHP
 Run the suite on the lowest and the highest supported PHP.
 Why: session and XML behaviour differ between PHP versions.
 Sources: none specific. The PHP manual notes that session settings change between versions, for example in 8.4.
-How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the PREFLIGHT `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
+How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the Preflight `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
 
 ### S40. Compatibility shims must not bring back old weaknesses
 The planned wayne-cas and simplecas shims map old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
@@ -313,7 +313,7 @@ How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from 
 Include pipeline components by commit SHA, never `~latest`.
 Why: a moving component can change what your pipeline runs, or what it skips, with no change in your repo. GitLab says components are used at your own risk.
 Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (commit SHA is the preferred pin; "Avoid using `latest`").
-How the stack holds it: `Documented`. `.gitlab-ci.yml` pins both PREFLIGHT components to one commit SHA and says never to use `~latest`. Nothing checks it, so PROCTOR could flag an unpinned `include:` in any repo.
+How the stack holds it: `Documented`. `.gitlab-ci.yml` pins both Preflight components to one commit SHA and says never to use `~latest`. Nothing checks it, so PROCTOR could flag an unpinned `include:` in any repo.
 
 ## 8. MFA
 
@@ -428,8 +428,8 @@ Corrected:
 - S26: the first pass cited ASVS V6.3.8, which is about account enumeration. Replaced with V16.5.1.
 - S3: the first pass allowed `SameSite=Strict`. Changed to `Lax`, with the reason (S41).
 - S19: the first pass said no document names the CAS login-age attributes. The CAS 3.0 spec names `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`.
-- S38, S39 and the gap list: the first pass said the repo has no `.gitlab-ci.yml`. It has one (PREFLIGHT components pinned to a commit).
-- S39: the Docker matrix now includes PHP 8.5, and CI runs 8.3, 8.4 and 8.5 through PREFLIGHT.
+- S38, S39 and the gap list: the first pass said the repo has no `.gitlab-ci.yml`. It has one (Preflight components pinned to a commit).
+- S39: the Docker matrix now includes PHP 8.5, and CI runs 8.3, 8.4 and 8.5 through Preflight.
 - S43 (new) records that the PHP manual itself advises a grace period over `session_regenerate_id(true)`, which the first pass left as an open trade-off.
 
 Checked and found correct: PHP support dates (S37), NIST AAL2 24 hours and 1 hour (S5), the ASVS 5.0 requirement numbers V6.8.1 to V6.8.4, V7.1.1, V7.1.3, V7.2.4, V7.3.1, V7.3.2, V7.4.1, V7.6.1, V9.1.2, V9.1.3, V9.2.1 to V9.2.3, V1.5.1 and V1.5.2, the `ST-` ticket prefix, Guzzle's zero default timeout, and the `__Host-` OWASP recommendation. The rfc6265bis reference is still a draft, as the first pass said.
