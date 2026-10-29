@@ -696,8 +696,8 @@ final class OidcDriver implements Driver, RemembersReturnTo
 
     /**
      * The return-to for after the sign-in, or null when none was asked for
-     * or it fails the ReturnTo rule (an absolute https URL on the redirect
-     * URI's host).
+     * or it fails the ReturnTo rule (an absolute https URL with the redirect
+     * URI's scheme, host and port, and no credentials).
      */
     private function safeReturnTo(mixed $returnTo): ?string
     {

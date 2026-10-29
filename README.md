@@ -527,8 +527,9 @@ app, `oidc.assume_mfa` adds `mfa` to the methods, exactly like
 `hasAuthContext()`.
 
 **Return-to.** A login request may carry `return_to`. It is kept only when
-it passes the ReturnTo rule (an absolute https URL on the redirect URI's
-host); anything else is dropped, so it can never be an open redirect. After
+it passes the ReturnTo rule (an absolute https URL with the redirect URI's
+scheme, host and port, and no user name or password); anything else is
+dropped, so it can never be an open redirect. After
 the callback, `sesame_login()` and the Laravel route send the user there.
 
 **Logout.** The app session is cleared first, as for every driver. With

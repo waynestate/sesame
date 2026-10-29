@@ -211,7 +211,7 @@ if (! function_exists('sesame_logout')) {
      * logout URL when the driver has one, otherwise to the safe return-to,
      * and stops the script, so no protected code runs after the redirect.
      *
-     * The return-to must be an absolute https URL on the service host;
+     * The return-to must be an absolute https URL on the service URL's scheme, host and port;
      * anything else sends the user to the service URL instead, so a logout
      * can never be turned into an open redirect.
      */

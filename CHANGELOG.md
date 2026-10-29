@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Laravel: the Guzzle client SESAME builds when the app binds none has
   redirects off.
+- `ReturnTo` (every driver's login and logout return-to) now requires the
+  service URL's scheme, host and effective port, and refuses a URL with a
+  user name or password; before, the host alone was compared, so
+  `https://app.example.test:8443/` passed for a service on 443. Plain http
+  is accepted only for a localhost or 127.0.0.1 service URL.
 - `DriverFactory::make()` takes the app session as an optional seventh
   argument (the oidc driver needs it).
 - `JwksProvider` takes the algorithm per key lookup and a reason prefix,

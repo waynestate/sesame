@@ -214,7 +214,7 @@ final class Sesame
     /**
      * The safe URL to send the user to after logout.
      *
-     * The return-to must be an absolute https URL on the service host;
+     * The return-to must be an absolute https URL on the service URL's scheme, host and port;
      * anything else sends the user to the service URL instead, so a logout
      * can never be turned into an open redirect.
      */

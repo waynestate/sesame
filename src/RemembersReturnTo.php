@@ -9,7 +9,7 @@ namespace Waynestate\Sesame;
  *
  * Optional: a driver that implements it hands back, after a completed
  * sign-in, the page the user asked for. The value has already passed the
- * ReturnTo rule (an absolute https URL on the service host), so it can never
+ * ReturnTo rule (an absolute https URL on the service URL's scheme, host and port), so it can never
  * be an open redirect.
  */
 interface RemembersReturnTo
