@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] (2026-10-29)
+
 ### Added
 
 - Step-up by authentication context: the gateway driver reads the signed
@@ -70,3 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the `waynestate/pinstripe` dev dependency instead of the hand-copied
   settings: PHPStan level 8, deprecation checks on, strict rules stay on.
   No behaviour changed.
+
+## [0.1.0] (2026-10-27)
+
+- First tagged release.
