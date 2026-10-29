@@ -24,7 +24,7 @@ final class LoginRegeneratesTest extends LaravelTestCase
     public function testLoginRegeneratesTheSessionId(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
 
         /** @var \Illuminate\Contracts\Session\Session $store */
         $store = $app['session.store'];
@@ -39,15 +39,15 @@ final class LoginRegeneratesTest extends LaravelTestCase
             ->get('/login')
             ->assertRedirect('/');
 
-        $this->assertNotSame($before, $store->getId());
-        $this->assertSame('before', $store->get('marker'));
-        $this->assertSame('the-user', $app->make(Sesame::class)->user());
+        self::assertNotSame($before, $store->getId());
+        self::assertSame('before', $store->get('marker'));
+        self::assertSame('the-user', $app->make(Sesame::class)->user());
     }
 
     public function testLoginRegeneratesTheSessionIdAfterACasLogin(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['config']->set('sesame.driver', 'cas');
         $app['config']->set('sesame.cas.base_url', 'https://cas.test/cas');
         $app['config']->set('sesame.cas.service_url', 'https://app.test/login');
@@ -66,9 +66,9 @@ final class LoginRegeneratesTest extends LaravelTestCase
             ->get('/login?ticket=ST-1')
             ->assertRedirect('/');
 
-        $this->assertNotSame($before, $store->getId());
-        $this->assertSame('before', $store->get('marker'));
-        $this->assertSame('the-user', $app->make(Sesame::class)->user());
+        self::assertNotSame($before, $store->getId());
+        self::assertSame('before', $store->get('marker'));
+        self::assertSame('the-user', $app->make(Sesame::class)->user());
     }
 
     /**

@@ -36,58 +36,58 @@ final class MfaTest extends TestCase
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
-        $this->assertTrue($result->satisfied);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertTrue($result->satisfied);
     }
 
     public function testNoAuthTimeWhenAuthTimeIsNull(): void
     {
         $result = Mfa::satisfied($this->identity(null, ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
-        $this->assertFalse($result->satisfied);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertFalse($result->satisfied);
     }
 
     public function testNoMfaMethodWhenAmrHasNoMfaMethod(): void
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', ['pwd']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
+        self::assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
     }
 
     public function testNoMfaMethodWhenAmrIsEmpty(): void
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', []), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
+        self::assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
     }
 
     public function testTooOldWhenAuthTimeIsOlderThanMaxAge(): void
     {
         $result = Mfa::satisfied($this->identity('-28801 seconds', ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::TOO_OLD, $result->reason);
+        self::assertSame(MfaResult::TOO_OLD, $result->reason);
     }
 
     public function testBoundaryExactlyMaxAgeIsSatisfied(): void
     {
         $result = Mfa::satisfied($this->identity('-28800 seconds', ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
     }
 
     public function testFutureAuthTimeWhenAuthTimeIsBeyondTheSkew(): void
     {
         $result = Mfa::satisfied($this->identity('+61 seconds', ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::FUTURE_AUTH_TIME, $result->reason);
+        self::assertSame(MfaResult::FUTURE_AUTH_TIME, $result->reason);
     }
 
     public function testFutureAuthTimeWithinTheSkewIsSatisfied(): void
     {
         $result = Mfa::satisfied($this->identity('+60 seconds', ['mfa']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
     }
 
     public function testCasIdentityIsAlwaysDenied(): void
@@ -96,7 +96,7 @@ final class MfaTest extends TestCase
 
         $result = Mfa::satisfied($identity, self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
     }
 
     /**
@@ -120,27 +120,27 @@ final class MfaTest extends TestCase
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', [$method]), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
     }
 
     public function testAMfaMethodAmongOtherValuesCounts(): void
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', ['pwd', 'x509', 'otp']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
     }
 
     public function testNonMfaAmrValuesAloneDoNotCount(): void
     {
         $result = Mfa::satisfied($this->identity('-60 seconds', ['pwd', 'x509']), self::MAX_AGE, $this->now());
 
-        $this->assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
+        self::assertSame(MfaResult::NO_MFA_METHOD, $result->reason);
     }
 
     public function testTheMessageMatchesTheReason(): void
     {
         $result = Mfa::satisfied($this->identity(null, []), self::MAX_AGE, $this->now());
 
-        $this->assertSame('The identity provider did not report when the user last completed MFA.', $result->message());
+        self::assertSame('The identity provider did not report when the user last completed MFA.', $result->message());
     }
 }

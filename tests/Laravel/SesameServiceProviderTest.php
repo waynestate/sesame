@@ -26,45 +26,45 @@ final class SesameServiceProviderTest extends LaravelTestCase
 {
     public function testItMergesTheConfig(): void
     {
-        $this->assertSame('fake', config('sesame.driver'));
-        $this->assertSame('jdoe', config('sesame.fake.username'));
-        $this->assertSame(TestUserResolver::class, config('sesame.user_resolver'));
-        $this->assertTrue(config('sesame.routes'));
-        $this->assertSame(120, config('sesame.session.idle_minutes'));
-        $this->assertSame(720, config('sesame.session.absolute_minutes'));
-        $this->assertSame(28800, config('sesame.mfa.max_age'));
-        $this->assertSame('deny', config('sesame.mfa.on_failure'));
+        self::assertSame('fake', config('sesame.driver'));
+        self::assertSame('jdoe', config('sesame.fake.username'));
+        self::assertSame(TestUserResolver::class, config('sesame.user_resolver'));
+        self::assertTrue(config('sesame.routes'));
+        self::assertSame(120, config('sesame.session.idle_minutes'));
+        self::assertSame(720, config('sesame.session.absolute_minutes'));
+        self::assertSame(28800, config('sesame.mfa.max_age'));
+        self::assertSame('deny', config('sesame.mfa.on_failure'));
     }
 
     public function testItRegistersTheLoginAndLogoutRoutes(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $routes = $app['router']->getRoutes();
 
-        $this->assertTrue($routes->hasNamedRoute('sesame.login'));
-        $this->assertTrue($routes->hasNamedRoute('sesame.logout'));
+        self::assertTrue($routes->hasNamedRoute('sesame.login'));
+        self::assertTrue($routes->hasNamedRoute('sesame.logout'));
     }
 
     public function testItAliasesTheMiddleware(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $aliases = $app['router']->getMiddleware();
 
-        $this->assertArrayHasKey('auth.sesame', $aliases);
-        $this->assertArrayHasKey('sesame.mfa', $aliases);
-        $this->assertArrayHasKey('wayne.cas', $aliases);
+        self::assertArrayHasKey('auth.sesame', $aliases);
+        self::assertArrayHasKey('sesame.mfa', $aliases);
+        self::assertArrayHasKey('wayne.cas', $aliases);
     }
 
     public function testItBindsTheContainer(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
-        $this->assertInstanceOf(Sesame::class, $app->make(Sesame::class));
-        $this->assertInstanceOf(Driver::class, $app->make(Driver::class));
-        $this->assertInstanceOf(TestUserResolver::class, $app->make(UserResolver::class));
-        $this->assertInstanceOf(LaravelSession::class, $app->make(LaravelSession::class));
+        self::assertNotNull($app);
+        self::assertInstanceOf(Sesame::class, $app->make(Sesame::class));
+        self::assertInstanceOf(Driver::class, $app->make(Driver::class));
+        self::assertInstanceOf(TestUserResolver::class, $app->make(UserResolver::class));
+        self::assertInstanceOf(LaravelSession::class, $app->make(LaravelSession::class));
     }
 
     public function testItUsesTheAppsClockWhenThereIsOne(): void
@@ -73,12 +73,12 @@ final class SesameServiceProviderTest extends LaravelTestCase
         // clock would store a different timestamp.
         $clock = new FakeClock('2020-01-01T00:00:00+00:00');
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app->instance(ClockInterface::class, $clock);
 
         $this->get('/login')->assertRedirect('/');
 
-        $this->assertSame(
+        self::assertSame(
             $clock->now()->getTimestamp(),
             $app->make(LaravelSession::class)->get('sesame.signed_in_at'),
         );
@@ -87,10 +87,10 @@ final class SesameServiceProviderTest extends LaravelTestCase
     public function testItResolvesAReplayGuard(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['config']->set('cache.default', 'array');
 
-        $this->assertInstanceOf(Psr16ReplayGuard::class, $app->make(ReplayGuard::class));
+        self::assertInstanceOf(Psr16ReplayGuard::class, $app->make(ReplayGuard::class));
     }
 
     public function testItUsesTheConfiguredReplayStore(): void
@@ -98,14 +98,14 @@ final class SesameServiceProviderTest extends LaravelTestCase
         // The default store is pointed elsewhere; the guard must still write
         // to the store named in sesame.gateway.replay_store.
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['config']->set('cache.default', 'file');
         $app['config']->set('sesame.gateway.replay_store', 'array');
 
         $guard = $app->make(ReplayGuard::class);
-        $this->assertFalse($guard->seen('jti-1', (new DateTimeImmutable())->modify('+240 seconds')));
+        self::assertFalse($guard->seen('jti-1', (new DateTimeImmutable())->modify('+240 seconds')));
 
         $key = 'sesame.jti.' . hash('sha256', 'jti-1');
-        $this->assertTrue($app['cache']->store('array')->has($key));
+        self::assertTrue($app['cache']->store('array')->has($key));
     }
 }

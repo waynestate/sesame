@@ -76,12 +76,12 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
-        $this->assertInstanceOf(Redirect::class, $step);
-        $this->assertSame(
+        self::assertInstanceOf(Redirect::class, $step);
+        self::assertSame(
             self::BASE . '/login?service=' . rawurlencode(self::SERVICE),
             $step->url,
         );
-        $this->assertSame([], $http->requests);
+        self::assertSame([], $http->requests);
     }
 
     public function testServiceUrlComesFromConfigOnly(): void
@@ -96,18 +96,18 @@ final class CasDriverTest extends TestCase
 
         $redirect = $driver->login(new ServerRequest('GET', self::SERVICE, $headers));
 
-        $this->assertInstanceOf(Redirect::class, $redirect);
-        $this->assertStringContainsString(rawurlencode(self::SERVICE), $redirect->url);
-        $this->assertStringNotContainsString('evil.test', $redirect->url);
+        self::assertInstanceOf(Redirect::class, $redirect);
+        self::assertStringContainsString(rawurlencode(self::SERVICE), $redirect->url);
+        self::assertStringNotContainsString('evil.test', $redirect->url);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1', $headers));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
 
         parse_str($http->requests[0]->getUri()->getQuery(), $query);
 
-        $this->assertSame(self::SERVICE, $query['service']);
-        $this->assertSame('ST-1', $query['ticket']);
+        self::assertSame(self::SERVICE, $query['service']);
+        self::assertSame('ST-1', $query['ticket']);
     }
 
     #[DataProvider('badTickets')]
@@ -118,12 +118,12 @@ final class CasDriverTest extends TestCase
 
         try {
             $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=' . rawurlencode($ticket)));
-            $this->fail('Expected AuthenticationFailed.');
+            self::fail('Expected AuthenticationFailed.');
         } catch (AuthenticationFailed) {
             // Expected: the ticket fails the pattern before any HTTP call.
         }
 
-        $this->assertSame([], $http->requests);
+        self::assertSame([], $http->requests);
     }
 
     /**
@@ -148,7 +148,7 @@ final class CasDriverTest extends TestCase
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1.a_b-c'));
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/p3/serviceValidate?service=' . rawurlencode(self::SERVICE) . '&ticket=ST-1.a_b-c',
             $http->requests[0]->getUri()->__toString(),
         );
@@ -161,15 +161,15 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
-        $this->assertInstanceOf(Redirect::class, $step);
-        $this->assertSame(
+        self::assertInstanceOf(Redirect::class, $step);
+        self::assertSame(
             self::BASE . '/login?' . http_build_query([
                 'service' => self::SERVICE,
                 'renew' => 'true',
             ], '', '&', PHP_QUERY_RFC3986),
             $step->url,
         );
-        $this->assertSame([], $http->requests);
+        self::assertSame([], $http->requests);
     }
 
     public function testLoginRedirectHasNoRenewWhenDisabled(): void
@@ -179,8 +179,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
-        $this->assertInstanceOf(Redirect::class, $step);
-        $this->assertStringNotContainsString('renew', $step->url);
+        self::assertInstanceOf(Redirect::class, $step);
+        self::assertStringNotContainsString('renew', $step->url);
     }
 
     public function testValidateRequestCarriesRenewWhenEnabled(): void
@@ -192,9 +192,9 @@ final class CasDriverTest extends TestCase
 
         parse_str($http->requests[0]->getUri()->getQuery(), $query);
 
-        $this->assertSame(self::SERVICE, $query['service']);
-        $this->assertSame('ST-1', $query['ticket']);
-        $this->assertSame('true', $query['renew']);
+        self::assertSame(self::SERVICE, $query['service']);
+        self::assertSame('ST-1', $query['ticket']);
+        self::assertSame('true', $query['renew']);
     }
 
     public function testValidateRequestHasNoRenewWhenDisabled(): void
@@ -206,7 +206,7 @@ final class CasDriverTest extends TestCase
 
         parse_str($http->requests[0]->getUri()->getQuery(), $query);
 
-        $this->assertArrayNotHasKey('renew', $query);
+        self::assertArrayNotHasKey('renew', $query);
     }
 
     public function testRenewUrlsEncodeWithTheSameQueryBuilder(): void
@@ -217,8 +217,8 @@ final class CasDriverTest extends TestCase
 
         $redirect = $driver->login(new ServerRequest('GET', 'https://app.test/'));
 
-        $this->assertInstanceOf(Redirect::class, $redirect);
-        $this->assertSame(
+        self::assertInstanceOf(Redirect::class, $redirect);
+        self::assertSame(
             self::BASE . '/login?' . http_build_query([
                 'service' => $service,
                 'renew' => 'true',
@@ -228,7 +228,7 @@ final class CasDriverTest extends TestCase
 
         $driver->login(new ServerRequest('GET', 'https://app.test/?ticket=ST-1'));
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/p3/serviceValidate?' . http_build_query([
                 'service' => $service,
                 'renew' => 'true',
@@ -246,8 +246,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testAuthenticatedAtParsesFractionalSeconds(): void
@@ -258,9 +258,9 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
-        $this->assertSame('123000', $step->identity->authenticatedAt->format('u'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('2026-10-27T11:59:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertSame('123000', $step->identity->authenticatedAt->format('u'));
     }
 
     public function testAuthenticatedAtFallsBackToNowWhenTheDateIsMissing(): void
@@ -271,8 +271,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testAuthenticatedAtFallsBackToNowWhenTheDateIsGarbage(): void
@@ -283,8 +283,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testAuthenticatedAtFallsBackToNowWhenTheDateIsTooFarInTheFuture(): void
@@ -297,8 +297,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testAmrHasNoMfaWhenAssumeMfaIsOff(): void
@@ -308,9 +308,9 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame([], $step->identity->amr);
-        $this->assertNull($step->identity->authTime);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame([], $step->identity->amr);
+        self::assertNull($step->identity->authTime);
     }
 
     public function testAmrHasMfaWhenAssumeMfaIsOn(): void
@@ -320,8 +320,8 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(['mfa'], $step->identity->amr);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(['mfa'], $step->identity->amr);
     }
 
     public function testAssumeMfaWithARecentAuthenticationDateSatisfiesMfa(): void
@@ -332,14 +332,14 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertInstanceOf(DateTimeImmutable::class, $step->identity->authTime);
-        $this->assertSame('2026-10-27T11:59:00+00:00', $step->identity->authTime->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(DateTimeImmutable::class, $step->identity->authTime);
+        self::assertSame('2026-10-27T11:59:00+00:00', $step->identity->authTime->format('Y-m-d\TH:i:sP'));
 
         $result = Mfa::satisfied($step->identity, 28800, $clock->now());
 
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
-        $this->assertTrue($result->satisfied);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertTrue($result->satisfied);
     }
 
     public function testAssumeMfaWithoutAnAuthenticationDateHasNoAuthTime(): void
@@ -350,13 +350,13 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertNull($step->identity->authTime);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->authTime);
 
         $result = Mfa::satisfied($step->identity, 28800, $clock->now());
 
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
-        $this->assertFalse($result->satisfied);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertFalse($result->satisfied);
     }
 
     public function testAssumeMfaWithAFutureAuthenticationDateHasNoAuthTime(): void
@@ -369,12 +369,12 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertNull($step->identity->authTime);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->authTime);
 
         $result = Mfa::satisfied($step->identity, 28800, $clock->now());
 
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
     }
 
     public function testSuccessParsesUserAndAttributes(): void
@@ -384,11 +384,11 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('ab1234', $step->identity->username);
-        $this->assertSame('cas', $step->identity->driver);
-        $this->assertSame(['ab1234@wayne.edu'], $step->identity->attributes['mail']);
-        $this->assertCount(2, $step->identity->attributes['memberOf']);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('ab1234', $step->identity->username);
+        self::assertSame('cas', $step->identity->driver);
+        self::assertSame(['ab1234@wayne.edu'], $step->identity->attributes['mail']);
+        self::assertCount(2, $step->identity->attributes['memberOf']);
     }
 
     public function testProtocolThreeUsesTheCas3ValidatePath(): void
@@ -398,7 +398,7 @@ final class CasDriverTest extends TestCase
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertSame('/cas/p3/serviceValidate', $http->requests[0]->getUri()->getPath());
+        self::assertSame('/cas/p3/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
 
     public function testProtocolTwoUsesTheCas2ValidatePath(): void
@@ -408,7 +408,7 @@ final class CasDriverTest extends TestCase
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
+        self::assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
 
     public function testTheDefaultProtocolIsTwoAndValidatesAgainstServiceValidate(): void
@@ -418,7 +418,7 @@ final class CasDriverTest extends TestCase
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
+        self::assertSame('/cas/serviceValidate', $http->requests[0]->getUri()->getPath());
     }
 
     public function testAReplayedTicketFailsOnTheSecondUse(): void
@@ -432,7 +432,7 @@ final class CasDriverTest extends TestCase
 
         $first = $driver->login($request);
 
-        $this->assertInstanceOf(Authenticated::class, $first);
+        self::assertInstanceOf(Authenticated::class, $first);
 
         $this->expectException(AuthenticationFailed::class);
         $this->expectExceptionMessage('INVALID_TICKET');
@@ -542,15 +542,15 @@ final class CasDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
-        $this->assertInstanceOf(Redirect::class, $step);
-        $this->assertSame(self::BASE . '/login?service=' . rawurlencode(self::SERVICE), $step->url);
+        self::assertInstanceOf(Redirect::class, $step);
+        self::assertSame(self::BASE . '/login?service=' . rawurlencode(self::SERVICE), $step->url);
     }
 
     public function testLogoutUrlPointsAtTheCasLogout(): void
     {
         $driver = $this->driver(new FakeHttpClient());
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/logout?service=' . rawurlencode('https://app.test/') . '&url=' . rawurlencode('https://app.test/'),
             $driver->logoutUrl('https://app.test/'),
         );
@@ -563,15 +563,15 @@ final class CasDriverTest extends TestCase
 
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
 
-        $this->assertSame('https://app.test/dashboard', $query['service']);
-        $this->assertSame('https://app.test/dashboard', $query['url']);
+        self::assertSame('https://app.test/dashboard', $query['service']);
+        self::assertSame('https://app.test/dashboard', $query['url']);
     }
 
     public function testLogoutUrlKeepsAnHttpsReturnToOnTheServiceHost(): void
     {
         $driver = $this->driver(new FakeHttpClient());
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/logout?service=' . rawurlencode('https://app.test/dashboard') . '&url=' . rawurlencode('https://app.test/dashboard'),
             $driver->logoutUrl('https://app.test/dashboard'),
         );
@@ -581,7 +581,7 @@ final class CasDriverTest extends TestCase
     {
         $driver = $this->driver(new FakeHttpClient());
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('https://evil.test/'),
         );
@@ -591,7 +591,7 @@ final class CasDriverTest extends TestCase
     {
         $driver = $this->driver(new FakeHttpClient());
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('http://app.test/'),
         );
@@ -601,7 +601,7 @@ final class CasDriverTest extends TestCase
     {
         $driver = $this->driver(new FakeHttpClient());
 
-        $this->assertSame(
+        self::assertSame(
             self::BASE . '/logout?service=' . rawurlencode(self::SERVICE) . '&url=' . rawurlencode(self::SERVICE),
             $driver->logoutUrl('/dashboard'),
         );
@@ -628,8 +628,8 @@ final class CasDriverTest extends TestCase
 
         $user = $sesame->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
-        $this->assertSame('the-user', $user);
-        $this->assertSame(
+        self::assertSame('the-user', $user);
+        self::assertSame(
             [
                 'regenerate',
                 'put:sesame.user',
@@ -639,8 +639,8 @@ final class CasDriverTest extends TestCase
             ],
             $log->events,
         );
-        $this->assertSame('the-user', $session->store['sesame.user']);
-        $this->assertInstanceOf(Identity::class, $resolver->identity);
-        $this->assertSame('ab1234', $resolver->identity->username);
+        self::assertSame('the-user', $session->store['sesame.user']);
+        self::assertInstanceOf(Identity::class, $resolver->identity);
+        self::assertSame('ab1234', $resolver->identity->username);
     }
 }

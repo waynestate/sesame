@@ -48,8 +48,8 @@ final class WayneCasShimTest extends LaravelTestCase
     {
         $user = (new UserResolver())->findOrImportUser($this->identity());
 
-        $this->assertSame('the-imported-user', $user);
-        $this->assertSame(['jdoe'], RecordingUser::$calls);
+        self::assertSame('the-imported-user', $user);
+        self::assertSame(['jdoe'], RecordingUser::$calls);
     }
 
     public function testItThrowsWhenTheModelHasNoUser(): void
@@ -78,13 +78,13 @@ final class WayneCasShimTest extends LaravelTestCase
         $user = $resolver->findOrImportUser($this->identity());
         $resolver->findOrImportUser($this->identity());
 
-        $this->assertSame('the-imported-user', $user);
+        self::assertSame('the-imported-user', $user);
     }
 
     public function testItAnswersAnAjaxGuestWith403(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/wp', fn() => 'ok')->middleware(['web', 'wayne.cas']);
 
         $this->get('/wp', ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(403);

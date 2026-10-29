@@ -27,29 +27,29 @@ final class IdentityTest extends TestCase
             new DateTimeImmutable(),
         );
 
-        $this->assertSame('jdoe@wayne.edu', $identity->attribute('mail'));
+        self::assertSame('jdoe@wayne.edu', $identity->attribute('mail'));
     }
 
     public function testAttributeReturnsNullWhenTheAttributeIsAbsent(): void
     {
         $identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable());
 
-        $this->assertNull($identity->attribute('mail'));
+        self::assertNull($identity->attribute('mail'));
     }
 
     public function testAttributeReturnsNullWhenTheAttributeHasNoValues(): void
     {
         $identity = new Identity('jdoe', ['mail' => []], 'fake', new DateTimeImmutable());
 
-        $this->assertNull($identity->attribute('mail'));
+        self::assertNull($identity->attribute('mail'));
     }
 
     public function testAuthTimeAndAmrDefaultToNullAndEmpty(): void
     {
         $identity = new Identity('jdoe', [], 'gateway', new DateTimeImmutable());
 
-        $this->assertNull($identity->authTime);
-        $this->assertSame([], $identity->amr);
+        self::assertNull($identity->authTime);
+        self::assertSame([], $identity->amr);
     }
 
     public function testAuthTimeAndAmrAreStored(): void
@@ -60,16 +60,16 @@ final class IdentityTest extends TestCase
 
         $identity = new Identity('jdoe', [], 'gateway', $authenticatedAt, $authTime, $amr);
 
-        $this->assertSame($authTime, $identity->authTime);
-        $this->assertSame($amr, $identity->amr);
+        self::assertSame($authTime, $identity->authTime);
+        self::assertSame($amr, $identity->amr);
     }
 
     public function testAuthContextsDefaultToEmpty(): void
     {
         $identity = new Identity('jdoe', [], 'gateway', new DateTimeImmutable());
 
-        $this->assertSame([], $identity->authContexts());
-        $this->assertFalse($identity->hasAuthContext('c1'));
+        self::assertSame([], $identity->authContexts());
+        self::assertFalse($identity->hasAuthContext('c1'));
     }
 
     public function testAuthContextsAreStored(): void
@@ -84,7 +84,7 @@ final class IdentityTest extends TestCase
             ['c1', 'c10'],
         );
 
-        $this->assertSame(['c1', 'c10'], $identity->authContexts());
+        self::assertSame(['c1', 'c10'], $identity->authContexts());
     }
 
     public function testHasAuthContextIsMembershipNotEquality(): void
@@ -102,9 +102,9 @@ final class IdentityTest extends TestCase
             ['c2', 'c10'],
         );
 
-        $this->assertTrue($identity->hasAuthContext('c2'));
-        $this->assertTrue($identity->hasAuthContext('c10'));
-        $this->assertFalse($identity->hasAuthContext('c1'));
-        $this->assertFalse($identity->hasAuthContext('c3'));
+        self::assertTrue($identity->hasAuthContext('c2'));
+        self::assertTrue($identity->hasAuthContext('c10'));
+        self::assertFalse($identity->hasAuthContext('c1'));
+        self::assertFalse($identity->hasAuthContext('c3'));
     }
 }

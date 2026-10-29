@@ -38,7 +38,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     {
         $clock = new FakeClock();
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app->instance(ClockInterface::class, $clock);
         $app['config']->set('cache.default', 'array');
 
@@ -58,15 +58,15 @@ final class GatewayLoginRouteTest extends LaravelTestCase
         ]);
 
         $response->assertRedirect('/');
-        $this->assertSame('the-user', $app->make(Sesame::class)->user());
-        $this->assertSame('gateway', $app['session']->get('sesame.identity')->driver);
+        self::assertSame('the-user', $app->make(Sesame::class)->user());
+        self::assertSame('gateway', $app['session']->get('sesame.identity')->driver);
     }
 
     public function testGatewayLoginRejectsAReplayedAssertion(): void
     {
         $clock = new FakeClock();
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app->instance(ClockInterface::class, $clock);
         $app['config']->set('cache.default', 'array');
 
@@ -101,7 +101,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
     {
         $clock = new FakeClock();
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app->instance(ClockInterface::class, $clock);
 
         [$publicKey] = $this->keyPair();
@@ -141,12 +141,12 @@ final class GatewayLoginRouteTest extends LaravelTestCase
             'curve_name' => 'prime256v1',
         ]);
         if (! $resource instanceof OpenSSLAsymmetricKey) {
-            $this->fail('Could not generate an EC key.');
+            self::fail('Could not generate an EC key.');
         }
         openssl_pkey_export($resource, $privatePem);
         $details = openssl_pkey_get_details($resource);
         if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
-            $this->fail('Could not read the EC public key.');
+            self::fail('Could not read the EC public key.');
         }
 
         return [$details['key'], $privatePem];
@@ -167,7 +167,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
         $now = $clock->now();
         $jtiValue = $jti ?? uniqid('jti-', true);
         if ($jtiValue === '') {
-            $this->fail('Could not determine a jti.');
+            self::fail('Could not determine a jti.');
         }
 
         return Builder::new(new JoseEncoder(), ChainedFormatter::withUnixTimestampDates())

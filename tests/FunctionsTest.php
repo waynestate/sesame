@@ -40,8 +40,8 @@ final class FunctionsTest extends TestCase
             $this->config(),
         );
 
-        $this->assertSame($instance, sesame($instance));
-        $this->assertSame($instance, sesame());
+        self::assertSame($instance, sesame($instance));
+        self::assertSame($instance, sesame());
     }
 
     public function testSesameRequireMfaReturnsTheUserWhenMfaIsSatisfied(): void
@@ -70,7 +70,7 @@ final class FunctionsTest extends TestCase
         );
         sesame($sesame);
 
-        $this->assertSame('the-user', sesame_require_mfa());
+        self::assertSame('the-user', sesame_require_mfa());
     }
 
     public function testSesameRequireMfaThrowsWhenMfaIsNotSatisfied(): void
@@ -86,10 +86,10 @@ final class FunctionsTest extends TestCase
 
         try {
             sesame_require_mfa();
-            $this->fail('Expected MfaNotSatisfied.');
+            self::fail('Expected MfaNotSatisfied.');
         } catch (MfaNotSatisfied $e) {
-            $this->assertFalse($e->result->satisfied);
-            $this->assertSame(MfaResult::NO_AUTH_TIME, $e->result->reason);
+            self::assertFalse($e->result->satisfied);
+            self::assertSame(MfaResult::NO_AUTH_TIME, $e->result->reason);
         }
     }
 
@@ -120,7 +120,7 @@ final class FunctionsTest extends TestCase
         );
         sesame($sesame);
 
-        $this->assertSame('the-user', sesame_require_context('c1'));
+        self::assertSame('the-user', sesame_require_context('c1'));
     }
 
     public function testSesameRequireContextThrowsWhenTheIdentityLacksTheContext(): void
@@ -152,10 +152,10 @@ final class FunctionsTest extends TestCase
 
         try {
             sesame_require_context('c1');
-            $this->fail('Expected AuthContextNotSatisfied.');
+            self::fail('Expected AuthContextNotSatisfied.');
         } catch (AuthContextNotSatisfied $e) {
-            $this->assertSame('c1', $e->context);
-            $this->assertSame(
+            self::assertSame('c1', $e->context);
+            self::assertSame(
                 'The signed-in identity does not have the required authentication context "c1".',
                 $e->getMessage(),
             );
@@ -175,9 +175,9 @@ final class FunctionsTest extends TestCase
 
         try {
             sesame_require_context('c1');
-            $this->fail('Expected AuthContextNotSatisfied.');
+            self::fail('Expected AuthContextNotSatisfied.');
         } catch (AuthContextNotSatisfied $e) {
-            $this->assertSame('c1', $e->context);
+            self::assertSame('c1', $e->context);
         }
     }
 
@@ -208,7 +208,7 @@ final class FunctionsTest extends TestCase
             $_GET = $get;
         }
 
-        $this->assertSame('ST-1', $request->getQueryParams()['ticket']);
+        self::assertSame('ST-1', $request->getQueryParams()['ticket']);
     }
 
     public function testSesameLoginStopsTheScriptAfterARedirect(): void
@@ -243,7 +243,7 @@ PHP;
 
         $output = $this->runChildPhp($this->childScript($body));
 
-        $this->assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
+        self::assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
     }
 
     public function testSesameLoginRedirectsToTheServiceUrlAfterACasLogin(): void
@@ -256,9 +256,9 @@ PHP;
             $this->stopServer($process, $pipes, $file);
         }
 
-        $this->assertSame(302, $status);
-        $this->assertSame('https://app.test/login', $headers['location'] ?? null);
-        $this->assertStringNotContainsString('ticket', $headers['location']);
+        self::assertSame(302, $status);
+        self::assertSame('https://app.test/login', $headers['location'] ?? null);
+        self::assertStringNotContainsString('ticket', $headers['location']);
     }
 
     public function testSesameLoginDoesNotRedirectAgainOnTheNextRequestInTheSameSession(): void
@@ -269,7 +269,7 @@ PHP;
             [$firstStatus, $firstHeaders] = $this->httpGet('http://127.0.0.1:' . $port . '/login?ticket=ST-1');
 
             $cookie = $this->sessionCookie($firstHeaders);
-            $this->assertNotNull($cookie);
+            self::assertNotNull($cookie);
 
             [$status, $headers, $body] = $this->httpGet(
                 'http://127.0.0.1:' . $port . '/login',
@@ -279,14 +279,14 @@ PHP;
             $this->stopServer($process, $pipes, $file);
         }
 
-        $this->assertSame(302, $firstStatus);
-        $this->assertSame('https://app.test/login', $firstHeaders['location'] ?? null);
+        self::assertSame(302, $firstStatus);
+        self::assertSame('https://app.test/login', $firstHeaders['location'] ?? null);
 
-        $this->assertSame(200, $status);
-        $this->assertArrayNotHasKey('location', $headers);
-        $this->assertStringContainsString('USER:', $body);
-        $this->assertStringContainsString("'the-user'", $body);
-        $this->assertStringContainsString('HTTP:0', $body);
+        self::assertSame(200, $status);
+        self::assertArrayNotHasKey('location', $headers);
+        self::assertStringContainsString('USER:', $body);
+        self::assertStringContainsString("'the-user'", $body);
+        self::assertStringContainsString('HTTP:0', $body);
     }
 
     public function testSesameLoginReturnsTheUserFromTheFakeDriverWithoutARedirect(): void
@@ -299,9 +299,9 @@ PHP;
             $this->stopServer($process, $pipes, $file);
         }
 
-        $this->assertSame(200, $status);
-        $this->assertArrayNotHasKey('location', $headers);
-        $this->assertSame("USER:'the-user'", $body);
+        self::assertSame(200, $status);
+        self::assertArrayNotHasKey('location', $headers);
+        self::assertSame("USER:'the-user'", $body);
     }
 
     public function testSesameLoginReturnsNullWhenTheResolverRefusesATicket(): void
@@ -314,9 +314,9 @@ PHP;
             $this->stopServer($process, $pipes, $file);
         }
 
-        $this->assertSame(200, $status);
-        $this->assertArrayNotHasKey('location', $headers);
-        $this->assertSame('RESULT:NULL', $body);
+        self::assertSame(200, $status);
+        self::assertArrayNotHasKey('location', $headers);
+        self::assertSame('RESULT:NULL', $body);
     }
 
     public function testSesameLogoutSendsNoStoreAndClearSiteData(): void
@@ -329,10 +329,10 @@ PHP;
             $this->stopServer($process, $pipes, $file);
         }
 
-        $this->assertSame(302, $status);
-        $this->assertSame('no-store', $headers['cache-control'] ?? null);
-        $this->assertSame('"cache", "storage"', $headers['clear-site-data'] ?? null);
-        $this->assertStringNotContainsString('cookies', $headers['clear-site-data']);
+        self::assertSame(302, $status);
+        self::assertSame('no-store', $headers['cache-control'] ?? null);
+        self::assertSame('"cache", "storage"', $headers['clear-site-data'] ?? null);
+        self::assertStringNotContainsString('cookies', $headers['clear-site-data']);
     }
 
     public function testSesameLogoutStopsTheScriptAfterARedirect(): void
@@ -365,42 +365,42 @@ PHP;
 
         $output = $this->runChildPhp($this->childScript($body));
 
-        $this->assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
+        self::assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
     }
 
     public function testSafeReturnToKeepsAnHttpsReturnToOnTheServiceHost(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.test/login');
 
-        $this->assertSame('https://app.test/dashboard', $sesame->safeReturnTo('https://app.test/dashboard'));
+        self::assertSame('https://app.test/dashboard', $sesame->safeReturnTo('https://app.test/dashboard'));
     }
 
     public function testSafeReturnToFallsBackToTheServiceUrlForAnOffHostReturnTo(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.test/login');
 
-        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('https://evil.test/'));
+        self::assertSame('https://app.test/login', $sesame->safeReturnTo('https://evil.test/'));
     }
 
     public function testSafeReturnToFallsBackToTheServiceUrlForAnHttpReturnTo(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.test/login');
 
-        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('http://app.test/'));
+        self::assertSame('https://app.test/login', $sesame->safeReturnTo('http://app.test/'));
     }
 
     public function testSafeReturnToFallsBackToTheServiceUrlForARelativeReturnTo(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.test/login');
 
-        $this->assertSame('https://app.test/login', $sesame->safeReturnTo('/dashboard'));
+        self::assertSame('https://app.test/login', $sesame->safeReturnTo('/dashboard'));
     }
 
     public function testSafeReturnToComparesHostsWithoutCase(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.example.edu/login');
 
-        $this->assertSame('https://APP.Example.EDU/after-login', $sesame->safeReturnTo('https://APP.Example.EDU/after-login'));
+        self::assertSame('https://APP.Example.EDU/after-login', $sesame->safeReturnTo('https://APP.Example.EDU/after-login'));
     }
 
     /**
@@ -447,7 +447,7 @@ PHP;
 
         if (! is_resource($process)) {
             unlink($file);
-            $this->fail('Could not start a child PHP process.');
+            self::fail('Could not start a child PHP process.');
         }
 
         $output = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);
@@ -679,7 +679,7 @@ PHP;
 
         if (! is_resource($process)) {
             unlink($file);
-            $this->fail('Could not start the built-in PHP server.');
+            self::fail('Could not start the built-in PHP server.');
         }
 
         $this->waitForServer($port);
@@ -714,16 +714,22 @@ PHP;
         $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
 
         if (! is_resource($socket)) {
-            $this->fail('Could not find a free port: ' . $errstr);
+            self::fail('Could not find a free port: ' . $errstr);
         }
 
         $name = stream_socket_get_name($socket, false);
 
         if (! is_string($name)) {
-            $this->fail('Could not determine the port of the test socket.');
+            self::fail('Could not determine the port of the test socket.');
         }
 
-        $port = (int) substr($name, strrpos($name, ':') + 1);
+        $colon = strrpos($name, ':');
+
+        if ($colon === false) {
+            self::fail('Could not determine the port of the test socket.');
+        }
+
+        $port = (int) substr($name, $colon + 1);
         fclose($socket);
 
         return $port;
@@ -747,7 +753,7 @@ PHP;
             usleep(50_000);
         }
 
-        $this->fail('The built-in PHP server did not become ready on port ' . $port . '.');
+        self::fail('The built-in PHP server did not become ready on port ' . $port . '.');
     }
 
     /**
@@ -782,7 +788,7 @@ PHP;
 
         $status = 0;
 
-        if (isset($rawHeaders[0]) && preg_match('#^HTTP/\S+\s+(\d{3})#', $rawHeaders[0], $match)) {
+        if (isset($rawHeaders[0]) && preg_match('#^HTTP/\S+\s+(\d{3})#', $rawHeaders[0], $match) === 1) {
             $status = (int) $match[1];
         }
 

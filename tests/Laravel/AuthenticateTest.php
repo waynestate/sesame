@@ -15,7 +15,7 @@ final class AuthenticateTest extends LaravelTestCase
     public function testItSendsAGuestToTheLoginRoute(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->get('/protected')->assertRedirect(route('sesame.login'));
@@ -24,7 +24,7 @@ final class AuthenticateTest extends LaravelTestCase
     public function testItAnswersAJsonGuestWith401(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->getJson('/protected')->assertStatus(401);
@@ -33,7 +33,7 @@ final class AuthenticateTest extends LaravelTestCase
     public function testItLetsAnAuthenticatedRequestThrough(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'auth.sesame']);
 
         $this->withSession([

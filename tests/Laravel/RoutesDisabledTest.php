@@ -22,10 +22,10 @@ final class RoutesDisabledTest extends LaravelTestCase
     public function testItDoesNotRegisterTheRoutes(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $routes = $app['router']->getRoutes();
 
-        $this->assertFalse($routes->hasNamedRoute('sesame.login'));
-        $this->assertFalse($routes->hasNamedRoute('sesame.logout'));
+        self::assertFalse($routes->hasNamedRoute('sesame.login'));
+        self::assertFalse($routes->hasNamedRoute('sesame.logout'));
     }
 }

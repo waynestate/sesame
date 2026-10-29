@@ -23,16 +23,16 @@ final class LoginRouteTest extends LaravelTestCase
     public function testLoginStoresTheUserAndRedirectsHome(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $this->get('/login')->assertRedirect('/');
 
-        $this->assertSame('the-user', $app->make(Sesame::class)->user());
+        self::assertSame('the-user', $app->make(Sesame::class)->user());
     }
 
     public function testLoginDropsTheTicketFromTheRedirectAfterACasLogin(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['config']->set('sesame.driver', 'cas');
         $app['config']->set('sesame.cas.base_url', 'https://cas.test/cas');
         $app['config']->set('sesame.cas.service_url', 'https://app.test/login');
@@ -41,7 +41,7 @@ final class LoginRouteTest extends LaravelTestCase
         $response = $this->get('/login?ticket=ST-1');
 
         $response->assertRedirect('/');
-        $this->assertStringNotContainsString('ticket', (string) $response->headers->get('Location'));
+        self::assertStringNotContainsString('ticket', (string) $response->headers->get('Location'));
     }
 
     /**
@@ -59,12 +59,12 @@ final class LoginRouteTest extends LaravelTestCase
     public function testLogoutClearsTheUserAndRedirectsHome(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $this->withSession(['sesame.user' => 'the-user'])
             ->post('/logout')
             ->assertRedirect('/');
 
-        $this->assertNull($app->make(Sesame::class)->user());
+        self::assertNull($app->make(Sesame::class)->user());
     }
 
     public function testLogoutSendsNoStoreAndClearSiteData(): void
@@ -77,8 +77,8 @@ final class LoginRouteTest extends LaravelTestCase
         // The session handling appends its own "private" directive to the
         // Cache-Control header after the route runs, so assert the no-store
         // directive is present rather than the whole header equaling it.
-        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
-        $this->assertSame('"cache", "storage"', $response->headers->get('Clear-Site-Data'));
-        $this->assertStringNotContainsString('cookies', (string) $response->headers->get('Clear-Site-Data'));
+        self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        self::assertSame('"cache", "storage"', $response->headers->get('Clear-Site-Data'));
+        self::assertStringNotContainsString('cookies', $response->headers->get('Clear-Site-Data'));
     }
 }

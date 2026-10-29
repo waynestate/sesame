@@ -50,10 +50,10 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('fake', $config->driver);
-        $this->assertSame('local', $config->environment);
-        $this->assertSame('jdoe', $config->fakeUsername);
-        $this->assertSame(['cn' => ['John Doe']], $config->fakeAttributes);
+        self::assertSame('fake', $config->driver);
+        self::assertSame('local', $config->environment);
+        self::assertSame('jdoe', $config->fakeUsername);
+        self::assertSame(['cn' => ['John Doe']], $config->fakeAttributes);
     }
 
     public function testFakeAttributesDefaultToEmpty(): void
@@ -64,7 +64,7 @@ final class ConfigTest extends TestCase
             'fake' => ['username' => 'jdoe'],
         ]);
 
-        $this->assertSame([], $config->fakeAttributes);
+        self::assertSame([], $config->fakeAttributes);
     }
 
     public function testRejectsAMissingFakeUsername(): void
@@ -97,10 +97,10 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('cas', $config->driver);
-        $this->assertSame('https://cas.test/cas', $config->casBaseUrl);
-        $this->assertSame('https://app.test/login', $config->casServiceUrl);
-        $this->assertSame('2.0', $config->casProtocol);
+        self::assertSame('cas', $config->driver);
+        self::assertSame('https://cas.test/cas', $config->casBaseUrl);
+        self::assertSame('https://app.test/login', $config->casServiceUrl);
+        self::assertSame('2.0', $config->casProtocol);
     }
 
     public function testCasProtocolDefaultsToTwoZero(): void
@@ -114,7 +114,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('2.0', $config->casProtocol);
+        self::assertSame('2.0', $config->casProtocol);
     }
 
     public function testRejectsAMissingCasBaseUrl(): void
@@ -166,7 +166,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertTrue($config->casRenew);
+        self::assertTrue($config->casRenew);
     }
 
     public function testCasRenewDefaultsToFalse(): void
@@ -180,7 +180,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertFalse($config->casRenew);
+        self::assertFalse($config->casRenew);
     }
 
     public function testRejectsANonBooleanCasRenew(): void
@@ -211,7 +211,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertTrue($config->casAssumeMfa);
+        self::assertTrue($config->casAssumeMfa);
     }
 
     public function testCasAssumeMfaDefaultsToFalse(): void
@@ -225,7 +225,7 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertFalse($config->casAssumeMfa);
+        self::assertFalse($config->casAssumeMfa);
     }
 
     public function testRejectsANonBooleanCasAssumeMfa(): void
@@ -248,14 +248,14 @@ final class ConfigTest extends TestCase
     {
         $config = Config::fromArray($this->gatewayConfig());
 
-        $this->assertSame(300, $config->gatewayMaxLifetimeSeconds);
+        self::assertSame(300, $config->gatewayMaxLifetimeSeconds);
     }
 
     public function testReadsGatewayMaxLifetime(): void
     {
         $config = Config::fromArray($this->gatewayConfig(['max_lifetime' => 60]));
 
-        $this->assertSame(60, $config->gatewayMaxLifetimeSeconds);
+        self::assertSame(60, $config->gatewayMaxLifetimeSeconds);
     }
 
     #[DataProvider('badGatewayMaxLifetimes')]
@@ -271,14 +271,14 @@ final class ConfigTest extends TestCase
     {
         $config = Config::fromArray($this->gatewayConfig());
 
-        $this->assertFalse($config->gatewayAllowWithoutReplayGuard);
+        self::assertFalse($config->gatewayAllowWithoutReplayGuard);
     }
 
     public function testReadsGatewayAllowWithoutReplayGuard(): void
     {
         $config = Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => true]));
 
-        $this->assertTrue($config->gatewayAllowWithoutReplayGuard);
+        self::assertTrue($config->gatewayAllowWithoutReplayGuard);
     }
 
     public function testRejectsANonBooleanGatewayAllowWithoutReplayGuard(): void
@@ -301,8 +301,8 @@ final class ConfigTest extends TestCase
             ],
         ]);
 
-        $this->assertSame(30, $config->sessionIdleMinutes);
-        $this->assertSame(1440, $config->sessionAbsoluteMinutes);
+        self::assertSame(30, $config->sessionIdleMinutes);
+        self::assertSame(1440, $config->sessionAbsoluteMinutes);
     }
 
     public function testSessionTimeoutsDefaultToTwoHoursAndThirtyDays(): void
@@ -313,8 +313,8 @@ final class ConfigTest extends TestCase
             'fake' => ['username' => 'jdoe'],
         ]);
 
-        $this->assertSame(120, $config->sessionIdleMinutes);
-        $this->assertSame(720, $config->sessionAbsoluteMinutes);
+        self::assertSame(120, $config->sessionIdleMinutes);
+        self::assertSame(720, $config->sessionAbsoluteMinutes);
     }
 
     #[DataProvider('badSessionTimeouts')]
@@ -383,7 +383,7 @@ final class ConfigTest extends TestCase
             'slo' => false,
         ]);
 
-        $this->assertSame('fake', $config->driver);
+        self::assertSame('fake', $config->driver);
     }
 
     /**

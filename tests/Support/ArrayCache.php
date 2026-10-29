@@ -78,12 +78,12 @@ final class ArrayCache implements CacheInterface
     }
 
     /**
-     * @param iterable<string, mixed> $values
+     * @param iterable<mixed> $values
      */
     public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {
         foreach ($values as $key => $value) {
-            $this->set((string) $key, $value, $ttl);
+            $this->set($key, $value, $ttl);
         }
 
         return true;
@@ -92,7 +92,7 @@ final class ArrayCache implements CacheInterface
     public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
-            $this->delete((string) $key);
+            $this->delete($key);
         }
 
         return true;
@@ -113,8 +113,8 @@ final class ArrayCache implements CacheInterface
         $keys = [];
 
         foreach (array_keys($this->items) as $key) {
-            if ($this->isPresent((string) $key)) {
-                $keys[] = (string) $key;
+            if ($this->isPresent($key)) {
+                $keys[] = $key;
             }
         }
 

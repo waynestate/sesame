@@ -52,15 +52,15 @@ final class GatewayDriverTest extends TestCase
     {
         $driver = $this->driver(new FakeClock(), 'ES256', 'unused');
 
-        $this->assertSame('gateway', $driver->name());
+        self::assertSame('gateway', $driver->name());
     }
 
     public function testLogoutUrlAndServiceUrlAreNull(): void
     {
         $driver = $this->driver(new FakeClock(), 'ES256', 'unused');
 
-        $this->assertNull($driver->logoutUrl('https://app.test/'));
-        $this->assertNull($driver->serviceUrl());
+        self::assertNull($driver->logoutUrl('https://app.test/'));
+        self::assertNull($driver->serviceUrl());
     }
 
     public function testValidEs256AssertionAuthenticates(): void
@@ -72,11 +72,11 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(self::SUBJECT, $step->identity->username);
-        $this->assertSame('gateway', $step->identity->driver);
-        $this->assertSame([], $step->identity->attributes);
-        $this->assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+        self::assertSame('gateway', $step->identity->driver);
+        self::assertSame([], $step->identity->attributes);
+        self::assertSame('2026-10-27T12:00:00+00:00', $step->identity->authenticatedAt->format('Y-m-d\TH:i:sP'));
     }
 
     public function testValidRs256AssertionAuthenticates(): void
@@ -88,8 +88,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(self::SUBJECT, $step->identity->username);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
     }
 
     public function testValidEddsaAssertionAuthenticates(): void
@@ -101,8 +101,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(self::SUBJECT, $step->identity->username);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
     }
 
     public function testMapsOptionalClaimsToAttributes(): void
@@ -120,8 +120,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(
             [
                 'email' => ['ab1234@wayne.edu'],
                 'name' => ['Ab 1234'],
@@ -129,7 +129,7 @@ final class GatewayDriverTest extends TestCase
             ],
             $step->identity->attributes,
         );
-        $this->assertSame('ab1234@wayne.edu', $step->identity->attribute('email'));
+        self::assertSame('ab1234@wayne.edu', $step->identity->attribute('email'));
     }
 
     public function testExtractsAuthTimeAndAmrFromTheAssertion(): void
@@ -147,9 +147,9 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame($authTime->getTimestamp(), $step->identity->authTime?->getTimestamp());
-        $this->assertSame(['mfa', 'password'], $step->identity->amr);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame($authTime->getTimestamp(), $step->identity->authTime?->getTimestamp());
+        self::assertSame(['mfa', 'password'], $step->identity->amr);
     }
 
     public function testAuthTimeAndAmrDefaultToNullAndEmptyWhenTheClaimsAreMissing(): void
@@ -161,9 +161,9 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertNull($step->identity->authTime);
-        $this->assertSame([], $step->identity->amr);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->authTime);
+        self::assertSame([], $step->identity->amr);
     }
 
     public function testAuthTimeIsNullWhenTheClaimIsNotAnInteger(): void
@@ -177,8 +177,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertNull($step->identity->authTime);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->authTime);
     }
 
     public function testAuthTimeIsNullWhenTheClaimIsNegative(): void
@@ -192,8 +192,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertNull($step->identity->authTime);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->authTime);
     }
 
     public function testAmrDropsNonStringAndEmptyEntries(): void
@@ -207,8 +207,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(['mfa', 'password'], $step->identity->amr);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(['mfa', 'password'], $step->identity->amr);
     }
 
     public function testAmrIsEmptyWhenTheClaimIsNotAnArray(): void
@@ -222,8 +222,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame([], $step->identity->amr);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame([], $step->identity->amr);
     }
 
     public function testExtractsAcrsFromTheAssertion(): void
@@ -237,9 +237,9 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(['c1'], $step->identity->authContexts());
-        $this->assertTrue($step->identity->hasAuthContext('c1'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(['c1'], $step->identity->authContexts());
+        self::assertTrue($step->identity->hasAuthContext('c1'));
     }
 
     public function testAcrsIsEmptyWhenTheClaimIsMissing(): void
@@ -251,9 +251,9 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame([], $step->identity->authContexts());
-        $this->assertFalse($step->identity->hasAuthContext('c1'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame([], $step->identity->authContexts());
+        self::assertFalse($step->identity->hasAuthContext('c1'));
     }
 
     public function testAcrsIsEmptyWhenTheClaimIsNotAnArray(): void
@@ -267,8 +267,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame([], $step->identity->authContexts());
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame([], $step->identity->authContexts());
     }
 
     public function testAcrsDropsMalformedEntries(): void
@@ -285,8 +285,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(['c1', 'c99'], $step->identity->authContexts());
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(['c1', 'c99'], $step->identity->authContexts());
     }
 
     public function testAcrsDoesNotSatisfyADifferentContext(): void
@@ -300,12 +300,12 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertTrue($step->identity->hasAuthContext('c2'));
-        $this->assertTrue($step->identity->hasAuthContext('c10'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertTrue($step->identity->hasAuthContext('c2'));
+        self::assertTrue($step->identity->hasAuthContext('c10'));
         // c1 is a prefix of c10, but the check is membership, not a prefix
         // match.
-        $this->assertFalse($step->identity->hasAuthContext('c1'));
+        self::assertFalse($step->identity->hasAuthContext('c1'));
     }
 
     public function testTrustedPeerMatchesACidrRange(): void
@@ -317,7 +317,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token, '172.20.1.5'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testTrustedPeerMatchesTheSecondOfSeveralRanges(): void
@@ -329,7 +329,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token, '172.20.1.5'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testRejectsAnUntrustedPeer(): void
@@ -339,7 +339,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock);
 
-        $this->assertRejected($driver, $this->request($token, self::UNTRUSTED_PEER), 'gateway.untrusted_peer');
+        self::assertRejected($driver, $this->request($token, self::UNTRUSTED_PEER), 'gateway.untrusted_peer');
     }
 
     public function testRejectsARequestWithNoSourceAddress(): void
@@ -349,7 +349,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock);
 
-        $this->assertRejected($driver, $this->request($token, null), 'gateway.untrusted_peer');
+        self::assertRejected($driver, $this->request($token, null), 'gateway.untrusted_peer');
     }
 
     public function testRejectsAMissingAssertion(): void
@@ -358,7 +358,7 @@ final class GatewayDriverTest extends TestCase
         [$signer, $privateKey, $publicKey] = $this->keys('ES256');
         $driver = $this->driver($clock, 'ES256', $publicKey);
 
-        $this->assertRejected($driver, $this->request(null), 'gateway.missing_assertion');
+        self::assertRejected($driver, $this->request(null), 'gateway.missing_assertion');
     }
 
     public function testIgnoresPlainIdentityHeadersWhenThereIsNoSignedAssertion(): void
@@ -367,7 +367,7 @@ final class GatewayDriverTest extends TestCase
         [$signer, $privateKey, $publicKey] = $this->keys('ES256');
         $driver = $this->driver($clock, 'ES256', $publicKey);
 
-        $this->assertRejected(
+        self::assertRejected(
             $driver,
             $this->request(null, self::PEER, [
                 'Remote-User' => 'evil',
@@ -393,8 +393,8 @@ final class GatewayDriverTest extends TestCase
             'X-Authenticated-User' => 'evil',
         ]));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(self::SUBJECT, $step->identity->username);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
     }
 
     public function testRejectsAnAlgNoneToken(): void
@@ -415,7 +415,7 @@ final class GatewayDriverTest extends TestCase
         ]));
         $token = $header . '.' . $payload . '.';
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.invalid_jwt');
+        self::assertRejected($driver, $this->request($token), 'gateway.invalid_jwt');
     }
 
     public function testRejectsAWrongAlgorithm(): void
@@ -427,7 +427,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $es256PublicKey);
         $token = $this->buildToken($signer, $privateKey, $clock);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.signature');
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
     }
 
     public function testRejectsABadSignature(): void
@@ -439,7 +439,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $otherPublicKey);
         $token = $this->buildToken($signer, $privateKey, $clock);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.signature');
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
     }
 
     public function testRejectsAWrongIssuer(): void
@@ -449,7 +449,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['issuer' => 'https://evil.test']);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.issuer');
+        self::assertRejected($driver, $this->request($token), 'gateway.issuer');
     }
 
     public function testRejectsAWrongAudience(): void
@@ -459,7 +459,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['audience' => 'other-app']);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.audience');
+        self::assertRejected($driver, $this->request($token), 'gateway.audience');
     }
 
     public function testRejectsAnExpiredToken(): void
@@ -469,7 +469,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['exp' => $clock->now()->modify('-60 seconds')]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.expired');
+        self::assertRejected($driver, $this->request($token), 'gateway.expired');
     }
 
     public function testAcceptsAnExpiredTokenWithinTheLeeway(): void
@@ -482,7 +482,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testRejectsATokenNotYetValid(): void
@@ -492,7 +492,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['nbf' => $clock->now()->modify('+60 seconds')]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.not_yet_valid');
+        self::assertRejected($driver, $this->request($token), 'gateway.not_yet_valid');
     }
 
     public function testAcceptsATokenNotYetValidWithinTheLeeway(): void
@@ -505,7 +505,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testRejectsATokenIssuedInTheFuture(): void
@@ -515,7 +515,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['iat' => $clock->now()->modify('+60 seconds')]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.issued_in_future');
+        self::assertRejected($driver, $this->request($token), 'gateway.issued_in_future');
     }
 
     public function testAcceptsATokenIssuedInTheFutureWithinTheLeeway(): void
@@ -528,7 +528,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testRejectsAMissingIatClaim(): void
@@ -538,7 +538,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['iat' => null]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_claim');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_claim');
     }
 
     public function testRejectsAMissingExpClaim(): void
@@ -548,7 +548,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['exp' => null]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_claim');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_claim');
     }
 
     public function testRejectsAMissingSubClaim(): void
@@ -558,7 +558,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['subject' => null]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_claim');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_claim');
     }
 
     public function testRejectsAnEmptySubClaim(): void
@@ -568,7 +568,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['subject' => '']);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_claim');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_claim');
     }
 
     public function testRejectsAMalformedToken(): void
@@ -577,7 +577,7 @@ final class GatewayDriverTest extends TestCase
         [$signer, $privateKey, $publicKey] = $this->keys('ES256');
         $driver = $this->driver($clock, 'ES256', $publicKey);
 
-        $this->assertRejected($driver, $this->request('not-a-jwt'), 'gateway.invalid_jwt');
+        self::assertRejected($driver, $this->request('not-a-jwt'), 'gateway.invalid_jwt');
     }
 
     public function testRejectsAMissingJtiClaim(): void
@@ -587,7 +587,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => null]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_jti');
     }
 
     public function testRejectsAnEmptyJtiClaim(): void
@@ -597,7 +597,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => '']);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_jti');
     }
 
     public function testRejectsAnOversizedJtiClaim(): void
@@ -607,7 +607,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey);
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => str_repeat('a', 129)]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.missing_jti');
+        self::assertRejected($driver, $this->request($token), 'gateway.missing_jti');
     }
 
     public function testAcceptsAMaxLengthJtiClaim(): void
@@ -619,8 +619,8 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame(self::SUBJECT, $step->identity->username);
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
     }
 
     public function testRejectsAReplayedAssertion(): void
@@ -632,9 +632,9 @@ final class GatewayDriverTest extends TestCase
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
 
         $step = $driver->login($this->request($token));
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.replayed_assertion');
+        self::assertRejected($driver, $this->request($token), 'gateway.replayed_assertion');
     }
 
     public function testAcceptsADifferentJtiAfterOneUse(): void
@@ -646,8 +646,8 @@ final class GatewayDriverTest extends TestCase
         $first = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'jti-one']);
         $second = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'jti-two']);
 
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($first)));
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($second)));
+        self::assertInstanceOf(Authenticated::class, $driver->login($this->request($first)));
+        self::assertInstanceOf(Authenticated::class, $driver->login($this->request($second)));
     }
 
     public function testAcceptsAReusedJtiAfterItsRecordExpires(): void
@@ -658,14 +658,14 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, $guard);
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
 
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+        self::assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
 
         // The record lives until exp plus leeway (240 + 30 = 270 seconds).
         // Move past it, and the same jti is usable again.
         $clock->advance(271);
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
 
-        $this->assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
+        self::assertInstanceOf(Authenticated::class, $driver->login($this->request($token)));
     }
 
     public function testAcceptsALifetimeAtTheMaximum(): void
@@ -678,7 +678,7 @@ final class GatewayDriverTest extends TestCase
 
         $step = $driver->login($this->request($token));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
+        self::assertInstanceOf(Authenticated::class, $step);
     }
 
     public function testRejectsALifetimeOverTheMaximum(): void
@@ -689,7 +689,7 @@ final class GatewayDriverTest extends TestCase
         // exp = now + 241, so the assertion lives 301 seconds: one over the max.
         $token = $this->buildToken($signer, $privateKey, $clock, ['exp' => $clock->now()->modify('+241 seconds')]);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
+        self::assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
     }
 
     public function testHonorsACustomMaximumLifetime(): void
@@ -700,7 +700,7 @@ final class GatewayDriverTest extends TestCase
         $driver = $this->driver($clock, 'ES256', $publicKey, self::TRUSTED, 30, null, 60);
         $token = $this->buildToken($signer, $privateKey, $clock);
 
-        $this->assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
+        self::assertRejected($driver, $this->request($token), 'gateway.lifetime_too_long');
     }
 
     public function testFailsClosedWithoutAReplayGuard(): void
@@ -745,9 +745,9 @@ final class GatewayDriverTest extends TestCase
         $token = $this->buildToken($signer, $privateKey, $clock, ['jti' => 'fixed-jti']);
 
         $first = $driver->login($this->request($token));
-        $this->assertInstanceOf(Authenticated::class, $first);
+        self::assertInstanceOf(Authenticated::class, $first);
         $second = $driver->login($this->request($token));
-        $this->assertInstanceOf(Authenticated::class, $second);
+        self::assertInstanceOf(Authenticated::class, $second);
     }
 
     /**
@@ -803,12 +803,12 @@ final class GatewayDriverTest extends TestCase
             'curve_name' => 'prime256v1',
         ]);
         if (! $resource instanceof OpenSSLAsymmetricKey) {
-            $this->fail('Could not generate an EC key.');
+            self::fail('Could not generate an EC key.');
         }
         openssl_pkey_export($resource, $privatePem);
         $details = openssl_pkey_get_details($resource);
         if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
-            $this->fail('Could not read the EC public key.');
+            self::fail('Could not read the EC public key.');
         }
 
         return [new Sha256(), InMemory::plainText($privatePem), $details['key']];
@@ -824,12 +824,12 @@ final class GatewayDriverTest extends TestCase
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         ]);
         if (! $resource instanceof OpenSSLAsymmetricKey) {
-            $this->fail('Could not generate an RSA key.');
+            self::fail('Could not generate an RSA key.');
         }
         openssl_pkey_export($resource, $privatePem);
         $details = openssl_pkey_get_details($resource);
         if (! is_array($details) || ! isset($details['key']) || $details['key'] === '') {
-            $this->fail('Could not read the RSA public key.');
+            self::fail('Could not read the RSA public key.');
         }
 
         return [new RsaSha256(), InMemory::plainText($privatePem), $details['key']];
@@ -953,9 +953,9 @@ final class GatewayDriverTest extends TestCase
     {
         try {
             $driver->login($request);
-            $this->fail('Expected AuthenticationFailed.');
+            self::fail('Expected AuthenticationFailed.');
         } catch (AuthenticationFailed $e) {
-            $this->assertStringContainsString($reason, $e->getMessage());
+            self::assertStringContainsString($reason, $e->getMessage());
         }
     }
 }
