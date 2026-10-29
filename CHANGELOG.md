@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed: the proof page moves to a private site that needs a Wayne State sign-in.
 
+### Added
+
+- The `oidc` driver: browser sign-in with OpenID Connect (authorization
+  code flow with PKCE S256, `state` and `nonce` bound to the session, single
+  use, ten-minute expiry), Microsoft Entra ID first. Discovery is cached
+  through PSR-16 and each endpoint can be overridden; the ID token is
+  checked for signature (RS256 by default, never `none` or HMAC), `iss`,
+  `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age`
+  by default (silent SSO); `step_up=1` adds the configured step-up
+  parameters and requires a fresh `auth_time`. Username from `accessid`
+  with a `preferred_username` fallback, roles from `wsuRoles`, MFA from
+  `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in
+  `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver
+  as attributes. Optional logout through Entra with
+  `post_logout_redirect_uri`. See "The oidc driver (Entra sign-in)".
+- The oidc driver stands on `league/oauth2-client` (suggested, not
+  required; a clear error names the install command when it is missing)
+  for the OAuth mechanics, and on SESAME's own firebase/php-jwt key-set
+  code for the ID token. Why: `docs/oidc-library-choice.md`.
+- Laravel: `GET /login/callback` (`sesame.callback`) for the oidc driver,
+  the redirect URI defaulting to it, and `sesame.mfa` reauth asking the
+  provider for a step-up.
+- `Sesame::returnTo()` and the `RemembersReturnTo` interface, so
+  `sesame_login()` and the Laravel route send the user to the checked
+  return-to address after a callback.
+- `Setting::env()`, and `SESAME_OIDC_CLIENT_SECRET` read from the
+  environment only, never from the playbook.
+- README: a loud note that raw-PHP apps must raise
+  `session.gc_maxlifetime` to at least SESAME's idle timeout.
+
+### Changed
+
+- `DriverFactory::make()` takes the app session as an optional seventh
+  argument (the oidc driver needs it).
+- `JwksProvider` takes the algorithm per key lookup and a reason prefix,
+  so the oauth2 and oidc drivers share it.
+
 ## [0.1.3] - 2026-10-29
 
 ### Added
