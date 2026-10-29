@@ -38,6 +38,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InvalidConfig` at boot: the identity provider does not support single
   logout, so the setting is a mistake to fail on early rather than at the
   first logout.
+- The `oauth2` driver: signs the user in from a JWT bearer token in the
+  `Authorization` header, verified against the issuer's key set (a JWKS)
+  fetched over HTTP. Only RS256 tokens are accepted; a token that claims
+  `none` or an HMAC algorithm is refused before its signature is looked at.
+  After the signature, the driver checks the issuer, audience, `exp` and
+  `nbf` claims (with a leeway), then any required scopes (against the `scp`
+  claim) and roles (against the `roles` claim). Microsoft Entra ID is the
+  first planned issuer; any other RS256 issuer works with the same settings.
+- `oauth2` config keys: `oauth2.issuer`, `oauth2.jwks_url` and
+  `oauth2.audience` (all required), `oauth2.leeway_seconds` (default `60`),
+  `oauth2.required_scopes` and `oauth2.required_roles` (default empty, which
+  checks nothing), `oauth2.identity_claim` (`preferred_username` or
+  `accessid`, default `preferred_username`), and
+  `oauth2.jwks_cache_ttl_seconds` (default `3600`).
+- `JwksProvider`: keeps the fetched key set in a PSR-16 cache for
+  `oauth2.jwks_cache_ttl_seconds`, refetches at most once a minute when a
+  token carries an unknown key id (so a rotated key is picked up without
+  hammering the issuer), and fails closed on an unreachable issuer, a non-2xx
+  answer, or an empty or malformed key set.
+- The Laravel adapter wires the oauth2 driver: the PSR-18 client comes from
+  the app's `ClientInterface` binding or Guzzle, and the key set cache comes
+  from the app's cache, using the store named by `oauth2.jwks_store` (the
+  default store when none is named).
+- `firebase/php-jwt` as a dependency: JWKS parsing and RS256 verification
+  come from the library, not from SESAME's own code.
 
 ### Changed
 

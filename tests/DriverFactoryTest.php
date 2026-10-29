@@ -13,7 +13,9 @@ use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Drivers\FakeDriver;
 use Waynestate\Sesame\Drivers\GatewayDriver;
 use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
+use Waynestate\Sesame\Drivers\OAuth2Driver;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Tests\Support\ArrayCache;
 use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 
@@ -109,6 +111,36 @@ final class DriverFactoryTest extends TestCase
         self::assertInstanceOf(GatewayDriver::class, $driver);
     }
 
+    public function testMakesAnOauth2Driver(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        $driver = DriverFactory::make($config, new FakeHttpClient(), new Psr17Factory(), null, null, new ArrayCache());
+
+        self::assertInstanceOf(OAuth2Driver::class, $driver);
+        self::assertSame('oauth2', $driver->name());
+    }
+
+    public function testOauth2WithoutAnHttpClientNamesTheMissingClient(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('PSR-18 client');
+
+        DriverFactory::make($config, null, new Psr17Factory(), null, null, new ArrayCache());
+    }
+
+    public function testOauth2WithoutAKeySetCacheNamesTheMissingCache(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('PSR-16 cache');
+
+        DriverFactory::make($config, new FakeHttpClient(), new Psr17Factory());
+    }
+
     /**
      * The gateway's public key, issuer and audience must be non-empty strings.
      *
@@ -182,6 +214,26 @@ final class DriverFactoryTest extends TestCase
                 'audience' => 'sesame',
                 'trusted_proxies' => ['10.0.0.0/8'],
             ], $gateway),
+        ];
+    }
+
+    /**
+     * A valid oauth2 config, with any overrides merged into the oauth2
+     * section.
+     *
+     * @param  array<string, mixed>  $oauth2
+     * @return array<string, mixed>
+     */
+    private function oauth2Config(array $oauth2 = []): array
+    {
+        return [
+            'driver' => 'oauth2',
+            'environment' => 'local',
+            'oauth2' => array_merge([
+                'issuer' => 'https://login.example.com/v2.0',
+                'jwks_url' => 'https://login.example.com/discovery/v2.0/keys',
+                'audience' => 'api://test-client',
+            ], $oauth2),
         ];
     }
 }

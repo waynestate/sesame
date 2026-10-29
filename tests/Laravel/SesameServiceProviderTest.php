@@ -6,13 +6,16 @@ namespace Waynestate\Sesame\Tests\Laravel;
 
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
+use Psr\Http\Client\ClientInterface;
 use Waynestate\Sesame\Driver;
+use Waynestate\Sesame\Drivers\OAuth2Driver;
 use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Laravel\LaravelSession;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Laravel\Support\TestUserResolver;
 use Waynestate\Sesame\Tests\Support\FakeClock;
+use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 use Waynestate\Sesame\UserResolver;
 
 /**
@@ -107,5 +110,22 @@ final class SesameServiceProviderTest extends LaravelTestCase
 
         $key = 'sesame.jti.' . hash('sha256', 'jti-1');
         self::assertTrue($app['cache']->store('array')->has($key));
+    }
+
+    public function testItResolvesAnOAuth2DriverWithTheConfiguredKeySetStore(): void
+    {
+        // The default store is pointed elsewhere; the driver must still keep
+        // its key set in the store named in sesame.oauth2.jwks_store.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('cache.default', 'file');
+        $app['config']->set('sesame.driver', 'oauth2');
+        $app['config']->set('sesame.oauth2.issuer', 'https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0');
+        $app['config']->set('sesame.oauth2.jwks_url', 'https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys');
+        $app['config']->set('sesame.oauth2.audience', '00000000-0000-0000-0000-000000000000');
+        $app['config']->set('sesame.oauth2.jwks_store', 'array');
+        $app->instance(ClientInterface::class, new FakeHttpClient());
+
+        self::assertInstanceOf(OAuth2Driver::class, $app->make(Driver::class));
     }
 }

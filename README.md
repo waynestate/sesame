@@ -113,7 +113,7 @@ SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
-| `oauth2` | Later. JWT bearer tokens. |
+| `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. |
 
 <details>
 <summary><b>Walk round the shop</b>: the front page's counter, pegboard and duplicator</summary>
@@ -280,6 +280,79 @@ sign-in; `amr` is the list of methods they used. A missing or malformed
 the method list empty, so a claim the gateway did not verify can never satisfy
 the check.
 
+## oauth2 with Entra
+
+The oauth2 driver signs the user in from a JWT bearer token in the
+`Authorization` header, verified against the issuer's key set (a JWKS) fetched
+from `oauth2.jwks_url`. Only RS256 tokens are accepted: a token that claims
+`none` or an HMAC algorithm is refused before its signature is even looked at,
+and the key used to verify is the one the issuer published under the token's
+key id, never anything the token itself carries. After the signature, the
+driver checks the issuer, audience, expiry and not-before claims (with a
+leeway), then any required scopes and roles.
+
+Microsoft Entra ID is the first planned issuer. Point `issuer` and `jwks_url`
+at the tenant's v2.0 endpoints (the `issuer` and `jwks_uri` values in the
+tenant's discovery document) and `audience` at the app's client id. Any other
+RS256 issuer works with the same settings.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+
+$config = Config::fromArray([
+    'driver' => 'oauth2',
+    'environment' => 'production',
+    'oauth2' => [
+        'issuer' => 'https://login.microsoftonline.com/<tenant>/v2.0',
+        'jwks_url' => 'https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys',
+        'audience' => '<client id>',
+        'required_scopes' => ['openid'],
+    ],
+]);
+
+// Any PSR-18 client works, for example Guzzle.
+$http = new \GuzzleHttp\Client();
+
+// Any PSR-16 cache works (symfony/cache is shown); the Laravel adapter wires
+// one up for you, so you only see this in raw PHP.
+$driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, new FilesystemAdapter());
+```
+
+Then build the Sesame facade with the driver, as in the Raw PHP section above.
+
+Config keys:
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `oauth2.issuer` | Yes | none | The `iss` claim the token must carry. For Entra, the `issuer` value in the tenant's discovery document. |
+| `oauth2.jwks_url` | Yes | none | The URL of the issuer's JSON Web Key Set. For Entra, the `jwks_uri` value in the tenant's discovery document. |
+| `oauth2.audience` | Yes | none | The `aud` claim the token must carry. For Entra, the app's client id. |
+| `oauth2.leeway_seconds` | No | `60` | Clock skew allowed on the `exp` and `nbf` checks, in seconds. |
+| `oauth2.required_scopes` | No | `[]` | Scopes the token's `scp` claim must cover, all of them. An empty list checks nothing. |
+| `oauth2.required_roles` | No | `[]` | Roles the token's `roles` claim must include, all of them. An empty list checks nothing. |
+| `oauth2.identity_claim` | No | `preferred_username` | The claim the username comes from: `preferred_username`, or `accessid` (the UPN's mail prefix, Entra's user claim). |
+| `oauth2.jwks_cache_ttl_seconds` | No | `3600` | How long the fetched key set is kept before it is refetched, in seconds. |
+| `oauth2.jwks_store` | No | the app's default cache store | The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache). |
+
+The token must carry an `exp` claim; a token without one is refused. The
+`email` and `name` claims become read-only identity attributes, and the
+optional `auth_time` and `amr` claims become the identity's MFA facts, for
+`requireMfa()`, exactly as in the gateway driver.
+
+The key set is fetched once and kept for `oauth2.jwks_cache_ttl_seconds`. When
+a token carries a key id the cached set does not know, the provider refetches
+the set once, and at most once a minute, so a rotated key is picked up without
+hammering the issuer. Everything about the fetch fails closed: an unreachable
+issuer, a non-2xx answer, or an empty or malformed key set all refuse the
+sign-in rather than let it through.
+
 ## Session timeouts
 
 Open sesame opens the door for a live session; a stale one finds it locked.
@@ -421,7 +494,7 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 |---|---|---|---|
-| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway` or `fake`. |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2` or `fake`. |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
@@ -437,6 +510,13 @@ Config keys (in `config/sesame.php`):
 | `gateway.max_lifetime` | `SESAME_GATEWAY_MAX_LIFETIME` | `300` | The longest an assertion may live, in seconds. |
 | `gateway.replay_store` | `SESAME_GATEWAY_REPLAY_STORE` | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only). |
 | `gateway.allow_without_replay_guard` | `SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD` | `false` | Skip the replay guard. Local development only. |
+| `oauth2.issuer` | `SESAME_OAUTH2_ISSUER` | none | The `iss` claim the token must carry. Required for the oauth2 driver. |
+| `oauth2.jwks_url` | `SESAME_OAUTH2_JWKS_URL` | none | The URL of the issuer's key set. Required for the oauth2 driver. |
+| `oauth2.audience` | `SESAME_OAUTH2_AUDIENCE` | none | The `aud` claim the token must carry. Required for the oauth2 driver. |
+| `oauth2.leeway_seconds` | `SESAME_OAUTH2_LEEWAY_SECONDS` | `60` | Clock skew allowed on the time-claim checks, in seconds. |
+| `oauth2.identity_claim` | `SESAME_OAUTH2_IDENTITY_CLAIM` | `preferred_username` | The claim the username comes from: `preferred_username` or `accessid`. |
+| `oauth2.jwks_cache_ttl_seconds` | `SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS` | `3600` | How long the fetched key set is kept, in seconds. |
+| `oauth2.jwks_store` | `SESAME_OAUTH2_JWKS_STORE` | the app's default cache store | The cache store the key set is kept in (Laravel only). |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
@@ -485,7 +565,7 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-The cas driver needs a PSR-18 client. The adapter uses the app's
+The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's
 `Psr\Http\Client\ClientInterface` binding when there is one, Guzzle when it is
 installed, and nothing when there is neither. Bind a client when the app has
 neither:
@@ -496,6 +576,10 @@ app()->singleton(
     fn () => new \Symfony\Component\HttpClient\Psr18Client(),
 );
 ```
+
+The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The
+adapter wires one up from the app's cache, using the store named by
+`oauth2.jwks_store`, or the default store when none is named.
 
 ## Running off Citadel
 
