@@ -1,13 +1,10 @@
-# Same settings as Pinstripe's phpstan/raw.neon. Swap for an include once waynestate/pinstripe is on Packagist.
+# Coding standard: Pinstripe's raw preset (level 8 plus deprecation checks).
 includes:
-    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/waynestate/pinstripe/phpstan/raw.neon
 parameters:
-    level: 8
     paths:
         - src
         - tests
-    reportIgnoresWithoutComments: true
-    reportUnmatchedIgnoredErrors: true
     phpVersion:
         min: 80300
         max: 80599
