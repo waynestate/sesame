@@ -472,6 +472,49 @@ final class CasDriverTest extends TestCase
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
     }
 
+    public function testAWrongCasNamespaceIsNotAccepted(): void
+    {
+        // The "cas" prefix is bound to a different namespace URI. Only
+        // elements in the real CAS namespace count, so this forged success
+        // must be refused.
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<serviceResponse xmlns:cas="urn:other">' . "\n"
+            . '  <cas:authenticationSuccess>' . "\n"
+            . '    <cas:user>ab1234</cas:user>' . "\n"
+            . '  </cas:authenticationSuccess>' . "\n"
+            . '</serviceResponse>' . "\n";
+        $http = new FakeHttpClient([self::response(200, $xml)]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+        $this->expectExceptionMessage('neither a success nor a failure');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+    }
+
+    public function testADifferentPrefixBoundToTheCasNamespaceIsAccepted(): void
+    {
+        // A different prefix bound to the real CAS namespace URI must keep
+        // working: the driver matches by namespace, not by prefix.
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+            . '<serviceResponse xmlns:x="http://www.yale.edu/tp/cas">' . "\n"
+            . '  <x:authenticationSuccess>' . "\n"
+            . '    <x:user>ab1234</x:user>' . "\n"
+            . '    <x:attributes>' . "\n"
+            . '      <x:mail>ab1234@wayne.edu</x:mail>' . "\n"
+            . '    </x:attributes>' . "\n"
+            . '  </x:authenticationSuccess>' . "\n"
+            . '</serviceResponse>' . "\n";
+        $http = new FakeHttpClient([self::response(200, $xml)]);
+        $driver = $this->driver($http);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('ab1234', $step->identity->username);
+        self::assertSame(['ab1234@wayne.edu'], $step->identity->attributes['mail']);
+    }
+
     public function testAFailureElementWinsOverASuccessElement(): void
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
