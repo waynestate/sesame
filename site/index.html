@@ -57,7 +57,25 @@
 
   <!-- ================================================================ hero -->
   <section class="hero" aria-labelledby="hero-title">
-    <div class="wrap hero__grid">
+    <div class="wrap hero__stage">
+
+      <!-- The doorway: the mark stands open at the top of the page, and the
+           light that spills from it runs down behind the name and the words. -->
+      <div class="hero__door">
+        <span class="hero__glow" aria-hidden="true"></span>
+        <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
+      </div>
+      <span class="hero__spill" aria-hidden="true"></span>
+
+      <!-- The shop's working keys, off the board and onto the rails by the
+           door: two on the left, one on the right. The cas key gets company. -->
+      <span class="hang-rail hang-rail--left" aria-hidden="true">
+        <span class="hang hang--a" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+        <span class="hang hang--b" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+      </span>
+      <span class="hang-rail hang-rail--right" aria-hidden="true">
+        <span class="hang hang--c" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
+      </span>
 
       <div class="hero__copy">
         <p class="stamp">Keys cut while you wait · <code>waynestate/sesame</code> 0.1</p>
@@ -81,18 +99,6 @@
           <a class="wsu-btn wsu-btn--primary wsu-btn--lg tag-btn" href="#keys">Try a key</a>
           <a class="hero__link" href="#duplicator">Watch one get cut</a>
         </p>
-      </div>
-
-      <div class="hero__art">
-        <div class="peg-wall" aria-hidden="true"></div>
-        <div class="hero__door">
-          <span class="hero__glow" aria-hidden="true"></span>
-          <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
-          <span class="hero__spill" aria-hidden="true"></span>
-        </div>
-        <span class="hang hang--a" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-cas" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
-        <span class="hang hang--b" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-gateway" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
-        <span class="hang hang--c" aria-hidden="true"><span class="hang__hook"></span><svg viewBox="0 0 90 260"><use href="#key-saml" width="260" height="90" transform="translate(90,0) rotate(90)"/></svg></span>
       </div>
 
     </div>
