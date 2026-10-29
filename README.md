@@ -328,6 +328,8 @@ not send one, the MFA check fails because there is no sign-in time to age.
 
 ## The gateway driver
 
+This is the recommended path on Citadel: Drawbridge is not live yet, but once it is, every app behind it uses this driver and needs no Entra registration of its own.
+
 The gateway driver signs the user in from a signed JWT assertion that the auth
 gateway (Drawbridge) puts in one header. It verifies the assertion's signature
 against the gateway's public key, then checks the issuer, audience and time
@@ -479,6 +481,8 @@ issuer, a non-2xx answer, or an empty or malformed key set all refuse the
 sign-in rather than let it through.
 
 ## The oidc driver (Entra sign-in)
+
+> This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
 
 Open sesame, said straight to Entra. The oidc driver signs a person in
 through the browser with OpenID Connect: the authorization code flow with
