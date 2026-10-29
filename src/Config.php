@@ -348,7 +348,7 @@ final readonly class Config
             }
         }
 
-        return $value;
+        return array_values($value);
     }
 
     /**

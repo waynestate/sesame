@@ -173,28 +173,28 @@ final class OAuth2DriverTest extends TestCase
 
     public function testAMissingAuthorizationHeaderIsRejected(): void
     {
-        $this->assertRejected('oauth2.missing_token', fn (): mixed => $this->driver()->login($this->requestWith(null)));
+        $this->assertRejected('oauth2.missing_token', fn(): mixed => $this->driver()->login($this->requestWith(null)));
 
         self::assertCount(0, $this->http->requests);
     }
 
     public function testANonBearerAuthorizationHeaderIsRejected(): void
     {
-        $this->assertRejected('oauth2.missing_token', fn (): mixed => $this->driver()->login($this->requestWith('Basic dG9rZW4=')));
+        $this->assertRejected('oauth2.missing_token', fn(): mixed => $this->driver()->login($this->requestWith('Basic dG9rZW4=')));
 
         self::assertCount(0, $this->http->requests);
     }
 
     public function testAnEmptyBearerTokenIsRejected(): void
     {
-        $this->assertRejected('oauth2.missing_token', fn (): mixed => $this->driver()->login($this->requestWith('Bearer   ')));
+        $this->assertRejected('oauth2.missing_token', fn(): mixed => $this->driver()->login($this->requestWith('Bearer   ')));
 
         self::assertCount(0, $this->http->requests);
     }
 
     public function testAMalformedTokenIsRejectedWithoutTouchingTheIssuer(): void
     {
-        $this->assertRejected('oauth2.invalid_jwt', fn (): mixed => $this->driver()->login($this->requestWith('Bearer not.a.jwt')));
+        $this->assertRejected('oauth2.invalid_jwt', fn(): mixed => $this->driver()->login($this->requestWith('Bearer not.a.jwt')));
 
         self::assertCount(0, $this->http->requests);
     }
@@ -206,7 +206,7 @@ final class OAuth2DriverTest extends TestCase
 
         $token = JWT::encode($this->claims(), $privateKey, 'RS256');
 
-        $this->assertRejected('oauth2.missing_kid', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.missing_kid', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
         self::assertCount(0, $this->http->requests);
     }
@@ -216,7 +216,7 @@ final class OAuth2DriverTest extends TestCase
         $header = self::base64UrlEncode((string) json_encode(['alg' => 'none', 'typ' => 'JWT']));
         $payload = self::base64UrlEncode((string) json_encode($this->claims()));
 
-        $this->assertRejected('oauth2.bad_algorithm', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $header . '.' . $payload . '.')));
+        $this->assertRejected('oauth2.bad_algorithm', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $header . '.' . $payload . '.')));
 
         self::assertCount(0, $this->http->requests);
     }
@@ -230,7 +230,7 @@ final class OAuth2DriverTest extends TestCase
 
         $token = JWT::encode($this->claims(), $jwk['n'], 'HS256', self::KID_A);
 
-        $this->assertRejected('oauth2.bad_algorithm', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.bad_algorithm', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
         self::assertCount(0, $this->http->requests);
     }
@@ -240,7 +240,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('oauth2.issuer', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
+        $this->assertRejected('oauth2.issuer', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
             'iss' => 'https://evil.example.com/v2.0',
         ]))));
     }
@@ -250,7 +250,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('oauth2.audience', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
+        $this->assertRejected('oauth2.audience', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
             'aud' => 'some-other-app',
         ]))));
     }
@@ -260,7 +260,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('oauth2.expired', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
+        $this->assertRejected('oauth2.expired', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
             'exp' => $this->clock->now()->getTimestamp() - 120,
         ]))));
     }
@@ -282,7 +282,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('oauth2.not_yet_valid', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
+        $this->assertRejected('oauth2.not_yet_valid', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: [
             'nbf' => $this->clock->now()->getTimestamp() + 120,
         ]))));
     }
@@ -309,7 +309,7 @@ final class OAuth2DriverTest extends TestCase
 
         $token = JWT::encode($claims, $privateKey, 'RS256', self::KID_A);
 
-        $this->assertRejected('oauth2.missing_claim', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.missing_claim', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
     }
 
     public function testAMissingScopeIsRejected(): void
@@ -317,7 +317,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('"profile" scope (oauth2.scope)', fn (): mixed => $this->driver(['required_scopes' => ['openid', 'profile']])
+        $this->assertRejected('"profile" scope (oauth2.scope)', fn(): mixed => $this->driver(['required_scopes' => ['openid', 'profile']])
             ->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: ['scp' => 'openid email']))));
     }
 
@@ -348,7 +348,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('"admin" role (oauth2.role)', fn (): mixed => $this->driver(['required_roles' => ['admin']])
+        $this->assertRejected('"admin" role (oauth2.role)', fn(): mixed => $this->driver(['required_roles' => ['admin']])
             ->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: ['roles' => ['user']]))));
     }
 
@@ -368,7 +368,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey, $jwk] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
 
-        $this->assertRejected('oauth2.role', fn (): mixed => $this->driver(['required_roles' => ['admin']])
+        $this->assertRejected('oauth2.role', fn(): mixed => $this->driver(['required_roles' => ['admin']])
             ->login($this->requestWith('Bearer ' . $this->token($privateKey, overrides: ['roles' => 'admin']))));
     }
 
@@ -394,7 +394,7 @@ final class OAuth2DriverTest extends TestCase
 
         $token = JWT::encode($claims, $privateKey, 'RS256', self::KID_A);
 
-        $this->assertRejected('preferred_username" claim (oauth2.missing_claim)', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('preferred_username" claim (oauth2.missing_claim)', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
     }
 
     public function testASignatureMismatchIsRejected(): void
@@ -405,7 +405,7 @@ final class OAuth2DriverTest extends TestCase
         [, $jwkA] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
 
-        $this->assertRejected('oauth2.signature', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKeyB, self::KID_A))));
+        $this->assertRejected('oauth2.signature', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKeyB, self::KID_A))));
     }
 
     public function testTheKeySetIsFetchedOnceAndThenCached(): void
@@ -454,10 +454,10 @@ final class OAuth2DriverTest extends TestCase
 
         $token = $this->token($privateKeyB, self::KID_B);
 
-        $this->assertRejected('oauth2.unknown_key', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
         // Within the cooldown window, a second bad token costs no request.
-        $this->assertRejected('oauth2.unknown_key', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
         self::assertCount(2, $this->http->requests);
 
@@ -465,7 +465,7 @@ final class OAuth2DriverTest extends TestCase
         $this->clock->advance(61);
         $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
 
-        $this->assertRejected('oauth2.unknown_key', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
         self::assertCount(3, $this->http->requests);
     }
@@ -491,7 +491,7 @@ final class OAuth2DriverTest extends TestCase
         // answer with an authentication error, not a transport error.
         [$privateKey] = self::keyPair('a');
 
-        $this->assertRejected('oauth2.jwks_unavailable', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
+        $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }
 
     public function testANon2xxIssuerAnswerFailsClosed(): void
@@ -499,7 +499,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey] = self::keyPair('a');
         $this->http->queue(new Response(500, [], 'nope'));
 
-        $this->assertRejected('oauth2.jwks_unavailable', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
+        $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }
 
     public function testAnEmptyKeySetFailsClosed(): void
@@ -507,7 +507,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey] = self::keyPair('a');
         $this->http->queue($this->jwksResponse([]));
 
-        $this->assertRejected('oauth2.jwks_unavailable', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
+        $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }
 
     public function testAMalformedKeySetFailsClosed(): void
@@ -515,7 +515,7 @@ final class OAuth2DriverTest extends TestCase
         [$privateKey] = self::keyPair('a');
         $this->http->queue(new Response(200, ['Content-Type' => 'application/json'], 'not a key set'));
 
-        $this->assertRejected('oauth2.jwks_unavailable', fn (): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
+        $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }
 
     /**

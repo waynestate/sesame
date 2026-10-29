@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Laravel;
 
 use GuzzleHttp\Client;
+use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Session\Session;
@@ -133,8 +134,9 @@ class SesameServiceProvider extends ServiceProvider
     }
 
     /**
-     * The PSR-18 client the cas driver uses: the app's binding when there is
-     * one, Guzzle when it is installed, and nothing when there is neither.
+     * The PSR-18 client the cas and oauth2 drivers use: the app's binding
+     * when there is one, Guzzle when it is installed, and nothing when there
+     * is neither.
      */
     private function httpClient(Application $app): ?ClientInterface
     {
@@ -155,13 +157,18 @@ class SesameServiceProvider extends ServiceProvider
      */
     private function jwksCache(Application $app): CacheInterface
     {
-        $store = $app['config']->get('sesame.oauth2.jwks_store');
+        $store = $app->make(Repository::class)->get('sesame.oauth2.jwks_store');
+        $cache = $app->make(CacheManager::class)->store(is_string($store) && $store !== '' ? $store : null);
 
-        return new LaravelPsr16Cache($app['cache']->store(is_string($store) && $store !== '' ? $store : null));
+        if (! $cache instanceof \Illuminate\Cache\Repository) {
+            throw new InvalidConfig('The sesame.oauth2.jwks_store cache store must be a standard Laravel cache store.');
+        }
+
+        return new LaravelPsr16Cache($cache);
     }
 
     /**
-     * The PSR-17 request factory the cas driver uses.
+     * The PSR-17 request factory the cas and oauth2 drivers use.
      */
     private function requestFactory(Application $app): RequestFactoryInterface
     {

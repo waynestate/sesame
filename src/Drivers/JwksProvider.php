@@ -12,6 +12,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
+use UnexpectedValueException;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 
 /**
