@@ -234,10 +234,10 @@ session at logout. Laravel apps use Laravel's own CSRF token instead: the
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
+| `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
 | `saml` | Later. Direct SP. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
-| `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs `league/oauth2-client`. |
+| `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
 <details>
 <summary><b>Walk round the shop</b>: the front page's counter, pegboard and duplicator</summary>
