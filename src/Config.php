@@ -26,13 +26,13 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * replay guard, for local development only). The `oauth2` driver adds
  * `oauth2.issuer` (required), `oauth2.jwks_url` (required),
  * `oauth2.audience` (required), `oauth2.leeway_seconds` (default `60`, a
- * non-negative integer), `oauth2.required_scopes` (default `[]`, a list of
+ * non-negative integer, at most `300`), `oauth2.required_scopes` (default `[]`, a list of
  * non-empty strings the token's scp claim must include),
  * `oauth2.required_roles` (default `[]`, a list of non-empty strings the
  * token's roles claim must include), `oauth2.identity_claim` (default
  * `preferred_username`, only `preferred_username` or `accessid`) and
- * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer: how
- * long the fetched key set stays usable). The session timeouts are
+ * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer, at most
+ * `86400`: how long the fetched key set stays usable). The session timeouts are
  * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
  * (default `720`), both optional positive integers. A truthy `slo` (or
  * `single_logout`) key is rejected: the identity provider does not support
@@ -192,6 +192,16 @@ final readonly class Config
             }
 
             $oauth2JwksCacheTtlSeconds = self::optionalPositiveInt($config, 'oauth2.jwks_cache_ttl_seconds', 3600);
+
+            // Bounds: a huge leeway makes expired tokens live on, and a huge
+            // TTL keeps a revoked signing key trusted.
+            if ($oauth2LeewaySeconds > 300) {
+                throw new InvalidConfig('The config key "oauth2.leeway_seconds" must be at most 300.');
+            }
+
+            if ($oauth2JwksCacheTtlSeconds > 86400) {
+                throw new InvalidConfig('The config key "oauth2.jwks_cache_ttl_seconds" must be at most 86400.');
+            }
         }
 
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);

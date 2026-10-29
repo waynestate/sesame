@@ -429,15 +429,22 @@ final class OAuth2DriverTest extends TestCase
 
     public function testAnUnknownKeyIdTriggersOneRefetchAndThenSucceeds(): void
     {
-        // The cached set knows only key A; the token carries key B, so the
-        // provider refetches once and finds the rotated set.
+        // The first fetch knows only key A; the token carries key B. That
+        // first fetch already spends the one-refetch-per-minute budget, so
+        // the token is refused until the window passes and the provider
+        // refetches the rotated set.
         [, $jwkA] = self::keyPair('a');
         [$privateKeyB, $jwkB] = self::keyPair('b');
 
         $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
+
+        $token = $this->token($privateKeyB, self::KID_B);
+        $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
+
+        $this->clock->advance(61);
         $this->http->queue($this->jwksResponse([self::withKid($jwkB, self::KID_B)]));
 
-        $step = $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKeyB, self::KID_B)));
+        $step = $this->driver()->login($this->requestWith('Bearer ' . $token));
 
         self::assertInstanceOf(Authenticated::class, $step);
         self::assertCount(2, $this->http->requests);
@@ -456,27 +463,29 @@ final class OAuth2DriverTest extends TestCase
 
         $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
-        // Within the cooldown window, a second bad token costs no request.
+        // The first fetch already marked the window, so a second bad token
+        // within it costs no request at all.
         $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
-        self::assertCount(2, $this->http->requests);
+        self::assertCount(1, $this->http->requests);
 
         // After the window, the provider may refetch again.
         $this->clock->advance(61);
-        $this->http->queue($this->jwksResponse([self::withKid($jwkA, self::KID_A)]));
 
         $this->assertRejected('oauth2.unknown_key', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $token)));
 
-        self::assertCount(3, $this->http->requests);
+        self::assertCount(2, $this->http->requests);
     }
 
     public function testAStaleCachedSetIsRefreshedWhenTheIssuerRotates(): void
     {
-        // The first login caches the set that holds only key A. The issuer
-        // then rotates to key B, and the next token must still be accepted.
+        // The first login caches the set that holds only key A and marks
+        // the refetch window. The issuer then rotates to key B; once the
+        // window has passed, the next token must still be accepted.
         $this->validLogin();
 
         [$privateKeyB, $jwkB] = self::keyPair('b');
+        $this->clock->advance(61);
         $this->http->queue($this->jwksResponse([self::withKid($jwkB, self::KID_B)]));
 
         $step = $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKeyB, self::KID_B)));
@@ -498,6 +507,15 @@ final class OAuth2DriverTest extends TestCase
     {
         [$privateKey] = self::keyPair('a');
         $this->http->queue(new Response(500, [], 'nope'));
+
+        $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
+    }
+
+    public function testAnOversizedKeySetFailsClosed(): void
+    {
+        // A body far beyond any real JWKS is refused before it is parsed.
+        [$privateKey] = self::keyPair('a');
+        $this->http->queue(new Response(200, ['Content-Type' => 'application/json'], str_repeat('a', 262145)));
 
         $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }

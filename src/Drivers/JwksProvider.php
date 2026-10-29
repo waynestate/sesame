@@ -36,6 +36,11 @@ final readonly class JwksProvider
     private const REFETCH_COOLDOWN_SECONDS = 60;
 
     /**
+     * The largest key set body accepted, in bytes; real sets are a few KB.
+     */
+    private const MAX_BODY_BYTES = 262144;
+
+    /**
      * @param int $ttlSeconds How long the fetched set stays usable, in seconds.
      */
     public function __construct(
@@ -56,11 +61,14 @@ final readonly class JwksProvider
     public function keyFor(string $kid): ?Key
     {
         $set = $this->cachedSet();
+        $justFetched = false;
 
         if ($set === null) {
             // Cold start: no cached set yet, so fetch and keep one.
             $set = $this->fetch();
             $this->store($set);
+            $this->markRefetched();
+            $justFetched = true;
         }
 
         $key = $this->findKey($set, $kid);
@@ -72,13 +80,14 @@ final readonly class JwksProvider
         // An unknown key id means the cached set may be stale: the issuer
         // rotated its keys. Refetch once, at most once per minute, then fail
         // closed rather than trust a key nobody published.
-        if ($this->recentlyRefetched()) {
+        if ($justFetched || $this->recentlyRefetched()) {
             return null;
         }
 
+        // Mark before fetching so a failing issuer is not hammered either.
+        $this->markRefetched();
         $fresh = $this->fetch();
         $this->store($fresh);
-        $this->markRefetched();
 
         return $this->findKey($fresh, $kid);
     }
@@ -126,7 +135,13 @@ final readonly class JwksProvider
             throw new AuthenticationFailed(sprintf('The issuer\'s key set answered %d, not 2xx (oauth2.jwks_unavailable).', $status));
         }
 
-        $decoded = json_decode((string) $response->getBody(), true);
+        $body = (string) $response->getBody();
+
+        if (strlen($body) > self::MAX_BODY_BYTES) {
+            throw new AuthenticationFailed('The issuer\'s key set is too large (oauth2.jwks_unavailable).');
+        }
+
+        $decoded = json_decode($body, true);
 
         if (! is_array($decoded) || ! isset($decoded['keys']) || ! is_array($decoded['keys']) || $decoded['keys'] === []) {
             throw new AuthenticationFailed('The issuer\'s key set is not a usable JWKS document (oauth2.jwks_unavailable).');

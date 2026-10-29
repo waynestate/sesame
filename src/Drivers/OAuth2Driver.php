@@ -179,7 +179,8 @@ final class OAuth2Driver implements Driver
         $alg = $header['alg'] ?? null;
 
         if (! is_string($alg) || $alg !== self::ALGORITHM) {
-            throw new AuthenticationFailed(sprintf('The access token uses the "%s" algorithm; only %s is accepted (oauth2.bad_algorithm).', is_string($alg) ? $alg : 'none', self::ALGORITHM));
+            // The attacker-chosen algorithm name is not echoed back or logged.
+            throw new AuthenticationFailed(sprintf('The access token does not use %s (oauth2.bad_algorithm).', self::ALGORITHM));
         }
 
         $kid = $header['kid'] ?? null;
@@ -200,6 +201,8 @@ final class OAuth2Driver implements Driver
      */
     private function decode(string $token, Key $key): object
     {
+        $previousLeeway = JWT::$leeway;
+        $previousTimestamp = JWT::$timestamp;
         JWT::$leeway = $this->leewaySeconds;
         JWT::$timestamp = $this->clock->now()->getTimestamp();
 
@@ -213,6 +216,9 @@ final class OAuth2Driver implements Driver
             throw new AuthenticationFailed('The access token signature is invalid (oauth2.signature).');
         } catch (UnexpectedValueException|InvalidArgumentException|DomainException) {
             throw new AuthenticationFailed('The access token is not a valid JWT (oauth2.invalid_jwt).');
+        } finally {
+            JWT::$leeway = $previousLeeway;
+            JWT::$timestamp = $previousTimestamp;
         }
     }
 

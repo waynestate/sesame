@@ -416,6 +416,21 @@ final class ConfigTest extends TestCase
         self::assertSame(0, $config->oauth2LeewaySeconds);
     }
 
+    public function testRejectsAnExcessiveOauth2Leeway(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.leeway_seconds" must be at most 300.');
+
+        Config::fromArray($this->oauth2Config(['leeway_seconds' => 301]));
+    }
+
+    public function testAcceptsTheMaximumOauth2Leeway(): void
+    {
+        $config = Config::fromArray($this->oauth2Config(['leeway_seconds' => 300]));
+
+        self::assertSame(300, $config->oauth2LeewaySeconds);
+    }
+
     #[DataProvider('badOauth2JwksCacheTtls')]
     public function testRejectsAnInvalidOauth2JwksCacheTtl(int|string $value): void
     {
@@ -437,6 +452,21 @@ final class ConfigTest extends TestCase
             'a negative ttl' => [-5],
             'a string ttl' => ['abc'],
         ];
+    }
+
+    public function testRejectsAnExcessiveOauth2JwksCacheTtl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.jwks_cache_ttl_seconds" must be at most 86400.');
+
+        Config::fromArray($this->oauth2Config(['jwks_cache_ttl_seconds' => 86401]));
+    }
+
+    public function testAcceptsTheMaximumOauth2JwksCacheTtl(): void
+    {
+        $config = Config::fromArray($this->oauth2Config(['jwks_cache_ttl_seconds' => 86400]));
+
+        self::assertSame(86400, $config->oauth2JwksCacheTtlSeconds);
     }
 
     public function testReadsTheSessionTimeouts(): void
