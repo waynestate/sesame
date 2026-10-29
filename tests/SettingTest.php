@@ -91,6 +91,9 @@ final class SettingTest extends TestCase
         self::assertNull(Setting::get(self::KEY));
     }
 
+    /**
+     * @param array<string, mixed> $config
+     */
     #[DataProvider('missingRoutedSettings')]
     public function testAMissingRoutedSettingNamesTheSettingAndPointsAtPlaybook(array $config, string $message): void
     {
