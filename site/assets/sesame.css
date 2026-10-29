@@ -424,7 +424,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .lock[data-driver="gateway"] .door__key { --k: var(--nickel); --kd: var(--nickel-dark); }
 .lock[data-driver="oidc"] .door__key { --k: var(--copper); --kd: var(--copper-dark); }
 .lock[data-driver="fake"] .door__key { --k: #5b7a72; --kd: #23352f; }
-.lock[data-driver="saml"] .door__key, .lock[data-driver="oauth2"] .door__key { --k: #eef1ef; --kd: #8d9894; }
+.lock[data-driver="saml"] .door__key { --k: #eef1ef; --kd: #8d9894; }
 
 .lock:not(.is-in) .door__key { transform: translateX(-46px); opacity: 0; }
 .lock.is-turned .door__key svg use { transform: scaleY(.32); }

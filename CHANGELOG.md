@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed: the oauth2 peg on the site hangs as a cut key, since the driver ships.
 - Changed: project names written as words except acronyms.
 - Fixed: stale capability claims in the site and docs.
 - Changed: the site shows the oidc driver.
