@@ -67,8 +67,8 @@ use Waynestate\Sesame\SessionPort;
  * opt-in (oidc.username_fallback), because users can change
  * preferred_username. iss, sub, tid and oid are passed to the resolver so
  * apps can key accounts on issuer plus sub, or tenant plus oid. The roles
- * claim (wsuRoles by default) becomes the "roles" attribute, the claims
- * the app lists in oidc.claims (wsuRoles and accessid by default) are
+ * claim (wsu_roles by default) becomes the "roles" attribute, the claims
+ * the app lists in oidc.claims (wsu_roles and accessid by default) are
  * passed through under their own names, and auth_time
  * and amr become the identity's MFA facts with the same rules as the cas
  * driver's authenticationDate: the driver never invents a sign-in time.
@@ -614,10 +614,10 @@ final class OidcDriver implements Driver, RemembersReturnTo
     /**
      * One claim by name. A claim mapped through a custom-claim namespace
      * may arrive under a longer name (for example
-     * "http://schemas.example.test/claims/wsuRoles" or "extn.wsuRoles"):
+     * "http://schemas.example.test/claims/wsu_roles" or "extn.wsu_roles"):
      * the candidates are the claim with the exact name and every claim
      * whose name ends in "/<name>" or ".<name>", counted together. Exactly
-     * one candidate is used; two or more (for example an exact "wsuRoles"
+     * one candidate is used; two or more (for example an exact "wsu_roles"
      * beside a namespaced one) are ambiguous, and none is used, so a second
      * claim can never quietly decide which roles count.
      *

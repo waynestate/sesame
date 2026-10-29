@@ -70,7 +70,7 @@ final readonly class OidcOptions
         public int $leewaySeconds = 60,
         public string $usernameClaim = 'accessid',
         public bool $usernameFallback = false,
-        public string $rolesClaim = 'wsuRoles',
+        public string $rolesClaim = 'wsu_roles',
         public bool $assumeMfa = false,
         public ?string $postLogoutRedirectUri = null,
         public array $endpoints = [],
@@ -80,7 +80,7 @@ final readonly class OidcOptions
         public ?int $stepUpMaxAge = null,
         public ?string $stepUpAcrValues = null,
         public ?string $stepUpClaims = null,
-        public array $claims = ['wsuRoles', 'accessid'],
+        public array $claims = ['wsu_roles', 'accessid'],
     ) {
         $this->clientSecret = new SensitiveParameterValue($clientSecret);
     }
@@ -159,7 +159,7 @@ final readonly class OidcOptions
         $leeway = self::int($oidc, 'leeway_seconds', 60, 0, 300);
         $usernameClaim = self::optionalString($oidc, 'username_claim') ?? 'accessid';
         $usernameFallback = self::bool($oidc, 'username_fallback', false);
-        $rolesClaim = self::optionalString($oidc, 'roles_claim') ?? 'wsuRoles';
+        $rolesClaim = self::optionalString($oidc, 'roles_claim') ?? 'wsu_roles';
         $assumeMfa = self::bool($oidc, 'assume_mfa', false);
 
         $postLogout = self::optionalString($oidc, 'post_logout_redirect_uri');
@@ -226,7 +226,7 @@ final readonly class OidcOptions
             }
         }
 
-        $claimNames = self::claimNames($oidc['claims'] ?? ['wsuRoles', 'accessid']);
+        $claimNames = self::claimNames($oidc['claims'] ?? ['wsu_roles', 'accessid']);
 
         return new self(
             $issuer,

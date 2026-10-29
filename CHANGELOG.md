@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed: README leads with the gateway driver for Citadel apps and labels the oidc driver as the exception that needs its own Entra registration.
 - Changed: the deploy layer's Squire kit is refreshed to 0.3.3 (release options can now live in ./.env.squire).
+- Fixed: the oidc driver's default roles claim is wsu_roles, the name Entra sends; set roles_claim (and claims) to wsuRoles to keep the old name. Apps that relied on the old default must set it.
 
 ## [0.2.1] - 2026-10-29
 

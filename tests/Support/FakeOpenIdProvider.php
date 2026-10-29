@@ -298,7 +298,7 @@ final class FakeOpenIdProvider
             'preferred_username' => 'ab1234@example.test',
             'email' => 'jane.doe@example.test',
             'name' => 'Jane Doe',
-            'wsuRoles' => ['employee', 'staff'],
+            'wsu_roles' => ['employee', 'staff'],
         ], $this->claimOverrides);
 
         foreach ($this->claimRemovals as $name) {

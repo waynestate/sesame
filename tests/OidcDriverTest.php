@@ -97,7 +97,7 @@ final class OidcDriverTest extends TestCase
     {
         $identity = $this->signIn($this->driver())->identity;
 
-        self::assertSame(['employee', 'staff'], $identity->attributes['wsuRoles']);
+        self::assertSame(['employee', 'staff'], $identity->attributes['wsu_roles']);
         self::assertSame(['ab1234'], $identity->attributes['accessid']);
     }
 
@@ -108,7 +108,7 @@ final class OidcDriverTest extends TestCase
         $identity = $this->signIn($this->driver(['claims' => 'department']))->identity;
 
         self::assertSame(['Enterprise Applications'], $identity->attributes['department']);
-        self::assertArrayNotHasKey('wsuRoles', $identity->attributes);
+        self::assertArrayNotHasKey('wsu_roles', $identity->attributes);
         self::assertArrayNotHasKey('accessid', $identity->attributes);
     }
 
@@ -767,31 +767,62 @@ final class OidcDriverTest extends TestCase
         self::assertSame('https://app.example.test/after', $sesame->returnTo());
     }
 
+    public function testTheDefaultRolesClaimAndClaimsAreWsURoles(): void
+    {
+        $options = OidcOptions::fromArray($this->settings());
+
+        self::assertSame('wsu_roles', $options->rolesClaim);
+        self::assertSame(['wsu_roles', 'accessid'], $options->claims);
+    }
+
+    public function testANamespacedWsURolesClaimStillYieldsTheRolesAttribute(): void
+    {
+        foreach ([
+            'extn.wsu_roles' => ['employee'],
+            'http://schemas.example.test/claims/wsu_roles' => ['employee'],
+        ] as $namespaced => $roles) {
+            $this->op->claimRemovals = ['wsu_roles'];
+            $this->op->claimOverrides = [$namespaced => $roles];
+
+            self::assertSame($roles, $this->signIn($this->driver())->identity->attributes['roles'], $namespaced);
+        }
+    }
+
+    public function testTheOldWsURolesClaimNameStillWorksWhenConfigured(): void
+    {
+        $this->op->claimOverrides = ['wsuRoles' => ['alumni', 'employee']];
+
+        $identity = $this->signIn($this->driver(['roles_claim' => 'wsuRoles']))->identity;
+
+        self::assertSame(['alumni', 'employee'], $identity->attributes['roles']);
+        self::assertSame(['employee', 'staff'], $identity->attributes['wsu_roles']);
+    }
+
     public function testTheRolesClaimIsFoundUnderACustomClaimNamespace(): void
     {
-        $this->op->claimRemovals = ['wsuRoles'];
-        $this->op->claimOverrides = ['http://schemas.example.test/claims/wsuRoles' => ['employee']];
+        $this->op->claimRemovals = ['wsu_roles'];
+        $this->op->claimOverrides = ['http://schemas.example.test/claims/wsu_roles' => ['employee']];
 
         $identity = $this->signIn($this->driver())->identity;
 
         self::assertSame(['employee'], $identity->attributes['roles']);
-        self::assertSame(['employee'], $identity->attributes['wsuRoles']);
+        self::assertSame(['employee'], $identity->attributes['wsu_roles']);
     }
 
     public function testTheRolesClaimIsFoundUnderADottedNamespace(): void
     {
-        $this->op->claimRemovals = ['wsuRoles'];
-        $this->op->claimOverrides = ['extn.wsuRoles' => 'employee'];
+        $this->op->claimRemovals = ['wsu_roles'];
+        $this->op->claimOverrides = ['extn.wsu_roles' => 'employee'];
 
         self::assertSame(['employee'], $this->signIn($this->driver())->identity->attributes['roles']);
     }
 
     public function testAnAmbiguousNamespacedRolesClaimGrantsNothing(): void
     {
-        $this->op->claimRemovals = ['wsuRoles'];
+        $this->op->claimRemovals = ['wsu_roles'];
         $this->op->claimOverrides = [
-            'http://schemas.example.test/claims/wsuRoles' => ['employee'],
-            'extn.wsuRoles' => ['admin'],
+            'http://schemas.example.test/claims/wsu_roles' => ['employee'],
+            'extn.wsu_roles' => ['admin'],
         ];
 
         self::assertArrayNotHasKey('roles', $this->signIn($this->driver())->identity->attributes);
@@ -799,14 +830,14 @@ final class OidcDriverTest extends TestCase
 
     public function testAnExactClaimBesideANamespacedOneIsAmbiguousAndGrantsNothing(): void
     {
-        // The fake already sends an exact "wsuRoles"; a namespaced one beside it
+        // The fake already sends an exact "wsu_roles"; a namespaced one beside it
         // must not let either win.
-        $this->op->claimOverrides = ['http://schemas.example.test/claims/wsuRoles' => ['admin']];
+        $this->op->claimOverrides = ['http://schemas.example.test/claims/wsu_roles' => ['admin']];
 
         $identity = $this->signIn($this->driver())->identity;
 
         self::assertArrayNotHasKey('roles', $identity->attributes);
-        self::assertArrayNotHasKey('wsuRoles', $identity->attributes);
+        self::assertArrayNotHasKey('wsu_roles', $identity->attributes);
     }
 
     public function testAnAmbiguousUsernameClaimFailsTheSignIn(): void
