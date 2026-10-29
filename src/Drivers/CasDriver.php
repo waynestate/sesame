@@ -10,6 +10,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use SimpleXMLElement;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\Driver;
@@ -181,9 +182,12 @@ final class CasDriver implements Driver
      *
      * Parsed with the CAS namespace, not string matching. A DOCTYPE is
      * rejected outright, and the document is parsed with LIBXML_NONET so no
-     * external entities are loaded. The success element must be a direct
-     * child of the root serviceResponse. A failure element wins over a
-     * success element: a response carrying both is a failure.
+     * external entities are loaded. Elements are matched by local name and
+     * namespace URI, never by prefix, so only elements in the real CAS
+     * namespace count whatever prefix (or none) the document binds to it.
+     * The success element must be a direct child of the root
+     * serviceResponse. A failure element wins over a success element: a
+     * response carrying both is a failure.
      */
     private function parse(string $xml): Authenticated
     {
@@ -204,13 +208,11 @@ final class CasDriver implements Driver
             throw new AuthenticationFailed('The CAS server returned a response that is not valid XML.');
         }
 
-        $doc->registerXPathNamespace('cas', self::CAS_NAMESPACE);
-
         // Check the failure element first so a response that carries both a
         // failure and a success is treated as a failure.
-        $failure = $doc->xpath('cas:authenticationFailure');
+        $failure = $this->casChildren($doc, 'authenticationFailure');
 
-        if ($failure !== false && $failure !== null && $failure !== []) {
+        if ($failure !== []) {
             $code = (string) $failure[0]['code'];
 
             throw new AuthenticationFailed($code === ''
@@ -218,17 +220,16 @@ final class CasDriver implements Driver
                 : 'CAS authentication failed: ' . $code);
         }
 
-        $success = $doc->xpath('cas:authenticationSuccess');
+        $success = $this->casChildren($doc, 'authenticationSuccess');
 
-        if ($success === false || $success === null || $success === []) {
+        if ($success === []) {
             throw new AuthenticationFailed('The CAS server returned neither a success nor a failure.');
         }
 
         $successElement = $success[0];
-        $successElement->registerXPathNamespace('cas', self::CAS_NAMESPACE);
 
-        $userNodes = $successElement->xpath('cas:user');
-        $user = ($userNodes === false || $userNodes === null || $userNodes === []) ? '' : trim((string) $userNodes[0]);
+        $userNodes = $this->casChildren($successElement, 'user');
+        $user = $userNodes === [] ? '' : trim((string) $userNodes[0]);
 
         if ($user === '') {
             throw new AuthenticationFailed('The CAS success response has no user.');
@@ -236,9 +237,9 @@ final class CasDriver implements Driver
 
         $attributes = [];
 
-        $attributeNodes = $successElement->xpath('cas:attributes');
+        $attributeNodes = $this->casChildren($successElement, 'attributes');
 
-        if ($attributeNodes !== false && $attributeNodes !== null && $attributeNodes !== []) {
+        if ($attributeNodes !== []) {
             foreach ($attributeNodes[0]->children(self::CAS_NAMESPACE) as $name => $value) {
                 $attributes[$name][] = (string) $value;
             }
@@ -252,6 +253,35 @@ final class CasDriver implements Driver
             $this->authTime($attributes),
             $this->amr(),
         ));
+    }
+
+    /**
+     * The direct children of $element in the CAS namespace, matched by local
+     * name and namespace URI.
+     *
+     * XPath prefix resolution honors the document's own namespace
+     * declarations, which shadow registerXPathNamespace: a body that binds
+     * the "cas" prefix to another namespace would answer a "cas:" query with
+     * its forged elements. local-name() and namespace-uri() are evaluated
+     * per node, so no prefix the document declares can steer this query.
+     *
+     * @return list<SimpleXMLElement>
+     */
+    private function casChildren(SimpleXMLElement $element, string $localName): array
+    {
+        $query = sprintf(
+            "*[local-name()='%s' and namespace-uri()='%s']",
+            $localName,
+            self::CAS_NAMESPACE,
+        );
+
+        $nodes = $element->xpath($query);
+
+        if ($nodes === false || $nodes === null) {
+            return [];
+        }
+
+        return array_values($nodes);
     }
 
     /**
