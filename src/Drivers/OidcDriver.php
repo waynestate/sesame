@@ -177,7 +177,7 @@ final class OidcDriver implements Driver, RemembersReturnTo
         return 'oidc';
     }
 
-    public function login(ServerRequestInterface $request): LoginStep
+    public function login(#[\SensitiveParameter] ServerRequestInterface $request): LoginStep
     {
         $query = $request->getQueryParams();
         $this->returnTo = null;
@@ -304,7 +304,7 @@ final class OidcDriver implements Driver, RemembersReturnTo
      *
      * @param array<mixed> $query
      */
-    private function callback(array $query): Authenticated
+    private function callback(#[\SensitiveParameter] array $query): Authenticated
     {
         $state = $query['state'] ?? null;
 
@@ -373,7 +373,7 @@ final class OidcDriver implements Driver, RemembersReturnTo
      * request holds the client secret, so none of them is chained. Only an
      * OAuth 2.0 error code of the expected shape is kept, for the logs.
      */
-    private function exchange(string $code, string $verifier): string
+    private function exchange(#[\SensitiveParameter] string $code, #[\SensitiveParameter] string $verifier): string
     {
         $provider = $this->provider('', $this->discovery->endpoint('token_endpoint'));
         $provider->setPkceCode($verifier);

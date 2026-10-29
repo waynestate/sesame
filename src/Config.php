@@ -100,7 +100,7 @@ final readonly class Config
     /**
      * @param array<string, mixed> $config
      */
-    public static function fromArray(array $config): self
+    public static function fromArray(#[\SensitiveParameter] array $config): self
     {
         $driver = self::requiredString($config, 'driver');
         $environment = self::requiredString($config, 'environment');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Drivers\Oidc;
 
 use SensitiveParameter;
+use SensitiveParameterValue;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Support\Setting;
 
@@ -12,9 +13,11 @@ use Waynestate\Sesame\Support\Setting;
  * The oidc driver's settings, checked once at boot.
  *
  * Every key is read from the `oidc` block of the config array. The client
- * secret is the one value that is never echoed: it is held in a private
- * property, redacted from var_dump and print_r, marked as a sensitive
- * parameter so stack traces hide it, and named (never shown) in errors.
+ * secret is the one value that is never echoed: it is held wrapped in a
+ * SensitiveParameterValue, which var_export, json_encode, var_dump,
+ * print_r and array casts show as empty and serialize() refuses; the
+ * parameters that carry it are marked #[\SensitiveParameter] so stack
+ * traces hide it; and errors name it, never show it.
  * When the config array has no client secret, it is read from the real
  * environment (SESAME_OIDC_CLIENT_SECRET) and never from waynestate/playbook.
  */
@@ -36,7 +39,7 @@ final readonly class OidcOptions
      */
     public const CLIENT_AUTH_METHODS = ['client_secret_post', 'client_secret_basic'];
 
-    private string $clientSecret;
+    private SensitiveParameterValue $clientSecret;
 
     /**
      * @param non-empty-string $issuer
@@ -73,7 +76,7 @@ final readonly class OidcOptions
         public ?string $stepUpClaims = null,
         public array $claims = ['wsuRoles', 'accessid'],
     ) {
-        $this->clientSecret = $clientSecret;
+        $this->clientSecret = new SensitiveParameterValue($clientSecret);
     }
 
     /**
@@ -81,7 +84,10 @@ final readonly class OidcOptions
      */
     public function clientSecret(): string
     {
-        return $this->clientSecret;
+        $secret = $this->clientSecret->getValue();
+        assert(is_string($secret));
+
+        return $secret;
     }
 
     /**
@@ -102,7 +108,7 @@ final readonly class OidcOptions
      *
      * @param array<mixed> $oidc
      */
-    public static function fromArray(array $oidc): self
+    public static function fromArray(#[\SensitiveParameter] array $oidc): self
     {
         $issuer = self::requiredUrl($oidc, 'issuer', 'SESAME_OIDC_ISSUER');
         $clientId = self::requiredString($oidc, 'client_id', 'SESAME_OIDC_CLIENT_ID');

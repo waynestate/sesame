@@ -646,6 +646,58 @@ final class OidcDriverTest extends TestCase
         self::assertStringNotContainsString($secret, (string) ob_get_clean());
     }
 
+    public function testTheSecretSurvivesNoExportSerializationOrEncoding(): void
+    {
+        $secret = FakeOpenIdProvider::CLIENT_SECRET;
+        $options = OidcOptions::fromArray($this->settings());
+        $config = Config::fromArray(['driver' => 'oidc', 'environment' => 'production', 'oidc' => $this->settings()]);
+        $driver = $this->driver();
+
+        foreach ([$options, $config, $driver] as $i => $value) {
+            self::assertStringNotContainsString($secret, var_export($value, true), 'var_export ' . $i);
+            self::assertStringNotContainsString($secret, (string) json_encode($value), 'json_encode ' . $i);
+            self::assertStringNotContainsString($secret, print_r((array) $value, true), 'array cast ' . $i);
+        }
+
+        foreach ([$options, $config] as $i => $value) {
+            try {
+                $serialized = serialize($value);
+                self::assertStringNotContainsString($secret, $serialized, 'serialize ' . $i);
+            } catch (\Exception $e) {
+                self::assertStringNotContainsString($secret, $e->getMessage());
+            }
+        }
+
+        self::assertSame($secret, $options->clientSecret(), 'The token request still gets the secret.');
+    }
+
+    public function testTokenAndSecretParametersAreMarkedSensitive(): void
+    {
+        $marked = [
+            [OidcOptions::class, '__construct', 'clientSecret'],
+            [OidcOptions::class, 'fromArray', 'oidc'],
+            [Config::class, 'fromArray', 'config'],
+            [\Waynestate\Sesame\Drivers\Oidc\IdTokenValidator::class, 'validate', 'idToken'],
+            [\Waynestate\Sesame\Drivers\Oidc\IdTokenValidator::class, 'validate', 'expectedNonce'],
+            [\Waynestate\Sesame\Drivers\Oidc\PendingLogins::class, 'put', 'pending'],
+            [OidcDriver::class, 'login', 'request'],
+            [OidcDriver::class, 'exchange', 'code'],
+            [OidcDriver::class, 'exchange', 'verifier'],
+        ];
+
+        foreach ($marked as [$class, $method, $parameter]) {
+            $found = false;
+
+            foreach ((new \ReflectionMethod($class, $method))->getParameters() as $p) {
+                if ($p->getName() === $parameter) {
+                    $found = $p->getAttributes(\SensitiveParameter::class) !== [];
+                }
+            }
+
+            self::assertTrue($found, sprintf('%s::%s($%s) is marked #[\SensitiveParameter].', $class, $method, $parameter));
+        }
+    }
+
     public function testTheSecretIsNeverStoredInTheSession(): void
     {
         $this->signIn($this->driver());

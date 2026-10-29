@@ -38,7 +38,7 @@ final readonly class PendingLogins
      *
      * @param Pending $pending
      */
-    public function put(string $state, array $pending): void
+    public function put(#[\SensitiveParameter] string $state, #[\SensitiveParameter] array $pending): void
     {
         $all = $this->live();
         $all[self::key($state)] = $pending;
@@ -57,7 +57,7 @@ final readonly class PendingLogins
      *
      * @return Pending|null
      */
-    public function take(string $state): ?array
+    public function take(#[\SensitiveParameter] string $state): ?array
     {
         $all = $this->live();
         $key = self::key($state);

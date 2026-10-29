@@ -24,7 +24,7 @@ final class BasicAuthOptionProvider extends PostAuthOptionProvider
      * @param array<mixed> $params
      * @return array<string, mixed>
      */
-    public function getAccessTokenOptions($method, array $params): array
+    public function getAccessTokenOptions($method, #[\SensitiveParameter] array $params): array
     {
         $id = $params['client_id'] ?? null;
         $secret = $params['client_secret'] ?? null;

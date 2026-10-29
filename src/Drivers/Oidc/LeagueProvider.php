@@ -49,7 +49,7 @@ final class LeagueProvider extends GenericProvider
     /**
      * Send the token request with redirects off; a 3xx answer fails.
      */
-    public function getResponse(RequestInterface $request): ResponseInterface
+    public function getResponse(#[\SensitiveParameter] RequestInterface $request): ResponseInterface
     {
         $response = $this->getHttpClient()->send($request, ['allow_redirects' => false, 'http_errors' => false]);
         $status = $response->getStatusCode();

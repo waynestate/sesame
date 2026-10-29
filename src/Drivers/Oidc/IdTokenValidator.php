@@ -50,7 +50,7 @@ final readonly class IdTokenValidator
      *
      * @throws AuthenticationFailed When any check fails.
      */
-    public function validate(string $idToken, string $expectedNonce): array
+    public function validate(#[\SensitiveParameter] string $idToken, #[\SensitiveParameter] string $expectedNonce): array
     {
         [$alg, $kid] = $this->header($idToken);
 
@@ -107,7 +107,7 @@ final readonly class IdTokenValidator
      *
      * @return array{string, non-empty-string}
      */
-    private function header(string $token): array
+    private function header(#[\SensitiveParameter] string $token): array
     {
         $parts = explode('.', $token);
 
@@ -145,7 +145,7 @@ final readonly class IdTokenValidator
      * The signature and time checks, with the library pinned to this
      * driver's leeway and clock for the one call, as in the oauth2 driver.
      */
-    private function decode(string $token, Key $key): object
+    private function decode(#[\SensitiveParameter] string $token, Key $key): object
     {
         $previousLeeway = JWT::$leeway;
         $previousTimestamp = JWT::$timestamp;

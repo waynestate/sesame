@@ -42,7 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sesame_login()` and the Laravel route send the user to the checked
   return-to address after a callback.
 - `Setting::env()`, and `SESAME_OIDC_CLIENT_SECRET` read from the
-  environment only, never from the playbook.
+  environment only, never from the playbook. The secret is held in a
+  `SensitiveParameterValue` (hidden from `var_export`, `json_encode`, dumps
+  and array casts; `serialize` refuses), and the parameters that carry it,
+  the ID token, the code or the PKCE verifier are marked
+  `#[\SensitiveParameter]`.
 - README: a loud note that raw-PHP apps must raise
   `session.gc_maxlifetime` to at least SESAME's idle timeout.
 
