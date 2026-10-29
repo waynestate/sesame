@@ -1,6 +1,6 @@
-# Coding standard: Pinstripe's raw preset (level 8 plus deprecation checks).
+# Coding standard: Pinstripe's strict preset (level 8, deprecation checks, strict rules).
 includes:
-    - vendor/waynestate/pinstripe/phpstan/raw.neon
+    - vendor/waynestate/pinstripe/phpstan/strict.neon
 parameters:
     paths:
         - src

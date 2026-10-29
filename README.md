@@ -587,11 +587,11 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
 ```
 
-Static analysis is PHPStan at level 8 from Pinstripe's raw preset
-(`vendor/waynestate/pinstripe/phpstan/raw.neon`, included through the
-`waynestate/pinstripe` dev dependency), which also fails the build when code
-calls a deprecated method. `composer ci` runs the whole gate, validate
-through tests, Pint and PHPStan:
+Static analysis is PHPStan at level 8 from Pinstripe's strict preset
+(`vendor/waynestate/pinstripe/phpstan/strict.neon`, included through the
+`waynestate/pinstripe` dev dependency): strict rules stay on, and a call to
+a deprecated method fails the build. `composer ci` runs the whole gate,
+validate through tests, Pint and PHPStan:
 
 ```
 docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
