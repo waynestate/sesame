@@ -14,7 +14,7 @@
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.
 
-Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same three checks, so a green build means the same thing on both sides.
+Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
 
 Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
 
