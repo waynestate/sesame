@@ -8,7 +8,7 @@
 <meta name="stack-env" content="auto">
 <script src="assets/stack-env.js" defer></script>
 <title>SESAME: The way in.</title>
-<meta name="description" content="SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.">
+<meta name="description" content="SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.">
 <meta name="theme-color" content="#0c5449">
 <link rel="canonical" href="https://sesame.apps.wayne.edu/">
 <!-- For agents (ADR-0019): this page as Markdown, beside it. bin/agent-ready.php writes it from
@@ -69,7 +69,7 @@
            light that spills from it runs down behind the name and the words. -->
       <div class="hero__door">
         <span class="hero__glow" aria-hidden="true"></span>
-        <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME mark: an arched door standing open, with a gold wedge of light between its leaves">
+        <img class="hero__mark" src="brand/sesame-avatar-512.png" width="512" height="512" alt="SESAME logo: an arched door standing open, with a gold wedge of light between its leaves">
       </div>
       <span class="hero__spill" aria-hidden="true"></span>
 
@@ -96,7 +96,7 @@
           <p class="key-tag__card"><span class="key-tag__hole" aria-hidden="true"></span>Single Entry, Sessions App-Managed Everywhere.</p>
         </div>
         <p class="hero__tagline">The way in. One lock, any key.</p>
-        <p class="hero__blurb">Wayne State's protocol-neutral auth library for PHP. It hands your app a verified identity and leaves the session to the app: every driver ends in the same place, your app's <code>findOrImportUser(Identity)</code>. Switching driver is a config change, not a code change. Open sesame.</p>
+        <p class="hero__blurb">SESAME is the sign-in library for Wayne State's PHP apps. It checks who someone is and hands your app a verified identity. Your app keeps the session. Every driver ends in your app's <code>findOrImportUser(Identity)</code>, so moving from CAS to OpenID Connect is an <code>.env</code> change.</p>
         <div class="cutline">
           <code class="cutline__code" id="install-cmd"><span class="t-dim" aria-hidden="true">$ </span>composer require waynestate/sesame</code>
           <button class="copy-btn" type="button" data-copy="composer require waynestate/sesame">Copy</button>
@@ -136,7 +136,7 @@
       <div class="head">
         <p class="kicker">The pegboard</p>
         <h2 id="keys-title">One blank per protocol</h2>
-        <p>Six blanks hang on the board, one for each driver. The heads differ; the cut does not. Every key that's cut is cut to the same lock, your app's <code>findOrImportUser(Identity)</code>. Pick one and try the door.</p>
+        <p>Each key on the board is a driver. Five ship today, and SAML hangs there uncut because it isn't built yet. Pick one to see its <code>.env</code> line and what it checks. Whichever you pick, the door is the same: your app's <code>findOrImportUser(Identity)</code>.</p>
       </div>
 
       <div class="shop">
@@ -201,7 +201,7 @@
       <div class="head head--light">
         <p class="kicker">The duplicator</p>
         <h2 id="dup-title">Swap the blank. Keep the door.</h2>
-        <p>Re-keying an app from <code>cas</code> to <code>gateway</code>: the machine traces the cut on the key you have and copies it onto a new blank. Scroll, and it runs.</p>
+        <p>This is an app moving from <code>cas</code> to <code>gateway</code>, the move Citadel apps will make once Drawbridge is live. Until then, <code>cas</code> is the driver to use on Citadel. Scroll down and the machine copies the cut onto the new key.</p>
       </div>
     </div>
     <div class="dup" data-dup>
@@ -210,10 +210,10 @@
           <svg class="dup__svg" viewBox="0 0 1000 720" aria-hidden="true" focusable="false"><defs><linearGradient id="dup-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE38A"/><stop offset="1" stop-color="#FFCC33"/></linearGradient><linearGradient id="dup-spill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFCC33" stop-opacity=".55"/><stop offset="1" stop-color="#FFCC33" stop-opacity="0"/></linearGradient><clipPath id="dup-cut"><rect data-cut x="0" y="0" width="260" height="90"/></clipPath><clipPath id="dup-uncut"><rect data-uncut x="260" y="0" width="260" height="90"/></clipPath><clipPath id="dup-type"><rect data-type x="540" y="300" width="380" height="60"/></clipPath></defs><rect class="m-plate" x="30" y="40" width="940" height="330" rx="26"/><rect class="m-rail" x="60" y="104" width="880" height="10" rx="5"/><text class="m-label" x="62" y="84">SESAME · key duplicator · model 0.1</text><rect class="m-jaw" x="198" y="252" width="236" height="34" rx="6"/><circle class="m-bolt" cx="220" cy="269" r="6"/><circle class="m-bolt" cx="412" cy="269" r="6"/><rect class="m-jaw" x="658" y="252" width="236" height="34" rx="6"/><circle class="m-bolt" cx="680" cy="269" r="6"/><circle class="m-bolt" cx="872" cy="269" r="6"/><text class="m-cap" x="70" y="336">cas · the key you have</text><text class="m-cap" x="530" y="336">gateway · a new blank</text><g class="k k--brass" transform="translate(70,170) scale(1.4)"><g class="k-body"><circle cx="44" cy="45" r="38"/><rect x="80" y="23" width="20" height="44" rx="4"/><path d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/></g><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">CAS</text></g><g class="m-carriage" data-carriage transform="translate(215.6,-22)"><rect class="m-arm" x="202.2" y="110" width="10" height="70"/><rect class="m-arm" x="662.2" y="110" width="10" height="40"/><g data-tracer transform="translate(0,0.0)"><path class="m-tracer" d="M196.2,176 L218.2,176 L207.2,212.0 Z"/></g><g data-cutter transform="translate(0,0.0)"><g class="m-wheel" style="transform-origin:667.2px 178.0px"><circle class="m-teeth" cx="667.2" cy="178.0" r="33"/><circle class="m-disc" cx="667.2" cy="178.0" r="26"/><circle class="m-hub" cx="667.2" cy="178.0" r="7"/></g><g class="m-chips"><rect class="m-chip" style="--c:0" x="655.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:1" x="660.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:2" x="665.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:3" x="670.2" y="214.0" width="3" height="3"/><rect class="m-chip" style="--c:4" x="675.2" y="214.0" width="3" height="3"/></g></g></g><rect class="m-slot" x="530" y="304" width="372" height="48" rx="8"/><g clip-path="url(#dup-type)"><text class="m-config" data-config x="548" y="336">SESAME_DRIVER=gateway</text></g><path class="d-floor" d="M40,700 H960"/><g class="d-ticket"><rect x="50" y="440" width="212" height="190" rx="10"/><circle class="d-ticket-hole" cx="74" cy="466" r="8"/><text class="d-ticket-no" x="92" y="473">Re-key job 0.1</text><text class="d-ticket-line" x="70" y="520">from  cas</text><text class="d-ticket-line" x="70" y="556">to    gateway</text><text class="d-ticket-line d-ticket-line--small" x="70" y="600">new head, same cut</text></g><path class="d-spill" data-spill d="M420,700 L580,700 L900,712 L240,712 Z" opacity="1"/><rect class="d-frame" x="392" y="392" width="216" height="308" rx="6"/><rect x="400" y="400" width="200" height="300" fill="url(#dup-light)"/><text class="d-in" x="500" y="530" text-anchor="middle">ab1234</text><text class="d-in d-in--small" x="500" y="566" text-anchor="middle">is in.</text><g class="d-leaf" data-leaf transform="translate(600,0) scale(0.12,1) translate(-600,0)"><rect class="d-leaf-face" x="400" y="400" width="200" height="300"/><rect class="d-panel" x="420" y="440" width="160" height="96" rx="4"/><rect class="d-panel" x="420" y="580" width="160" height="96" rx="4"/><text class="d-plate" x="500" y="428" text-anchor="middle">YOUR APP</text><circle class="d-escutcheon" cx="430" cy="558" r="13"/><path class="d-keyhole" d="M430,552 a4,4 0 1 1 0.01,0 Z M428,556 h4 l2,9 h-8 Z"/></g><text class="d-open" data-open x="790" y="560" text-anchor="middle">Open</text><text class="d-open" data-open2 x="790" y="610" text-anchor="middle">sesame.</text><g class="k k--nickel" data-newkey opacity="0" transform="translate(291.4,531.0) scale(0.55) translate(0,45) scale(1,0.3) translate(0,-45)"><g class="k-body"><rect x="7" y="8" width="76" height="74" rx="16"/><rect x="80" y="23" width="20" height="44" rx="4"/></g><path class="k-blade" clip-path="url(#dup-uncut)" d="M98,30 L216,30 L252,49 L244,58 L98,58 Z"/><path class="k-blade k-blade--cut" clip-path="url(#dup-cut)" d="M98,30 L102,30 L107,39.6 L113,39.6 L118,30 L124,30 L129,33.2 L135,33.2 L140,30 L146,30 L151,42.8 L157,42.8 L162,30 L168,30 L173,33.2 L179,33.2 L184,30 L190,30 L195,46.0 L201,46.0 L206,30 L216,30 L252,49 L244,58 L98,58 Z"/><circle class="k-hole" cx="25" cy="45" r="8"/><path class="k-groove" d="M104,44 H226"/><text class="k-stamp" x="56" y="49" text-anchor="middle">GW</text></g></svg>
           <figcaption class="wsu-sr-only">A key duplicator copies the cut of a cas key onto a gateway blank. As it cuts, the config line SESAME_DRIVER=gateway is typed under the new key. The new key goes into the same door, the door opens, and ab1234 is in.</figcaption>
           <ol class="steps">
-            <li class="step" data-step="0"><span class="step__n" aria-hidden="true">1</span><span class="step__t"><strong>Clamp a gateway blank.</strong> A new head; no cut yet.</span></li>
-            <li class="step" data-step="1"><span class="step__n" aria-hidden="true">2</span><span class="step__t"><strong>Trace the cut.</strong> The tracer follows the cas key and the cutter copies it. Same lock, same cut.</span></li>
-            <li class="step" data-step="2"><span class="step__n" aria-hidden="true">3</span><span class="step__t"><strong>The cut is one config line.</strong> <code>SESAME_DRIVER=gateway</code>, plus the gateway's key, issuer, audience and trusted proxies. No code changes.</span></li>
-            <li class="step" data-step="3"><span class="step__n" aria-hidden="true">4</span><span class="step__t"><strong>Open sesame.</strong> Same door, same <code>findOrImportUser(Identity)</code>. ab1234 is in.</span></li>
+            <li class="step" data-step="0"><span class="step__n" aria-hidden="true">1</span><span class="step__t"><strong>Clamp a gateway blank.</strong> It has a new head and no cut yet.</span></li>
+            <li class="step" data-step="1"><span class="step__n" aria-hidden="true">2</span><span class="step__t"><strong>Trace the cut.</strong> The tracer follows the cas key while the cutter copies it onto the blank.</span></li>
+            <li class="step" data-step="2"><span class="step__n" aria-hidden="true">3</span><span class="step__t"><strong>The cut is one config line.</strong> Set <code>SESAME_DRIVER=gateway</code>, then add the gateway's public key, issuer, audience and trusted proxies. You don't touch your code.</span></li>
+            <li class="step" data-step="3"><span class="step__n" aria-hidden="true">4</span><span class="step__t"><strong>Open sesame.</strong> Your <code>findOrImportUser(Identity)</code> runs as before, and ab1234 is signed in.</span></li>
           </ol>
         </figure>
       </div>
@@ -226,7 +226,7 @@
       <div class="head">
         <p class="kicker">Three doorways</p>
         <h2 id="start-title">Same lock, any frame</h2>
-        <p>Raw PHP, Laravel with Blade, or Inertia with Vue. Install it once; the door is the same.</p>
+        <p>SESAME works in raw PHP, in Laravel with Blade, and in Laravel with Inertia and Vue. The install line is the same for all three. What changes is how you wire it in.</p>
       </div>
 
       <div class="install">
@@ -241,39 +241,39 @@
         <article class="ticket" style="--i:0">
           <p class="ticket__no">Job 01</p>
           <h3>Raw PHP</h3>
-          <p>The app owns the session: start it yourself, and let HELMET set the cookie flags. Then ask SESAME who it is.</p>
+          <p>Your app owns the session, so you start it and HELMET sets the cookie flags. Set <code>session.gc_maxlifetime</code> to 7200, or PHP signs people out after 24 quiet minutes.</p>
 <pre class="ticket__code" tabindex="0"><code>session_start();
 // build $sesame (see the README), then:
 sesame($sesame);
 $user = sesame_login();</code></pre>
-          <p class="ticket__foot">Protected pages read <code>sesame_user()</code>. Login and logout stop the script after their redirect.</p>
+          <p class="ticket__foot">Protected pages call <code>sesame_user()</code>. Login and logout end the script after they redirect, so nothing below them runs.</p>
         </article>
 
         <article class="ticket" style="--i:1">
           <p class="ticket__no">Job 02</p>
           <h3>Laravel + Blade</h3>
-          <p>The service provider is discovered on its own. Publish the config, then guard a route.</p>
+          <p>Laravel finds the service provider by itself. Publish the config, then put <code>auth.sesame</code> on the routes that need a signed-in user.</p>
 <pre class="ticket__code" tabindex="0"><code>php artisan vendor:publish --tag=sesame-config
 
 Route::get('/dashboard', fn () =&gt; view('dashboard'))
     -&gt;middleware('auth.sesame');</code></pre>
-          <p class="ticket__foot">Guests go to <code>sesame.login</code>; a JSON guest gets a 401.</p>
+          <p class="ticket__foot">A guest is sent to <code>sesame.login</code>. A JSON request from a guest gets a 401.</p>
         </article>
 
         <article class="ticket" style="--i:2">
           <p class="ticket__no">Job 03</p>
           <h3>Laravel + Inertia/Vue</h3>
-          <p>The same Laravel adapter. The middleware guards the route before any Vue page is sent.</p>
+          <p>It's the same Laravel adapter. The middleware runs on the server, so a guest never receives the Vue page.</p>
 <pre class="ticket__code" tabindex="0"><code>Route::get('/vault', fn () =&gt; Inertia::render('Vault'))
     -&gt;middleware(['auth.sesame', 'sesame.mfa']);</code></pre>
-          <p class="ticket__foot"><code>sesame.mfa</code> also asks that the user's MFA is still good.</p>
+          <p class="ticket__foot"><code>sesame.mfa</code> also checks that the user's last MFA is recent enough: 8 hours unless you set another limit.</p>
         </article>
       </div>
 
       <div class="testbench">
         <div class="testbench__copy">
           <h3>No PHP on the machine?</h3>
-          <p>Docker runs the suite on every supported PHP. The lines work as written in PowerShell, bash and zsh.</p>
+          <p>Docker runs the tests on PHP 8.3, 8.4 and 8.5. Paste the lines as they are into PowerShell, bash or zsh.</p>
         </div>
 <pre class="testbench__code" tabindex="0"><code>docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
@@ -294,7 +294,7 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></
       <div class="head">
         <p class="kicker">Work orders</p>
         <h2 id="agents-title">Have your agent cut it</h2>
-        <p>Five work orders, ready for the coding agent you already use. Copy one, or run it straight in OpenCode, Claude Code, Codex or ChatGPT. Each one says which lock it is for, what the agent may not touch, and to ask at the counter before it guesses.</p>
+        <p>Five prompts for whatever coding agent you use. Copy one, or open it in OpenCode, Claude Code, Codex or ChatGPT. Each one names the kind of app it's for and what the agent must leave alone, and every one tells it to ask you before it guesses.</p>
       </div>
 
       <div class="orders">
@@ -304,7 +304,7 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit</code></
             <div>
               <p class="ar-prompt__kicker">Work order 00 · Any PHP app</p>
               <h3 class="ar-prompt__title" id="prompt-get-started-title">Get started with SESAME</h3>
-              <p class="ar-prompt__desc">Which doorway the app is, which key it needs, and the smallest plan to sign people in with a verified identity.</p>
+              <p class="ar-prompt__desc">Works out what kind of app you have and which driver it needs, then writes a plan. It changes nothing.</p>
             </div>
           </header>
           <pre class="ar-prompt__text"><code>You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
@@ -338,7 +338,7 @@ Output: the app kind, the driver and why, a settings table (setting, where it co
             <div>
               <p class="ar-prompt__kicker">Work order 01 · Raw PHP</p>
               <h3 class="ar-prompt__title" id="prompt-raw-php-title">SESAME in a raw PHP app</h3>
-              <p class="ar-prompt__desc">The core wired by hand: config, the driver, a user resolver, the app's own session, and a logout that only a POST can ring.</p>
+              <p class="ar-prompt__desc">Sets up the config, the driver and a user resolver by hand, on your app's own session, with a logout that only accepts a POST.</p>
             </div>
           </header>
           <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a raw PHP app (no framework) at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack.
@@ -369,7 +369,7 @@ Output: the changes as a diff per file, then how to try it locally with the fake
             <div>
               <p class="ar-prompt__kicker">Work order 02 · Laravel and Blade</p>
               <h3 class="ar-prompt__title" id="prompt-laravel-blade-title">SESAME in a Laravel app with Blade</h3>
-              <p class="ar-prompt__desc">The adapter the Laravel way: published config, a user resolver, the auth.sesame middleware and a CSRF-guarded sign-out.</p>
+              <p class="ar-prompt__desc">Publishes the config, writes a user resolver, puts auth.sesame on your routes and adds a sign-out form with a CSRF token.</p>
             </div>
           </header>
           <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a Laravel app that renders its pages with Blade, at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack; its Laravel adapter is a discovered service provider that holds no rules of its own.
@@ -400,7 +400,7 @@ Output: the diff, the .env.example lines, then your questions.</code></pre>
             <div>
               <p class="ar-prompt__kicker">Work order 03 · Laravel, Inertia and Vue</p>
               <h3 class="ar-prompt__title" id="prompt-laravel-inertia-title">SESAME in a Laravel app with Inertia and Vue</h3>
-              <p class="ar-prompt__desc">The same adapter. The middleware guards each route before any Vue page is sent, and the user reaches Vue as a prop.</p>
+              <p class="ar-prompt__desc">Uses the same adapter. Routes are guarded on the server, and Vue gets only the user fields it needs as a prop.</p>
             </div>
           </header>
           <pre class="ar-prompt__text"><code>You are a coding agent adding sign-in with SESAME to a Laravel app with Inertia and Vue, at Wayne State University. SESAME is the auth library of WELD, the Wayne State application stack. The Laravel adapter guards routes on the server, so a page that needs a signed-in user is never sent to a guest.
@@ -431,7 +431,7 @@ Output: the diff, the .env.example lines, then your questions.</code></pre>
             <div>
               <p class="ar-prompt__kicker">Work order 04 · Re-key from wayne-cas</p>
               <h3 class="ar-prompt__title" id="prompt-wayne-cas-title">Move a Laravel app from wayne-cas to SESAME</h3>
-              <p class="ar-prompt__desc">The shim keeps the old names, so the move is a mapping, not a rewrite. The agent lists every part before it swaps one.</p>
+              <p class="ar-prompt__desc">The shim keeps the old names, so most of the move is the mapping table. The agent lists every wayne-cas part before it swaps one.</p>
             </div>
           </header>
           <pre class="ar-prompt__text"><code>You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. SESAME ships a wayne-cas shim that keeps the old names and behaviour and logs once that it is a deprecated bridge.
@@ -455,7 +455,7 @@ Constraints:
 Output: the parts table (wayne-cas part, file and line, SESAME part), the plan as numbered steps, then your questions.</code></pre>
         </section>
 
-        <p class="orders__fine">The agent reads the same pages you do: <a href="llms.txt">llms.txt</a> lists them, <a href="llms-full.txt">llms-full.txt</a> holds them in one file, and this page has a <a href="index.md" type="text/markdown">Markdown twin</a>. Nothing here phones home; the buttons only copy text or open the tool you picked. No key ever gets to keep the door, and no agent does either.</p>
+        <p class="orders__fine">The agent reads the same pages you do: <a href="llms.txt">llms.txt</a> lists them, <a href="llms-full.txt">llms-full.txt</a> holds them in one file, and this page has a <a href="index.md" type="text/markdown">Markdown twin</a>. Nothing here phones home. The buttons only copy text or open the tool you picked.</p>
       </div>
     </div>
   </section>
@@ -473,12 +473,12 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
         <ol class="rules">
           <li><strong>The app owns the session.</strong> SESAME never starts one and never touches a cookie.</li>
           <li><strong>A new session ID at login,</strong> before anything is stored in it.</li>
-          <li><strong>Fail closed.</strong> A bad answer, bad XML or an empty user ends the login. Nothing falls back to a default user.</li>
-          <li><strong>No bare headers.</strong> The gateway driver reads one signed assertion, from a trusted proxy, and each one works once.</li>
-          <li><strong>The fake key stays home.</strong> It refuses to boot in production.</li>
-          <li><strong>No default locks.</strong> Required settings have no defaults, so nobody is pointed at a server the app owner never chose.</li>
-          <li><strong>MFA fails closed.</strong> No sign-in time, no MFA method, or one that's too old: the request is denied.</li>
-          <li><strong>Logout shuts the door.</strong> <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: "cache", "storage"</code>, so the back button shows nothing.</li>
+          <li><strong>Fail closed.</strong> A non-200 answer from the CAS server, malformed XML or an empty user ends the login. There is no default user to fall back on.</li>
+          <li><strong>No bare headers.</strong> The gateway driver trusts only a signed assertion that comes through a trusted proxy, and it refuses one it has seen before.</li>
+          <li><strong>The fake key stays home.</strong> The fake driver refuses to boot in production.</li>
+          <li><strong>No default locks.</strong> Required settings, like the CAS base URL, have no default. Your app only talks to a server you chose.</li>
+          <li><strong>MFA fails closed.</strong> If there's no sign-in time or MFA method, or the MFA is too old, the request is denied.</li>
+          <li><strong>Logout shuts the door.</strong> It takes a POST with a token, then sends <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: "cache", "storage"</code> so the back button can't show a signed-in page.</li>
         </ol>
         <p class="rules__more"><a href="https://github.com/waynestate/sesame/blob/main/BEST_PRACTICES.md">Every practice, with its sources</a></p>
       </div>
@@ -492,7 +492,7 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
             <div><dt>Absolute</dt><dd>720 min</dd></div>
             <div><dt>MFA good for</dt><dd>8 h</dd></div>
           </dl>
-          <p class="hours__note">Both session clocks are checked on every <code>user()</code> call. A stale session finds the door locked.</p>
+          <p class="hours__note">SESAME checks both session clocks each time <code>user()</code> is called. A stale session finds the door locked.</p>
         </div>
       </aside>
     </div>
@@ -504,7 +504,7 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
       <div class="head">
         <p class="kicker">Cross-reference</p>
         <h2 id="xref-title">Re-key from wayne-cas</h2>
-        <p>Coming from wayne-cas? You don't rewrite your auth. The shim keeps the old names and behaviour, and says once, in the log, that it's a bridge.</p>
+        <p>Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behaviour, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry <code>use2FA</code>, so that part stays with your app.</p>
       </div>
       <div class="xref wsu-table-wrap">
         <table class="wsu-table xref__table">
@@ -531,13 +531,13 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
       <div class="head head--light">
         <p class="kicker kicker--gold">On the key ring</p>
         <h2 id="ring-title">SESAME in WELD</h2>
-        <p>One part of Wayne State's app stack. Here's where it sits in a signed-in request, and who else is on the ring.</p>
+        <p>SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-in request on Citadel, followed by the rest of the stack.</p>
       </div>
 
       <ol class="hand" aria-label="A signed-in request on Citadel">
-        <li class="hand__stop"><img src="assets/marks/drawbridge.png" width="64" height="64" alt=""><span><a class="hand__link part-link" href="https://drawbridge.apps.wayne.edu/"><strong>Drawbridge</strong></a> signs the assertion at the edge</span></li>
+        <li class="hand__stop"><img src="assets/marks/drawbridge.png" width="64" height="64" alt=""><span><a class="hand__link part-link" href="https://drawbridge.apps.wayne.edu/"><strong>Drawbridge</strong></a> signs the assertion at the edge, once it's live</span></li>
         <li class="hand__gap" aria-hidden="true"></li>
-        <li class="hand__stop hand__stop--here"><img src="brand/sesame-avatar-256.png" width="64" height="64" alt=""><span><strong>SESAME</strong> checks it and hands over an identity</span></li>
+        <li class="hand__stop hand__stop--here"><img src="brand/sesame-avatar-256.png" width="64" height="64" alt=""><span><strong>SESAME</strong> checks it and gives your app an identity</span></li>
         <li class="hand__gap" aria-hidden="true"></li>
         <li class="hand__stop"><img src="assets/marks/helmet.png" width="64" height="64" alt=""><span><a class="hand__link part-link" href="https://helmet.apps.wayne.edu/"><strong>HELMET</strong></a> hardens the session cookie</span></li>
         <li class="hand__gap" aria-hidden="true"></li>
@@ -545,20 +545,20 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
       </ol>
 
       <ul class="ring">
-        <li class="ring__tag"><span class="ring__mark ring__mark--tile"><img src="assets/marks/wayneui.svg" width="36" height="36" alt=""></span><span class="ring__name"><a class="part-link" href="https://wayneui.apps.wayne.edu/">WayneUI</a></span><span class="ring__role">the interface</span></li>
+        <li class="ring__tag"><span class="ring__mark ring__mark--tile"><img src="assets/marks/wayneui.svg" width="36" height="36" alt=""></span><span class="ring__name"><a class="part-link" href="https://wayneui.apps.wayne.edu/">WayneUI</a></span><span class="ring__role">Wayne State's design system</span></li>
         <li class="ring__tag"><img class="ring__mark" src="assets/marks/creed.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://creed.apps.wayne.edu/">CREED</a></span><span class="ring__role">the written standards</span></li>
         <li class="ring__tag"><img class="ring__mark" src="assets/marks/proctor.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://proctor.apps.wayne.edu/">PROCTOR</a></span><span class="ring__role">checks an app against them</span></li>
-        <li class="ring__tag"><img class="ring__mark" src="assets/marks/preflight.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://preflight.apps.wayne.edu/">Preflight</a></span><span class="ring__role">shared CI</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/preflight.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://preflight.apps.wayne.edu/">Preflight</a></span><span class="ring__role">GitLab CI components</span></li>
         <li class="ring__tag ring__tag--here"><img class="ring__mark" src="brand/sesame-avatar-256.png" width="48" height="48" alt=""><span class="ring__name">SESAME</span><span class="ring__role">signs the user in · you are here</span></li>
         <li class="ring__tag"><img class="ring__mark" src="assets/marks/helmet.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://helmet.apps.wayne.edu/">HELMET</a></span><span class="ring__role">headers and hardening</span></li>
-        <li class="ring__tag"><img class="ring__mark" src="assets/marks/pinstripe.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://pinstripe.apps.wayne.edu/">Pinstripe</a></span><span class="ring__role">the coding standard</span></li>
-        <li class="ring__tag"><img class="ring__mark" src="assets/marks/sourdough.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://sourdough.apps.wayne.edu/">Sourdough</a></span><span class="ring__role">starters you feed</span></li>
-        <li class="ring__tag"><img class="ring__mark" src="assets/marks/weld.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://weld.apps.wayne.edu/">WELD</a></span><span class="ring__role">every part, already joined</span></li>
-        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/drawbridge.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://drawbridge.apps.wayne.edu/">Drawbridge</a></span><span class="ring__role">the Citadel sign-in gateway</span></li>
-        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/squire.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://squire.apps.wayne.edu/">Squire</a></span><span class="ring__role">carries the release to Citadel</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/pinstripe.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://pinstripe.apps.wayne.edu/">Pinstripe</a></span><span class="ring__role">code style presets</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/sourdough.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://sourdough.apps.wayne.edu/">Sourdough</a></span><span class="ring__role">starts a raw PHP app</span></li>
+        <li class="ring__tag"><img class="ring__mark" src="assets/marks/weld.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://weld.apps.wayne.edu/">WELD</a></span><span class="ring__role">Laravel and Vue, stack installed</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/drawbridge.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://drawbridge.apps.wayne.edu/">Drawbridge</a></span><span class="ring__role">the Citadel sign-in gateway, not live yet</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/squire.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://squire.apps.wayne.edu/">Squire</a></span><span class="ring__role">the Citadel deploy kit</span></li>
         <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/rollcall.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://rollcall.apps.wayne.edu/">Rollcall</a></span><span class="ring__role">every app answers “present”</span></li>
-        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/advisor.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://advisor.apps.wayne.edu/">ADVISOR</a></span><span class="ring__role">what applies to your app</span></li>
-        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/booster.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://booster.apps.wayne.edu/">Booster</a></span><span class="ring__role">keeps your PHP current</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/advisor.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://advisor.apps.wayne.edu/">ADVISOR</a></span><span class="ring__role">the stack's MCP server</span></li>
+        <li class="ring__tag ring__tag--new"><img class="ring__mark" src="assets/marks/booster.png" width="48" height="48" alt=""><span class="ring__name"><a class="part-link" href="https://booster.apps.wayne.edu/">Booster</a></span><span class="ring__role">upgrades PHP and Laravel</span></li>
       </ul>
     </div>
   </section>

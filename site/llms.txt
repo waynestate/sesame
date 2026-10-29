@@ -1,6 +1,6 @@
 # SESAME
 
-> SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.
+> SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
 
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.
@@ -26,15 +26,15 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 
 ## Pages
 
-- [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue.
+- [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
 
 ## Prompts
 
-- [Get started with SESAME](https://sesame.apps.wayne.edu/#prompt-get-started): Which doorway the app is, which key it needs, and the smallest plan to sign people in with a verified identity. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
-- [SESAME in a raw PHP app](https://sesame.apps.wayne.edu/#prompt-raw-php): The core wired by hand: config, the driver, a user resolver, the app's own session, and a logout that only a POST can ring. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
-- [SESAME in a Laravel app with Blade](https://sesame.apps.wayne.edu/#prompt-laravel-blade): The adapter the Laravel way: published config, a user resolver, the auth.sesame middleware and a CSRF-guarded sign-out. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
-- [SESAME in a Laravel app with Inertia and Vue](https://sesame.apps.wayne.edu/#prompt-laravel-inertia): The same adapter. The middleware guards each route before any Vue page is sent, and the user reaches Vue as a prop. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
-- [Move a Laravel app from wayne-cas to SESAME](https://sesame.apps.wayne.edu/#prompt-wayne-cas): The shim keeps the old names, so the move is a mapping, not a rewrite. The agent lists every part before it swaps one. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [Get started with SESAME](https://sesame.apps.wayne.edu/#prompt-get-started): Works out what kind of app you have and which driver it needs, then writes a plan. It changes nothing. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a raw PHP app](https://sesame.apps.wayne.edu/#prompt-raw-php): Sets up the config, the driver and a user resolver by hand, on your app's own session, with a logout that only accepts a POST. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a Laravel app with Blade](https://sesame.apps.wayne.edu/#prompt-laravel-blade): Publishes the config, writes a user resolver, puts auth.sesame on your routes and adds a sign-out form with a CSRF token. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [SESAME in a Laravel app with Inertia and Vue](https://sesame.apps.wayne.edu/#prompt-laravel-inertia): Uses the same adapter. Routes are guarded on the server, and Vue gets only the user fields it needs as a prop. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [Move a Laravel app from wayne-cas to SESAME](https://sesame.apps.wayne.edu/#prompt-wayne-cas): The shim keeps the old names, so most of the move is the mapping table. The agent lists every wayne-cas part before it swaps one. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
 
 ## Source
 
