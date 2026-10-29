@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: README leads with the gateway driver for Citadel apps and labels the oidc driver as the exception that needs its own Entra registration.
+
 ## [0.2.1] - 2026-10-29
 
 - Added: agent-ready site (prompt blocks, Markdown twins, llms.txt), from Squire's kit.
