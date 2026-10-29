@@ -10,7 +10,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | The protocol SESAME uses to verify identities: "cas" for the
-    | university's CAS server, or "fake" for local development.
+    | university's CAS server, "gateway" for signed assertions from the
+    | DRAWBRIDGE gateway, "oauth2" for JWT bearer tokens from an identity
+    | provider (Microsoft Entra ID first), or "fake" for local development.
     |
     */
 
@@ -93,6 +95,46 @@ return [
         'max_lifetime' => env('SESAME_GATEWAY_MAX_LIFETIME', 300),
         'replay_store' => env('SESAME_GATEWAY_REPLAY_STORE'),
         'allow_without_replay_guard' => env('SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | OAuth2 driver
+    |--------------------------------------------------------------------------
+    |
+    | The oauth2 driver signs the user in from a JWT bearer token in the
+    | Authorization header, verified against the issuer's key set (JWKS).
+    | Only RS256 tokens are accepted.
+    |
+    | Microsoft Entra ID is the first planned issuer: point issuer and
+    | jwks_url at the tenant's v2.0 endpoints (the discovery document's
+    | "issuer" and "jwks_uri" values) and audience at the app's client id.
+    | Any other RS256 issuer works with the same settings.
+    |
+    | required_scopes and required_roles are lists the token must cover:
+    | scopes against the scp claim (a space-separated list), roles against
+    | the roles claim (an array). An empty list checks nothing.
+    | identity_claim names the claim the username comes from:
+    | preferred_username (the default) or accessid.
+    |
+    | leeway_seconds is the clock skew allowed on the exp and nbf checks.
+    | The fetched key set is kept for jwks_cache_ttl_seconds (default one
+    | hour) and refetched at most once a minute when a token carries an
+    | unknown key id. jwks_store names the cache store the key set is kept
+    | in (null uses the app's default store).
+    |
+    */
+
+    'oauth2' => [
+        'issuer' => env('SESAME_OAUTH2_ISSUER'),
+        'jwks_url' => env('SESAME_OAUTH2_JWKS_URL'),
+        'audience' => env('SESAME_OAUTH2_AUDIENCE'),
+        'leeway_seconds' => env('SESAME_OAUTH2_LEEWAY_SECONDS', 60),
+        'required_scopes' => [],
+        'required_roles' => [],
+        'identity_claim' => env('SESAME_OAUTH2_IDENTITY_CLAIM', 'preferred_username'),
+        'jwks_cache_ttl_seconds' => env('SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS', 3600),
+        'jwks_store' => env('SESAME_OAUTH2_JWKS_STORE'),
     ],
 
     /*

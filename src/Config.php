@@ -23,7 +23,16 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `gateway.max_lifetime` (default `300`, a positive integer: the longest an
  * assertion may live, in seconds) and
  * `gateway.allow_without_replay_guard` (default `false`, a boolean: skip the
- * replay guard, for local development only). The session timeouts are
+ * replay guard, for local development only). The `oauth2` driver adds
+ * `oauth2.issuer` (required), `oauth2.jwks_url` (required),
+ * `oauth2.audience` (required), `oauth2.leeway_seconds` (default `60`, a
+ * non-negative integer), `oauth2.required_scopes` (default `[]`, a list of
+ * non-empty strings the token's scp claim must include),
+ * `oauth2.required_roles` (default `[]`, a list of non-empty strings the
+ * token's roles claim must include), `oauth2.identity_claim` (default
+ * `preferred_username`, only `preferred_username` or `accessid`) and
+ * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer: how
+ * long the fetched key set stays usable). The session timeouts are
  * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
  * (default `720`), both optional positive integers. A truthy `slo` (or
  * `single_logout`) key is rejected: the identity provider does not support
@@ -34,6 +43,8 @@ final readonly class Config
     /**
      * @param array<string, list<string>> $fakeAttributes
      * @param list<string> $gatewayTrustedProxies
+     * @param list<string> $oauth2RequiredScopes
+     * @param list<string> $oauth2RequiredRoles
      */
     public function __construct(
         public string $driver,
@@ -56,6 +67,14 @@ final readonly class Config
         public array $gatewayTrustedProxies = [],
         public int $gatewayMaxLifetimeSeconds = 300,
         public bool $gatewayAllowWithoutReplayGuard = false,
+        public ?string $oauth2Issuer = null,
+        public ?string $oauth2JwksUrl = null,
+        public ?string $oauth2Audience = null,
+        public int $oauth2LeewaySeconds = 60,
+        public array $oauth2RequiredScopes = [],
+        public array $oauth2RequiredRoles = [],
+        public string $oauth2IdentityClaim = 'preferred_username',
+        public int $oauth2JwksCacheTtlSeconds = 3600,
     ) {}
 
     /**
@@ -92,6 +111,14 @@ final readonly class Config
         $gatewayTrustedProxies = [];
         $gatewayMaxLifetimeSeconds = 300;
         $gatewayAllowWithoutReplayGuard = false;
+        $oauth2Issuer = null;
+        $oauth2JwksUrl = null;
+        $oauth2Audience = null;
+        $oauth2LeewaySeconds = 60;
+        $oauth2RequiredScopes = [];
+        $oauth2RequiredRoles = [];
+        $oauth2IdentityClaim = 'preferred_username';
+        $oauth2JwksCacheTtlSeconds = 3600;
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
@@ -150,12 +177,31 @@ final readonly class Config
             $gatewayAllowWithoutReplayGuard = self::optionalBool($config, 'gateway.allow_without_replay_guard', false);
         }
 
+        if ($driver === 'oauth2') {
+            $oauth2Issuer = self::requiredString($config, 'oauth2.issuer');
+            $oauth2JwksUrl = self::requiredString($config, 'oauth2.jwks_url');
+            $oauth2Audience = self::requiredString($config, 'oauth2.audience');
+            $oauth2LeewaySeconds = self::optionalNonNegativeInt($config, 'oauth2.leeway_seconds', 60);
+            $oauth2RequiredScopes = self::optionalStringList($config, 'oauth2.required_scopes', []);
+            $oauth2RequiredRoles = self::optionalStringList($config, 'oauth2.required_roles', []);
+
+            $oauth2IdentityClaim = $config['oauth2']['identity_claim'] ?? 'preferred_username';
+
+            if (! is_string($oauth2IdentityClaim) || ! in_array($oauth2IdentityClaim, ['preferred_username', 'accessid'], true)) {
+                throw new InvalidConfig('The config key "oauth2.identity_claim" must be "preferred_username" or "accessid".');
+            }
+
+            $oauth2JwksCacheTtlSeconds = self::optionalPositiveInt($config, 'oauth2.jwks_cache_ttl_seconds', 3600);
+        }
+
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
         $sessionAbsoluteMinutes = self::optionalPositiveInt($config, 'session.absolute_minutes', 720);
 
         /**
          * @var array<string, list<string>> $fakeAttributes
          * @var list<non-empty-string> $gatewayTrustedProxies
+         * @var list<string> $oauth2RequiredScopes
+         * @var list<string> $oauth2RequiredRoles
          */
         return new self(
             $driver,
@@ -178,6 +224,14 @@ final readonly class Config
             $gatewayTrustedProxies,
             $gatewayMaxLifetimeSeconds,
             $gatewayAllowWithoutReplayGuard,
+            $oauth2Issuer,
+            $oauth2JwksUrl,
+            $oauth2Audience,
+            $oauth2LeewaySeconds,
+            $oauth2RequiredScopes,
+            $oauth2RequiredRoles,
+            $oauth2IdentityClaim,
+            $oauth2JwksCacheTtlSeconds,
         );
     }
 
@@ -256,6 +310,42 @@ final readonly class Config
 
         if (! is_int($value) || $value < 0) {
             throw new InvalidConfig(sprintf('The config key "%s" must be a non-negative integer.', $path));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read an optional list of non-empty strings from a dotted path in the
+     * config.
+     *
+     * The default is returned when the key is absent; a present key that is
+     * not a list of non-empty strings is a config error.
+     *
+     * @param array<string, mixed> $config
+     * @param list<string> $default
+     * @return list<string>
+     */
+    private static function optionalStringList(array $config, string $path, array $default): array
+    {
+        $value = $config;
+
+        foreach (explode('.', $path) as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return $default;
+            }
+
+            $value = $value[$segment];
+        }
+
+        if (! is_array($value)) {
+            throw new InvalidConfig(sprintf('The config key "%s" must be an array of strings.', $path));
+        }
+
+        foreach ($value as $item) {
+            if (! is_string($item) || $item === '') {
+                throw new InvalidConfig(sprintf('Each entry in "%s" must be a non-empty string.', $path));
+            }
         }
 
         return $value;

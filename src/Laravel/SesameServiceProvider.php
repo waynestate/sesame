@@ -18,6 +18,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\SimpleCache\CacheInterface;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\DriverFactory;
@@ -70,6 +71,7 @@ class SesameServiceProvider extends ServiceProvider
                 $this->requestFactory($app),
                 $this->clock($app),
                 $config->driver === 'gateway' ? $app->make(ReplayGuard::class) : null,
+                $config->driver === 'oauth2' ? $this->jwksCache($app) : null,
             );
         });
 
@@ -145,6 +147,17 @@ class SesameServiceProvider extends ServiceProvider
         }
 
         return null;
+    }
+
+    /**
+     * The PSR-16 cache the oauth2 driver keeps its fetched key set in: the
+     * app's configured store, or the default store when none is named.
+     */
+    private function jwksCache(Application $app): CacheInterface
+    {
+        $store = $app['config']->get('sesame.oauth2.jwks_store');
+
+        return new LaravelPsr16Cache($app['cache']->store(is_string($store) && $store !== '' ? $store : null));
     }
 
     /**
