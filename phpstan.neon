@@ -1,4 +1,6 @@
 # Same settings as Pinstripe's phpstan/raw.neon. Swap for an include once waynestate/pinstripe is on Packagist.
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
 parameters:
     level: 8
     paths:

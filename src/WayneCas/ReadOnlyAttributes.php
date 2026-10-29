@@ -39,7 +39,7 @@ trait ReadOnlyAttributes
         $dirty = [];
 
         $attributes = array_filter($this->attributes, function ($key) {
-            return ! in_array($key, (array) $this->readOnlyAttributes);
+            return ! in_array($key, (array) $this->readOnlyAttributes, true); // @phpstan-ignore cast.useless (defensive cast: the property is written through an untyped setter)
         }, ARRAY_FILTER_USE_KEY);
 
         foreach ($attributes as $key => $value) {
@@ -59,7 +59,7 @@ trait ReadOnlyAttributes
     /**
      * @param Builder<static> $query
      * @param array<string, mixed> $attributes
-     * @return mixed
+     * @return void
      */
     protected function insertAndSetId(Builder $query, $attributes)
     {
@@ -81,36 +81,37 @@ trait ReadOnlyAttributes
         $attributes[$this->getKeyName()] = $this->getKey();
 
         // Now we refresh the read-only attributes and values
-        $readOnlyAttributes = $this->getReadOnlyAttributes((array) $attributes);
+        $readOnlyAttributes = $this->getReadOnlyAttributes($attributes);
 
         // merge them with the native attributes
-        $attributes = array_merge((array) $attributes, (array) $readOnlyAttributes);
+        $attributes = array_merge($attributes, (array) $readOnlyAttributes); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
 
         // set them on the instance
-        $this->setRawAttributes((array) $attributes, true);
+        $this->setRawAttributes($attributes, true);
 
         // and finally register the read-only attributes to prevent persistence in future database calls
-        $this->setReadonlyAttributes(array_keys((array) $readOnlyAttributes));
+        $this->setReadOnlyAttributes(array_keys((array) $readOnlyAttributes)); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
     }
 
     /**
      * @param array<string, mixed> $attributes
      * @param string|\UnitEnum|null $connection
-     * @return mixed
+     * @return static
      */
     public function newFromBuilder($attributes = [], $connection = null)
     {
         // Here we grab the attribute => attributeValue pairs the developer defines for this model
-        $readOnlyAttributes = $this->getReadOnlyAttributes((array) $attributes);
+        $readOnlyAttributes = $this->getReadOnlyAttributes((array) $attributes); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
 
         // merge them with the native attributes
-        $attributes = array_merge((array) $attributes, (array) $readOnlyAttributes);
+        $readOnlyArray = (array) $readOnlyAttributes; // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
+        $attributes = array_merge((array) $attributes, $readOnlyArray); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
 
         // let the parent method do the work of hydrating an instance with them
         $model = parent::newFromBuilder($attributes, $connection);
 
         // and finally register the read-only attributes to prevent persistence in future database calls
-        $model->setReadonlyAttributes(array_keys((array) $readOnlyAttributes));
+        $model->setReadOnlyAttributes(array_keys((array) $readOnlyAttributes)); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
 
         // oh yeah, we also have to return the freshly hydrated model. duh!
         return $model;

@@ -21,7 +21,7 @@ final class RequireMfaTest extends LaravelTestCase
     public function testItLetsARequestThroughWhenMfaIsSatisfied(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->withSession($this->signedInWithMfa())
@@ -33,7 +33,7 @@ final class RequireMfaTest extends LaravelTestCase
     public function testItAnswers403WhenTheSessionHasNoIdentity(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->withSession([
@@ -48,7 +48,7 @@ final class RequireMfaTest extends LaravelTestCase
     public function testItAnswers403WhenThereIsNoUser(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->get('/protected')->assertStatus(403);
@@ -57,7 +57,7 @@ final class RequireMfaTest extends LaravelTestCase
     public function testItAnswersAJson403WhenMfaIsNotSatisfied(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
         $this->getJson('/protected')
@@ -68,7 +68,7 @@ final class RequireMfaTest extends LaravelTestCase
     public function testItRedirectsToLoginWhenOnFailureIsReauth(): void
     {
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['config']->set('sesame.mfa.on_failure', 'reauth');
         $app['router']->get('/protected', fn() => 'ok')->middleware(['web', 'sesame.mfa']);
 
@@ -80,7 +80,7 @@ final class RequireMfaTest extends LaravelTestCase
         // The user's last MFA sign-in was 30 seconds ago: inside a 120-second
         // max age, outside a 10-second one.
         $app = $this->app;
-        $this->assertNotNull($app);
+        self::assertNotNull($app);
         $app['router']->get('/wide', fn() => 'ok')->middleware(['web', 'sesame.mfa:120']);
         $app['router']->get('/narrow', fn() => 'ok')->middleware(['web', 'sesame.mfa:10']);
 

@@ -24,8 +24,8 @@ final class ReadOnlyAttributesTest extends TestCase
 
         $dirty = $user->getDirty();
 
-        $this->assertArrayNotHasKey('cn', $dirty);
-        $this->assertArrayHasKey('username', $dirty);
+        self::assertArrayNotHasKey('cn', $dirty);
+        self::assertArrayHasKey('username', $dirty);
     }
 
     public function testNewFromBuilderRefusesWritesToReadOnlyAttributes(): void
@@ -33,6 +33,6 @@ final class ReadOnlyAttributesTest extends TestCase
         $hydrated = (new ReadOnlyUser())->newFromBuilder(['cn' => 'John Doe', 'username' => 'jdoe']);
         $hydrated->setAttribute('cn', 'Changed');
 
-        $this->assertSame([], $hydrated->getDirty());
+        self::assertSame([], $hydrated->getDirty());
     }
 }

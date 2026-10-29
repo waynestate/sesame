@@ -29,8 +29,8 @@ final class DriverFactoryTest extends TestCase
 
         $driver = DriverFactory::make($config);
 
-        $this->assertInstanceOf(FakeDriver::class, $driver);
-        $this->assertSame('fake', $driver->name());
+        self::assertInstanceOf(FakeDriver::class, $driver);
+        self::assertSame('fake', $driver->name());
     }
 
     public function testMakesACasDriver(): void
@@ -46,8 +46,8 @@ final class DriverFactoryTest extends TestCase
 
         $driver = DriverFactory::make($config, new FakeHttpClient(), new Psr17Factory());
 
-        $this->assertInstanceOf(CasDriver::class, $driver);
-        $this->assertSame('cas', $driver->name());
+        self::assertInstanceOf(CasDriver::class, $driver);
+        self::assertSame('cas', $driver->name());
     }
 
     public function testCasWithoutAnHttpClientNamesTheMissingClient(): void
@@ -86,8 +86,8 @@ final class DriverFactoryTest extends TestCase
 
         $driver = DriverFactory::make($config, null, null, new FakeClock(), new InMemoryReplayGuard());
 
-        $this->assertInstanceOf(GatewayDriver::class, $driver);
-        $this->assertSame('gateway', $driver->name());
+        self::assertInstanceOf(GatewayDriver::class, $driver);
+        self::assertSame('gateway', $driver->name());
     }
 
     public function testGatewayWithoutAReplayGuardFailsClosed(): void
@@ -106,7 +106,7 @@ final class DriverFactoryTest extends TestCase
 
         $driver = DriverFactory::make($config);
 
-        $this->assertInstanceOf(GatewayDriver::class, $driver);
+        self::assertInstanceOf(GatewayDriver::class, $driver);
     }
 
     /**

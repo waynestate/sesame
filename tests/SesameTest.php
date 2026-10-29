@@ -57,7 +57,7 @@ final class SesameTest extends TestCase
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $this->assertSame(
+        self::assertSame(
             [
                 'login',
                 'regenerate',
@@ -87,8 +87,8 @@ final class SesameTest extends TestCase
 
         $now = $clock->now()->getTimestamp();
 
-        $this->assertSame($now, $session->store['sesame.signed_in_at']);
-        $this->assertSame($now, $session->store['sesame.last_seen']);
+        self::assertSame($now, $session->store['sesame.signed_in_at']);
+        self::assertSame($now, $session->store['sesame.last_seen']);
     }
 
     public function testLoginPassesTheExactIdentityAndReturnsTheResolverResult(): void
@@ -105,8 +105,8 @@ final class SesameTest extends TestCase
 
         $user = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $this->assertSame($identity, $resolver->identity);
-        $this->assertSame('the-user', $user);
+        self::assertSame($identity, $resolver->identity);
+        self::assertSame('the-user', $user);
     }
 
     public function testLoginWithANullResolverResultStoresNothing(): void
@@ -122,9 +122,9 @@ final class SesameTest extends TestCase
 
         $user = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $this->assertNull($user);
-        $this->assertSame(['login'], $log->events);
-        $this->assertSame([], $session->store);
+        self::assertNull($user);
+        self::assertSame(['login'], $log->events);
+        self::assertSame([], $session->store);
     }
 
     public function testLoginStoresTheIdentityWithoutItsRawAttributes(): void
@@ -143,11 +143,11 @@ final class SesameTest extends TestCase
 
         $stored = $session->store['sesame.identity'];
 
-        $this->assertInstanceOf(Identity::class, $stored);
-        $this->assertSame($identity->username, $stored->username);
-        $this->assertSame($identity->driver, $stored->driver);
-        $this->assertEquals($identity->authenticatedAt, $stored->authenticatedAt);
-        $this->assertSame([], $stored->attributes);
+        self::assertInstanceOf(Identity::class, $stored);
+        self::assertSame($identity->username, $stored->username);
+        self::assertSame($identity->driver, $stored->driver);
+        self::assertEquals($identity->authenticatedAt, $stored->authenticatedAt);
+        self::assertSame([], $stored->attributes);
     }
 
     public function testLoginReturnsARedirectUnchanged(): void
@@ -164,8 +164,8 @@ final class SesameTest extends TestCase
 
         $result = $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $this->assertSame($redirect, $result);
-        $this->assertSame(['login'], $log->events);
+        self::assertSame($redirect, $result);
+        self::assertSame(['login'], $log->events);
     }
 
     public function testUserReturnsTheStoredUser(): void
@@ -187,8 +187,8 @@ final class SesameTest extends TestCase
 
         $clock->advance(60);
 
-        $this->assertSame('the-user', $sesame->user());
-        $this->assertSame($clock->now()->getTimestamp(), $session->store['sesame.last_seen']);
+        self::assertSame('the-user', $sesame->user());
+        self::assertSame($clock->now()->getTimestamp(), $session->store['sesame.last_seen']);
     }
 
     public function testUserReturnsNullWhenNothingIsStored(): void
@@ -201,7 +201,7 @@ final class SesameTest extends TestCase
             $this->config(),
         );
 
-        $this->assertNull($sesame->user());
+        self::assertNull($sesame->user());
     }
 
     public function testUserSignsOutWhenTheIdleTimeoutHasPassed(): void
@@ -223,8 +223,8 @@ final class SesameTest extends TestCase
 
         $clock->advance(120 * 60 + 1);
 
-        $this->assertNull($sesame->user());
-        $this->assertSame(
+        self::assertNull($sesame->user());
+        self::assertSame(
             [
                 'get:sesame.user',
                 'get:sesame.signed_in_at',
@@ -235,7 +235,7 @@ final class SesameTest extends TestCase
             ],
             $log->events,
         );
-        $this->assertSame([], $session->store);
+        self::assertSame([], $session->store);
     }
 
     public function testUserStaysSignedInAtTheIdleBoundary(): void
@@ -257,7 +257,7 @@ final class SesameTest extends TestCase
 
         $clock->advance(120 * 60);
 
-        $this->assertSame('the-user', $sesame->user());
+        self::assertSame('the-user', $sesame->user());
     }
 
     public function testUserSignsOutWhenTheAbsoluteLifetimeHasPassed(): void
@@ -282,13 +282,13 @@ final class SesameTest extends TestCase
 
         for ($i = 0; $i < 6; $i++) {
             $clock->advance(10 * 60);
-            $this->assertSame('the-user', $sesame->user(), 'Request ' . ($i + 1) . ' should still be signed in.');
+            self::assertSame('the-user', $sesame->user(), 'Request ' . ($i + 1) . ' should still be signed in.');
         }
 
         $clock->advance(10 * 60);
 
-        $this->assertNull($sesame->user());
-        $this->assertSame([], $session->store);
+        self::assertNull($sesame->user());
+        self::assertSame([], $session->store);
     }
 
     public function testUserSignsOutWhenTheSessionHasNoTimestamps(): void
@@ -304,8 +304,8 @@ final class SesameTest extends TestCase
             $this->config(),
         );
 
-        $this->assertNull($sesame->user());
-        $this->assertSame([], $session->store);
+        self::assertNull($sesame->user());
+        self::assertSame([], $session->store);
     }
 
     public function testLogoutInvalidatesBeforeTheIdpUrlIsBuilt(): void
@@ -320,8 +320,8 @@ final class SesameTest extends TestCase
 
         $url = $sesame->logout('http://app.local/');
 
-        $this->assertSame('http://idp.local/logout', $url);
-        $this->assertSame(
+        self::assertSame('http://idp.local/logout', $url);
+        self::assertSame(
             ['forget:sesame.user', 'forget:sesame.identity', 'invalidate', 'logoutUrl'],
             $log->events,
         );
@@ -337,7 +337,7 @@ final class SesameTest extends TestCase
             $this->config(),
         );
 
-        $this->assertNull($sesame->logout('http://app.local/'));
+        self::assertNull($sesame->logout('http://app.local/'));
     }
 
     public function testRequireMfaReturnsNoAuthTimeWhenThereIsNoUser(): void
@@ -352,8 +352,8 @@ final class SesameTest extends TestCase
 
         $result = $sesame->requireMfa();
 
-        $this->assertFalse($result->satisfied);
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertFalse($result->satisfied);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
     }
 
     public function testRequireMfaReturnsNoAuthTimeWhenTheSessionHasNoIdentity(): void
@@ -375,8 +375,8 @@ final class SesameTest extends TestCase
 
         $result = $sesame->requireMfa();
 
-        $this->assertFalse($result->satisfied);
-        $this->assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
+        self::assertFalse($result->satisfied);
+        self::assertSame(MfaResult::NO_AUTH_TIME, $result->reason);
     }
 
     public function testRequireMfaIsSatisfiedWhenTheIdentityHasRecentMfa(): void
@@ -406,8 +406,8 @@ final class SesameTest extends TestCase
 
         $result = $sesame->requireMfa();
 
-        $this->assertTrue($result->satisfied);
-        $this->assertSame(MfaResult::SATISFIED, $result->reason);
+        self::assertTrue($result->satisfied);
+        self::assertSame(MfaResult::SATISFIED, $result->reason);
     }
 
     public function testRequireMfaIsTooOldWhenTheClockMovesPastTheMaxAge(): void
@@ -442,8 +442,8 @@ final class SesameTest extends TestCase
 
         $result = $sesame->requireMfa();
 
-        $this->assertFalse($result->satisfied);
-        $this->assertSame(MfaResult::TOO_OLD, $result->reason);
+        self::assertFalse($result->satisfied);
+        self::assertSame(MfaResult::TOO_OLD, $result->reason);
     }
 
     public function testLoginStoresTheMfaFactsInTheSessionIdentity(): void
@@ -469,9 +469,9 @@ final class SesameTest extends TestCase
 
         $stored = $session->store['sesame.identity'];
 
-        $this->assertInstanceOf(Identity::class, $stored);
-        $this->assertEquals($identity->authTime, $stored->authTime);
-        $this->assertSame($identity->amr, $stored->amr);
+        self::assertInstanceOf(Identity::class, $stored);
+        self::assertEquals($identity->authTime, $stored->authTime);
+        self::assertSame($identity->amr, $stored->amr);
     }
 
     public function testLoginStoresTheAuthContextsInTheSessionIdentity(): void
@@ -498,8 +498,8 @@ final class SesameTest extends TestCase
 
         $stored = $session->store['sesame.identity'];
 
-        $this->assertInstanceOf(Identity::class, $stored);
-        $this->assertSame(['c1', 'c10'], $stored->authContexts());
+        self::assertInstanceOf(Identity::class, $stored);
+        self::assertSame(['c1', 'c10'], $stored->authContexts());
     }
 
     public function testHasAuthContextIsFalseWhenThereIsNoUser(): void
@@ -512,7 +512,7 @@ final class SesameTest extends TestCase
             $this->config(),
         );
 
-        $this->assertFalse($sesame->hasAuthContext('c1'));
+        self::assertFalse($sesame->hasAuthContext('c1'));
     }
 
     public function testHasAuthContextIsFalseWhenTheSessionHasNoIdentity(): void
@@ -532,7 +532,7 @@ final class SesameTest extends TestCase
             $clock,
         );
 
-        $this->assertFalse($sesame->hasAuthContext('c1'));
+        self::assertFalse($sesame->hasAuthContext('c1'));
     }
 
     public function testHasAuthContextIsTrueWhenTheIdentityHasTheContext(): void
@@ -561,10 +561,10 @@ final class SesameTest extends TestCase
             $clock,
         );
 
-        $this->assertTrue($sesame->hasAuthContext('c2'));
-        $this->assertTrue($sesame->hasAuthContext('c10'));
+        self::assertTrue($sesame->hasAuthContext('c2'));
+        self::assertTrue($sesame->hasAuthContext('c10'));
         // c1 is a prefix of c10, but the check is membership, not a prefix
         // match.
-        $this->assertFalse($sesame->hasAuthContext('c1'));
+        self::assertFalse($sesame->hasAuthContext('c1'));
     }
 }

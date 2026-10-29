@@ -19,7 +19,7 @@ class ReadOnlyUser extends Model implements WayneCasable
 {
     use ReadOnlyAttributes;
 
-    /** @var string */
+    /** @var string|null */
     protected $table = 'users';
 
     /** @var bool */

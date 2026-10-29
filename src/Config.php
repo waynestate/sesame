@@ -69,7 +69,10 @@ final readonly class Config
         // The identity provider does not support single logout, so a config
         // that asks for it is a mistake to fail on at boot, not at the first
         // logout.
-        if (! empty($config['slo']) || ! empty($config['single_logout'])) {
+        $slo = $config['slo'] ?? null;
+        $singleLogout = $config['single_logout'] ?? null;
+
+        if ((bool) $slo || (bool) $singleLogout) {
             throw new InvalidConfig('Single logout is not supported by the identity provider; remove the slo setting.');
         }
 

@@ -30,7 +30,7 @@ final class Deprecation
 
         Log::warning(self::MESSAGE);
 
-        if (config('wayne-cas.use2FA')) {
+        if ((bool) config('wayne-cas.use2FA')) {
             self::logTwoFaOnce();
         }
     }

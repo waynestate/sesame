@@ -35,10 +35,10 @@ PHP;
         $output = $this->runChildPhp($this->childScript($body));
         $result = json_decode($output, true);
 
-        $this->assertIsArray($result, 'Child output was not JSON: ' . $output);
-        $this->assertSame(1, $result['status'], 'The session should be destroyed (PHP_SESSION_NONE).');
-        $this->assertSame(0, $result['sessionCount'], 'The session data should be cleared.');
-        $this->assertFalse($result['oldFileExists'], 'The old session file should be gone.');
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame(1, $result['status'], 'The session should be destroyed (PHP_SESSION_NONE).');
+        self::assertSame(0, $result['sessionCount'], 'The session data should be cleared.');
+        self::assertFalse($result['oldFileExists'], 'The old session file should be gone.');
     }
 
     /**
@@ -67,7 +67,7 @@ PHP;
 
         if (! is_resource($process)) {
             unlink($file);
-            $this->fail('Could not start a child PHP process.');
+            self::fail('Could not start a child PHP process.');
         }
 
         $output = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);

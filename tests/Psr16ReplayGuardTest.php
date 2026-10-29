@@ -31,52 +31,52 @@ final class Psr16ReplayGuardTest extends TestCase
 
     public function testFirstSightIsRecordedAndNotSeen(): void
     {
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(240)));
 
-        $this->assertCount(1, $this->cache->keys());
+        self::assertCount(1, $this->cache->keys());
     }
 
     public function testSecondSightIsSeen(): void
     {
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(240)));
 
-        $this->assertTrue($this->guard->seen('jti-1', $this->at(240)));
+        self::assertTrue($this->guard->seen('jti-1', $this->at(240)));
     }
 
     public function testDifferentJtisAreIndependent(): void
     {
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(240)));
-        $this->assertFalse($this->guard->seen('jti-2', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-2', $this->at(240)));
 
-        $this->assertCount(2, $this->cache->keys());
+        self::assertCount(2, $this->cache->keys());
     }
 
     public function testAnAlreadyExpiredAssertionIsNotRecorded(): void
     {
         // exp is 60 seconds in the past; with 30 seconds of leeway the ttl is
         // negative, so the guard records nothing.
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(-60)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(-60)));
 
-        $this->assertSame([], $this->cache->keys());
+        self::assertSame([], $this->cache->keys());
     }
 
     public function testARecordExpiresAfterTheLeeway(): void
     {
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(240)));
 
         // The record lives until exp plus leeway: 240 + 30 = 270 seconds.
         // Move past it, and a fresh, still-valid assertion with the same jti
         // is accepted again.
         $this->clock->advance(271);
 
-        $this->assertFalse($this->guard->seen('jti-1', $this->at(240)));
+        self::assertFalse($this->guard->seen('jti-1', $this->at(240)));
     }
 
     public function testTheCacheKeyIsPrefixedAndHashed(): void
     {
         $this->guard->seen('jti-1', $this->at(240));
 
-        $this->assertSame(['sesame.jti.' . hash('sha256', 'jti-1')], $this->cache->keys());
+        self::assertSame(['sesame.jti.' . hash('sha256', 'jti-1')], $this->cache->keys());
     }
 
     private function at(int $offsetSeconds): DateTimeImmutable

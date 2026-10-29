@@ -50,7 +50,7 @@ final class LaravelPsr16Cache implements CacheInterface
     }
 
     /**
-     * @param iterable<string, mixed> $values
+     * @param iterable<mixed> $values
      */
     public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
     {

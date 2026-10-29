@@ -240,7 +240,7 @@ final class CasDriver implements Driver
 
         if ($attributeNodes !== false && $attributeNodes !== null && $attributeNodes !== []) {
             foreach ($attributeNodes[0]->children(self::CAS_NAMESPACE) as $name => $value) {
-                $attributes[(string) $name][] = (string) $value;
+                $attributes[$name][] = (string) $value;
             }
         }
 
@@ -321,7 +321,7 @@ final class CasDriver implements Driver
     private function authenticationDate(array $attributes): ?DateTimeImmutable
     {
         $dates = $attributes['authenticationDate'] ?? [];
-        $value = $dates === [] ? null : (string) $dates[0];
+        $value = $dates === [] ? null : $dates[0];
 
         if ($value === null) {
             return null;

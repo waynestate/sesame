@@ -38,7 +38,7 @@ final class FakeDriverTest extends TestCase
     {
         $driver = new FakeDriver($environment, 'jdoe', []);
 
-        $this->assertSame('fake', $driver->name());
+        self::assertSame('fake', $driver->name());
     }
 
     /**
@@ -79,7 +79,7 @@ final class FakeDriverTest extends TestCase
     {
         $driver = new FakeDriver($environment, 'jdoe', []);
 
-        $this->assertSame('fake', $driver->name());
+        self::assertSame('fake', $driver->name());
     }
 
     /**
@@ -100,16 +100,16 @@ final class FakeDriverTest extends TestCase
 
         $step = $driver->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $this->assertInstanceOf(Authenticated::class, $step);
-        $this->assertSame('jdoe', $step->identity->username);
-        $this->assertSame('fake', $step->identity->driver);
-        $this->assertSame('John Doe', $step->identity->attribute('cn'));
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('jdoe', $step->identity->username);
+        self::assertSame('fake', $step->identity->driver);
+        self::assertSame('John Doe', $step->identity->attribute('cn'));
     }
 
     public function testLogoutUrlIsNull(): void
     {
         $driver = new FakeDriver('local', 'jdoe', []);
 
-        $this->assertNull($driver->logoutUrl('http://app.local/'));
+        self::assertNull($driver->logoutUrl('http://app.local/'));
     }
 }

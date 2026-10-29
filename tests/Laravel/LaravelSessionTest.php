@@ -34,15 +34,15 @@ final class LaravelSessionTest extends TestCase
 
         $port->put('sesame.user', 'the-user');
 
-        $this->assertSame('the-user', $port->get('sesame.user'));
-        $this->assertSame('the-user', $store->get('sesame.user'));
+        self::assertSame('the-user', $port->get('sesame.user'));
+        self::assertSame('the-user', $store->get('sesame.user'));
     }
 
     public function testGetReturnsNullWhenAbsent(): void
     {
         [$port] = $this->port();
 
-        $this->assertNull($port->get('missing'));
+        self::assertNull($port->get('missing'));
     }
 
     public function testForgetRemovesTheKey(): void
@@ -52,7 +52,7 @@ final class LaravelSessionTest extends TestCase
 
         $port->forget('sesame.user');
 
-        $this->assertNull($port->get('sesame.user'));
+        self::assertNull($port->get('sesame.user'));
     }
 
     public function testInvalidateClearsTheSession(): void
@@ -63,8 +63,8 @@ final class LaravelSessionTest extends TestCase
 
         $port->invalidate();
 
-        $this->assertNull($store->get('sesame.user'));
-        $this->assertNull($store->get('other'));
+        self::assertNull($store->get('sesame.user'));
+        self::assertNull($store->get('other'));
     }
 
     public function testRegenerateChangesTheSessionId(): void
@@ -74,6 +74,6 @@ final class LaravelSessionTest extends TestCase
 
         $port->regenerate();
 
-        $this->assertNotSame($before, $store->getId());
+        self::assertNotSame($before, $store->getId());
     }
 }

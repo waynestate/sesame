@@ -38,3 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InvalidConfig` at boot: the identity provider does not support single
   logout, so the setting is a mistake to fail on early rather than at the
   first logout.
+
+### Changed
+
+- Static analysis now runs PHPStan level 8 with the Pinstripe strict preset
+  (`phpstan/phpstan-strict-rules`). Every finding was fixed in place; no
+  behaviour changed.
