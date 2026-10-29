@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The four shared WSU values (`SESAME_CAS_BASE_URL`, `SESAME_GATEWAY_ISSUER`,
+  `SESAME_OAUTH2_ISSUER`, `SESAME_OAUTH2_JWKS_URL`) now resolve through
+  `Waynestate\Sesame\Support\Setting::get()`: the environment wins, and when
+  it is empty the private `waynestate/playbook` package supplies the value.
+  `waynestate/playbook` is suggested, never required.
+- A missing routed setting now fails with `Missing required setting
+  SESAME_.... Set it in the environment, or install waynestate/playbook
+  (see the README).` instead of naming the config key.
+
 ## [0.1.2] - 2026-10-29
 
 ### Fixed

@@ -37,6 +37,64 @@ and merge requests on the internal project.
 composer require waynestate/sesame
 ```
 
+## WSU values (PLAYBOOK)
+
+Open sesame, minus the incantation. Four settings carry Wayne State's shared
+values: where the CAS server lives, and who signs the gateway and oauth2
+assertions.
+
+| Setting | Config key | Meaning |
+|---|---|---|
+| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL. |
+| `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
+| `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
+| `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
+
+Set them in the environment, as with every other setting. When the
+environment is empty, the private [waynestate/playbook]
+(https://git.wayne.edu/enterprise-apps/playbook) package supplies the
+university's values, so a fresh app boots against the real services without
+a `.env` full of addresses. The environment always wins: a set variable
+beats the playbook, and an empty one counts as unset.
+
+The playbook is never required. It sits in `suggest`, not `require`, and
+SESAME runs fine without it, reading these four from the environment alone.
+Get it through Composer, or by cloning:
+
+**Composer.** Add the repository to your `composer.json`:
+
+```json
+{
+    "repositories": [
+        { "type": "vcs", "url": "https://git.wayne.edu/enterprise-apps/playbook.git" }
+    ]
+}
+```
+
+then require it:
+
+```
+composer require waynestate/playbook
+```
+
+Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as
+an `http-basic` entry, so later installs do not ask again.
+
+**A clone.** When the app keeps its private dependencies by hand:
+
+```
+git clone https://git.wayne.edu/enterprise-apps/playbook.git
+```
+
+Raw-PHP apps that build their config by hand can resolve a value the same
+way the Laravel config does:
+
+```php
+use Waynestate\Sesame\Support\Setting;
+
+$baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
+```
+
 ## Raw PHP
 
 ```php
