@@ -533,14 +533,15 @@ change. `oidc.username_fallback` (off by default) uses the part of
 > something else (`iss` plus `sub`, or `tid` plus `oid`).
 
 The roles claim (`oidc.roles_claim`,
-default `wsuRoles`) becomes the `roles` attribute; a mapped claim that
+default `wsu_roles`) becomes the `roles` attribute; a mapped claim that
 arrives under a custom-claim namespace
-(`http://schemas.example.test/claims/wsuRoles` or `extn.wsuRoles`) is found
+(`http://schemas.example.test/claims/wsu_roles` or `extn.wsu_roles`) is found
 by its short name. The exact name and the namespaced forms are counted
-together: two or more candidates (an exact `wsuRoles` beside a namespaced
+together: two or more candidates (an exact `wsu_roles` beside a namespaced
 one, say) count as none. `oidc.claims` (default
-`wsuRoles,accessid`) lists the claims passed to the resolver under their own
-names, so `$identity->attributes['wsuRoles']` works. `iss`, `sub`, `oid`,
+`wsu_roles,accessid`) lists the claims passed to the resolver under their own
+names, so `$identity->attributes['wsu_roles']` works. Set `roles_claim` (and
+`claims`) to `wsuRoles` to keep the old name. `iss`, `sub`, `oid`,
 `tid`, `email`, `name` and `preferred_username` are attributes too; key the
 app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the
 username alone.
@@ -650,8 +651,8 @@ right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 | `oidc.client_auth` | `SESAME_OIDC_CLIENT_AUTH` | `client_secret_post` | Or `client_secret_basic`. |
 | `oidc.username_claim` | `SESAME_OIDC_USERNAME_CLAIM` | `accessid` | The claim the username comes from. |
 | `oidc.username_fallback` | `SESAME_OIDC_USERNAME_FALLBACK` | `false` | Opt in to the `preferred_username` prefix when the claim is missing. `preferred_username` is user-changeable; see the warning above. |
-| `oidc.roles_claim` | `SESAME_OIDC_ROLES_CLAIM` | `wsuRoles` | The claim that becomes the `roles` attribute; namespaced forms are found. |
-| `oidc.claims` | `SESAME_OIDC_CLAIMS` | `wsuRoles,accessid` | Claims passed to the resolver as attributes under their own names. |
+| `oidc.roles_claim` | `SESAME_OIDC_ROLES_CLAIM` | `wsu_roles` | The claim that becomes the `roles` attribute; namespaced forms are found. |
+| `oidc.claims` | `SESAME_OIDC_CLAIMS` | `wsu_roles,accessid` | Claims passed to the resolver as attributes under their own names. |
 | `oidc.assume_mfa` | `SESAME_OIDC_ASSUME_MFA` | `false` | Count a sign-in as MFA when Conditional Access enforces it for the app. |
 | `oidc.algorithms` | none | `['RS256']` | The ID token algorithms allowed: `RS256`, `RS384`, `RS512` only. |
 | `oidc.leeway_seconds` | `SESAME_OIDC_LEEWAY_SECONDS` | `60` | Clock skew on `exp`, `nbf` and `iat`, at most 300. |
@@ -681,7 +682,7 @@ What the developer (or the Entra admin) sets on the app registration:
   tokens" boxes unchecked; the code flow does not need them.
 - **Token configuration**: add the optional ID token claim `auth_time`
   (and `email` if the app wants it). Ask the Entra admin for the mapped
-  `wsuRoles` and `accessid` claims (a claims-mapping policy); if they arrive
+  `wsu_roles` and `accessid` claims (a claims-mapping policy); if they arrive
   under a namespace, SESAME finds them by their short names.
 - **Enterprise application, Properties: Assignment required = Yes**, then
   assign the groups that may sign in. This is what limits an app to, for
