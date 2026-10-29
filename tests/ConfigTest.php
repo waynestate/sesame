@@ -289,6 +289,156 @@ final class ConfigTest extends TestCase
         Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => 'yes']));
     }
 
+    public function testReadsTheOauth2Settings(): void
+    {
+        $config = Config::fromArray($this->oauth2Config([
+            'leeway_seconds' => 30,
+            'required_scopes' => ['openid', 'profile'],
+            'required_roles' => ['admin'],
+            'identity_claim' => 'accessid',
+            'jwks_cache_ttl_seconds' => 600,
+        ]));
+
+        self::assertSame('oauth2', $config->driver);
+        self::assertSame('https://login.example.com/v2.0', $config->oauth2Issuer);
+        self::assertSame('https://login.example.com/discovery/v2.0/keys', $config->oauth2JwksUrl);
+        self::assertSame('api://test-client', $config->oauth2Audience);
+        self::assertSame(30, $config->oauth2LeewaySeconds);
+        self::assertSame(['openid', 'profile'], $config->oauth2RequiredScopes);
+        self::assertSame(['admin'], $config->oauth2RequiredRoles);
+        self::assertSame('accessid', $config->oauth2IdentityClaim);
+        self::assertSame(600, $config->oauth2JwksCacheTtlSeconds);
+    }
+
+    public function testOauth2LeewayDefaultsToSixtySeconds(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertSame(60, $config->oauth2LeewaySeconds);
+    }
+
+    public function testOauth2IdentityClaimDefaultsToPreferredUsername(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertSame('preferred_username', $config->oauth2IdentityClaim);
+    }
+
+    public function testOauth2JwksCacheTtlDefaultsToAnHour(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertSame(3600, $config->oauth2JwksCacheTtlSeconds);
+    }
+
+    public function testOauth2ScopesAndRolesDefaultToEmpty(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertSame([], $config->oauth2RequiredScopes);
+        self::assertSame([], $config->oauth2RequiredRoles);
+    }
+
+    public function testRejectsAMissingOauth2Issuer(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        $oauth2 = $this->oauth2Config()['oauth2'];
+        unset($oauth2['issuer']);
+
+        Config::fromArray(['driver' => 'oauth2', 'environment' => 'local', 'oauth2' => $oauth2]);
+    }
+
+    public function testRejectsAMissingOauth2JwksUrl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        $oauth2 = $this->oauth2Config()['oauth2'];
+        unset($oauth2['jwks_url']);
+
+        Config::fromArray(['driver' => 'oauth2', 'environment' => 'local', 'oauth2' => $oauth2]);
+    }
+
+    public function testRejectsAMissingOauth2Audience(): void
+    {
+        $this->expectException(InvalidConfig::class);
+
+        $oauth2 = $this->oauth2Config()['oauth2'];
+        unset($oauth2['audience']);
+
+        Config::fromArray(['driver' => 'oauth2', 'environment' => 'local', 'oauth2' => $oauth2]);
+    }
+
+    public function testRejectsAnUnknownOauth2IdentityClaim(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.identity_claim" must be "preferred_username" or "accessid".');
+
+        Config::fromArray($this->oauth2Config(['identity_claim' => 'upn']));
+    }
+
+    public function testRejectsANonArrayOauth2RequiredScopes(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.required_scopes" must be an array of strings.');
+
+        Config::fromArray($this->oauth2Config(['required_scopes' => 'openid profile']));
+    }
+
+    public function testRejectsAnEmptyOauth2ScopeEntry(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Each entry in "oauth2.required_scopes" must be a non-empty string.');
+
+        Config::fromArray($this->oauth2Config(['required_scopes' => ['openid', '']]));
+    }
+
+    public function testRejectsANonStringOauth2RoleEntry(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Each entry in "oauth2.required_roles" must be a non-empty string.');
+
+        Config::fromArray($this->oauth2Config(['required_roles' => [42]]));
+    }
+
+    public function testRejectsANegativeOauth2Leeway(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.leeway_seconds" must be a non-negative integer.');
+
+        Config::fromArray($this->oauth2Config(['leeway_seconds' => -1]));
+    }
+
+    public function testAcceptsAZeroOauth2Leeway(): void
+    {
+        $config = Config::fromArray($this->oauth2Config(['leeway_seconds' => 0]));
+
+        self::assertSame(0, $config->oauth2LeewaySeconds);
+    }
+
+    #[DataProvider('badOauth2JwksCacheTtls')]
+    public function testRejectsAnInvalidOauth2JwksCacheTtl(int|string $value): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.jwks_cache_ttl_seconds" must be a positive integer.');
+
+        Config::fromArray($this->oauth2Config(['jwks_cache_ttl_seconds' => $value]));
+    }
+
+    /**
+     * Oauth2 key-set cache TTLs that must be rejected.
+     *
+     * @return array<string, array{int|string}>
+     */
+    public static function badOauth2JwksCacheTtls(): array
+    {
+        return [
+            'a ttl of zero' => [0],
+            'a negative ttl' => [-5],
+            'a string ttl' => ['abc'],
+        ];
+    }
+
     public function testReadsTheSessionTimeouts(): void
     {
         $config = Config::fromArray([
@@ -418,6 +568,26 @@ final class ConfigTest extends TestCase
                 'audience' => 'sesame',
                 'trusted_proxies' => ['10.0.0.0/8'],
             ], $gateway),
+        ];
+    }
+
+    /**
+     * A valid oauth2 config, with any overrides merged into the oauth2
+     * section.
+     *
+     * @param  array<string, mixed>  $oauth2
+     * @return array<string, mixed>
+     */
+    private function oauth2Config(array $oauth2 = []): array
+    {
+        return [
+            'driver' => 'oauth2',
+            'environment' => 'local',
+            'oauth2' => array_merge([
+                'issuer' => 'https://login.example.com/v2.0',
+                'jwks_url' => 'https://login.example.com/discovery/v2.0/keys',
+                'audience' => 'api://test-client',
+            ], $oauth2),
         ];
     }
 }

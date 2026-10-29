@@ -9,7 +9,6 @@ use Firebase\JWT\JWK;
 use Firebase\JWT\Key;
 use InvalidArgumentException;
 use Psr\Clock\ClockInterface;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
@@ -110,11 +109,13 @@ final readonly class JwksProvider
      */
     private function fetch(): array
     {
+        // Any failure here fails closed: a transport that cannot reach the
+        // issuer, or that misbehaves, must never leave the door open.
         try {
             $response = $this->http->sendRequest(
                 $this->requests->createRequest('GET', $this->jwksUrl)->withHeader('Accept', 'application/json'),
             );
-        } catch (ClientExceptionInterface) {
+        } catch (\Throwable) {
             throw new AuthenticationFailed('The issuer\'s key set could not be reached (oauth2.jwks_unavailable).');
         }
 
