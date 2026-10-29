@@ -90,10 +90,7 @@ final readonly class OidcOptions
      */
     public function clientSecret(): string
     {
-        $secret = $this->clientSecret->getValue();
-        assert(is_string($secret));
-
-        return $secret;
+        return $this->clientSecret->getValue();
     }
 
     /**

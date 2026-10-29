@@ -385,10 +385,13 @@ final class OidcDriver implements Driver, RemembersReturnTo
             $reason = preg_match(self::ERROR_CODE_PATTERN, $error) === 1 ? $error : 'error';
 
             throw new AuthenticationFailed(sprintf('The token endpoint refused the code (oidc.token_exchange: %s).', $reason));
-        } catch (AuthenticationFailed $e) {
-            // Raised by SESAME itself (a redirect answer), with a safe message.
-            throw new AuthenticationFailed($e->getMessage());
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            if ($e instanceof AuthenticationFailed) {
+                // Raised by SESAME itself (a redirect answer), with a safe
+                // message; rebuilt so nothing is chained.
+                throw new AuthenticationFailed($e->getMessage());
+            }
+
             throw new AuthenticationFailed('The token endpoint could not be used (oidc.token_exchange).');
         }
 
@@ -625,7 +628,8 @@ final class OidcDriver implements Driver, RemembersReturnTo
         $matches = [];
 
         foreach ($claims as $key => $value) {
-            $key = (string) $key;
+            // A numeric claim name arrives as an int key.
+            $key = strval($key);
 
             if ($key === $name || str_ends_with($key, '/' . $name) || str_ends_with($key, '.' . $name)) {
                 $matches[] = $value;
