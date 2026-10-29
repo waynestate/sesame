@@ -100,8 +100,8 @@ On logout, both paths send `Cache-Control: no-store` and
 `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser
 cannot show a signed-in page; `"cookies"` is left out on purpose, because it
 would clear every cookie on the host and sign the user out of every other app
-on wayne.edu, not just this one. Single logout is not supported — the
-identity provider cannot sign the user out of the app's other sessions — so
+on wayne.edu, not just this one. Single logout is not supported, the
+identity provider cannot sign the user out of the app's other sessions, so
 SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 
 ## Drivers
@@ -206,8 +206,8 @@ not send one, the MFA check fails because there is no sign-in time to age.
 The gateway driver signs the user in from a signed JWT assertion that the auth
 gateway (DRAWBRIDGE) puts in one header. It verifies the assertion's signature
 against the gateway's public key, then checks the issuer, audience and time
-claims. It never reads a plain identity header — `Remote-User`,
-`X-Remote-User`, or any spelling of them — because a plain header can come from
+claims. It never reads a plain identity header: `Remote-User`,
+`X-Remote-User`, or any spelling of them, because a plain header can come from
 anywhere on the shared network. And the request must come from a trusted
 proxy: the direct peer (`REMOTE_ADDR`) must match one of the configured CIDR
 ranges. A valid assertion from an untrusted peer is still rejected.
