@@ -16,7 +16,10 @@ use UnexpectedValueException;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 
 /**
- * The oauth2 driver's key set, fetched from the issuer and kept in a cache.
+ * An issuer's key set, fetched from the issuer and kept in a cache.
+ *
+ * The oauth2 driver uses it for bearer tokens and the oidc driver for ID
+ * tokens, so both verify signatures through the same code.
  *
  * A JWKS is small and changes rarely (the issuer rotates its signing keys),
  * so the provider fetches it once, keeps the parsed set in a PSR-16 cache
@@ -42,6 +45,7 @@ final readonly class JwksProvider
 
     /**
      * @param int $ttlSeconds How long the fetched set stays usable, in seconds.
+     * @param string $reasonPrefix The driver name the failure reasons carry, for example "oauth2" in "oauth2.jwks_unavailable".
      */
     public function __construct(
         private ClientInterface $http,
@@ -50,15 +54,22 @@ final readonly class JwksProvider
         private ClockInterface $clock,
         private string $jwksUrl,
         private int $ttlSeconds,
+        private string $reasonPrefix = 'oauth2',
     ) {}
 
     /**
      * The public key for the given key id, or null when no known key set
      * holds it.
      *
+     * The algorithm is the one the caller has already checked against its
+     * allowlist. It is the default for keys that do not name their own
+     * algorithm; a key that names a different one never verifies the token,
+     * because the JWT library refuses a key whose algorithm does not match
+     * the token's header.
+     *
      * @throws AuthenticationFailed When the issuer cannot be reached or read.
      */
-    public function keyFor(string $kid): ?Key
+    public function keyFor(string $kid, string $algorithm = 'RS256'): ?Key
     {
         $set = $this->cachedSet();
         $justFetched = false;
@@ -71,7 +82,7 @@ final readonly class JwksProvider
             $justFetched = true;
         }
 
-        $key = $this->findKey($set, $kid);
+        $key = $this->findKey($set, $kid, $algorithm);
 
         if ($key !== null) {
             return $key;
@@ -89,7 +100,7 @@ final readonly class JwksProvider
         $fresh = $this->fetch();
         $this->store($fresh);
 
-        return $this->findKey($fresh, $kid);
+        return $this->findKey($fresh, $kid, $algorithm);
     }
 
     /**
@@ -126,25 +137,25 @@ final readonly class JwksProvider
                 $this->requests->createRequest('GET', $this->jwksUrl)->withHeader('Accept', 'application/json'),
             );
         } catch (\Throwable) {
-            throw new AuthenticationFailed('The issuer\'s key set could not be reached (oauth2.jwks_unavailable).');
+            throw new AuthenticationFailed('The issuer\'s key set could not be reached (' . $this->reasonPrefix . '.jwks_unavailable).');
         }
 
         $status = $response->getStatusCode();
 
         if ($status < 200 || $status >= 300) {
-            throw new AuthenticationFailed(sprintf('The issuer\'s key set answered %d, not 2xx (oauth2.jwks_unavailable).', $status));
+            throw new AuthenticationFailed(sprintf('The issuer\'s key set answered %d, not 2xx (%s.jwks_unavailable).', $status, $this->reasonPrefix));
         }
 
         $body = (string) $response->getBody();
 
         if (strlen($body) > self::MAX_BODY_BYTES) {
-            throw new AuthenticationFailed('The issuer\'s key set is too large (oauth2.jwks_unavailable).');
+            throw new AuthenticationFailed('The issuer\'s key set is too large (' . $this->reasonPrefix . '.jwks_unavailable).');
         }
 
         $decoded = json_decode($body, true);
 
         if (! is_array($decoded) || ! isset($decoded['keys']) || ! is_array($decoded['keys']) || $decoded['keys'] === []) {
-            throw new AuthenticationFailed('The issuer\'s key set is not a usable JWKS document (oauth2.jwks_unavailable).');
+            throw new AuthenticationFailed('The issuer\'s key set is not a usable JWKS document (' . $this->reasonPrefix . '.jwks_unavailable).');
         }
 
         return $decoded;
@@ -199,10 +210,10 @@ final readonly class JwksProvider
      *
      * @param array<string, mixed> $set
      */
-    private function findKey(array $set, string $kid): ?Key
+    private function findKey(array $set, string $kid, string $algorithm): ?Key
     {
         try {
-            $keys = JWK::parseKeySet($set, 'RS256');
+            $keys = JWK::parseKeySet($set, $algorithm);
         } catch (InvalidArgumentException|UnexpectedValueException|DomainException) {
             return null;
         }
