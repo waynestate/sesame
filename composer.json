@@ -37,7 +37,8 @@
     "suggest": {
         "guzzlehttp/guzzle": "A PSR-18 client for the cas and oauth2 drivers",
         "laravel/framework": "For the Laravel adapter",
-        "symfony/http-client": "A PSR-18 client for the cas and oauth2 drivers"
+        "symfony/http-client": "A PSR-18 client for the cas and oauth2 drivers",
+        "waynestate/playbook": "WSU's shared values (CAS, Entra, gateway); private, git.wayne.edu"
     },
     "autoload": {
         "psr-4": {
