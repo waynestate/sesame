@@ -39,6 +39,12 @@ final readonly class OidcOptions
      */
     public const CLIENT_AUTH_METHODS = ['client_secret_post', 'client_secret_basic'];
 
+    /**
+     * The longest the discovery document and key set may be cached, in
+     * seconds (one hour).
+     */
+    public const MAX_CACHE_TTL_SECONDS = 3600;
+
     private SensitiveParameterValue $clientSecret;
 
     /**
@@ -176,7 +182,10 @@ final readonly class OidcOptions
             }
         }
 
-        $cacheTtl = self::int($oidc, 'cache_ttl_seconds', 3600, 1, 86400);
+        // At most an hour: a discovery document or key set the issuer has
+        // replaced (a moved endpoint, a revoked key) must not live on in the
+        // cache for a day.
+        $cacheTtl = self::int($oidc, 'cache_ttl_seconds', 3600, 1, self::MAX_CACHE_TTL_SECONDS);
         $stateTtl = self::int($oidc, 'state_ttl_seconds', 600, 60, 3600);
 
         $stepUp = $oidc['step_up'] ?? [];

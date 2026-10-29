@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `oidc` driver: browser sign-in with OpenID Connect (authorization
   code flow with PKCE S256, `state` and `nonce` bound to the session, single
-  use, ten-minute expiry), Microsoft Entra ID first. Discovery is cached
-  through PSR-16 and each endpoint can be overridden; the ID token is
+  use, ten-minute expiry), Microsoft Entra ID first. Discovery and the key set are
+  cached through PSR-16 for `oidc.cache_ttl_seconds` (default and maximum
+  3600) and each endpoint can be overridden; the ID token is
   checked for signature (RS256 by default, never `none` or HMAC), `iss`,
   `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age`
   by default (silent SSO); `step_up=1` adds the configured step-up

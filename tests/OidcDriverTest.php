@@ -1022,6 +1022,33 @@ final class OidcDriverTest extends TestCase
         }
     }
 
+    public function testTheCacheTtlIsAtMostAnHour(): void
+    {
+        self::assertSame(3600, OidcOptions::fromArray($this->settings())->cacheTtlSeconds);
+        self::assertSame(3600, OidcOptions::fromArray(array_merge($this->settings(), ['cache_ttl_seconds' => '3600']))->cacheTtlSeconds);
+
+        foreach ([3601, 86400, 0] as $ttl) {
+            try {
+                OidcOptions::fromArray(array_merge($this->settings(), ['cache_ttl_seconds' => $ttl]));
+                self::fail(sprintf('A cache TTL of %d must be refused.', $ttl));
+            } catch (InvalidConfig $e) {
+                self::assertStringContainsString('from 1 to 3600', $e->getMessage());
+            }
+        }
+    }
+
+    public function testTheDiscoveryDocumentIsRefetchedAfterTheCacheTtl(): void
+    {
+        $driver = $this->driver(['cache_ttl_seconds' => 600]);
+        $this->start($driver);
+        $this->start($driver);
+        self::assertSame(1, $this->op->discoveryFetches);
+
+        $this->clock->advance(601);
+        $this->start($driver);
+        self::assertSame(2, $this->op->discoveryFetches);
+    }
+
     public function testOpenidIsAlwaysRequested(): void
     {
         self::assertSame(['openid', 'profile'], OidcOptions::fromArray(['scopes' => 'profile'] + $this->settings())->scopes);

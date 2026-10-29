@@ -173,6 +173,9 @@ return [
     | when username_claim is missing. preferred_username is user-changeable,
     | so key accounts on iss plus sub, or tid plus oid, if you turn it on.
     |
+    | cache_ttl_seconds (default and maximum 3600) is how long the discovery
+    | document and key set are cached.
+    |
     | claims lists the ID token claims passed through to the user resolver
     | as identity attributes (comma-separated). post_logout_redirect_uri,
     | when set, sends the user through the provider's end-session endpoint
