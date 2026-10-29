@@ -51,8 +51,8 @@ assertions.
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
 
 Set them in the environment, as with every other setting. When the
-environment is empty, the private [waynestate/playbook]
-(https://git.wayne.edu/enterprise-apps/playbook) package supplies the
+environment is empty, the private
+[waynestate/playbook](https://git.wayne.edu/enterprise-apps/playbook) package supplies the
 university's values, so a fresh app boots against the real services without
 a `.env` full of addresses. The environment always wins: a set variable
 beats the playbook, and an empty one counts as unset.
@@ -98,6 +98,9 @@ Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https:
 ```
 git clone https://git.wayne.edu/enterprise-apps/playbook.git
 ```
+
+A fetched `.env.playbook` is plain `KEY=value` lines: copy the ones you need into your app's `.env` (or your
+Citadel environment). SESAME does not read `.env.playbook` itself.
 
 The token is your own: `read_api` for curl, `read_repository` for clone and Composer.
 
