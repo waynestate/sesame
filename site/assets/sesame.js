@@ -60,7 +60,8 @@
 
   /* ------------------------------------------------------------ 4. the lock */
   // Driver notes follow README.md ("Drivers", "The cas driver", "The gateway
-  // driver"). Drivers that are not built yet show no config line.
+  // driver", "oauth2 with Entra", "The oidc driver (Entra sign-in)"). Drivers
+  // that are not built yet show no config line.
   var DRIVERS = {
     fake: { line: "SESAME_DRIVER=fake", opens: true,
       note: "<strong>fake:</strong> local development and tests only. It refuses to boot in production, so this door only opens on your own machine." },
@@ -71,7 +72,9 @@
     saml: { line: null, opens: false,
       note: "<strong>saml:</strong> later, as a direct SAML service provider. The blank hangs on the board, but it isn't cut yet, so it won't turn." },
     oauth2: { line: "SESAME_DRIVER=oauth2", opens: true,
-      note: "<strong>oauth2:</strong> a JWT bearer token, checked against the issuer's key set (Entra first). For APIs. The door opens." }
+      note: "<strong>oauth2:</strong> a JWT bearer token, checked against the issuer's key set (Entra first). For APIs. The door opens." },
+    oidc: { line: "SESAME_DRIVER=oidc", opens: true,
+      note: "<strong>oidc:</strong> browser sign-in with OpenID Connect, Microsoft Entra ID first. Code flow with PKCE; the ID token is checked against the issuer's key set, and state and nonce work once. The only key that brings its own ID. The door opens." }
   };
 
   var lock = $("[data-lock]");

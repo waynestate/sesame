@@ -7,7 +7,7 @@
 <p>
   <img src="docs/readme/badges/php.svg" alt="php ^8.3">
   <img src="docs/readme/badges/license.svg" alt="licence MIT">
-  <img src="docs/readme/badges/drivers.svg" alt="drivers: fake, cas, gateway">
+  <img src="docs/readme/badges/drivers.svg" alt="drivers: fake, cas, gateway, oauth2, oidc">
   <a href="https://github.com/waynestate/sesame/actions/workflows/ci.yml"><img src="https://github.com/waynestate/sesame/actions/workflows/ci.yml/badge.svg" alt="GitHub CI"></a>
 </p>
 
@@ -231,7 +231,7 @@ session at logout. Laravel apps use Laravel's own CSRF token instead: the
 <details>
 <summary><b>Walk round the shop</b>: the front page's counter, pegboard and duplicator</summary>
 <br>
-<div align="center"><img src="docs/readme/gallery.jpg" width="100%" alt="Three cuts of the front page: the hero with SESAME's mark on the pegboard; the pegboard 'One blank per protocol', with fake, cas and gateway marked now and saml and oauth2 marked later; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234."></div>
+<div align="center"><img src="docs/readme/gallery.jpg" width="100%" alt="Three cuts of the front page: the hero with SESAME's mark on the pegboard; the pegboard 'One blank per protocol', with fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked later; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234."></div>
 </details>
 
 ## The cas driver

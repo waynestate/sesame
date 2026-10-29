@@ -39,6 +39,8 @@
   --brass-dark: #8a6a1e;
   --nickel: #ccd3d0;
   --nickel-dark: #66736e;
+  --copper: #c98a5e;         /* the oidc key */
+  --copper-dark: #7a4524;
   --tag: #fffaf0;
   --shadow: 0 1px 0 rgba(29, 43, 39, .06), 0 10px 24px -12px rgba(29, 43, 39, .35);
   --sign: "Bungee", "Lato", "Arial Black", sans-serif;
@@ -323,7 +325,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
   gap: clamp(24px, 4vw, 48px); align-items: start;
 }
 .board {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;
   padding: 26px 18px 22px;
   background-color: var(--peg);
   background-image: radial-gradient(circle, var(--peg-hole) 0 3px, transparent 3.6px);
@@ -337,6 +339,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
   --k: var(--brass); --kd: var(--brass-dark);
 }
 .peg[data-driver="gateway"] { --k: var(--nickel); --kd: var(--nickel-dark); }
+.peg[data-driver="oidc"] { --k: var(--copper); --kd: var(--copper-dark); }
 .peg[data-driver="fake"] { --k: #5b7a72; --kd: #23352f; --hole: var(--peg); }
 .peg--blank { --k: #eef1ef; --kd: #8d9894; }
 .peg__hook {
@@ -419,6 +422,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .door__key svg { display: block; width: 100%; height: auto; overflow: visible; }
 .door__key svg use { transform-origin: 50% 50%; transition: transform .35s ease; }
 .lock[data-driver="gateway"] .door__key { --k: var(--nickel); --kd: var(--nickel-dark); }
+.lock[data-driver="oidc"] .door__key { --k: var(--copper); --kd: var(--copper-dark); }
 .lock[data-driver="fake"] .door__key { --k: #5b7a72; --kd: #23352f; }
 .lock[data-driver="saml"] .door__key, .lock[data-driver="oauth2"] .door__key { --k: #eef1ef; --kd: #8d9894; }
 
@@ -725,10 +729,11 @@ h3 { font-size: 1.2rem; font-weight: 900; }
   .lock { grid-template-columns: minmax(0, 1fr); }
   .door { width: 160px; height: 220px; margin-left: 96px; margin-right: 0; }
   .door__key { width: 100px; }
-  .board { grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 22px 8px 16px; gap: 2px; }
+  .board { grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 22px 6px 16px; gap: 2px; }
   .peg { padding-inline: 0; }
-  .peg__name { font-size: .78rem; }
-  .peg__status { font-size: .62rem; padding: 1px 5px; }
+  .peg__tag { padding: 5px 2px 6px; border-width: 1.5px; }
+  .peg__name { font-size: .7rem; }
+  .peg__status { font-size: .56rem; padding: 1px 4px; letter-spacing: .02em; }
   .steps { grid-template-columns: minmax(0, 1fr); gap: 6px; }
   .step { padding: 8px 10px; font-size: .9rem; gap: 10px; }
   .step__n { width: 26px; height: 26px; font-size: .8rem; }
@@ -746,7 +751,9 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 }
 @media (max-width: 380px) {
   .door { margin-left: 84px; width: 150px; }
-  .peg__status { font-size: .56rem; letter-spacing: .02em; }
+  /* Six across gets crowded on the smallest phones: two rows of three. */
+  .board { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 6px; padding-inline: 8px; }
+  .peg__name { font-size: .78rem; }
   .copy-btn { min-width: 72px; padding: 0 12px; }
 }
 @media (max-width: 419px) {
