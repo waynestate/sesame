@@ -1,12 +1,12 @@
 ---
 title: "SESAME: The way in."
-description: "SESAME is Wayne State's protocol-neutral auth library for PHP: a verified identity for your app, app-native sessions, and drivers behind one config switch. Raw PHP, Laravel/Blade and Inertia/Vue."
+description: "SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue."
 url: https://sesame.apps.wayne.edu/
 llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-![SESAME mark: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
+![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
 Keys cut while you wait · `waynestate/sesame` 0.2
 
@@ -16,7 +16,7 @@ Single Entry, Sessions App-Managed Everywhere.
 
 The way in. One lock, any key.
 
-Wayne State's protocol-neutral auth library for PHP. It hands your app a verified identity and leaves the session to the app: every driver ends in the same place, your app's `findOrImportUser(Identity)`. Switching driver is a config change, not a code change. Open sesame.
+SESAME is the sign-in library for Wayne State's PHP apps. It checks who someone is and hands your app a verified identity. Your app keeps the session. Every driver ends in your app's `findOrImportUser(Identity)`, so moving from CAS to OpenID Connect is an `.env` change.
 
 `$ composer require waynestate/sesame`
 
@@ -30,7 +30,7 @@ The pegboard
 
 ## One blank per protocol
 
-Six blanks hang on the board, one for each driver. The heads differ; the cut does not. Every key that's cut is cut to the same lock, your app's `findOrImportUser(Identity)`. Pick one and try the door.
+Each key on the board is a driver. Five ship today, and SAML hangs there uncut because it isn't built yet. Pick one to see its `.env` line and what it checks. Whichever you pick, the door is the same: your app's `findOrImportUser(Identity)`.
 
 .env
 
@@ -42,20 +42,20 @@ The duplicator
 
 ## Swap the blank. Keep the door.
 
-Re-keying an app from `cas` to `gateway`: the machine traces the cut on the key you have and copies it onto a new blank. Scroll, and it runs.
+This is an app moving from `cas` to `gateway`, the move Citadel apps will make once Drawbridge is live. Until then, `cas` is the driver to use on Citadel. Scroll down and the machine copies the cut onto the new key.
 
 A key duplicator copies the cut of a cas key onto a gateway blank. As it cuts, the config line SESAME_DRIVER=gateway is typed under the new key. The new key goes into the same door, the door opens, and ab1234 is in.
 
-1. **Clamp a gateway blank.** A new head; no cut yet.
-2. **Trace the cut.** The tracer follows the cas key and the cutter copies it. Same lock, same cut.
-3. **The cut is one config line.** `SESAME_DRIVER=gateway`, plus the gateway's key, issuer, audience and trusted proxies. No code changes.
-4. **Open sesame.** Same door, same `findOrImportUser(Identity)`. ab1234 is in.
+1. **Clamp a gateway blank.** It has a new head and no cut yet.
+2. **Trace the cut.** The tracer follows the cas key while the cutter copies it onto the blank.
+3. **The cut is one config line.** Set `SESAME_DRIVER=gateway`, then add the gateway's public key, issuer, audience and trusted proxies. You don't touch your code.
+4. **Open sesame.** Your `findOrImportUser(Identity)` runs as before, and ab1234 is signed in.
 
 Three doorways
 
 ## Same lock, any frame
 
-Raw PHP, Laravel with Blade, or Inertia with Vue. Install it once; the door is the same.
+SESAME works in raw PHP, in Laravel with Blade, and in Laravel with Inertia and Vue. The install line is the same for all three. What changes is how you wire it in.
 
 Install Windows, macOS and Linux: the same line
 
@@ -65,7 +65,7 @@ Job 01
 
 ### Raw PHP
 
-The app owns the session: start it yourself, and let HELMET set the cookie flags. Then ask SESAME who it is.
+Your app owns the session, so you start it and HELMET sets the cookie flags. Set `session.gc_maxlifetime` to 7200, or PHP signs people out after 24 quiet minutes.
 
 ```
 session_start();
@@ -74,13 +74,13 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
-Protected pages read `sesame_user()`. Login and logout stop the script after their redirect.
+Protected pages call `sesame_user()`. Login and logout end the script after they redirect, so nothing below them runs.
 
 Job 02
 
 ### Laravel + Blade
 
-The service provider is discovered on its own. Publish the config, then guard a route.
+Laravel finds the service provider by itself. Publish the config, then put `auth.sesame` on the routes that need a signed-in user.
 
 ```
 php artisan vendor:publish --tag=sesame-config
@@ -89,24 +89,24 @@ Route::get('/dashboard', fn () => view('dashboard'))
     ->middleware('auth.sesame');
 ```
 
-Guests go to `sesame.login`; a JSON guest gets a 401.
+A guest is sent to `sesame.login`. A JSON request from a guest gets a 401.
 
 Job 03
 
 ### Laravel + Inertia/Vue
 
-The same Laravel adapter. The middleware guards the route before any Vue page is sent.
+It's the same Laravel adapter. The middleware runs on the server, so a guest never receives the Vue page.
 
 ```
 Route::get('/vault', fn () => Inertia::render('Vault'))
     ->middleware(['auth.sesame', 'sesame.mfa']);
 ```
 
-`sesame.mfa` also asks that the user's MFA is still good.
+`sesame.mfa` also checks that the user's last MFA is recent enough: 8 hours unless you set another limit.
 
 ### No PHP on the machine?
 
-Docker runs the suite on every supported PHP. The lines work as written in PowerShell, bash and zsh.
+Docker runs the tests on PHP 8.3, 8.4 and 8.5. Paste the lines as they are into PowerShell, bash or zsh.
 
 ```
 docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
@@ -119,11 +119,11 @@ Work orders
 
 ## Have your agent cut it
 
-Five work orders, ready for the coding agent you already use. Copy one, or run it straight in OpenCode, Claude Code, Codex or ChatGPT. Each one says which lock it is for, what the agent may not touch, and to ask at the counter before it guesses.
+Five prompts for whatever coding agent you use. Copy one, or open it in OpenCode, Claude Code, Codex or ChatGPT. Each one names the kind of app it's for and what the agent must leave alone, and every one tells it to ask you before it guesses.
 
 ### Get started with SESAME
 
-Which doorway the app is, which key it needs, and the smallest plan to sign people in with a verified identity.
+Works out what kind of app you have and which driver it needs, then writes a plan. It changes nothing.
 
 A prompt for your coding agent. Copy it as it stands:
 
@@ -156,7 +156,7 @@ Output: the app kind, the driver and why, a settings table (setting, where it co
 
 ### SESAME in a raw PHP app
 
-The core wired by hand: config, the driver, a user resolver, the app's own session, and a logout that only a POST can ring.
+Sets up the config, the driver and a user resolver by hand, on your app's own session, with a logout that only accepts a POST.
 
 A prompt for your coding agent. Copy it as it stands:
 
@@ -185,7 +185,7 @@ Output: the changes as a diff per file, then how to try it locally with the fake
 
 ### SESAME in a Laravel app with Blade
 
-The adapter the Laravel way: published config, a user resolver, the auth.sesame middleware and a CSRF-guarded sign-out.
+Publishes the config, writes a user resolver, puts auth.sesame on your routes and adds a sign-out form with a CSRF token.
 
 A prompt for your coding agent. Copy it as it stands:
 
@@ -214,7 +214,7 @@ Output: the diff, the .env.example lines, then your questions.
 
 ### SESAME in a Laravel app with Inertia and Vue
 
-The same adapter. The middleware guards each route before any Vue page is sent, and the user reaches Vue as a prop.
+Uses the same adapter. Routes are guarded on the server, and Vue gets only the user fields it needs as a prop.
 
 A prompt for your coding agent. Copy it as it stands:
 
@@ -243,7 +243,7 @@ Output: the diff, the .env.example lines, then your questions.
 
 ### Move a Laravel app from wayne-cas to SESAME
 
-The shim keeps the old names, so the move is a mapping, not a rewrite. The agent lists every part before it swaps one.
+The shim keeps the old names, so most of the move is the mapping table. The agent lists every wayne-cas part before it swaps one.
 
 A prompt for your coding agent. Copy it as it stands:
 
@@ -269,7 +269,7 @@ Constraints:
 Output: the parts table (wayne-cas part, file and line, SESAME part), the plan as numbered steps, then your questions.
 ```
 
-The agent reads the same pages you do: [llms.txt](https://sesame.apps.wayne.edu/llms.txt) lists them, [llms-full.txt](https://sesame.apps.wayne.edu/llms-full.txt) holds them in one file, and this page has a [Markdown twin](https://sesame.apps.wayne.edu/index.md). Nothing here phones home; the buttons only copy text or open the tool you picked. No key ever gets to keep the door, and no agent does either.
+The agent reads the same pages you do: [llms.txt](https://sesame.apps.wayne.edu/llms.txt) lists them, [llms-full.txt](https://sesame.apps.wayne.edu/llms-full.txt) holds them in one file, and this page has a [Markdown twin](https://sesame.apps.wayne.edu/index.md). Nothing here phones home. The buttons only copy text or open the tool you picked.
 
 Posted by the door
 
@@ -277,12 +277,12 @@ Posted by the door
 
 1. **The app owns the session.** SESAME never starts one and never touches a cookie.
 2. **A new session ID at login,** before anything is stored in it.
-3. **Fail closed.** A bad answer, bad XML or an empty user ends the login. Nothing falls back to a default user.
-4. **No bare headers.** The gateway driver reads one signed assertion, from a trusted proxy, and each one works once.
-5. **The fake key stays home.** It refuses to boot in production.
-6. **No default locks.** Required settings have no defaults, so nobody is pointed at a server the app owner never chose.
-7. **MFA fails closed.** No sign-in time, no MFA method, or one that's too old: the request is denied.
-8. **Logout shuts the door.** `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"`, so the back button shows nothing.
+3. **Fail closed.** A non-200 answer from the CAS server, malformed XML or an empty user ends the login. There is no default user to fall back on.
+4. **No bare headers.** The gateway driver trusts only a signed assertion that comes through a trusted proxy, and it refuses one it has seen before.
+5. **The fake key stays home.** The fake driver refuses to boot in production.
+6. **No default locks.** Required settings, like the CAS base URL, have no default. Your app only talks to a server you chose.
+7. **MFA fails closed.** If there's no sign-in time or MFA method, or the MFA is too old, the request is denied.
+8. **Logout shuts the door.** It takes a POST with a token, then sends `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"` so the back button can't show a signed-in page.
 
 [Every practice, with its sources](https://github.com/waynestate/sesame/blob/main/BEST_PRACTICES.md)
 
@@ -292,13 +292,13 @@ Posted by the door
 - **Absolute**: 720 min
 - **MFA good for**: 8 h
 
-Both session clocks are checked on every `user()` call. A stale session finds the door locked.
+SESAME checks both session clocks each time `user()` is called. A stale session finds the door locked.
 
 Cross-reference
 
 ## Re-key from wayne-cas
 
-Coming from wayne-cas? You don't rewrite your auth. The shim keeps the old names and behaviour, and says once, in the log, that it's a bridge.
+Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behaviour, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app.
 
 **wayne-cas names and the SESAME names that replace them**
 
@@ -315,24 +315,24 @@ On the key ring
 
 ## SESAME in WELD
 
-One part of Wayne State's app stack. Here's where it sits in a signed-in request, and who else is on the ring.
+SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-in request on Citadel, followed by the rest of the stack.
 
-1. [**Drawbridge**](https://drawbridge.apps.wayne.edu/) signs the assertion at the edge
-2. **SESAME** checks it and hands over an identity
+1. [**Drawbridge**](https://drawbridge.apps.wayne.edu/) signs the assertion at the edge, once it's live
+2. **SESAME** checks it and gives your app an identity
 3. [**HELMET**](https://helmet.apps.wayne.edu/) hardens the session cookie
 4. [**WayneUI**](https://wayneui.apps.wayne.edu/) renders the signed-in page
 
-- [WayneUI](https://wayneui.apps.wayne.edu/)the interface
+- [WayneUI](https://wayneui.apps.wayne.edu/)Wayne State's design system
 - [CREED](https://creed.apps.wayne.edu/)the written standards
 - [PROCTOR](https://proctor.apps.wayne.edu/)checks an app against them
-- [Preflight](https://preflight.apps.wayne.edu/)shared CI
+- [Preflight](https://preflight.apps.wayne.edu/)GitLab CI components
 - SESAMEsigns the user in · you are here
 - [HELMET](https://helmet.apps.wayne.edu/)headers and hardening
-- [Pinstripe](https://pinstripe.apps.wayne.edu/)the coding standard
-- [Sourdough](https://sourdough.apps.wayne.edu/)starters you feed
-- [WELD](https://weld.apps.wayne.edu/)every part, already joined
-- [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway
-- [Squire](https://squire.apps.wayne.edu/)carries the release to Citadel
+- [Pinstripe](https://pinstripe.apps.wayne.edu/)code style presets
+- [Sourdough](https://sourdough.apps.wayne.edu/)starts a raw PHP app
+- [WELD](https://weld.apps.wayne.edu/)Laravel and Vue, stack installed
+- [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway, not live yet
+- [Squire](https://squire.apps.wayne.edu/)the Citadel deploy kit
 - [Rollcall](https://rollcall.apps.wayne.edu/)every app answers “present”
-- [ADVISOR](https://advisor.apps.wayne.edu/)what applies to your app
-- [Booster](https://booster.apps.wayne.edu/)keeps your PHP current
+- [ADVISOR](https://advisor.apps.wayne.edu/)the stack's MCP server
+- [Booster](https://booster.apps.wayne.edu/)upgrades PHP and Laravel
