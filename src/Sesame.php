@@ -86,6 +86,18 @@ final class Sesame
     }
 
     /**
+     * Where to send the user after the sign-in that just completed, or null
+     * when the driver remembers none.
+     *
+     * Only drivers that implement RemembersReturnTo (the oidc driver) answer;
+     * the value has already passed the ReturnTo rule.
+     */
+    public function returnTo(): ?string
+    {
+        return $this->driver instanceof RemembersReturnTo ? $this->driver->returnTo() : null;
+    }
+
+    /**
      * The driver's configured service URL, or null when the driver has none.
      */
     public function serviceUrl(): ?string
@@ -200,9 +212,50 @@ final class Sesame
     }
 
     /**
+     * The form field the raw-PHP logout reads its CSRF token from.
+     */
+    public const LOGOUT_TOKEN_FIELD = 'sesame_logout_token';
+
+    /**
+     * The session key that holds the logout CSRF token.
+     */
+    public const LOGOUT_TOKEN_KEY = 'sesame.logout_token';
+
+    /**
+     * The logout CSRF token for this session, made on first use.
+     *
+     * The raw-PHP logout (sesame_logout()) only runs for a POST that
+     * carries this token, so another site cannot sign the user out with a
+     * link or a hidden form. Laravel apps use Laravel's own CSRF token
+     * instead (the logout route is in the web middleware group).
+     */
+    public function logoutToken(): string
+    {
+        $token = $this->session->get(self::LOGOUT_TOKEN_KEY);
+
+        if (! is_string($token) || strlen($token) !== 64) {
+            $token = bin2hex(random_bytes(32));
+            $this->session->put(self::LOGOUT_TOKEN_KEY, $token);
+        }
+
+        return $token;
+    }
+
+    /**
+     * Whether $token is this session's logout CSRF token. A session that
+     * never made one accepts nothing.
+     */
+    public function isLogoutToken(#[\SensitiveParameter] mixed $token): bool
+    {
+        $expected = $this->session->get(self::LOGOUT_TOKEN_KEY);
+
+        return is_string($expected) && $expected !== '' && is_string($token) && hash_equals($expected, $token);
+    }
+
+    /**
      * The safe URL to send the user to after logout.
      *
-     * The return-to must be an absolute https URL on the service host;
+     * The return-to must be an absolute https URL on the service URL's scheme, host and port;
      * anything else sends the user to the service URL instead, so a logout
      * can never be turned into an open redirect.
      */

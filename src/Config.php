@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame;
 
+use Waynestate\Sesame\Drivers\Oidc\OidcOptions;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
 /**
@@ -32,7 +33,11 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * token's roles claim must include), `oauth2.identity_claim` (default
  * `preferred_username`, only `preferred_username` or `accessid`) and
  * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer, at most
- * `86400`: how long the fetched key set stays usable). The session timeouts are
+ * `86400`: how long the fetched key set stays usable). The `oidc` driver
+ * reads the `oidc` block into an OidcOptions (see that class for the keys;
+ * `oidc.issuer`, `oidc.client_id`, `oidc.client_secret` and
+ * `oidc.redirect_uri` are required, and the secret falls back to the
+ * environment only). The session timeouts are
  * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
  * (default `720`), both optional positive integers. A truthy `slo` (or
  * `single_logout`) key is rejected: the identity provider does not support
@@ -89,12 +94,13 @@ final readonly class Config
         public array $oauth2RequiredRoles = [],
         public string $oauth2IdentityClaim = 'preferred_username',
         public int $oauth2JwksCacheTtlSeconds = 3600,
+        public ?OidcOptions $oidc = null,
     ) {}
 
     /**
      * @param array<string, mixed> $config
      */
-    public static function fromArray(array $config): self
+    public static function fromArray(#[\SensitiveParameter] array $config): self
     {
         $driver = self::requiredString($config, 'driver');
         $environment = self::requiredString($config, 'environment');
@@ -218,6 +224,18 @@ final readonly class Config
             }
         }
 
+        $oidc = null;
+
+        if ($driver === 'oidc') {
+            $oidcConfig = $config['oidc'] ?? [];
+
+            if (! is_array($oidcConfig)) {
+                throw new InvalidConfig('The config key "oidc" must be an array.');
+            }
+
+            $oidc = OidcOptions::fromArray($oidcConfig);
+        }
+
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
         $sessionAbsoluteMinutes = self::optionalPositiveInt($config, 'session.absolute_minutes', 720);
 
@@ -256,6 +274,7 @@ final readonly class Config
             $oauth2RequiredRoles,
             $oauth2IdentityClaim,
             $oauth2JwksCacheTtlSeconds,
+            $oidc,
         );
     }
 

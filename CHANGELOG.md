@@ -9,6 +9,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed: the proof page moves to a private site that needs a Wayne State sign-in.
 
+### Added
+
+- The `oidc` driver: browser sign-in with OpenID Connect (authorization
+  code flow with PKCE S256, `state` and `nonce` bound to the session, single
+  use, ten-minute expiry), Microsoft Entra ID first. Discovery and the key set are
+  cached through PSR-16 for `oidc.cache_ttl_seconds` (default and maximum
+  3600) and each endpoint can be overridden; the ID token is
+  checked for signature (RS256 by default, never `none` or HMAC), `iss`,
+  `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age`
+  by default (silent SSO); `step_up=1` adds the configured step-up
+  parameters and requires a fresh `auth_time` (never in the future, and
+  within `max_age`, 300 seconds when none is configured). Username from `accessid`
+  (the `preferred_username` fallback is an opt-in, off by default, because
+  users can change that claim), `iss`, `sub`, `tid` and `oid` passed to
+  the resolver as stable account keys, roles from `wsuRoles`, MFA from
+  `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in
+  `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver
+  as attributes. Optional logout through Entra with
+  `post_logout_redirect_uri`. Token, discovery and key-set requests never
+  follow a redirect: a 3xx answer is an error (`oidc.token_redirect`,
+  `oidc.discovery_unavailable`, `oidc.jwks_unavailable`), so the code,
+  verifier and secret cannot be resent elsewhere. See "The oidc driver
+  (Entra sign-in)".
+- The oidc driver stands on `league/oauth2-client` (suggested, not
+  required; a clear error names the install command when it is missing)
+  for the OAuth mechanics, and on SESAME's own firebase/php-jwt key-set
+  code for the ID token. Why: `docs/oidc-library-choice.md`.
+- Laravel: `GET /login/callback` (`sesame.callback`) for the oidc driver,
+  the redirect URI defaulting to it, and `sesame.mfa` reauth asking the
+  provider for a step-up.
+- `Sesame::returnTo()` and the `RemembersReturnTo` interface, so
+  `sesame_login()` and the Laravel route send the user to the checked
+  return-to address after a callback.
+- `Setting::env()`, and `SESAME_OIDC_CLIENT_SECRET` read from the
+  environment only, never from the playbook. The secret is held in a
+  `SensitiveParameterValue` (hidden from `var_export`, `json_encode`, dumps
+  and array casts; `serialize` refuses), and the parameters that carry it,
+  the ID token, the code or the PKCE verifier are marked
+  `#[\SensitiveParameter]`.
+- README: a loud note that raw-PHP apps must raise
+  `session.gc_maxlifetime` to at least SESAME's idle timeout.
+
+### Changed
+
+- Raw PHP: `sesame_logout()` is POST-only with a CSRF token. It runs only
+  when the POST body's `sesame_logout_token` matches the session's token
+  (new `sesame_logout_token()`, `Sesame::logoutToken()` and
+  `Sesame::isLogoutToken()`); a GET answers 405 and a bad token 403, and
+  neither touches the session. Apps must change a logout link to a POST
+  form carrying the token. The Laravel `POST /logout` route stays in the
+  `web` group and so under Laravel's CSRF check, now covered by a test.
+
+- Laravel: the Guzzle client SESAME builds when the app binds none has
+  redirects off.
+- `ReturnTo` (every driver's login and logout return-to) now requires the
+  service URL's scheme, host and effective port, and refuses a URL with a
+  user name or password; before, the host alone was compared, so
+  `https://app.example.test:8443/` passed for a service on 443. Plain http
+  is accepted only for a localhost or 127.0.0.1 service URL.
+- `DriverFactory::make()` takes the app session as an optional seventh
+  argument (the oidc driver needs it).
+- `JwksProvider` takes the algorithm per key lookup and a reason prefix,
+  so the oauth2 and oidc drivers share it.
+- `JwksProvider`: the first (cold) key-set fetch no longer starts the
+  one-minute refetch cooldown, so a key rotated just after it is picked up
+  by the next unknown key id (oauth2 and oidc).
+
 ## [0.1.3] - 2026-10-29
 
 ### Added

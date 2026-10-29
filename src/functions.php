@@ -90,15 +90,27 @@ if (! function_exists('sesame_login')) {
      * redirect is sent: the ticket is single-use, so leaving it in that one
      * refused URL is harmless.
      *
+     * The oidc driver's callback (a request with state and a code or an
+     * error) counts as a ticket here: it always goes to the driver, and a
+     * completed sign-in is sent on to the checked return-to the sign-in
+     * began with, or to the service URL. A request with step_up=1 always
+     * goes to the driver too, so a signed-in user can be asked for a fresh
+     * sign-in.
+     *
      * @return mixed The app's user, or null when the resolver refused the
      *               identity.
      */
     function sesame_login(): mixed
     {
         $request = sesame_request();
-        $ticket = $request->getQueryParams()['ticket'] ?? null;
+        $query = $request->getQueryParams();
+        $ticket = $query['ticket'] ?? null;
 
-        if ($ticket === null) {
+        if ($ticket === null && isset($query['state']) && (isset($query['code']) || isset($query['error']))) {
+            $ticket = $query['state'];
+        }
+
+        if ($ticket === null && ! isset($query['step_up'])) {
             $user = sesame()->user();
 
             if ($user !== null) {
@@ -114,7 +126,7 @@ if (! function_exists('sesame_login')) {
         }
 
         if ($ticket !== null && $result !== null) {
-            $serviceUrl = sesame()->serviceUrl();
+            $serviceUrl = sesame()->returnTo() ?? sesame()->serviceUrl();
 
             if ($serviceUrl !== null) {
                 header('Location: ' . $serviceUrl, true, 302);
@@ -190,6 +202,24 @@ if (! function_exists('sesame_require_context')) {
     }
 }
 
+if (! function_exists('sesame_logout_token')) {
+
+    /**
+     * The logout CSRF token for this session, for the logout form:
+     *
+     *     <form method="post" action="/logout.php">
+     *       <input type="hidden" name="sesame_logout_token" value="<?= sesame_logout_token() ?>">
+     *       <button>Sign out</button>
+     *     </form>
+     *
+     * The token is hex, so it needs no escaping in HTML.
+     */
+    function sesame_logout_token(): string
+    {
+        return sesame()->logoutToken();
+    }
+}
+
 if (! function_exists('sesame_logout')) {
 
     /**
@@ -199,12 +229,37 @@ if (! function_exists('sesame_logout')) {
      * logout URL when the driver has one, otherwise to the safe return-to,
      * and stops the script, so no protected code runs after the redirect.
      *
-     * The return-to must be an absolute https URL on the service host;
+     * The return-to must be an absolute https URL on the service URL's scheme, host and port;
      * anything else sends the user to the service URL instead, so a logout
      * can never be turned into an open redirect.
+     *
+     * CSRF guard: the logout runs only for a POST whose body carries the
+     * session's token in the "sesame_logout_token" field (see
+     * sesame_logout_token()). A GET answers 405 with "Allow: POST", and a
+     * POST without the right token answers 403; both leave the session
+     * alone and stop the script. So another site cannot sign the user out
+     * with an image, a link or a forged form.
      */
     function sesame_logout(string $returnTo): void
     {
+        $method = strtoupper(is_string($_SERVER['REQUEST_METHOD'] ?? null) ? $_SERVER['REQUEST_METHOD'] : 'GET');
+
+        if ($method !== 'POST' || ! sesame()->isLogoutToken($_POST[Sesame::LOGOUT_TOKEN_FIELD] ?? null)) {
+            header('Cache-Control: no-store', true);
+            header('Content-Type: text/plain; charset=utf-8', true);
+
+            if ($method !== 'POST') {
+                header('Allow: POST', true);
+                http_response_code(405);
+                echo 'Sign out with a POST form that carries sesame_logout_token.';
+            } else {
+                http_response_code(403);
+                echo 'The sign-out form is missing or has a stale sesame_logout_token. Reload the page and try again.';
+            }
+
+            exit;
+        }
+
         $url = sesame()->logout($returnTo);
 
         // Keep the logout response out of any cache and clear the site's

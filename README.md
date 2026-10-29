@@ -175,6 +175,17 @@ reads the user with `sesame_user()`:
 $user = sesame_user();
 ```
 
+> **Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's
+> default is 1440 seconds (24 minutes), and PHP's garbage collector deletes
+> session data older than that, so a raw-PHP app on the defaults signs
+> people out after 24 quiet minutes, long before SESAME's 120-minute idle
+> timeout. SESAME never starts the session (S2), so it cannot change this
+> for you: set `session.gc_maxlifetime = 7200` (your
+> `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call
+> `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
+> SESAME's timeouts stay the authority; this only stops PHP from ending the
+> session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
+
 On logout, both paths send `Cache-Control: no-store` and
 `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser
 cannot show a signed-in page; `"cookies"` is left out on purpose, because it
@@ -182,6 +193,29 @@ would clear every cookie on the host and sign the user out of every other app
 on wayne.edu, not just this one. Single logout is not supported, the
 identity provider cannot sign the user out of the app's other sessions, so
 SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
+
+**Logout is POST-only, with a CSRF token.** `sesame_logout()` runs only for
+a POST whose body carries the session's `sesame_logout_token`; a GET
+answers 405 (`Allow: POST`) and a POST without the right token answers 403,
+and both leave the session alone. So another site cannot sign the user out
+with an image, a link or a forged form. Put the token in the sign-out form:
+
+```php
+<form method="post" action="/logout.php">
+  <input type="hidden" name="sesame_logout_token" value="<?= sesame_logout_token() ?>">
+  <button>Sign out</button>
+</form>
+```
+
+```php
+// logout.php
+sesame_logout('https://app.example.test/');
+```
+
+The token lives in the session, is made on first use and dies with the
+session at logout. Laravel apps use Laravel's own CSRF token instead: the
+`POST /logout` route is in the `web` middleware group, so a form needs
+`@csrf`.
 
 ## Drivers
 
@@ -191,7 +225,8 @@ SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. A signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. |
 | `saml` | Later. Direct SP. |
-| `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. |
+| `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
+| `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs `league/oauth2-client`. |
 
 <details>
 <summary><b>Walk round the shop</b>: the front page's counter, pegboard and duplicator</summary>
@@ -427,9 +462,233 @@ optional `auth_time` and `amr` claims become the identity's MFA facts, for
 The key set is fetched once and kept for `oauth2.jwks_cache_ttl_seconds`. When
 a token carries a key id the cached set does not know, the provider refetches
 the set once, and at most once a minute, so a rotated key is picked up without
-hammering the issuer. Everything about the fetch fails closed: an unreachable
+hammering the issuer. The first fetch does not start that minute, so a key
+rotated just after it is still picked up at once. Everything about the fetch fails closed: an unreachable
 issuer, a non-2xx answer, or an empty or malformed key set all refuse the
 sign-in rather than let it through.
+
+## The oidc driver (Entra sign-in)
+
+Open sesame, said straight to Entra. The oidc driver signs a person in
+through the browser with OpenID Connect: the authorization code flow with
+PKCE (S256), the ID token checked against the issuer's key set. It is the
+Entra-direct path beside `cas` and `gateway` (DRAWBRIDGE), and it
+needs `league/oauth2-client`, which SESAME suggests but does not require:
+
+```
+composer require league/oauth2-client
+```
+
+Without it, building the driver fails with `The oidc driver needs
+league/oauth2-client. Install it with: composer require league/oauth2-client`.
+Why that library, and what else was weighed:
+[docs/oidc-library-choice.md](docs/oidc-library-choice.md).
+
+How a sign-in runs:
+
+1. A request to the login URL without a `code` starts it. The driver makes a
+   fresh `state` and `nonce` and a PKCE verifier, keeps all three in the
+   app's session (bound to this browser, single use, gone after ten
+   minutes), and redirects to the authorization endpoint with
+   `response_mode=query`.
+2. Entra sends the browser back to the redirect URI with `code` and
+   `state`. The driver takes the pending sign-in for that state out of the
+   session first (a replayed callback finds nothing), exchanges the code with
+   the verifier and the client secret, and validates the ID token: signature
+   against the JWKS (RS256 by default, never `none` or HMAC), `iss` exactly,
+   `aud` is the client id, `azp` when present, `exp`, `nbf` and `iat` with a
+   60-second leeway, and the `nonce`. No request to the provider (token,
+   discovery, key set) follows a redirect: a 3xx answer fails the sign-in,
+   so the code, the verifier and the secret are never resent elsewhere.
+3. The identity goes to the app's `findOrImportUser(Identity)`, and the core
+   regenerates the session ID, as for every driver. The access token and the
+   ID token are never stored.
+
+**SSO stays silent.** No `prompt` and no `max_age` are sent by default, so a
+person already signed in to Entra (Outlook, Teams, Canvas) is signed in
+without a click.
+
+**Step-up.** A login request with `step_up=1` adds the app's configured
+step-up parameters: `prompt=login` by default, and optionally `max_age`,
+`acr_values` and `claims`. The request can ask for a step-up but cannot
+choose what it is; only config feeds those values. The callback then
+requires a fresh `auth_time`: not in the future (beyond the leeway), not
+before the sign-in started when `prompt=login` was sent, and within
+`max_age`, which is 300 seconds when `oidc.step_up.max_age` is not set, so
+a step-up is never unbounded. In Laravel, `sesame.mfa` with
+`mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
+
+**Identity.** The username comes from `oidc.username_claim` (default
+`accessid`, the UPN's prefix). When the token has no such claim, the
+sign-in fails with `oidc.missing_claim` and the error names the settings to
+change. `oidc.username_fallback` (off by default) uses the part of
+`preferred_username` before the `@` instead.
+
+> **Warning:** `preferred_username` can be changed by the user or an admin
+> (a renamed UPN, a guest account), so a fallback username is no stable
+> account key. Turn the fallback on only when the app keys its users on
+> something else (`iss` plus `sub`, or `tid` plus `oid`).
+
+The roles claim (`oidc.roles_claim`,
+default `wsuRoles`) becomes the `roles` attribute; a mapped claim that
+arrives under a custom-claim namespace
+(`http://schemas.example.test/claims/wsuRoles` or `extn.wsuRoles`) is found
+by its short name. The exact name and the namespaced forms are counted
+together: two or more candidates (an exact `wsuRoles` beside a namespaced
+one, say) count as none. `oidc.claims` (default
+`wsuRoles,accessid`) lists the claims passed to the resolver under their own
+names, so `$identity->attributes['wsuRoles']` works. `iss`, `sub`, `oid`,
+`tid`, `email`, `name` and `preferred_username` are attributes too; key the
+app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the
+username alone.
+
+**MFA.** `auth_time` becomes the identity's MFA time and `amr` its methods,
+with the cas driver's rules: the driver never invents a sign-in time, and
+without an MFA method in `amr` the MFA check fails closed. Entra's v2 ID
+tokens often carry no `amr`; when Conditional Access enforces MFA for this
+app, `oidc.assume_mfa` adds `mfa` to the methods, exactly like
+`cas.assume_mfa`. `acrs` (authentication contexts `c1` to `c99`) feeds
+`hasAuthContext()`.
+
+**Return-to.** A login request may carry `return_to`. It is kept only when
+it passes the ReturnTo rule (an absolute https URL with the redirect URI's
+scheme, host and port, and no user name or password); anything else is
+dropped, so it can never be an open redirect. After
+the callback, `sesame_login()` and the Laravel route send the user there.
+
+**Logout.** The app session is cleared first, as for every driver. With
+`oidc.post_logout_redirect_uri` set, the user then goes through Entra's
+`end_session_endpoint` with that `post_logout_redirect_uri`, which must also
+be registered on the app registration. Without it, logout stays local and
+the Entra session lives on (the next sign-in is silent).
+
+### Raw PHP
+
+```php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__.'/vendor/autoload.php';
+
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Session\NativeSession;
+use Waynestate\Sesame\Support\Setting;
+
+ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+session_start();
+
+$config = Config::fromArray([
+    'driver' => 'oidc',
+    'environment' => 'production',
+    'oidc' => [
+        'issuer' => Setting::get('SESAME_OIDC_ISSUER') ?? Setting::get('SESAME_OAUTH2_ISSUER'),
+        'client_id' => Setting::get('SESAME_OIDC_CLIENT_ID'),
+        // client_secret is left out: it is read from SESAME_OIDC_CLIENT_SECRET
+        // in the environment, never from the playbook.
+        'redirect_uri' => 'https://app.example.test/login.php',
+        'post_logout_redirect_uri' => 'https://app.example.test/',
+    ],
+]);
+
+$session = new NativeSession();
+$driver = DriverFactory::make(
+    $config,
+    new \GuzzleHttp\Client(['allow_redirects' => false, 'timeout' => 10]),
+    new Psr17Factory(),
+    null,
+    null,
+    new Psr16Cache(new FilesystemAdapter('sesame')), // optional; without it, discovery and keys are fetched per request
+    $session,
+);
+
+sesame(new Sesame($driver, new MyUserResolver(), $session, $config));
+
+// login.php: starts the sign-in, finishes it on the callback, then sends the
+// user to the checked return_to or back here.
+$user = sesame_login();
+```
+
+A protected page sends a guest to `login.php?return_to=<its own https URL>`,
+and a page that needs fresh credentials to `login.php?step_up=1`.
+
+### Laravel
+
+```
+SESAME_DRIVER=oidc
+SESAME_OIDC_CLIENT_ID=<application (client) id>
+SESAME_OIDC_CLIENT_SECRET=<client secret value>
+# SESAME_OIDC_ISSUER falls back to SESAME_OAUTH2_ISSUER (and the playbook).
+# SESAME_OIDC_REDIRECT_URI defaults to the app's /login/callback route.
+SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
+```
+
+The adapter registers `GET /login/callback` (`sesame.callback`) beside
+`GET /login`, passes the Laravel session and cache to the driver, and after
+the callback redirects to the checked `return_to`, or to the page
+`auth.sesame` saved. Laravel's default `SameSite=Lax` session cookie is
+right: Entra's redirect back is a top-level GET, which Lax allows (S41);
+`Strict` would drop the cookie and fail every callback with `oidc.state`.
+
+### Config keys
+
+| Key | Env | Default | Meaning |
+|---|---|---|---|
+| `oidc.issuer` | `SESAME_OIDC_ISSUER`, then `SESAME_OAUTH2_ISSUER` | none | The issuer, exactly as the discovery document's `issuer`. Required. |
+| `oidc.client_id` | `SESAME_OIDC_CLIENT_ID` | none | The app registration's client id; the ID token's `aud`. Required. |
+| `oidc.client_secret` | `SESAME_OIDC_CLIENT_SECRET` | none | Environment only, never the playbook, never logged. Held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well. Required. |
+| `oidc.redirect_uri` | `SESAME_OIDC_REDIRECT_URI` | Laravel: `/login/callback` | Where Entra sends the browser back. https, or `http://localhost` for development. Required in raw PHP. |
+| `oidc.scopes` | `SESAME_OIDC_SCOPES` | `openid profile email` | `openid` is always added. |
+| `oidc.client_auth` | `SESAME_OIDC_CLIENT_AUTH` | `client_secret_post` | Or `client_secret_basic`. |
+| `oidc.username_claim` | `SESAME_OIDC_USERNAME_CLAIM` | `accessid` | The claim the username comes from. |
+| `oidc.username_fallback` | `SESAME_OIDC_USERNAME_FALLBACK` | `false` | Opt in to the `preferred_username` prefix when the claim is missing. `preferred_username` is user-changeable; see the warning above. |
+| `oidc.roles_claim` | `SESAME_OIDC_ROLES_CLAIM` | `wsuRoles` | The claim that becomes the `roles` attribute; namespaced forms are found. |
+| `oidc.claims` | `SESAME_OIDC_CLAIMS` | `wsuRoles,accessid` | Claims passed to the resolver as attributes under their own names. |
+| `oidc.assume_mfa` | `SESAME_OIDC_ASSUME_MFA` | `false` | Count a sign-in as MFA when Conditional Access enforces it for the app. |
+| `oidc.algorithms` | none | `['RS256']` | The ID token algorithms allowed: `RS256`, `RS384`, `RS512` only. |
+| `oidc.leeway_seconds` | `SESAME_OIDC_LEEWAY_SECONDS` | `60` | Clock skew on `exp`, `nbf` and `iat`, at most 300. |
+| `oidc.post_logout_redirect_uri` | `SESAME_OIDC_POST_LOGOUT_REDIRECT_URI` | none | Set it to log out of Entra too. |
+| `oidc.authorization_endpoint`, `oidc.token_endpoint`, `oidc.jwks_uri`, `oidc.end_session_endpoint` | `SESAME_OIDC_AUTHORIZATION_ENDPOINT` and so on | discovered | Overrides; with the first three set, discovery is skipped. |
+| `oidc.cache_ttl_seconds` | `SESAME_OIDC_CACHE_TTL_SECONDS` | `3600` | How long the discovery document and key set are kept, 1 to 3600 seconds (at most an hour, so a moved endpoint or revoked key does not live on). |
+| `oidc.cache_store` | `SESAME_OIDC_CACHE_STORE` | the default store | Laravel only. |
+| `oidc.state_ttl_seconds` | none | `600` | How long a started sign-in may take, 60 to 3600 seconds. |
+| `oidc.step_up.prompt` | `SESAME_OIDC_STEP_UP_PROMPT` | `login` | Sent on a step-up only; `login` or empty. |
+| `oidc.step_up.max_age` | `SESAME_OIDC_STEP_UP_MAX_AGE` | none (300 enforced) | Seconds; sent on a step-up only, and enforced on `auth_time`. Unset, it is not sent, but a step-up `auth_time` older than 300 seconds still fails. |
+| `oidc.step_up.acr_values` | `SESAME_OIDC_STEP_UP_ACR_VALUES` | none | Sent on a step-up only. |
+| `oidc.step_up.claims` | `SESAME_OIDC_STEP_UP_CLAIMS` | none | A JSON object (for example an `acrs` request for an Entra authentication context), sent on a step-up only. |
+
+### The Entra app registration
+
+What the developer (or the Entra admin) sets on the app registration:
+
+- **Platform: Web**, with the redirect URI exactly as `oidc.redirect_uri`
+  (for Laravel, `https://<app host>/login/callback`). Add
+  `http://localhost:<port>/login/callback` only on a development
+  registration.
+- **Post-logout redirect**: when you set `oidc.post_logout_redirect_uri`,
+  register that address as a redirect URI too.
+- **Certificates and secrets**: a client secret, stored only in the app's
+  environment (`SESAME_OIDC_CLIENT_SECRET`); rotate it before it expires.
+- **Authentication**: leave the implicit grant's "ID tokens" and "Access
+  tokens" boxes unchecked; the code flow does not need them.
+- **Token configuration**: add the optional ID token claim `auth_time`
+  (and `email` if the app wants it). Ask the Entra admin for the mapped
+  `wsuRoles` and `accessid` claims (a claims-mapping policy); if they arrive
+  under a namespace, SESAME finds them by their short names.
+- **Enterprise application, Properties: Assignment required = Yes**, then
+  assign the groups that may sign in. This is what limits an app to, for
+  example, employees only: Entra refuses everyone else before SESAME sees
+  them. Check roles in the app as well (S25).
+- **API permissions**: `openid`, `profile` and `email` (Microsoft Graph,
+  delegated) are enough.
+
+Use the v2.0 issuer (`https://login.microsoftonline.com/<tenant>/v2.0`); the
+tenant id comes from the playbook or the environment, never from code.
 
 ## Session timeouts
 
@@ -500,8 +759,9 @@ if (! $result->satisfied) {
 }
 ```
 
-Only the gateway driver reports MFA facts on its own: it reads them from the
-signed assertion's `auth_time` and `amr` claims. The cas driver reports none
+The gateway and oidc drivers report MFA facts from the token's `auth_time`
+and `amr` claims (the oidc driver also has `oidc.assume_mfa`, see "The oidc
+driver (Entra sign-in)"). The cas driver reports none
 by default, because CAS carries no usable MFA signal, so a cas identity
 fails the check. With `cas.assume_mfa` on, a cas identity carries `mfa` in
 its `amr` and its MFA time from the CAS `authenticationDate` attribute, so
@@ -551,8 +811,9 @@ Route::get('/vault', [VaultController::class, 'index'])
 A request without the context gets a 403, or a JSON 403 with a `message` for
 JSON requests. A route that names no context fails closed.
 
-Only the gateway driver reports authentication contexts, because only the
-gateway performs step-up. A cas identity has none, so a cas identity always
+The gateway and oidc drivers report authentication contexts (the oidc
+driver from the ID token's `acrs` claim, after a step-up that asked for one
+through `oidc.step_up.claims`). A cas identity has none, so a cas identity always
 fails the check.
 
 ## Laravel
@@ -572,7 +833,7 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 |---|---|---|---|
-| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2` or `fake`. |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc` or `fake`. The oidc keys are in "The oidc driver (Entra sign-in)". |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
@@ -607,7 +868,8 @@ The routes, when `routes` is true:
 | Method | Path | Name |
 |---|---|---|
 | `GET` | `/login` | `sesame.login` |
-| `POST` | `/logout` | `sesame.logout` |
+| `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
+| `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout
 routes. The `auth.sesame` middleware still points at the `sesame.login` route

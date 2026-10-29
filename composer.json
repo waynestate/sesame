@@ -27,7 +27,9 @@
         "symfony/http-foundation": "^6.4 || ^7.4"
     },
     "require-dev": {
+        "guzzlehttp/guzzle": "^7.9 || ^8.0",
         "laravel/pint": "^1.32",
+        "league/oauth2-client": "^2.9.1",
         "orchestra/testbench": "^10.0 || ^11.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
@@ -35,9 +37,10 @@
         "waynestate/pinstripe": "^0.1"
     },
     "suggest": {
-        "guzzlehttp/guzzle": "A PSR-18 client for the cas and oauth2 drivers",
+        "guzzlehttp/guzzle": "A PSR-18 client for the cas, oauth2 and oidc drivers",
         "laravel/framework": "For the Laravel adapter",
-        "symfony/http-client": "A PSR-18 client for the cas and oauth2 drivers",
+        "league/oauth2-client": "Required by the oidc driver (browser sign-in to Entra): the authorization code flow with PKCE and the token request",
+        "symfony/http-client": "A PSR-18 client for the cas, oauth2 and oidc drivers",
         "waynestate/playbook": "WSU's shared values (CAS, Entra, gateway); private, git.wayne.edu"
     },
     "autoload": {

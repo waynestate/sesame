@@ -67,6 +67,34 @@ final class LoginRouteTest extends LaravelTestCase
         self::assertNull($app->make(Sesame::class)->user());
     }
 
+    public function testLogoutIsAPostRouteInTheWebGroupSoCsrfApplies(): void
+    {
+        $app = $this->app;
+        self::assertNotNull($app);
+        $route = $app['router']->getRoutes()->getByName('sesame.logout');
+
+        self::assertNotNull($route);
+        self::assertSame(['POST'], $route->methods());
+        self::assertContains('web', $route->gatherMiddleware());
+
+        $this->get('/logout')->assertStatus(405);
+    }
+
+    public function testLogoutWithoutACsrfTokenIsRefusedOutsideUnitTests(): void
+    {
+        $app = $this->app;
+        self::assertNotNull($app);
+        // Laravel skips its CSRF check while unit tests run; outside them the
+        // web group's CSRF middleware must refuse a forged logout.
+        $app['env'] = 'local';
+
+        $response = $this->withSession(['sesame.user' => 'the-user'])->post('/logout');
+
+        $response->assertStatus(419);
+        // The logout route never ran: it is what sends Clear-Site-Data.
+        self::assertFalse($response->headers->has('Clear-Site-Data'));
+    }
+
     public function testLogoutSendsNoStoreAndClearSiteData(): void
     {
         $response = $this->withSession(['sesame.user' => 'the-user'])

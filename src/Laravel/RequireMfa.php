@@ -43,7 +43,11 @@ class RequireMfa
         }
 
         if (config('sesame.mfa.on_failure', 'deny') === 'reauth') {
-            return redirect()->guest(route('sesame.login'));
+            // The oidc driver can ask the provider for a fresh sign-in; the
+            // other drivers sign in again the usual way.
+            $parameters = config('sesame.driver') === 'oidc' ? ['step_up' => 1] : [];
+
+            return redirect()->guest(route('sesame.login', $parameters));
         }
 
         return response($result->message(), 403);
