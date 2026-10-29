@@ -41,6 +41,20 @@ use Waynestate\Sesame\Exception\InvalidConfig;
 final readonly class Config
 {
     /**
+     * The environment setting behind each config key the package resolves
+     * from the environment or waynestate/playbook, so a missing value can
+     * name the setting the developer actually sets.
+     *
+     * @var array<string, string>
+     */
+    private const ENV_SETTINGS = [
+        'cas.base_url' => 'SESAME_CAS_BASE_URL',
+        'gateway.issuer' => 'SESAME_GATEWAY_ISSUER',
+        'oauth2.issuer' => 'SESAME_OAUTH2_ISSUER',
+        'oauth2.jwks_url' => 'SESAME_OAUTH2_JWKS_URL',
+    ];
+
+    /**
      * @param array<string, list<string>> $fakeAttributes
      * @param list<string> $gatewayTrustedProxies
      * @param list<string> $oauth2RequiredScopes
@@ -256,17 +270,42 @@ final readonly class Config
 
         foreach (explode('.', $path) as $segment) {
             if (! is_array($value) || ! array_key_exists($segment, $value)) {
-                throw new InvalidConfig(sprintf('Missing required config key "%s".', $path));
+                throw new InvalidConfig(self::missingRequiredValueMessage($path));
             }
 
             $value = $value[$segment];
         }
 
         if (! is_string($value) || $value === '') {
+            if (isset(self::ENV_SETTINGS[$path])) {
+                throw new InvalidConfig(self::missingRequiredValueMessage($path));
+            }
+
             throw new InvalidConfig(sprintf('The config key "%s" must be a non-empty string.', $path));
         }
 
         return $value;
+    }
+
+    /**
+     * The error for a required value that is missing or empty.
+     *
+     * The routed settings (the ones resolved from the environment or
+     * waynestate/playbook) name the environment setting and point at the
+     * playbook; every other key names its config path.
+     */
+    private static function missingRequiredValueMessage(string $path): string
+    {
+        $setting = self::ENV_SETTINGS[$path] ?? null;
+
+        if ($setting !== null) {
+            return sprintf(
+                'Missing required setting %s. Set it in the environment, or install waynestate/playbook (see the README).',
+                $setting
+            );
+        }
+
+        return sprintf('Missing required config key "%s".', $path);
     }
 
     /**

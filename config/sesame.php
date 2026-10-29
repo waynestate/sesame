@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+use Waynestate\Sesame\Support\Setting;
+
+/*
+| The four shared WSU values (cas.base_url, gateway.issuer, oauth2.issuer
+| and oauth2.jwks_url) resolve through Setting::get(): the environment
+| wins, and when it is empty the private waynestate/playbook package
+| supplies the university's values (see the README, "WSU values
+| (PLAYBOOK)"). Every other setting stays environment-only.
+*/
+
 return [
 
     /*
@@ -35,7 +45,7 @@ return [
     */
 
     'cas' => [
-        'base_url' => env('SESAME_CAS_BASE_URL'),
+        'base_url' => Setting::get('SESAME_CAS_BASE_URL'),
         'service_url' => env('SESAME_CAS_SERVICE_URL'),
         'protocol' => env('SESAME_CAS_PROTOCOL', '2.0'),
         // Leave off against Academica: it issues no ticket for renew=true.
@@ -88,7 +98,7 @@ return [
         'header' => env('SESAME_GATEWAY_HEADER', 'X-Sesame-Assertion'),
         'algorithm' => env('SESAME_GATEWAY_ALGORITHM', 'ES256'),
         'public_key' => env('SESAME_GATEWAY_PUBLIC_KEY'),
-        'issuer' => env('SESAME_GATEWAY_ISSUER'),
+        'issuer' => Setting::get('SESAME_GATEWAY_ISSUER'),
         'audience' => env('SESAME_GATEWAY_AUDIENCE'),
         'leeway_seconds' => env('SESAME_GATEWAY_LEEWAY_SECONDS', 30),
         'trusted_proxies' => array_filter(array_map('trim', explode(',', (string) env('SESAME_GATEWAY_TRUSTED_PROXIES', '')))),
@@ -126,8 +136,8 @@ return [
     */
 
     'oauth2' => [
-        'issuer' => env('SESAME_OAUTH2_ISSUER'),
-        'jwks_url' => env('SESAME_OAUTH2_JWKS_URL'),
+        'issuer' => Setting::get('SESAME_OAUTH2_ISSUER'),
+        'jwks_url' => Setting::get('SESAME_OAUTH2_JWKS_URL'),
         'audience' => env('SESAME_OAUTH2_AUDIENCE'),
         'leeway_seconds' => env('SESAME_OAUTH2_LEEWAY_SECONDS', 60),
         'required_scopes' => [],
