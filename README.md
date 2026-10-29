@@ -488,8 +488,10 @@ without a click.
 step-up parameters: `prompt=login` by default, and optionally `max_age`,
 `acr_values` and `claims`. The request can ask for a step-up but cannot
 choose what it is; only config feeds those values. The callback then
-requires a fresh `auth_time` (not before the sign-in started, and within
-`max_age` when one was sent). In Laravel, `sesame.mfa` with
+requires a fresh `auth_time`: not in the future (beyond the leeway), not
+before the sign-in started when `prompt=login` was sent, and within
+`max_age`, which is 300 seconds when `oidc.step_up.max_age` is not set, so
+a step-up is never unbounded. In Laravel, `sesame.mfa` with
 `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
 
 **Identity.** The username comes from `oidc.username_claim` (default
@@ -629,7 +631,7 @@ right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 | `oidc.cache_store` | `SESAME_OIDC_CACHE_STORE` | the default store | Laravel only. |
 | `oidc.state_ttl_seconds` | none | `600` | How long a started sign-in may take, 60 to 3600 seconds. |
 | `oidc.step_up.prompt` | `SESAME_OIDC_STEP_UP_PROMPT` | `login` | Sent on a step-up only; `login` or empty. |
-| `oidc.step_up.max_age` | `SESAME_OIDC_STEP_UP_MAX_AGE` | none | Seconds; sent on a step-up only, and enforced on `auth_time`. |
+| `oidc.step_up.max_age` | `SESAME_OIDC_STEP_UP_MAX_AGE` | none (300 enforced) | Seconds; sent on a step-up only, and enforced on `auth_time`. Unset, it is not sent, but a step-up `auth_time` older than 300 seconds still fails. |
 | `oidc.step_up.acr_values` | `SESAME_OIDC_STEP_UP_ACR_VALUES` | none | Sent on a step-up only. |
 | `oidc.step_up.claims` | `SESAME_OIDC_STEP_UP_CLAIMS` | none | A JSON object (for example an `acrs` request for an Entra authentication context), sent on a step-up only. |
 

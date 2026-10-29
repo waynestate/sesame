@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checked for signature (RS256 by default, never `none` or HMAC), `iss`,
   `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age`
   by default (silent SSO); `step_up=1` adds the configured step-up
-  parameters and requires a fresh `auth_time`. Username from `accessid`
+  parameters and requires a fresh `auth_time` (never in the future, and
+  within `max_age`, 300 seconds when none is configured). Username from `accessid`
   (the `preferred_username` fallback is an opt-in, off by default, because
   users can change that claim), `iss`, `sub`, `tid` and `oid` passed to
   the resolver as stable account keys, roles from `wsuRoles`, MFA from

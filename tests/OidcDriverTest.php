@@ -208,6 +208,36 @@ final class OidcDriverTest extends TestCase
         $this->assertRejected('oidc.step_up', fn(): mixed => $this->signIn($driver, ['step_up' => '1']));
     }
 
+    public function testAStepUpWithAFutureAuthTimeIsRejected(): void
+    {
+        $driver = $this->driver();
+        $this->op->claimOverrides = ['auth_time' => $this->clock->now()->getTimestamp() + 3600];
+
+        $this->assertRejected('oidc.step_up', fn(): mixed => $this->signIn($driver, ['step_up' => '1']));
+    }
+
+    public function testAStepUpAuthTimeWithinTheLeewayAheadIsAccepted(): void
+    {
+        $driver = $this->driver();
+        $this->op->claimOverrides = ['auth_time' => $this->clock->now()->getTimestamp() + 30];
+
+        self::assertInstanceOf(Authenticated::class, $this->signIn($driver, ['step_up' => '1']));
+    }
+
+    public function testAStepUpWithoutMaxAgeIsStillBoundedByTheDefault(): void
+    {
+        // No prompt=login and no max_age configured: without a default bound
+        // any old auth_time would pass.
+        $driver = $this->driver(['step_up' => ['prompt' => null]]);
+        $now = $this->clock->now()->getTimestamp();
+
+        $this->op->claimOverrides = ['auth_time' => $now - OidcDriver::DEFAULT_STEP_UP_MAX_AGE - 61];
+        $this->assertRejected('oidc.step_up', fn(): mixed => $this->signIn($driver, ['step_up' => '1']));
+
+        $this->op->claimOverrides = ['auth_time' => $now - OidcDriver::DEFAULT_STEP_UP_MAX_AGE + 10];
+        self::assertInstanceOf(Authenticated::class, $this->signIn($driver, ['step_up' => '1']));
+    }
+
     public function testAStepUpWithoutAuthTimeIsRejected(): void
     {
         $driver = $this->driver();

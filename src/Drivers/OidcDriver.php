@@ -102,6 +102,12 @@ final class OidcDriver implements Driver, RemembersReturnTo
 
     private const MAX_RETURN_TO_LENGTH = 2048;
 
+    /**
+     * How old a step-up sign-in may be, in seconds, when the app configured
+     * no oidc.step_up.max_age: a step-up is always bounded.
+     */
+    public const DEFAULT_STEP_UP_MAX_AGE = 300;
+
     private readonly ClockInterface $clock;
 
     private readonly CacheInterface $cache;
@@ -452,9 +458,12 @@ final class OidcDriver implements Driver, RemembersReturnTo
 
     /**
      * A step-up sign-in must be fresh: auth_time is required, it must not
-     * be before the sign-in started (prompt=login asked for new
-     * credentials), and it must be within max_age when one was sent (Core
-     * 3.1.2.1 makes auth_time required when max_age is used).
+     * be in the future (beyond the leeway), it must not be before the
+     * sign-in started when prompt=login asked for new credentials, and it
+     * must be within max_age: the configured one (sent to the provider;
+     * Core 3.1.2.1 makes auth_time required then), or
+     * DEFAULT_STEP_UP_MAX_AGE when none is configured, so a step-up is never
+     * unbounded.
      *
      * @param array<string, mixed> $claims
      */
@@ -469,11 +478,17 @@ final class OidcDriver implements Driver, RemembersReturnTo
         $leeway = $this->options->leewaySeconds;
         $now = $this->clock->now()->getTimestamp();
 
+        if ($authTime > $now + $leeway) {
+            throw new AuthenticationFailed('The step-up sign-in has an auth_time in the future (oidc.step_up).');
+        }
+
         if ($this->options->stepUpPrompt === 'login' && $authTime < $started - $leeway) {
             throw new AuthenticationFailed('The step-up sign-in reused an earlier sign-in (oidc.step_up).');
         }
 
-        if ($maxAge !== null && $now - $authTime > $maxAge + $leeway) {
+        $maxAge ??= self::DEFAULT_STEP_UP_MAX_AGE;
+
+        if ($now - $authTime > $maxAge + $leeway) {
             throw new AuthenticationFailed('The step-up sign-in is older than max_age (oidc.step_up).');
         }
     }
