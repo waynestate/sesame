@@ -909,6 +909,16 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
+SESAME stores the user your resolver returned at sign-in and hands back that
+same copy until the session ends. When the app wants the signed-in user read
+back from its own store on every request, so a change made after the sign-in
+(a removed role, a deleted account) shows up from the next request on, the
+resolver also implements `Waynestate\Sesame\RefreshesUser`: its
+`refreshUser($user)` runs on every request, and a `null` answer signs the
+session out. The wayne-cas shim already implements it, looking the user up
+through `auth.providers.users.model`; a resolver that does not implement it
+keeps handing back the stored copy, as it always has.
+
 The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's
 `Psr\Http\Client\ClientInterface` binding when there is one, Guzzle when it is
 installed, and nothing when there is neither. Bind a client when the app has

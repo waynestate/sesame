@@ -18,6 +18,7 @@ use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\RecordingDriver;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
+use Waynestate\Sesame\Tests\Support\RefreshingResolver;
 
 final class SesameTest extends TestCase
 {
@@ -306,6 +307,81 @@ final class SesameTest extends TestCase
 
         self::assertNull($sesame->user());
         self::assertSame([], $session->store);
+    }
+
+    public function testARefreshingResolverSeesAChangedUserFromTheNextRequest(): void
+    {
+        $stored = new class {
+            public string $key = 'jdoe';
+            public string $role = 'member';
+        };
+        $resolver = new RefreshingResolver($stored);
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            $resolver,
+            $session,
+            $this->config(),
+        );
+
+        self::assertSame($stored, $sesame->login(new ServerRequest('GET', 'http://app.local/login')));
+
+        $changed = new class {
+            public string $key = 'jdoe';
+            public string $role = 'admin';
+        };
+        $resolver->replace($changed);
+
+        self::assertSame($changed, $sesame->user());
+        self::assertSame($changed, $session->store['sesame.user']);
+    }
+
+    public function testARefreshingResolverSignsOutWhenTheUserIsDeleted(): void
+    {
+        $stored = new class {
+            public string $key = 'jdoe';
+            public string $role = 'member';
+        };
+        $resolver = new RefreshingResolver($stored);
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            $resolver,
+            $session,
+            $this->config(),
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+
+        $resolver->forget('jdoe');
+
+        self::assertNull($sesame->user());
+        self::assertSame([], $session->store);
+        self::assertNull($sesame->user(), 'The sign-out sticks.');
+    }
+
+    public function testAResolverWithoutTheRefreshInterfaceKeepsHandingBackTheStoredCopy(): void
+    {
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver('the-user'),
+            $session,
+            $this->config(),
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+        $log->events = [];
+
+        $first = $sesame->user();
+        self::assertSame('the-user', $first);
+
+        $second = $sesame->user();
+        self::assertSame($first, $second, 'The stored copy is handed back on every request.');
+        self::assertNotContains('put:sesame.user', $log->events, 'The stored copy is never rewritten.');
     }
 
     public function testTheLogoutTokenIsStableForASessionAndChecked(): void

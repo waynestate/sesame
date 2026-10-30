@@ -143,7 +143,10 @@ final class Sesame
      * spot, and a session with a user but no timestamps (one made before
      * the timeouts existed) counts as expired. Every "is someone signed in"
      * check goes through here, so a stale session can never pass one check
-     * and fail another.
+     * and fail another. When the resolver implements RefreshesUser, the
+     * stored user is looked up again before the answer, and a null result
+     * signs the session out, so a deleted account stops reading as signed
+     * in from the next request on.
      *
      * @return mixed
      */
@@ -174,6 +177,22 @@ final class Sesame
         }
 
         $this->session->put('sesame.last_seen', $now);
+
+        if ($this->resolver instanceof RefreshesUser) {
+            $fresh = $this->resolver->refreshUser($user);
+
+            if ($fresh === null) {
+                $this->signOut();
+
+                return null;
+            }
+
+            if ($fresh !== $user) {
+                $this->session->put('sesame.user', $fresh);
+            }
+
+            return $fresh;
+        }
 
         return $user;
     }
