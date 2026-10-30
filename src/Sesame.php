@@ -262,6 +262,20 @@ final class Sesame
     }
 
     /**
+     * Clear SESAME's session keys and invalidate the session, without
+     * pointing at the identity provider.
+     *
+     * The guard's logout() uses it: the app signs the user out of its own
+     * session, and the provider's single sign-on session is left alone. The
+     * logout route keeps logout(), which does the same and then builds the
+     * provider's URL.
+     */
+    public function signOutLocal(): void
+    {
+        $this->signOut();
+    }
+
+    /**
      * The form field the raw-PHP logout reads its CSRF token from.
      */
     public const LOGOUT_TOKEN_FIELD = 'sesame_logout_token';
