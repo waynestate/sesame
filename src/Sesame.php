@@ -30,8 +30,7 @@ final class Sesame
     /**
      * @param Driver|Closure(): Driver $driver The driver, or a factory that
      *        builds it. With a factory the driver is built on first use, so
-     *        checking a session or logging an empty one out never pays for
-     *        the driver's construction.
+     *        checking a session never pays for the driver's construction.
      */
     public function __construct(
         Driver|Closure $driver,
@@ -232,19 +231,15 @@ final class Sesame
      * Log the user out of the app, then point at the identity provider.
      *
      * The app session is invalidated before the provider's URL is built, so a
-     * failed redirect can never leave a live session behind. A session with
-     * no user has nothing to point at: it is signed out and null is
-     * returned, and the driver is never built for it.
+     * failed redirect can never leave a live session behind. The pointer goes
+     * out even when the session holds no user of its own: the single sign-on
+     * session at the provider may still be alive there.
      */
     public function logout(string $returnTo): ?string
     {
-        // The raw session key, not user(): a session with a user but stale
-        // timestamps still points at the identity provider.
-        $hadUser = $this->session->get('sesame.user') !== null;
-
         $this->signOut();
 
-        return $hadUser ? $this->driver()->logoutUrl($returnTo) : null;
+        return $this->driver()->logoutUrl($returnTo);
     }
 
     /**

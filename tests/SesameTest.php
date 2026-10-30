@@ -349,11 +349,8 @@ final class SesameTest extends TestCase
         $url = $sesame->logout('http://app.local/');
 
         self::assertSame('http://idp.local/logout', $url);
-        // The first read decides whether the IdP URL is built at all; the
-        // rest must stay in this order so a failed redirect never leaves a
-        // live session behind.
         self::assertSame(
-            ['get:sesame.user', 'forget:sesame.user', 'forget:sesame.identity', 'invalidate', 'logoutUrl'],
+            ['forget:sesame.user', 'forget:sesame.identity', 'invalidate', 'logoutUrl'],
             $log->events,
         );
     }
@@ -371,10 +368,10 @@ final class SesameTest extends TestCase
         self::assertNull($sesame->logout('http://app.local/'));
     }
 
-    public function testTheDriverIsBuiltOnlyWhenSigningIn(): void
+    public function testCheckingTheSessionNeverBuildsTheDriver(): void
     {
         // The facade takes a factory as well as a driver, so an app can
-        // defer the driver's construction until the first sign-in.
+        // defer the driver's construction until it is needed.
         $log = new EventLog();
         $session = new RecordingSession($log);
         $built = 0;
@@ -386,13 +383,14 @@ final class SesameTest extends TestCase
         $sesame = new Sesame($factory, new RecordingResolver(), $session, $this->config());
 
         self::assertNull($sesame->user());
-        self::assertNull($sesame->logout('http://app.local/'));
-        self::assertSame(0, $built, 'Checking a session and logging an empty one out never build the driver.');
+        self::assertSame(0, $built, 'Checking a session never builds the driver.');
+
+        // Logout still points at the identity provider for an empty session,
+        // because the single sign-on session may still be alive.
+        self::assertSame('http://idp.local/logout', $sesame->logout('http://app.local/'));
+        self::assertSame(1, $built, 'Logging out builds the driver.');
 
         self::assertSame('the-user', $sesame->login(new ServerRequest('GET', 'http://app.local/login')));
-        self::assertSame(1, $built, 'The first sign-in builds the driver.');
-
-        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
         self::assertSame(1, $built, 'The built driver is kept.');
     }
 
