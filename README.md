@@ -1007,7 +1007,11 @@ The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 The middleware. wayne-cas's `WayneAuthenticate` middleware is kept as the
 `wayne.cas` alias. It checks the SESAME session instead of the Laravel auth
 guard, and it sends unauthenticated users to the `sesame.login` route. The
-AJAX 403 is kept, because wayne-cas returned it.
+AJAX 403 is kept, because wayne-cas returned it. It is safe in the global
+`web` group (it lets the `sesame.login`, `sesame.callback` and
+`sesame.logout` routes straight through), though putting it on the app's
+routes is still the recommended setup; an app that takes the routes over
+with `sesame.routes = false` must keep those names or exclude its routes.
 
 The service URL. wayne-cas built the service URL from the current request.
 SESAME takes `sesame.cas.service_url` from config; the Laravel adapter

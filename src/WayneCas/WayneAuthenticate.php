@@ -16,6 +16,12 @@ use Waynestate\Sesame\Sesame;
  * It checks the SESAME session instead of the Laravel auth guard, and it
  * sends unauthenticated users to the sesame.login route instead of running
  * the CAS dance itself. The AJAX 403 is kept, because wayne-cas returned it.
+ *
+ * It is safe in the global web middleware group: it lets the named routes
+ * sesame.login, sesame.callback and sesame.logout straight through, so a
+ * guest on /login is not redirected to /login forever. An app that took the
+ * routes over (sesame.routes = false) must keep those route names, or
+ * exclude its own routes from this middleware.
  */
 class WayneAuthenticate
 {
@@ -25,6 +31,10 @@ class WayneAuthenticate
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs('sesame.login', 'sesame.callback', 'sesame.logout')) {
+            return $next($request);
+        }
+
         Deprecation::logOnce();
 
         if ($this->sesame->user() !== null) {

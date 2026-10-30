@@ -89,4 +89,16 @@ final class WayneCasShimTest extends LaravelTestCase
 
         $this->get('/wp', ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(403);
     }
+
+    public function testItLetsSesamesOwnRoutesThroughWhenInTheWebGroup(): void
+    {
+        // The way wayne-cas apps mount it: in the global web group. A guest
+        // on /login must reach the login route, not be sent back to /login
+        // by the middleware that guards the group.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['router']->pushMiddlewareToGroup('web', 'wayne.cas');
+
+        $this->get('/login')->assertRedirect('/');
+    }
 }
