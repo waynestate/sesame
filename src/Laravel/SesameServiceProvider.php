@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Laravel;
 
 use GuzzleHttp\Client;
+use Illuminate\Auth\AuthManager;
 use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository;
+use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Contracts\Cookie\QueueingFactory;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
@@ -34,10 +38,10 @@ use Waynestate\Sesame\UserResolver;
  * The Laravel adapter.
  *
  * It binds the core's collaborators (the driver, the app's user resolver,
- * the session and the config) into the container, registers the auth.sesame
- * and wayne.cas middleware aliases, and, unless the app has taken the routes
- * over, registers the login and logout routes. It holds no rules of its own:
- * every rule lives in the core.
+ * the session and the config) into the container, registers the sesame guard
+ * driver, the auth.sesame and wayne.cas middleware aliases, and, unless the
+ * app has taken the routes over, registers the login and logout routes. It
+ * holds no rules of its own: every rule lives in the core.
  */
 class SesameServiceProvider extends ServiceProvider
 {
@@ -110,6 +114,35 @@ class SesameServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../../config/sesame.php' => $this->app->configPath('sesame.php'),
         ], 'sesame-config');
+
+        // The sesame guard driver: auth.driver = "sesame" gives the app's
+        // guards a view of the SESAME session. It holds no rules of its own;
+        // the rules live in the core, and the driver only reads them.
+        $this->app->make(AuthManager::class)->extend('sesame', function (\Illuminate\Foundation\Application $app, string $name, array $config) {
+            /** @var UserProvider $provider */
+            $provider = $app->make(AuthManager::class)->createUserProvider($config['provider'] ?? null);
+
+            /** @var Session $session */
+            $session = $app['session.store'];
+
+            /** @var \Symfony\Component\HttpFoundation\Request $request */
+            $request = $app['request'];
+
+            $guard = new SesameGuard($name, $provider, $session, $request);
+
+            /** @var QueueingFactory $cookies */
+            $cookies = $app['cookie'];
+
+            /** @var Dispatcher $events */
+            $events = $app['events'];
+
+            $guard->setCookieJar($cookies);
+            $guard->setDispatcher($events);
+
+            $app->refresh('request', $guard, 'setRequest');
+
+            return $guard;
+        });
 
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('auth.sesame', Authenticate::class);

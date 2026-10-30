@@ -20,7 +20,7 @@ use Waynestate\Sesame\Identity;
  * class keeps the wayne-cas short name and PHP will not let a class share a
  * short name with a use import.
  */
-class UserResolver implements \Waynestate\Sesame\UserResolver
+class UserResolver implements \Waynestate\Sesame\UserResolver, \Waynestate\Sesame\RefreshesUser
 {
     public function findOrImportUser(Identity $identity): mixed
     {
@@ -39,5 +39,30 @@ class UserResolver implements \Waynestate\Sesame\UserResolver
         }
 
         return $user;
+    }
+
+    /**
+     * Look the stored user up again, through the same model wayne-cas found
+     * it in. A plain find, never findOrImportUser: a refresh must not import
+     * a user back who was deleted after the sign-in.
+     *
+     * @param  mixed  $user  The user the session holds.
+     * @return mixed The current user, or null when it no longer exists.
+     */
+    public function refreshUser(mixed $user): mixed
+    {
+        Deprecation::logOnce();
+
+        if (! is_object($user) || ! method_exists($user, 'getKey')) {
+            return $user;
+        }
+
+        $model = config('auth.providers.users.model');
+
+        if (! is_string($model) || $model === '' || ! class_exists($model) || ! method_exists($model, 'find')) {
+            throw new InvalidConfig('The wayne-cas shim needs auth.providers.users.model to be a class with a static find method.');
+        }
+
+        return $model::find($user->getKey());
     }
 }

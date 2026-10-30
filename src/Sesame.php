@@ -143,7 +143,10 @@ final class Sesame
      * spot, and a session with a user but no timestamps (one made before
      * the timeouts existed) counts as expired. Every "is someone signed in"
      * check goes through here, so a stale session can never pass one check
-     * and fail another.
+     * and fail another. When the resolver implements RefreshesUser, the
+     * stored user is looked up again before the answer, and a null result
+     * signs the session out, so a deleted account stops reading as signed
+     * in from the next request on.
      *
      * @return mixed
      */
@@ -174,6 +177,22 @@ final class Sesame
         }
 
         $this->session->put('sesame.last_seen', $now);
+
+        if ($this->resolver instanceof RefreshesUser) {
+            $fresh = $this->resolver->refreshUser($user);
+
+            if ($fresh === null) {
+                $this->signOut();
+
+                return null;
+            }
+
+            if ($fresh !== $user) {
+                $this->session->put('sesame.user', $fresh);
+            }
+
+            return $fresh;
+        }
 
         return $user;
     }
@@ -240,6 +259,20 @@ final class Sesame
         $this->signOut();
 
         return $this->driver()->logoutUrl($returnTo);
+    }
+
+    /**
+     * Clear SESAME's session keys and invalidate the session, without
+     * pointing at the identity provider.
+     *
+     * The guard's logout() uses it: the app signs the user out of its own
+     * session, and the provider's single sign-on session is left alone. The
+     * logout route keeps logout(), which does the same and then builds the
+     * provider's URL.
+     */
+    public function signOutLocal(): void
+    {
+        $this->signOut();
     }
 
     /**

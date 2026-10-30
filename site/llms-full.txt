@@ -909,6 +909,40 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
+SESAME stores the user your resolver returned at sign-in and hands back that
+same copy until the session ends. When the app wants the signed-in user read
+back from its own store on every request, so a change made after the sign-in
+(a removed role, a deleted account) shows up from the next request on, the
+resolver also implements `Waynestate\Sesame\RefreshesUser`: its
+`refreshUser($user)` runs on every request, and a `null` answer signs the
+session out. The wayne-cas shim already implements it, looking the user up
+through `auth.providers.users.model`; a resolver that does not implement it
+keeps handing back the stored copy, as it always has.
+
+The same user is available through Laravel's own auth, because the provider
+registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
+
+```php
+'guards' => [
+    'web' => [
+        'driver' => 'sesame',
+        'provider' => 'users',
+    ],
+],
+```
+
+and the usual calls work against the SESAME session: `auth()->user()`,
+`$request->user()`, `Auth::check()`, and the `auth` middleware. The note
+above applies here too: the guard hands back the stored copy, or the
+refreshed one when the resolver refreshes. A user that is not an
+`Illuminate\Contracts\Auth\Authenticatable` reads as `null` through the
+guard; the `auth.sesame` middleware still sees it, because it checks the
+SESAME session directly.
+
+`auth()->logout()` signs the user out of both sides, the Laravel session and
+the SESAME session. The identity provider's single sign-on session is left
+alone.
+
 The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's
 `Psr\Http\Client\ClientInterface` binding when there is one, Guzzle when it is
 installed, and nothing when there is neither. Bind a client when the app has
@@ -1005,6 +1039,12 @@ AJAX 403 is kept, because wayne-cas returned it. It is safe in the global
 `sesame.logout` routes straight through), though putting it on the app's
 routes is still the recommended setup; an app that takes the routes over
 with `sesame.routes = false` must keep those names or exclude its routes.
+
+The guard. wayne-cas apps that read the user through `auth()->user()` can
+keep that call: point the app's guard at the `sesame` driver (see "Laravel")
+and `auth()->user()`, `Auth::check()` and `auth()->logout()` all work
+against the SESAME session. Without the guard, the equivalent is
+`app(Sesame::class)->user()`.
 
 The service URL. wayne-cas built the service URL from the current request.
 SESAME takes `sesame.cas.service_url` from config; the Laravel adapter
