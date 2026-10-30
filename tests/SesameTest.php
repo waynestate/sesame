@@ -349,8 +349,11 @@ final class SesameTest extends TestCase
         $url = $sesame->logout('http://app.local/');
 
         self::assertSame('http://idp.local/logout', $url);
+        // The first read decides whether the IdP URL is built at all; the
+        // rest must stay in this order so a failed redirect never leaves a
+        // live session behind.
         self::assertSame(
-            ['forget:sesame.user', 'forget:sesame.identity', 'invalidate', 'logoutUrl'],
+            ['get:sesame.user', 'forget:sesame.user', 'forget:sesame.identity', 'invalidate', 'logoutUrl'],
             $log->events,
         );
     }
@@ -366,6 +369,31 @@ final class SesameTest extends TestCase
         );
 
         self::assertNull($sesame->logout('http://app.local/'));
+    }
+
+    public function testTheDriverIsBuiltOnlyWhenSigningIn(): void
+    {
+        // The facade takes a factory as well as a driver, so an app can
+        // defer the driver's construction until the first sign-in.
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $built = 0;
+        $factory = function () use (&$built, $log): RecordingDriver {
+            $built++;
+
+            return new RecordingDriver(new Authenticated($this->identity()), 'http://idp.local/logout', $log);
+        };
+        $sesame = new Sesame($factory, new RecordingResolver(), $session, $this->config());
+
+        self::assertNull($sesame->user());
+        self::assertNull($sesame->logout('http://app.local/'));
+        self::assertSame(0, $built, 'Checking a session and logging an empty one out never build the driver.');
+
+        self::assertSame('the-user', $sesame->login(new ServerRequest('GET', 'http://app.local/login')));
+        self::assertSame(1, $built, 'The first sign-in builds the driver.');
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+        self::assertSame(1, $built, 'The built driver is kept.');
     }
 
     public function testRequireMfaReturnsNoAuthTimeWhenThereIsNoUser(): void

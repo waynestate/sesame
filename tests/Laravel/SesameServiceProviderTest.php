@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests\Laravel;
 
 use DateTimeImmutable;
+use Nyholm\Psr7\ServerRequest;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Waynestate\Sesame\Driver;
@@ -84,6 +85,40 @@ final class SesameServiceProviderTest extends LaravelTestCase
         );
 
         $app->make(UserResolver::class);
+    }
+
+    public function testResolvingSesameAndCheckingTheSessionNeverBuildsTheDriver(): void
+    {
+        // An app whose cas.service_url is not https cannot build its driver.
+        // Resolving the facade and checking the session must not try to, so
+        // such an app can still boot and answer signed-out requests.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('sesame.driver', 'cas');
+        $app['config']->set('sesame.cas.base_url', 'https://cas.local/cas');
+        $app['config']->set('sesame.cas.service_url', 'http://app.local/login');
+        $app->instance(ClientInterface::class, new FakeHttpClient());
+
+        $sesame = $app->make(Sesame::class);
+
+        self::assertNull($sesame->user());
+    }
+
+    public function testStartingALoginStillRaisesTheHttpsCheck(): void
+    {
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('sesame.driver', 'cas');
+        $app['config']->set('sesame.cas.base_url', 'https://cas.local/cas');
+        $app['config']->set('sesame.cas.service_url', 'http://app.local/login');
+        $app->instance(ClientInterface::class, new FakeHttpClient());
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage(
+            'The config key "cas.service_url" must be an absolute https:// URL, got "http://app.local/login".',
+        );
+
+        $app->make(Sesame::class)->login(new ServerRequest('GET', 'http://app.local/login'));
     }
 
     public function testItUsesTheAppsClockWhenThereIsOne(): void

@@ -92,8 +92,11 @@ class SesameServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(Sesame::class, function ($app) {
+            // The driver goes in as a factory: building it validates the
+            // config, and an app with a broken config should still boot and
+            // answer signed-out requests.
             return new Sesame(
-                $app->make(Driver::class),
+                static fn(): Driver => $app->make(Driver::class),
                 $app->make(UserResolver::class),
                 $app->make(LaravelSession::class),
                 $this->coreConfig($app),
