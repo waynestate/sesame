@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests\Laravel;
 
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use Waynestate\Sesame\Tests\Laravel\Support\ReadOnlyUser;
 
 /**
@@ -34,5 +35,28 @@ final class ReadOnlyAttributesTest extends TestCase
         $hydrated->setAttribute('cn', 'Changed');
 
         self::assertSame([], $hydrated->getDirty());
+    }
+
+    public function testTheWayneCasSignatureWorksOnTheModel(): void
+    {
+        // The one change a wayne-cas model needs: the method goes from
+        // protected to public, keeping its parameter. The interface and the
+        // trait agree on this shape, so the model satisfies both, and the
+        // parameter is optional.
+        $user = new ReadOnlyUser();
+
+        self::assertSame(['cn' => null], $user->getReadOnlyAttributes());
+        self::assertSame(['cn' => 'John Doe'], $user->getReadOnlyAttributes(['cn' => 'John Doe']));
+    }
+
+    public function testTheInterfaceAndTheTraitShareOneSignature(): void
+    {
+        $method = new ReflectionMethod(ReadOnlyUser::class, 'getReadOnlyAttributes');
+
+        self::assertTrue($method->isPublic());
+        self::assertSame('array', (string) $method->getReturnType());
+        self::assertCount(1, $method->getParameters());
+        self::assertSame('persistedAttributes', $method->getParameters()[0]->getName());
+        self::assertTrue($method->getParameters()[0]->isOptional());
     }
 }

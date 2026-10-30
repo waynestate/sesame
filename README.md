@@ -1001,6 +1001,11 @@ class User extends Model implements WayneCasable
 }
 ```
 
+The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from
+protected to public, keeping its `$persistedAttributes` parameter. The
+interface and the trait share that signature, so a model that satisfies one
+satisfies both.
+
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 `Waynestate\Sesame\WayneCas` namespace.
 

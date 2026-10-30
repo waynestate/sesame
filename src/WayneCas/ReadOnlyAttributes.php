@@ -23,10 +23,13 @@ trait ReadOnlyAttributes
      * Get an array of attribute => attributeValue pairs that will be read-only for the Eloquent model.
      * Attributes can be native to the model (i.e. part of the database table).
      *
+     * The same signature the WayneCasable interface declares, so a model
+     * that implements the interface and uses this trait satisfies both.
+     *
      * @param array<string, mixed> $persistedAttributes
      * @return array<string, mixed>
      */
-    abstract protected function getReadOnlyAttributes($persistedAttributes);
+    abstract public function getReadOnlyAttributes($persistedAttributes = []): array;
 
     /**
      * Get the attributes that have been changed since last sync.
@@ -84,13 +87,13 @@ trait ReadOnlyAttributes
         $readOnlyAttributes = $this->getReadOnlyAttributes($attributes);
 
         // merge them with the native attributes
-        $attributes = array_merge($attributes, (array) $readOnlyAttributes); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
+        $attributes = array_merge($attributes, $readOnlyAttributes);
 
         // set them on the instance
         $this->setRawAttributes($attributes, true);
 
         // and finally register the read-only attributes to prevent persistence in future database calls
-        $this->setReadOnlyAttributes(array_keys((array) $readOnlyAttributes)); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
+        $this->setReadOnlyAttributes(array_keys($readOnlyAttributes));
     }
 
     /**
@@ -104,14 +107,13 @@ trait ReadOnlyAttributes
         $readOnlyAttributes = $this->getReadOnlyAttributes((array) $attributes); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
 
         // merge them with the native attributes
-        $readOnlyArray = (array) $readOnlyAttributes; // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
-        $attributes = array_merge((array) $attributes, $readOnlyArray); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
+        $attributes = array_merge((array) $attributes, $readOnlyAttributes); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
 
         // let the parent method do the work of hydrating an instance with them
         $model = parent::newFromBuilder($attributes, $connection);
 
         // and finally register the read-only attributes to prevent persistence in future database calls
-        $model->setReadOnlyAttributes(array_keys((array) $readOnlyAttributes)); // @phpstan-ignore cast.useless (defensive cast: getReadOnlyAttributes() is abstract and untyped)
+        $model->setReadOnlyAttributes(array_keys($readOnlyAttributes));
 
         // oh yeah, we also have to return the freshly hydrated model. duh!
         return $model;

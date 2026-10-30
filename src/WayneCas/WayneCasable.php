@@ -24,7 +24,12 @@ interface WayneCasable
     /**
      * The read-only attributes for the model, as key => value pairs.
      *
+     * One signature for the interface and the ReadOnlyAttributes trait, so
+     * a wayne-cas model satisfies both: the method goes from protected to
+     * public and takes the persisted attributes, optional.
+     *
+     * @param array<string, mixed> $persistedAttributes
      * @return array<string, mixed>
      */
-    public function getReadOnlyAttributes(): array;
+    public function getReadOnlyAttributes($persistedAttributes = []): array;
 }
