@@ -85,7 +85,7 @@ class SesameServiceProvider extends ServiceProvider
             $class = $app['config']->get('sesame.user_resolver');
 
             if (! is_string($class) || $class === '') {
-                throw new InvalidConfig('Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user.');
+                throw new InvalidConfig('Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user (wayne-cas apps: \Waynestate\Sesame\WayneCas\UserResolver::class).');
             }
 
             return $app->make($class);

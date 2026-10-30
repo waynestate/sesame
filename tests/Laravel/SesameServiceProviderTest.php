@@ -9,6 +9,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\Drivers\OAuth2Driver;
+use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Laravel\LaravelSession;
@@ -68,6 +69,21 @@ final class SesameServiceProviderTest extends LaravelTestCase
         self::assertInstanceOf(Driver::class, $app->make(Driver::class));
         self::assertInstanceOf(TestUserResolver::class, $app->make(UserResolver::class));
         self::assertInstanceOf(LaravelSession::class, $app->make(LaravelSession::class));
+    }
+
+    public function testTheMissingResolverErrorNamesTheWayneCasResolver(): void
+    {
+        // A wayne-cas app moving to SESAME gets told which class to set.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('sesame.user_resolver', null);
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage(
+            'Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user (wayne-cas apps: \Waynestate\Sesame\WayneCas\UserResolver::class).',
+        );
+
+        $app->make(UserResolver::class);
     }
 
     public function testItUsesTheAppsClockWhenThereIsOne(): void
