@@ -85,15 +85,18 @@ class SesameServiceProvider extends ServiceProvider
             $class = $app['config']->get('sesame.user_resolver');
 
             if (! is_string($class) || $class === '') {
-                throw new InvalidConfig('Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user.');
+                throw new InvalidConfig('Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user (wayne-cas apps: \Waynestate\Sesame\WayneCas\UserResolver::class).');
             }
 
             return $app->make($class);
         });
 
         $this->app->singleton(Sesame::class, function ($app) {
+            // The driver goes in as a factory: building it validates the
+            // config, and an app with a broken config should still boot and
+            // answer signed-out requests.
             return new Sesame(
-                $app->make(Driver::class),
+                static fn(): Driver => $app->make(Driver::class),
                 $app->make(UserResolver::class),
                 $app->make(LaravelSession::class),
                 $this->coreConfig($app),

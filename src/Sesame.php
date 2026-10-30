@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame;
 
+use Closure;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Waynestate\Sesame\Clock\SystemClock;
@@ -11,23 +12,49 @@ use Waynestate\Sesame\Clock\SystemClock;
 /**
  * The facade an app talks to.
  *
- * It holds a driver, the app's user resolver, the app's session and the
- * config, and it runs the one rule the code holds: every driver ends in
- * `findOrImportUser(Identity)`, and the app owns the session. Time is read
- * through a PSR-20 clock, so the session timeouts are testable.
+ * It holds a driver (or a factory for one, built on first use), the app's
+ * user resolver, the app's session and the config, and it runs the one rule
+ * the code holds: every driver ends in `findOrImportUser(Identity)`, and the
+ * app owns the session. Time is read through a PSR-20 clock, so the session
+ * timeouts are testable.
  */
 final class Sesame
 {
     private readonly ClockInterface $clock;
 
+    /** @var Driver|Closure(): Driver */
+    private readonly Driver|Closure $driverFactory;
+
+    private ?Driver $driver = null;
+
+    /**
+     * @param Driver|Closure(): Driver $driver The driver, or a factory that
+     *        builds it. With a factory the driver is built on first use, so
+     *        checking a session never pays for the driver's construction.
+     */
     public function __construct(
-        private readonly Driver $driver,
+        Driver|Closure $driver,
         private readonly UserResolver $resolver,
         private readonly SessionPort $session,
         private readonly Config $config,
         ?ClockInterface $clock = null,
     ) {
+        $this->driverFactory = $driver;
         $this->clock = $clock ?? new SystemClock();
+    }
+
+    /**
+     * The driver, built on first use and kept from then on.
+     */
+    private function driver(): Driver
+    {
+        if ($this->driver === null) {
+            $factory = $this->driverFactory;
+
+            $this->driver = $factory instanceof Closure ? $factory() : $factory;
+        }
+
+        return $this->driver;
     }
 
     /**
@@ -50,7 +77,7 @@ final class Sesame
      */
     public function login(ServerRequestInterface $request): mixed
     {
-        $step = $this->driver->login($request);
+        $step = $this->driver()->login($request);
 
         if (! $step instanceof Authenticated) {
             return $step;
@@ -94,7 +121,9 @@ final class Sesame
      */
     public function returnTo(): ?string
     {
-        return $this->driver instanceof RemembersReturnTo ? $this->driver->returnTo() : null;
+        $driver = $this->driver();
+
+        return $driver instanceof RemembersReturnTo ? $driver->returnTo() : null;
     }
 
     /**
@@ -102,7 +131,7 @@ final class Sesame
      */
     public function serviceUrl(): ?string
     {
-        return $this->driver->serviceUrl();
+        return $this->driver()->serviceUrl();
     }
 
     /**
@@ -202,13 +231,15 @@ final class Sesame
      * Log the user out of the app, then point at the identity provider.
      *
      * The app session is invalidated before the provider's URL is built, so a
-     * failed redirect can never leave a live session behind.
+     * failed redirect can never leave a live session behind. The pointer goes
+     * out even when the session holds no user of its own: the single sign-on
+     * session at the provider may still be alive there.
      */
     public function logout(string $returnTo): ?string
     {
         $this->signOut();
 
-        return $this->driver->logoutUrl($returnTo);
+        return $this->driver()->logoutUrl($returnTo);
     }
 
     /**
@@ -261,7 +292,7 @@ final class Sesame
      */
     public function safeReturnTo(string $returnTo): string
     {
-        return ReturnTo::safe($returnTo, $this->driver->serviceUrl());
+        return ReturnTo::safe($returnTo, $this->driver()->serviceUrl());
     }
 
     /**
