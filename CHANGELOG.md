@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-30
+
 - Security: the signed-in user is looked up again on every request when the app's resolver implements the new `RefreshesUser` interface, and a user who no longer exists signs the session out. Before, `Sesame::user()` returned the copy saved at sign-in, so a user whose role was removed kept it until the session ended. The wayne-cas `UserResolver` implements it (a plain find by primary key, never an import).
 - Added: a `sesame` Laravel guard driver. Set `auth.guards.web.driver` to `sesame` and the users provider to `eloquent`, and `auth()->user()` returns the SESAME user; a Laravel login, `onceUsingId()` or `actingAs()` still wins for the request.
 - Fixed: the wayne-cas `WayneAuthenticate` middleware lets SESAME's login, callback and logout routes through, so it is safe in the global `web` group (it used to send `/login` to itself forever).
