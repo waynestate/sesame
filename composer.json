@@ -64,6 +64,9 @@
             "providers": [
                 "Waynestate\\Sesame\\Laravel\\SesameServiceProvider"
             ]
+        },
+        "proctor": {
+            "wayneui.copies": "fail"
         }
     },
     "scripts": {
