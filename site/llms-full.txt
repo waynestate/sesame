@@ -390,6 +390,7 @@ Config keys:
 | `gateway.header` | No | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | No | `ES256` | `ES256`, `RS256` or `EdDSA`. Pinned, so a token that claims another algorithm is refused. |
 | `gateway.public_key` | Yes | none | The gateway's public key: a PEM string (or a path to one) for `ES256` and `RS256`, or a base64-encoded raw key (or a path to one) for `EdDSA`. |
+| `gateway.public_keys` | No | none | A map of `kid` to public key, for rotating the gateway's signing key. Use this or `public_key`, not both. |
 | `gateway.issuer` | Yes | none | The `iss` claim the assertion must carry. |
 | `gateway.audience` | Yes | none | The `aud` claim the assertion must carry. |
 | `gateway.leeway_seconds` | No | `30` | Clock skew allowed on the `iat`, `nbf` and `exp` checks, in seconds. |
@@ -409,6 +410,36 @@ sign-in; `amr` is the list of methods they used. A missing or malformed
 `auth_time` leaves the MFA time unset, and a missing or malformed `amr` leaves
 the method list empty, so a claim the gateway did not verify can never satisfy
 the check.
+
+#### Rotating the gateway's signing key
+
+The gateway may list two public keys at once, so a key rotation needs no
+coordinated window. The driver reads the `kid` header of each assertion and
+verifies it with the key listed under that `kid`; an assertion with a missing
+or unknown `kid` is refused, and so is one signed by the other listed key
+under the wrong `kid`. The algorithm stays pinned from config for every key.
+
+1. Add the new public key to `gateway.public_keys` under its `kid`, next to
+   the old one, and deploy every app.
+2. Switch the gateway's `DRAWBRIDGE_SIGNING_KEY_ID` and its private key to
+   the new pair. New assertions carry the new `kid`, and the old ones still
+   verify against the old key until they expire.
+3. After the old assertions have expired (they live 60 seconds by default;
+   `gateway.max_lifetime` is the ceiling), remove the old entry. With one key
+   left, you can go back to `gateway.public_key`.
+
+```php
+'gateway' => [
+    'public_keys' => [
+        '2026a' => file_get_contents('/etc/sesame/gateway-2026a.pub'),
+        '2026b' => file_get_contents('/etc/sesame/gateway-2026b.pub'),
+    ],
+    // issuer, audience, trusted_proxies and the rest, as before.
+],
+```
+
+Two keys on the pegboard, one door: while the old one still hangs there,
+nobody gets locked out.
 
 ### oauth2 with Entra
 
