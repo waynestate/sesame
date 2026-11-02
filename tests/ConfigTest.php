@@ -534,6 +534,28 @@ final class ConfigTest extends TestCase
         self::assertSame(86400, $config->oauth2JwksCacheTtlSeconds);
     }
 
+    public function testOauth2RequireAtJwtDefaultsToFalse(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertFalse($config->oauth2RequireAtJwt);
+    }
+
+    public function testOauth2RequireAtJwtCanBeEnabled(): void
+    {
+        $config = Config::fromArray($this->oauth2Config(['require_at_jwt' => true]));
+
+        self::assertTrue($config->oauth2RequireAtJwt);
+    }
+
+    public function testOauth2RequireAtJwtMustBeABoolean(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.require_at_jwt" must be a boolean.');
+
+        Config::fromArray($this->oauth2Config(['require_at_jwt' => 'yes']));
+    }
+
     public function testReadsTheSessionTimeouts(): void
     {
         $config = Config::fromArray([

@@ -542,6 +542,73 @@ final class OAuth2DriverTest extends TestCase
         $this->assertRejected('oauth2.jwks_unavailable', fn(): mixed => $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey))));
     }
 
+    public function testRequireAtJwtOffAcceptsATokenTypedJwt(): void
+    {
+        [$privateKey, $jwk] = self::keyPair('a');
+        $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+        $step = $this->driver()->login($this->requestWith('Bearer ' . $this->token($privateKey, typ: 'JWT')));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+    }
+
+    public function testRequireAtJwtOnAcceptsAtJwt(): void
+    {
+        foreach (['at+jwt', 'AT+JWT', ' At+Jwt '] as $typ) {
+            [$privateKey, $jwk] = self::keyPair('a');
+            $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+            $step = $this->driver(['require_at_jwt' => true])
+                ->login($this->requestWith('Bearer ' . $this->token($privateKey, typ: $typ)));
+
+            self::assertInstanceOf(Authenticated::class, $step);
+        }
+    }
+
+    public function testRequireAtJwtOnAcceptsTheApplicationMediaType(): void
+    {
+        foreach (['application/at+jwt', 'APPLICATION/AT+JWT'] as $typ) {
+            [$privateKey, $jwk] = self::keyPair('a');
+            $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+            $step = $this->driver(['require_at_jwt' => true])
+                ->login($this->requestWith('Bearer ' . $this->token($privateKey, typ: $typ)));
+
+            self::assertInstanceOf(Authenticated::class, $step);
+        }
+    }
+
+    public function testRequireAtJwtOnRefusesTypJwt(): void
+    {
+        [$privateKey, $jwk] = self::keyPair('a');
+        $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+        try {
+            $this->driver(['require_at_jwt' => true])
+                ->login($this->requestWith('Bearer ' . $this->token($privateKey, typ: 'JWT')));
+
+            self::fail('Expected AuthenticationFailed with "oauth2.bad_typ".');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringContainsString('oauth2.bad_typ', $e->getMessage());
+            self::assertStringNotContainsString('JWT', $e->getMessage());
+        }
+    }
+
+    public function testRequireAtJwtOnRefusesAMissingTyp(): void
+    {
+        [$privateKey, $jwk] = self::keyPair('a');
+        $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+        try {
+            $this->driver(['require_at_jwt' => true])
+                ->login($this->requestWith('Bearer ' . $this->token($privateKey, typ: null)));
+
+            self::fail('Expected AuthenticationFailed with "oauth2.bad_typ".');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringContainsString('oauth2.bad_typ', $e->getMessage());
+        }
+    }
+
     /**
      * Run the attempt and assert it failed with an authentication error
      * carrying the given reason code.
@@ -589,6 +656,7 @@ final class OAuth2DriverTest extends TestCase
             'required_roles' => [],
             'identity_claim' => 'preferred_username',
             'jwks_cache_ttl_seconds' => 3600,
+            'require_at_jwt' => false,
         ], $overrides);
 
         return new OAuth2Driver(
@@ -604,6 +672,7 @@ final class OAuth2DriverTest extends TestCase
             $this->cache,
             $config['jwks_cache_ttl_seconds'],
             $this->clock,
+            $config['require_at_jwt'],
         );
     }
 
@@ -624,12 +693,29 @@ final class OAuth2DriverTest extends TestCase
      * A token signed with the given key under the given key id, with the
      * standard claims plus any overrides.
      *
+     * When $typ is null, the token is built by hand so its header carries
+     * no typ member at all (the JWT library always writes one).
+     *
      * @param  array<string, mixed>  $overrides
      */
-    private function token(string $privateKey, string $kid = self::KID_A, array $overrides = []): string
+    private function token(string $privateKey, string $kid = self::KID_A, array $overrides = [], ?string $typ = 'JWT'): string
     {
-        // The overrides win over the standard claims.
-        return JWT::encode($overrides + $this->claims(), $privateKey, 'RS256', $kid);
+        $claims = $overrides + $this->claims();
+
+        if ($typ !== null) {
+            // The overrides win over the standard claims.
+            return JWT::encode($claims, $privateKey, 'RS256', $kid, ['typ' => $typ]);
+        }
+
+        $header = self::base64UrlEncode((string) json_encode(['alg' => 'RS256', 'kid' => $kid]));
+        $payload = self::base64UrlEncode((string) json_encode($claims));
+        $signed = openssl_sign($header . '.' . $payload, $signature, $privateKey, 'sha256WithRSAEncryption');
+
+        if ($signed !== true) {
+            self::fail('Could not sign the test token.');
+        }
+
+        return $header . '.' . $payload . '.' . self::base64UrlEncode($signature);
     }
 
     /**

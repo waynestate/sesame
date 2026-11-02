@@ -33,9 +33,12 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * non-empty strings the token's scp claim must include),
  * `oauth2.required_roles` (default `[]`, a list of non-empty strings the
  * token's roles claim must include), `oauth2.identity_claim` (default
- * `preferred_username`, only `preferred_username` or `accessid`) and
+ * `preferred_username`, only `preferred_username` or `accessid`),
  * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer, at most
- * `86400`: how long the fetched key set stays usable). The `oidc` driver
+ * `86400`: how long the fetched key set stays usable) and
+ * `oauth2.require_at_jwt` (default `false`, a boolean: require the token's
+ * typ header to be an RFC 9068 access token type; off by default because
+ * Microsoft Entra v2 tokens are typed JWT). The `oidc` driver
  * reads the `oidc` block into an OidcOptions (see that class for the keys;
  * `oidc.issuer`, `oidc.client_id`, `oidc.client_secret` and
  * `oidc.redirect_uri` are required, and the secret falls back to the
@@ -97,6 +100,7 @@ final readonly class Config
         public array $oauth2RequiredRoles = [],
         public string $oauth2IdentityClaim = 'preferred_username',
         public int $oauth2JwksCacheTtlSeconds = 3600,
+        public bool $oauth2RequireAtJwt = false,
         public ?OidcOptions $oidc = null,
         public ?array $gatewayPublicKeys = null,
     ) {}
@@ -144,6 +148,7 @@ final readonly class Config
         $oauth2RequiredRoles = [];
         $oauth2IdentityClaim = 'preferred_username';
         $oauth2JwksCacheTtlSeconds = 3600;
+        $oauth2RequireAtJwt = false;
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
@@ -246,6 +251,7 @@ final readonly class Config
             }
 
             $oauth2JwksCacheTtlSeconds = self::optionalPositiveInt($config, 'oauth2.jwks_cache_ttl_seconds', 3600);
+            $oauth2RequireAtJwt = self::optionalBool($config, 'oauth2.require_at_jwt', false);
 
             // Bounds: a huge leeway makes expired tokens live on, and a huge
             // TTL keeps a revoked signing key trusted.
@@ -309,6 +315,7 @@ final readonly class Config
             $oauth2RequiredRoles,
             $oauth2IdentityClaim,
             $oauth2JwksCacheTtlSeconds,
+            $oauth2RequireAtJwt,
             $oidc,
             $gatewayPublicKeys,
         );

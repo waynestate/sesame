@@ -154,6 +154,9 @@ return [
         'identity_claim' => env('SESAME_OAUTH2_IDENTITY_CLAIM', 'preferred_username'),
         'jwks_cache_ttl_seconds' => env('SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS', 3600),
         'jwks_store' => env('SESAME_OAUTH2_JWKS_STORE'),
+        // Off by default: Microsoft Entra v2 tokens are typed JWT, so an
+        // RFC 9068 typ check would refuse them.
+        'require_at_jwt' => env('SESAME_OAUTH2_REQUIRE_AT_JWT', false),
     ],
 
     /*
