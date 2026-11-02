@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: a "Which key to store" paragraph tells apps to key their users on the driver plus the identity provider's stable identifier, never an email or a display name.
 - Docs: a note tells apps to log `AuthenticationFailed` messages and show the user one generic line, since the message can carry the CAS failure code.
 - Added: `gateway.public_keys`, a map of `kid` to public key, so the gateway driver can verify against two keys at once (the assertion's `kid` header picks the key) for key rotation without a coordinated window.
+- Changed: CI pulls its Docker Hub images through the GitLab Dependency Proxy (the group's CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX), so pipelines no longer hit Docker Hub's anonymous pull limit.
 
 ## [0.3.0] - 2026-10-30
 
