@@ -175,6 +175,15 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
+**Which key to store.** Your `findOrImportUser` looks the person up in the
+app's own store, so key that store on the driver plus the identity provider's
+own stable identifier, never on an email or a display name, which can change
+or be shared between providers. For the cas driver that identifier is the
+`username` (the Access ID), so the key is `$identity->driver` plus
+`$identity->username`. Other drivers name their stable identifier differently:
+the oidc section keys on `iss` plus `sub`, or `tid` plus `oid`, never the
+username alone.
+
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
 user and identity in it, but it never starts a session and never touches a
@@ -277,8 +286,10 @@ $config = Config::fromArray([
     ],
 ]);
 
-// Any PSR-18 client works, for example Guzzle.
-$http = new \GuzzleHttp\Client();
+// Any PSR-18 client works, for example Guzzle. Set a timeout: Guzzle has no
+// total timeout by default, so a hung CAS server would hold the request open
+// forever.
+$http = new \GuzzleHttp\Client(['timeout' => 10, 'connect_timeout' => 5]);
 
 $driver = DriverFactory::make($config, $http, new Psr17Factory());
 ```
@@ -325,6 +336,11 @@ users, would make the MFA check pass for sign-ins that never did MFA.
 The MFA age still needs a sign-in time, and the driver never invents one: it
 comes from the CAS `authenticationDate` attribute, and when the server does
 not send one, the MFA check fails because there is no sign-in time to age.
+
+**On a failed login, show a generic line, not the exception.** An
+`AuthenticationFailed` message can carry the CAS failure code (for example
+`INVALID_TICKET`), which tells an attacker how the server refused the ticket.
+Log the message for operators and show the user one generic line instead.
 
 ## The gateway driver
 
@@ -443,8 +459,10 @@ $config = Config::fromArray([
     ],
 ]);
 
-// Any PSR-18 client works, for example Guzzle.
-$http = new \GuzzleHttp\Client();
+// Any PSR-18 client works, for example Guzzle. Set a timeout: Guzzle has no
+// total timeout by default, so a hung issuer would hold the request open
+// forever.
+$http = new \GuzzleHttp\Client(['timeout' => 10, 'connect_timeout' => 5]);
 
 // Any PSR-16 cache works (symfony/cache is shown); the Laravel adapter wires
 // one up for you, so you only see this in raw PHP.
