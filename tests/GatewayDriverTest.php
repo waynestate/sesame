@@ -462,6 +462,79 @@ final class GatewayDriverTest extends TestCase
         self::assertRejected($driver, $this->request($token), 'gateway.audience');
     }
 
+    public function testGatewayRefusesAnAccessTokenType(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // Otherwise valid (right signature, issuer, audience), but typed as an
+        // OAuth2 access token: the typ is the only reason for the refusal.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['typ' => 'at+jwt']);
+
+        try {
+            $driver->login($this->request($token));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringContainsString('gateway.invalid_assertion', $e->getMessage());
+            // The failure must not echo the typ header back.
+            self::assertStringNotContainsString('at+jwt', $e->getMessage());
+        }
+    }
+
+    public function testGatewayRefusesTheApplicationAccessTokenType(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // The full media-type spelling of the same marker is refused too.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['typ' => 'application/at+jwt']);
+
+        self::assertRejected($driver, $this->request($token), 'gateway.invalid_assertion');
+    }
+
+    public function testGatewayRefusesAnAccessTokenTypeInAnyCase(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // The comparison is case-insensitive and ignores surrounding
+        // whitespace, so both spellings below are refused.
+        $upper = $this->buildToken($signer, $privateKey, $clock, ['typ' => 'AT+JWT']);
+        $padded = $this->buildToken($signer, $privateKey, $clock, ['typ' => ' At+Jwt ']);
+
+        self::assertRejected($driver, $this->request($upper), 'gateway.invalid_assertion');
+        self::assertRejected($driver, $this->request($padded), 'gateway.invalid_assertion');
+    }
+
+    public function testGatewayAcceptsATokenWithoutATypHeader(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // No typ header at all: not an access-token marker, so it is left to
+        // the signature and claim checks.
+        $token = $this->buildToken($signer, $privateKey, $clock);
+
+        $step = $driver->login($this->request($token));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+    }
+
+    public function testGatewayAcceptsAJwtTypHeader(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+        // A plain "JWT" typ is not an access-token marker, so it signs in.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['typ' => 'JWT']);
+
+        $step = $driver->login($this->request($token));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+    }
+
     public function testRejectsAnExpiredToken(): void
     {
         $clock = new FakeClock();
@@ -952,7 +1025,8 @@ final class GatewayDriverTest extends TestCase
      * driver's default maximum lifetime. A default jti is present and unique
      * per call, so two different tokens never collide; the replay tests
      * override it with a fixed value. A 'kid' override sets the token's kid
-     * header (no default: most assertions carry none).
+     * header and a 'typ' override sets the token's typ header (no default
+     * for either: most assertions carry neither).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -961,6 +1035,7 @@ final class GatewayDriverTest extends TestCase
         $now = $clock->now();
 
         $kid = $this->override($overrides, 'kid', null);
+        $typ = $this->override($overrides, 'typ', null);
         $issuer = $this->override($overrides, 'issuer', self::ISSUER);
         $audience = $this->override($overrides, 'audience', self::AUDIENCE);
         $subject = $this->override($overrides, 'subject', self::SUBJECT);
@@ -1006,6 +1081,10 @@ final class GatewayDriverTest extends TestCase
 
         if ($kid !== null) {
             $builder = $builder->withHeader('kid', $kid);
+        }
+
+        if ($typ !== null) {
+            $builder = $builder->withHeader('typ', $typ);
         }
 
         return $builder->getToken($signer, $privateKey)->toString();
