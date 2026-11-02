@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Security: the `gateway` driver refuses a token whose `typ` header is `at+jwt` or `application/at+jwt`, so an OAuth2 access token cannot be replayed as a gateway assertion. A missing `typ` or `JWT` still works.
 - Docs: BEST_PRACTICES tags now match the code: the entries whose fix is already in `src/` and `tests/` are re-tagged (`Enforced`, `Documented` or `Partly enforced`) with the code and test file:line named, and the gap list at the bottom drops the items that are closed.
 - Docs: the "Moving from wayne-cas" section now leads with the easy way, Booster's `cas-to-sesame` hop (planned with `--sesame`, needs the plan to end on PHP 8.3 or newer), then the by-hand mapping, then what Booster leaves for you (Duo 2FA is not carried, verify login on the pre-production host).
 - Docs: the cas quick start's Guzzle client now sets a `timeout` and `connect_timeout` (Guzzle has no total timeout by default), and the oauth2 quick start does the same.
