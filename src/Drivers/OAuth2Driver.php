@@ -71,12 +71,15 @@ final class OAuth2Driver implements Driver
 
     private readonly ClockInterface $clock;
 
+    private readonly bool $requireAtJwt;
+
     /**
      * @param  non-empty-string  $issuer  The expected issuer (iss claim).
      * @param  non-empty-string  $audience  The expected audience (aud claim).
      * @param  list<string>  $requiredScopes  The scopes the token's scp claim must include.
      * @param  list<string>  $requiredRoles  The roles the token's roles claim must include.
      * @param  int  $jwksCacheTtlSeconds  How long the fetched key set stays usable, in seconds.
+     * @param  bool  $requireAtJwt  When true, the token's typ header must be an RFC 9068 access token type (at+jwt or application/at+jwt). Off by default because Microsoft Entra v2 tokens are typed JWT.
      */
     public function __construct(
         private readonly string $issuer,
@@ -91,7 +94,9 @@ final class OAuth2Driver implements Driver
         CacheInterface $jwksCache,
         int $jwksCacheTtlSeconds,
         ?ClockInterface $clock = null,
+        bool $requireAtJwt = false,
     ) {
+        $this->requireAtJwt = $requireAtJwt;
         $this->clock = $clock ?? new SystemClock();
         $this->jwks = new JwksProvider($http, $requests, $jwksCache, $this->clock, $jwksUrl, $jwksCacheTtlSeconds);
     }
@@ -187,6 +192,16 @@ final class OAuth2Driver implements Driver
 
         if (! is_string($kid) || $kid === '') {
             throw new AuthenticationFailed('The access token has no usable "kid" header (oauth2.missing_kid).');
+        }
+
+        if ($this->requireAtJwt) {
+            // RFC 9068 types the access token as at+jwt. The value is not
+            // echoed back or logged.
+            $typ = $header['typ'] ?? null;
+
+            if (! is_string($typ) || ! in_array(strtolower(trim($typ)), ['at+jwt', 'application/at+jwt'], true)) {
+                throw new AuthenticationFailed('The access token is not typed as an RFC 9068 access token (oauth2.bad_typ).');
+            }
         }
 
         return $kid;

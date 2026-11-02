@@ -97,6 +97,7 @@ final class DriverFactory
                 self::requiredJwksCache($jwksCache),
                 $config->oauth2JwksCacheTtlSeconds,
                 $clock,
+                $config->oauth2RequireAtJwt,
             ),
             'oidc' => new OidcDriver(
                 $config->oidc ?? throw new InvalidConfig('The oidc driver needs the "oidc" config block.'),
