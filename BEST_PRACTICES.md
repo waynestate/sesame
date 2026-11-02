@@ -336,18 +336,13 @@ Risks in the current code:
 - README client example: add no-redirect and TLS-verify settings, and a timeout (S23, S42).
 
 Missing practices:
-- Idle and absolute session timeouts, with a configurable value.
 - A `__Host-` cookie name, set by HELMET.
-- Ticket removal from the URL after login.
 - Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
 - A logging hook (PSR-3) for authentication events.
 - A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
-- A documented lifetime table for each app, covering app, SESAME and IdP sessions.
-- Tests: XXE payload, null resolver result.
 - Choose the SAML library for `saml` (still open). The `gateway` signing scheme is settled: `ES256`, `RS256` or `EdDSA`, pinned in config.
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20). Answered by the CAS owner: a CAS answer means MFA happened for the session (the opt-in `cas.assume_mfa`), and the server will add `authenticationDate`, the session-creation instant in UTC.
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
-- A cache and `Clear-Site-Data` rule for logout (S44).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
 - Resolved: the `oauth2` driver is resource-server only; the `oidc` driver (0.2.0) starts browser logins.
 - A test for the `saml` library choice: feed it a document with a second signature, a DOCTYPE and a namespace trick, and expect rejection (S34, S47).
