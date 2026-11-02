@@ -77,6 +77,17 @@ final class GatewayDriver implements Driver
     private const MAX_JTI_LENGTH = 128;
 
     /**
+     * The typ header values of an OAuth2 access token.
+     *
+     * The oauth2 driver is the only one that accepts these: an access token
+     * replayed as a gateway assertion is refused, so the two token kinds stay
+     * apart.
+     *
+     * @var list<string>
+     */
+    private const ACCESS_TOKEN_TYPES = ['at+jwt', 'application/at+jwt'];
+
+    /**
      * The optional claims that become read-only identity attributes.
      *
      * @var list<string>
@@ -287,6 +298,8 @@ final class GatewayDriver implements Driver
      */
     private function validate(UnencryptedToken $token): void
     {
+        $this->assertNotAnAccessToken($token);
+
         $key = $this->publicKey;
 
         if ($key === null) {
@@ -320,6 +333,33 @@ final class GatewayDriver implements Driver
         } catch (RequiredConstraintsViolated $e) {
             throw new AuthenticationFailed(
                 'The signed assertion was rejected (' . $this->violationReasons($e) . ').',
+            );
+        }
+    }
+
+    /**
+     * Refuse an OAuth2 access token presented as a gateway assertion.
+     *
+     * The oauth2 driver accepts JWTs typed "at+jwt" or
+     * "application/at+jwt", so an access token captured from one app could
+     * otherwise be replayed here as if it were a signed assertion. A typ
+     * header that is one of those values (compared case-insensitively, with
+     * any surrounding whitespace ignored) is refused like a bad assertion,
+     * and the header value is never echoed back in the message. A missing
+     * typ, or any other value such as "JWT", is not an access token marker
+     * and is left to the signature and claim checks.
+     */
+    private function assertNotAnAccessToken(UnencryptedToken $token): void
+    {
+        $typ = $token->headers()->get('typ');
+
+        if (! is_string($typ)) {
+            return;
+        }
+
+        if (in_array(strtolower(trim($typ)), self::ACCESS_TOKEN_TYPES, true)) {
+            throw new AuthenticationFailed(
+                'The signed assertion is typed as an OAuth2 access token, not a gateway assertion (gateway.invalid_assertion).',
             );
         }
     }
