@@ -750,17 +750,108 @@ final class GatewayDriverTest extends TestCase
         self::assertInstanceOf(Authenticated::class, $second);
     }
 
+    public function testListedKeysAuthenticateByTheirKid(): void
+    {
+        $clock = new FakeClock();
+        [$signerA, $privateKeyA, $publicKeyA] = $this->keys('ES256');
+        [$signerB, $privateKeyB, $publicKeyB] = $this->keys('ES256');
+        // Two keys listed (as gateway.public_keys would): the token's kid
+        // header picks the key that verifies it.
+        $driver = $this->driver($clock, 'ES256', ['a' => $publicKeyA, 'b' => $publicKeyB]);
+
+        $step = $driver->login($this->request($this->buildToken($signerA, $privateKeyA, $clock, ['kid' => 'a'])));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+
+        $step = $driver->login($this->request($this->buildToken($signerB, $privateKeyB, $clock, ['kid' => 'b'])));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+    }
+
+    public function testRejectsATokenSignedWithOneListedKeyButCarryingTheOthersKid(): void
+    {
+        $clock = new FakeClock();
+        [$signerA, $privateKeyA, $publicKeyA] = $this->keys('ES256');
+        [, , $publicKeyB] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['a' => $publicKeyA, 'b' => $publicKeyB]);
+        // Validly signed by key A, but the kid names key B.
+        $token = $this->buildToken($signerA, $privateKeyA, $clock, ['kid' => 'b']);
+
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
+    }
+
+    public function testRejectsAListedKeyTokenWithoutAKid(): void
+    {
+        $clock = new FakeClock();
+        [$signerA, $privateKeyA, $publicKeyA] = $this->keys('ES256');
+        [, , $publicKeyB] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['a' => $publicKeyA, 'b' => $publicKeyB]);
+        // Validly signed by key A, but no kid header names any key.
+        $token = $this->buildToken($signerA, $privateKeyA, $clock);
+
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
+    }
+
+    public function testRejectsAListedKeyTokenWithAnUnknownKidWithoutEchoingIt(): void
+    {
+        $clock = new FakeClock();
+        [$signerA, $privateKeyA, $publicKeyA] = $this->keys('ES256');
+        [, , $publicKeyB] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['a' => $publicKeyA, 'b' => $publicKeyB]);
+        $token = $this->buildToken($signerA, $privateKeyA, $clock, ['kid' => 'not-configured']);
+
+        try {
+            $driver->login($this->request($token));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringContainsString('gateway.signature', $e->getMessage());
+            // The failure must not echo the kid back.
+            self::assertStringNotContainsString('not-configured', $e->getMessage());
+        }
+    }
+
+    public function testRejectsAnEmptyPublicKeysMap(): void
+    {
+        $clock = new FakeClock();
+
+        $this->expectException(InvalidConfig::class);
+
+        $this->driver($clock, 'ES256', []);
+    }
+
+    public function testRejectsAPublicKeysMapWithAnEmptyKid(): void
+    {
+        $clock = new FakeClock();
+        [, , $publicKey] = $this->keys('ES256');
+
+        $this->expectException(InvalidConfig::class);
+
+        $this->driver($clock, 'ES256', ['' => $publicKey]);
+    }
+
+    public function testRejectsAPublicKeysMapWithAnEmptyKey(): void
+    {
+        $clock = new FakeClock();
+
+        $this->expectException(InvalidConfig::class);
+
+        $this->driver($clock, 'ES256', ['a' => '']);
+    }
+
     /**
-     * A driver with the given algorithm, public key, trusted proxies and leeway.
+     * A driver with the given algorithm, public key (or map of kid to key),
+     * trusted proxies and leeway.
      *
      * Without an explicit replay guard, the driver gets a fresh in-memory one
      * (sharing the clock), so the single-use checks are on. The fail-closed
      * test constructs the driver directly instead.
      *
-     * @param  non-empty-string  $publicKey
-     * @param  list<string>      $trustedProxies
+     * @param  string|array<array-key, mixed>                    $publicKey
+     * @param  list<string>                                      $trustedProxies
      */
-    private function driver(FakeClock $clock, string $algorithm, string $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30, ?ReplayGuard $replayGuard = null, int $maxLifetimeSeconds = 300, bool $allowWithoutReplayGuard = false): GatewayDriver
+    private function driver(FakeClock $clock, string $algorithm, string|array $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30, ?ReplayGuard $replayGuard = null, int $maxLifetimeSeconds = 300, bool $allowWithoutReplayGuard = false): GatewayDriver
     {
         return new GatewayDriver(
             self::HEADER,
@@ -860,7 +951,8 @@ final class GatewayDriverTest extends TestCase
      * seconds in the future, so the assertion lives exactly 300 seconds: the
      * driver's default maximum lifetime. A default jti is present and unique
      * per call, so two different tokens never collide; the replay tests
-     * override it with a fixed value.
+     * override it with a fixed value. A 'kid' override sets the token's kid
+     * header (no default: most assertions carry none).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -868,6 +960,7 @@ final class GatewayDriverTest extends TestCase
     {
         $now = $clock->now();
 
+        $kid = $this->override($overrides, 'kid', null);
         $issuer = $this->override($overrides, 'issuer', self::ISSUER);
         $audience = $this->override($overrides, 'audience', self::AUDIENCE);
         $subject = $this->override($overrides, 'subject', self::SUBJECT);
@@ -909,6 +1002,10 @@ final class GatewayDriverTest extends TestCase
 
         foreach ($extra as $name => $value) {
             $builder = $builder->withClaim($name, $value);
+        }
+
+        if ($kid !== null) {
+            $builder = $builder->withHeader('kid', $kid);
         }
 
         return $builder->getToken($signer, $privateKey)->toString();

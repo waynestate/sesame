@@ -85,7 +85,18 @@ final class GatewayDriver implements Driver
 
     private readonly Signer $signer;
 
-    private readonly Key $publicKey;
+    /**
+     * The single configured key, or null when a map of keys was given.
+     */
+    private readonly ?Key $publicKey;
+
+    /**
+     * The configured keys by kid (for a gateway rotating its signing key),
+     * or null when a single key was given.
+     *
+     * @var array<string, Key>|null
+     */
+    private readonly ?array $publicKeys;
 
     private readonly ClockInterface $clock;
 
@@ -94,7 +105,7 @@ final class GatewayDriver implements Driver
     private readonly int $maxLifetimeSeconds;
 
     /**
-     * @param  non-empty-string  $publicKey  The gateway's public key (PEM, a path to one, or base64 for EdDSA).
+     * @param  string|array<array-key, mixed>  $publicKey  The gateway's public key (PEM, a path to one, or base64 for EdDSA), or a map of kid to key while the gateway rotates its signing key: the token's kid header picks the key that verifies it. A PHP caller can pass a bad string or array, so both are checked at runtime.
      * @param  non-empty-string  $issuer  The expected issuer (iss claim).
      * @param  non-empty-string  $audience  The expected audience (aud claim).
      * @param  list<string>  $trustedProxies  CIDR ranges (or single IPs) the gateway proxy sits behind.
@@ -104,7 +115,7 @@ final class GatewayDriver implements Driver
     public function __construct(
         private readonly string $header,
         string $algorithm,
-        string $publicKey,
+        string|array $publicKey,
         private readonly string $issuer,
         private readonly string $audience,
         private readonly int $leewaySeconds,
@@ -121,7 +132,39 @@ final class GatewayDriver implements Driver
         }
 
         $this->signer = self::signerFor($algorithm);
-        $this->publicKey = self::keyFor($publicKey, $algorithm);
+
+        if (is_array($publicKey)) {
+            if ($publicKey === []) {
+                throw new InvalidConfig(
+                    'The config key "gateway.public_keys" must be a non-empty map of kid to key.',
+                );
+            }
+
+            $keys = [];
+
+            foreach ($publicKey as $kid => $key) {
+                if (! is_string($kid) || $kid === '' || ! is_string($key) || $key === '') {
+                    throw new InvalidConfig(
+                        'Each entry in "gateway.public_keys" must be a non-empty string kid mapped to a non-empty string key.',
+                    );
+                }
+
+                $keys[$kid] = self::keyFor($key, $algorithm);
+            }
+
+            $this->publicKey = null;
+            $this->publicKeys = $keys;
+        } else {
+            if ($publicKey === '') {
+                throw new InvalidConfig(
+                    'The config key "gateway.public_key" must be a non-empty string.',
+                );
+            }
+
+            $this->publicKey = self::keyFor($publicKey, $algorithm);
+            $this->publicKeys = null;
+        }
+
         $this->clock = $clock ?? new SystemClock();
         $this->replayGuard = $replayGuard;
         $this->maxLifetimeSeconds = $maxLifetimeSeconds;
@@ -235,18 +278,41 @@ final class GatewayDriver implements Driver
      *
      * The signature is checked first, with the algorithm pinned from config,
      * so a token that claims a different algorithm (or "none") is refused
-     * before its signature is looked at. Then the issuer, audience and time
-     * claims (iat, nbf, exp) are checked, with the configured leeway for
-     * clock skew.
+     * before its signature is looked at. When several keys are configured
+     * (a gateway rotating its signing key), the token's kid header names the
+     * key that verifies it: a missing or unknown kid is refused like a bad
+     * signature, and the kid is never echoed back in the message. Then the
+     * issuer, audience and time claims (iat, nbf, exp) are checked, with the
+     * configured leeway for clock skew.
      */
     private function validate(UnencryptedToken $token): void
     {
+        $key = $this->publicKey;
+
+        if ($key === null) {
+            $keys = $this->publicKeys;
+
+            if ($keys === null) {
+                throw new InvalidConfig('The gateway driver has no configured public key.');
+            }
+
+            $kid = $token->headers()->get('kid');
+
+            if (! is_string($kid) || ! array_key_exists($kid, $keys)) {
+                throw new AuthenticationFailed(
+                    'The signed assertion does not name a configured gateway key (gateway.signature).',
+                );
+            }
+
+            $key = $keys[$kid];
+        }
+
         $leeway = new DateInterval('PT' . $this->leewaySeconds . 'S');
 
         try {
             (new Validator())->assert(
                 $token,
-                new SignedWith($this->signer, $this->publicKey),
+                new SignedWith($this->signer, $key),
                 new IssuedBy($this->issuer),
                 new PermittedFor($this->audience),
                 new LooseValidAt($this->clock, $leeway),
