@@ -998,8 +998,43 @@ Docker is a config change, not a code change. What differs per host:
 ## Moving from wayne-cas
 
 Apps that use wayne-cas can move to SESAME without rewriting their auth. The
-shim keeps the wayne-cas names and behavior, and it says once (in the log)
-that it is a deprecated bridge.
+easy way is [Booster](https://github.com/waynestate/booster)'s
+`cas-to-sesame` hop; the by-hand path is below it.
+
+### The easy way: Booster's `cas-to-sesame` hop
+
+Booster plans the hop with `--sesame`, and leaves it out with a warning when
+the plan ends below PHP 8.3, which SESAME needs. It lands just before the hop
+from Laravel 10 to 11, and while PHP is still below 8.3 the PHP hops go
+first. What the hop does:
+
+- Writes `config/sesame.php` from the app's `config/wayne-cas.php` when the
+  old `root` is a plain string (the old root becomes the fallback for
+  `cas.base_url`), or from SESAME's published defaults when the app has no
+  wayne-cas config at all. `user_resolver` defaults to the compat resolver.
+- Moves the CAS middleware off the global `web` group and onto the app's web
+  routes, with the `wayne.cas` alias registered against SESAME's
+  `WayneAuthenticate`.
+- Points the web guard at the `sesame` driver and the users provider at
+  `eloquent`, adding a model key when the provider has none.
+- Rewrites user models that use `WayneCasable` as a trait to
+  `implements WayneCasable` plus `use ReadOnlyAttributes`.
+- Swaps the Composer requirement to `waynestate/sesame:^0.3` (SESAME is on
+  Packagist, so no extra repository is needed) and drops the `wayne-cas`
+  package, any `wayne-cas` path entry and its VCS repository entries.
+- Removes `config/wayne-cas.php` when nothing in the app reads its config
+  keys any more; while anything still does, the file stays and a manual note
+  names the readers.
+- Flags the dead `DUO_*` settings in example env files.
+
+It never runs app code: the old files are read with conservative patterns,
+and anything it cannot move safely comes back as a manual note that names the
+file.
+
+### By hand
+
+The shim keeps the wayne-cas names and behavior, and it says once (in the
+log) that it is a deprecated bridge.
 
 The mapping:
 
@@ -1009,7 +1044,7 @@ The mapping:
 | `auth.providers.users.model` | `auth.providers.users.model` (unchanged) |
 | `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
 | `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
-| `auth()->login($user)` | `app(Sesame::class)->user()` |
+| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame`, or `app(Sesame::class)->user()` |
 | `use2FA` | not supported; the shim logs a warning when it is on |
 
 The model. wayne-cas found the user through the model's static
@@ -1065,6 +1100,18 @@ defaults it to the app's `/login` route when it is not set.
 `use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry.
 When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning
 once and leaves the 2FA to the app.
+
+### What Booster leaves for you
+
+- Duo 2FA is not carried. If the app had `use2FA` enabled, re-enable
+  two-factor in the app itself, and drop the `DUO_HOSTNAME`, `DUO_IKEY`,
+  `DUO_SKEY` and `DUO_AKEY` settings: they do nothing under SESAME.
+- Log in through the pre-production host before you ship, and check the
+  session timeout, the Access ID attribute and Duo there.
+- `auth()->user()` now comes from SESAME's guard and is reloaded every
+  request (the compat resolver looks the user up again through
+  `auth.providers.users.model`), so check that signed-in pages and any Gate
+  or policy checks still work.
 
 ## Proof
 
