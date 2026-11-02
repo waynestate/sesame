@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: the cas quick start's Guzzle client now sets a `timeout` and `connect_timeout` (Guzzle has no total timeout by default), and the oauth2 quick start does the same.
 - Docs: a "Which key to store" paragraph tells apps to key their users on the driver plus the identity provider's stable identifier, never an email or a display name.
 - Docs: a note tells apps to log `AuthenticationFailed` messages and show the user one generic line, since the message can carry the CAS failure code.
+- Added: `gateway.public_keys`, a map of `kid` to public key, so the gateway driver can verify against two keys at once (the assertion's `kid` header picks the key) for key rotation without a coordinated window.
 
 ## [0.3.0] - 2026-10-30
 
