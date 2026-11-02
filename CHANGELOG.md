@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added: `oauth2.require_at_jwt` (env `SESAME_OAUTH2_REQUIRE_AT_JWT`), an opt-in check that the access token's `typ` header is `at+jwt` or `application/at+jwt`. It is off by default because Microsoft Entra v2 access tokens are typed `JWT`, so requiring it would refuse every Entra token.
 - Security: the `gateway` driver refuses a token whose `typ` header is `at+jwt` or `application/at+jwt`, so an OAuth2 access token cannot be replayed as a gateway assertion. A missing `typ` or `JWT` still works.
 - Docs: BEST_PRACTICES tags now match the code: the entries whose fix is already in `src/` and `tests/` are re-tagged (`Enforced`, `Documented` or `Partly enforced`) with the code and test file:line named, and the gap list at the bottom drops the items that are closed.
 - Docs: the "Moving from wayne-cas" section now leads with the easy way, Booster's `cas-to-sesame` hop (planned with `--sesame`, needs the plan to end on PHP 8.3 or newer), then the by-hand mapping, then what Booster leaves for you (Duo 2FA is not carried, verify login on the pre-production host).
