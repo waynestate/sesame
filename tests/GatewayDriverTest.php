@@ -848,7 +848,7 @@ final class GatewayDriverTest extends TestCase
      * (sharing the clock), so the single-use checks are on. The fail-closed
      * test constructs the driver directly instead.
      *
-     * @param  non-empty-string|array<string, non-empty-string>  $publicKey
+     * @param  string|array<array-key, mixed>                    $publicKey
      * @param  list<string>                                      $trustedProxies
      */
     private function driver(FakeClock $clock, string $algorithm, string|array $publicKey, array $trustedProxies = self::TRUSTED, int $leeway = 30, ?ReplayGuard $replayGuard = null, int $maxLifetimeSeconds = 300, bool $allowWithoutReplayGuard = false): GatewayDriver

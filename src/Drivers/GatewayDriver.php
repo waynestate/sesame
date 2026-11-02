@@ -105,7 +105,7 @@ final class GatewayDriver implements Driver
     private readonly int $maxLifetimeSeconds;
 
     /**
-     * @param  non-empty-string|array<string, non-empty-string>  $publicKey  The gateway's public key (PEM, a path to one, or base64 for EdDSA), or a map of kid to key while the gateway rotates its signing key: the token's kid header picks the key that verifies it.
+     * @param  string|array<array-key, mixed>  $publicKey  The gateway's public key (PEM, a path to one, or base64 for EdDSA), or a map of kid to key while the gateway rotates its signing key: the token's kid header picks the key that verifies it. A PHP caller can pass a bad string or array, so both are checked at runtime.
      * @param  non-empty-string  $issuer  The expected issuer (iss claim).
      * @param  non-empty-string  $audience  The expected audience (aud claim).
      * @param  list<string>  $trustedProxies  CIDR ranges (or single IPs) the gateway proxy sits behind.
@@ -155,6 +155,12 @@ final class GatewayDriver implements Driver
             $this->publicKey = null;
             $this->publicKeys = $keys;
         } else {
+            if ($publicKey === '') {
+                throw new InvalidConfig(
+                    'The config key "gateway.public_key" must be a non-empty string.',
+                );
+            }
+
             $this->publicKey = self::keyFor($publicKey, $algorithm);
             $this->publicKeys = null;
         }

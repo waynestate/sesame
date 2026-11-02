@@ -66,7 +66,7 @@ final readonly class Config
      * @param list<string> $gatewayTrustedProxies
      * @param list<string> $oauth2RequiredScopes
      * @param list<string> $oauth2RequiredRoles
-     * @param array<string, non-empty-string>|null $gatewayPublicKeys
+     * @param non-empty-array<non-empty-string, non-empty-string>|null $gatewayPublicKeys
      */
     public function __construct(
         public string $driver,
@@ -278,7 +278,7 @@ final readonly class Config
          * @var list<non-empty-string> $gatewayTrustedProxies
          * @var list<string> $oauth2RequiredScopes
          * @var list<string> $oauth2RequiredRoles
-         * @var array<string, non-empty-string>|null $gatewayPublicKeys
+         * @var non-empty-array<non-empty-string, non-empty-string>|null $gatewayPublicKeys
          */
         return new self(
             $driver,
