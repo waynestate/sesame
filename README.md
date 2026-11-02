@@ -175,6 +175,15 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
+**Which key to store.** Your `findOrImportUser` looks the person up in the
+app's own store, so key that store on the driver plus the identity provider's
+own stable identifier, never on an email or a display name, which can change
+or be shared between providers. For the cas driver that identifier is the
+`username` (the Access ID), so the key is `$identity->driver` plus
+`$identity->username`. Other drivers name their stable identifier differently:
+the oidc section keys on `iss` plus `sub`, or `tid` plus `oid`, never the
+username alone.
+
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
 user and identity in it, but it never starts a session and never touches a
@@ -277,8 +286,10 @@ $config = Config::fromArray([
     ],
 ]);
 
-// Any PSR-18 client works, for example Guzzle.
-$http = new \GuzzleHttp\Client();
+// Any PSR-18 client works, for example Guzzle. Set a timeout: Guzzle has no
+// total timeout by default, so a hung CAS server would hold the request open
+// forever.
+$http = new \GuzzleHttp\Client(['timeout' => 10, 'connect_timeout' => 5]);
 
 $driver = DriverFactory::make($config, $http, new Psr17Factory());
 ```
@@ -325,6 +336,11 @@ users, would make the MFA check pass for sign-ins that never did MFA.
 The MFA age still needs a sign-in time, and the driver never invents one: it
 comes from the CAS `authenticationDate` attribute, and when the server does
 not send one, the MFA check fails because there is no sign-in time to age.
+
+**On a failed login, show a generic line, not the exception.** An
+`AuthenticationFailed` message can carry the CAS failure code (for example
+`INVALID_TICKET`), which tells an attacker how the server refused the ticket.
+Log the message for operators and show the user one generic line instead.
 
 ## The gateway driver
 
@@ -443,8 +459,10 @@ $config = Config::fromArray([
     ],
 ]);
 
-// Any PSR-18 client works, for example Guzzle.
-$http = new \GuzzleHttp\Client();
+// Any PSR-18 client works, for example Guzzle. Set a timeout: Guzzle has no
+// total timeout by default, so a hung issuer would hold the request open
+// forever.
+$http = new \GuzzleHttp\Client(['timeout' => 10, 'connect_timeout' => 5]);
 
 // Any PSR-16 cache works (symfony/cache is shown); the Laravel adapter wires
 // one up for you, so you only see this in raw PHP.
@@ -998,8 +1016,43 @@ Docker is a config change, not a code change. What differs per host:
 ## Moving from wayne-cas
 
 Apps that use wayne-cas can move to SESAME without rewriting their auth. The
-shim keeps the wayne-cas names and behavior, and it says once (in the log)
-that it is a deprecated bridge.
+easy way is [Booster](https://github.com/waynestate/booster)'s
+`cas-to-sesame` hop; the by-hand path is below it.
+
+### The easy way: Booster's `cas-to-sesame` hop
+
+Booster plans the hop with `--sesame`, and leaves it out with a warning when
+the plan ends below PHP 8.3, which SESAME needs. It lands just before the hop
+from Laravel 10 to 11, and while PHP is still below 8.3 the PHP hops go
+first. What the hop does:
+
+- Writes `config/sesame.php` from the app's `config/wayne-cas.php` when the
+  old `root` is a plain string (the old root becomes the fallback for
+  `cas.base_url`), or from SESAME's published defaults when the app has no
+  wayne-cas config at all. `user_resolver` defaults to the compat resolver.
+- Moves the CAS middleware off the global `web` group and onto the app's web
+  routes, with the `wayne.cas` alias registered against SESAME's
+  `WayneAuthenticate`.
+- Points the web guard at the `sesame` driver and the users provider at
+  `eloquent`, adding a model key when the provider has none.
+- Rewrites user models that use `WayneCasable` as a trait to
+  `implements WayneCasable` plus `use ReadOnlyAttributes`.
+- Swaps the Composer requirement to `waynestate/sesame:^0.3` (SESAME is on
+  Packagist, so no extra repository is needed) and drops the `wayne-cas`
+  package, any `wayne-cas` path entry and its VCS repository entries.
+- Removes `config/wayne-cas.php` when nothing in the app reads its config
+  keys any more; while anything still does, the file stays and a manual note
+  names the readers.
+- Flags the dead `DUO_*` settings in example env files.
+
+It never runs app code: the old files are read with conservative patterns,
+and anything it cannot move safely comes back as a manual note that names the
+file.
+
+### By hand
+
+The shim keeps the wayne-cas names and behavior, and it says once (in the
+log) that it is a deprecated bridge.
 
 The mapping:
 
@@ -1009,7 +1062,7 @@ The mapping:
 | `auth.providers.users.model` | `auth.providers.users.model` (unchanged) |
 | `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
 | `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
-| `auth()->login($user)` | `app(Sesame::class)->user()` |
+| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame`, or `app(Sesame::class)->user()` |
 | `use2FA` | not supported; the shim logs a warning when it is on |
 
 The model. wayne-cas found the user through the model's static
@@ -1065,6 +1118,18 @@ defaults it to the app's `/login` route when it is not set.
 `use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry.
 When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning
 once and leaves the 2FA to the app.
+
+### What Booster leaves for you
+
+- Duo 2FA is not carried. If the app had `use2FA` enabled, re-enable
+  two-factor in the app itself, and drop the `DUO_HOSTNAME`, `DUO_IKEY`,
+  `DUO_SKEY` and `DUO_AKEY` settings: they do nothing under SESAME.
+- Log in through the pre-production host before you ship, and check the
+  session timeout, the Access ID attribute and Duo there.
+- `auth()->user()` now comes from SESAME's guard and is reloaded every
+  request (the compat resolver looks the user up again through
+  `auth.providers.users.model`), so check that signed-in pages and any Gate
+  or policy checks still work.
 
 ## Proof
 

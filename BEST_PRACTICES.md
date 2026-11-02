@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-10-29. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist; `saml` is design only, so its practices are tagged by what is written down, not by what runs.
+The tags describe the repo as it stands on 2026-11-02. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist; `saml` is design only, so its practices are tagged by what is written down, not by what runs.
 
 ## 1. Sessions
 
@@ -41,31 +41,31 @@ How the stack holds it: `Not yet`. Neither SESAME nor HELMET sets a cookie name 
 End the session after a period of inactivity and after a maximum lifetime, whatever the activity. Do not rely on PHP's garbage collection for this.
 Why: a stolen or forgotten session should stop working on its own. PHP's `gc_maxlifetime` only marks data as collectable, and collection is random.
 Sources: [ASVS 5.0 V7.3.1 and V7.3.2](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md), [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) (checked second pass: AAL2 says SHOULD be no more than 24 hours overall and 1 hour idle; AAL3 says SHALL be no more than 12 hours overall and SHOULD be no more than 15 minutes idle), [PHP session configuration](https://www.php.net/manual/en/session.configuration.php).
-How the stack holds it: `Not yet`. SESAME stores `authenticatedAt` in the identity (`src/Sesame.php:46`), but nothing reads it. No timeout is enforced or configurable.
+How the stack holds it: `Enforced`. `Sesame::user()` checks both clocks on every call and signs the session out when it has been quiet for longer than `session.idle_minutes` (default 120) or has lived for longer than `session.absolute_minutes` (default 720); a session with a user but no timestamps counts as expired (`src/Sesame.php:161-177`). The values come from config (`config/sesame.php:226-229`, read in `src/Config.php:239-240`). Tests: `SesameTest::testUserSignsOutWhenTheIdleTimeoutHasPassed:208`, `SesameTest::testUserStaysSignedInAtTheIdleBoundary:242`, `SesameTest::testUserSignsOutWhenTheAbsoluteLifetimeHasPassed:264`, `SesameTest::testUserSignsOutWhenTheSessionHasNoTimestamps:295`, `ConfigTest::testReadsTheSessionTimeouts:472`.
 
 ### S6. Keep session contents small and plain
 Store a user key and little else. Do not put a full model object or the raw IdP attributes in the session.
 Why: serialized objects grow stale, leak personal data into session storage, and widen the deserialization surface.
 Sources: [OWASP Deserialization](https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html), [ASVS 5.0 V1.5.2](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x10-V1-Encoding-and-Sanitization.md).
-How the stack holds it: `Not yet`. The design says the session holds the user key, but `Sesame::login()` stores whatever `findOrImportUser` returns plus the whole `Identity` with its attributes (`src/Sesame.php:45-46`).
+How the stack holds it: `Partly enforced`. `Sesame::login()` stores the identity without its raw IdP attributes, so no driver can get them into the session (`src/Sesame.php:100-108`); `SesameTest::testLoginStoresTheIdentityWithoutItsRawAttributes:131` pins it. What is stored under `sesame.user` is whatever `findOrImportUser` returns, so keeping that to a key is the app's choice.
 
 ### S7. Logout ends the app session first, then the IdP session
 Destroy the server-side session, then send the browser to the IdP logout. A failed redirect must not leave a live session.
 Why: deleting only the cookie, or only the IdP session, leaves a usable session.
 Sources: [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html), [ASVS 5.0 V7.4.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md).
-How the stack holds it: `Enforced`. `Sesame::logout()` forgets the keys and invalidates before it asks the driver for the IdP URL (`src/Sesame.php:67-74`). `SesameTest::testLogoutInvalidatesBeforeTheIdpUrlIsBuilt` covers it. `NativeSession::invalidate()` empties the data and rotates the ID, but does not call `session_destroy()` or expire the cookie.
+How the stack holds it: `Enforced`. `Sesame::logout()` forgets the keys and invalidates before it asks the driver for the IdP URL (`src/Sesame.php:257-262, 337-342`). `SesameTest::testLogoutInvalidatesBeforeTheIdpUrlIsBuilt:415` covers it. `NativeSession::invalidate()` clears the data, expires the cookie on the client, and destroys the session (`src/Session/NativeSession.php:57-84`), tested by `NativeSessionTest::testInvalidateDestroysTheSession:11`.
 
 ### S8. Logout is a protected action
 Make logout a POST (or otherwise token-protected) request, not a plain link that any page can trigger.
 Why: SameSite=Lax does not stop state changes made by top-level GET navigation.
 Sources: [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
-How the stack holds it: `Not yet`. `sesame_logout()` accepts any method (`src/functions.php:114-119`), and no guidance says to protect it.
+How the stack holds it: `Enforced`. `sesame_logout()` runs only for a POST whose body carries the session's token in `sesame_logout_token`; a GET answers 405 and a POST without the right token answers 403, and both leave the session alone and stop the script (`src/functions.php:243-261`; the token is made and checked in `src/Sesame.php:296-317`). The Laravel logout route is a POST in the web group, so Laravel's CSRF applies. Tests: `FunctionsTest::testSesameLogoutRefusesAGetAndKeepsTheSession:338`, `FunctionsTest::testSesameLogoutRefusesAPostWithoutTheRightToken:354`, `FunctionsTest::testSesameLogoutWithTheTokenClearsTheSession:373`, `SesameTest::testTheLogoutTokenIsStableForASessionAndChecked:387`, `LoginRouteTest::testLogoutIsAPostRouteInTheWebGroupSoCsrfApplies:70`.
 
 ### S9. Write down the session lifetimes
 Record the idle timeout, the maximum lifetime, and how app, SESAME and IdP sessions relate.
 Why: with a federated login there are several sessions, and nobody can reason about logout or re-authentication if their lifetimes are not written down.
 Sources: [ASVS 5.0 V7.1.1 and V7.1.3](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md), [ASVS 5.0 V7.6.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md).
-How the stack holds it: `Not yet`. No template or section in the README or the CREED handbook asks an app to state its lifetimes.
+How the stack holds it: `Documented`. The README's "Session timeouts" section writes down the two clocks, their defaults (idle 120 minutes, absolute 720 minutes) and what starts each, and how the sessions relate: `auth()->logout()` ends the app side and leaves the identity provider's single sign-on session alone, and there is no single logout, so the IdP session survives until the provider ends it (`README.md:727-747, 972-974`). An app's own written table of its lifetimes is still on the app, so this stays documentation.
 
 ## 2. The `cas` driver
 
@@ -115,7 +115,7 @@ How the stack holds it: `Enforced`. See `src/Drivers/CasDriver.php:87-92, 130-16
 After a successful login, redirect to the same page without `?ticket=`.
 Why: the ticket would otherwise stay in logs, history and Referer headers. It is single-use, so the risk is small, but it is free to remove.
 Sources: [CAS Protocol 3.0 (security considerations)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html).
-How the stack holds it: `Not yet`. `Sesame::login()` returns the user and the app must redirect. Nothing says so.
+How the stack holds it: `Enforced`. When a ticket completes the login, `sesame_login()` sends the user to the driver's service URL or the checked return-to, which carry no ticket, and stops the script (`src/functions.php:128-135`). Tests: `FunctionsTest::testSesameLoginRedirectsToTheServiceUrlAfterACasLogin:249`, `LoginRouteTest::testLoginDropsTheTicketFromTheRedirectAfterACasLogin:32`.
 
 ### S18. Bind the login to the browser that started it
 Set a short-lived value in the browser before the redirect to CAS, and check it when the ticket returns.
@@ -139,19 +139,19 @@ How the stack holds it: `Not yet`, and moot against Academica. Academica never s
 Allow only local paths, or hosts on an allowlist, for the post-login return and the post-logout `service` value.
 Why: an open redirect turns a trusted login page into a phishing link.
 Sources: [OWASP Unvalidated Redirects and Forwards](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html), [CAS Protocol 3.0 (/logout service parameter)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html).
-How the stack holds it: `Not yet`. `logoutUrl()` and `sesame_logout()` pass `$returnTo` through as given (`src/Drivers/CasDriver.php:97-100`, `src/functions.php:114-119`). The CAS server checks its own registered services, which is a second line, not a first.
+How the stack holds it: `Enforced`. Every return-to passes `ReturnTo::safe()`: an absolute https URL on the service URL's scheme, host and port, with no user information, or the user goes to the service URL instead (plain http only for localhost, for local development) (`src/ReturnTo.php:35-42`). It is applied to the CAS logout `service` value (`src/Drivers/CasDriver.php:152`), to `sesame_logout()`'s destination (`src/functions.php:271`) and to the oidc driver's remembered return-to (`src/Drivers/OidcDriver.php:713`). The CAS server still checks its own registered services, as a second line. Tests: `ReturnToTest`, `CasDriverTest::testLogoutUrlFallsBackToTheServiceUrlForAnOffHostReturnTo:623`, `FunctionsTest::testSafeReturnToFallsBackToTheServiceUrlForAnOffHostReturnTo:430`.
 
 ### S22. Stop the script after a redirect
 After sending a `Location` header, end the request so no protected code runs.
 Why: a redirect does not stop PHP. The rest of the page runs, and its output can reach the client.
 Sources: none of the sources above make this point directly. It follows from how PHP's `header()` works: it queues a header and the script keeps running.
-How the stack holds it: `Not yet`. `sesame_login()` and `sesame_logout()` send the header and return (`src/functions.php:84-86, 118`). The README example keeps running after `sesame_login()` (`README.md:45-47`).
+How the stack holds it: `Enforced`. `sesame_login()` and `sesame_logout()` call `exit` after every `Location` header they send (`src/functions.php:125, 133, 260, 272`), and the README says both functions stop the script after the redirect (`README.md:190-191`). Tests: `FunctionsTest::testSesameLoginStopsTheScriptAfterARedirect:214`, `FunctionsTest::testSesameLogoutStopsTheScriptAfterARedirect:388`.
 
 ### S23. Give the HTTP client a timeout and keep TLS verification on
 Set connect and total timeouts on the PSR-18 client that calls CAS. Never disable certificate checks.
 Why: a hung CAS server should fail one login, not hold every PHP worker.
 Sources: [OWASP Authentication (TLS)](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [Guzzle request options](https://docs.guzzlephp.org/en/stable/request-options.html) (checked second pass: `timeout` and `connect_timeout` both default to `0`, which waits forever; `verify` defaults to `true`).
-How the stack holds it: `Not yet`. SESAME takes any client and sets nothing. The README example is `new \GuzzleHttp\Client()` with defaults, and Guzzle's default has no total timeout (`README.md:89-90`). The first pass claim holds.
+How the stack holds it: `Documented`. The app owns the PSR-18 client, so the README gives it the timeout: the cas quick start builds the Guzzle client with `timeout` and `connect_timeout` set, noting that Guzzle has no total timeout by default (`README.md:289-292`). Certificate checks stay on by default: Guzzle's `verify` option is `true` unless the app turns it off, and nothing in SESAME does.
 
 ## 3. Identity and the app's user
 
@@ -159,19 +159,19 @@ How the stack holds it: `Not yet`. SESAME takes any client and sets nothing. The
 Look users up by the driver and the IdP's identifier, not by email or a display attribute.
 Why: two IdPs may issue the same name, and email can change or be reused.
 Sources: [ASVS 5.0 V6.8.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md), [OWASP Authentication (federation)](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).
-How the stack holds it: `Not yet`. `Identity` carries `driver` and `username`, but the README and the resolver docblock do not tell apps to use both as the key.
+How the stack holds it: `Documented`. `Identity` carries `driver` and `username` (`src/Identity.php:24, 26`), and the README's "Which key to store" paragraph tells apps to key their users on the driver plus the IdP's own stable identifier, naming `$identity->driver` plus `$identity->username` for the cas driver and pointing to the oidc section for the oidc identifiers (`README.md:178-185`).
 
 ### S25. Authentication is not authorization
 `findOrImportUser` decides whether this person may use this app. When it says no, the user must not end up signed in.
 Why: a valid CAS login means "a WSU person", not "a person with access to this app".
 Sources: [NIST SP 800-63C-4 (RP maps the assertion to a provisioned account)](https://pages.nist.gov/800-63-4/sp800-63c.html).
-How the stack holds it: `Not yet`. If the resolver returns `null`, `Sesame::login()` still regenerates the session and stores `sesame.identity` (`src/Sesame.php:42-46`). `user()` then returns null, but an app that checks the identity key is signed in. No test covers a null result.
+How the stack holds it: `Enforced`. When the resolver returns `null`, `Sesame::login()` returns before it regenerates the session or stores anything, so a refused identity never ends up signed in (`src/Sesame.php:88-90`). Test: `SesameTest::testLoginWithANullResolverResultStoresNothing:113`.
 
 ### S26. Show users a generic failure, keep the detail in logs
 The login error page must not say why a ticket failed. Record the reason for operators.
 Why: detail helps an attacker probe, and it is no use to the user.
 Sources: [OWASP Authentication (generic messages)](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [ASVS 5.0 V16.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) (generic message for security-sensitive errors; no stack traces, queries, keys or tokens). Corrected in the second pass: the first pass cited V6.3.8, but that requirement is about not revealing whether an account exists, not about error detail.
-How the stack holds it: `Not yet`. `AuthenticationFailed` messages carry the CAS failure code (`src/Drivers/CasDriver.php:144-146`). Nothing tells apps not to print them.
+How the stack holds it: `Documented`. `AuthenticationFailed` messages carry the CAS failure code (`src/Drivers/CasDriver.php:218-220`), so the README tells apps to log the message and show the user one generic line instead (`README.md:340-343`).
 
 ### S27. Log authentication events, never secrets
 Log logins, failures, logouts and session anomalies with user, driver and time. Never log tickets, session IDs, assertions or tokens.
@@ -185,7 +185,7 @@ How the stack holds it: `Not yet`. SESAME has no logger or event hook. The CAS f
 It throws when the environment is production. It never falls back silently.
 Why: a fake login in production is an open door.
 Sources: none specific. This is a project rule from the stack's auth design.
-How the stack holds it: `Enforced`. `FakeDriver` throws `FakeDriverInProduction` (`src/Drivers/FakeDriver.php:32-34`), tested by `FakeDriverTest::testRefusesProduction`. The test is an exact match on the word `production`, so an environment named `prod` or `live` boots it (see the gap list).
+How the stack holds it: `Enforced`. `FakeDriver` throws `FakeDriverInProduction` unless the environment is on its allowlist (`local`, `development`, `dev`, `testing`, `test`), so an environment that is not explicitly a development one, including `prod` and `live`, cannot boot it (`src/Drivers/FakeDriver.php:31, 41-43`). Tests: `FakeDriverTest::testRefusesProduction:17`, `FakeDriverTest::testAcceptsNonProduction:37`.
 
 ### S29. Required settings have no defaults
 `driver`, `environment`, `cas.base_url` and `cas.service_url` must be set. There is no built-in default for the IdP address.
@@ -295,7 +295,7 @@ How the stack holds it: `Not yet`. `NativeSession::regenerate()` calls `session_
 Send `Cache-Control: no-store` on responses that carry session data. On logout also send `Clear-Site-Data: "cache", "cookies", "storage"`, and still expire the session cookie.
 Why: a back button or a shared browser should not show a signed-in page after logout.
 Sources: [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) (recommends `no-store` on responses with session data, and `Clear-Site-Data` on logout). One search result says Safari does not support the header. I did not confirm that on a primary page, so expire the cookie too.
-How the stack holds it: `Not yet`. `sesame_logout()` sends only `Location`.
+How the stack holds it: `Partly enforced`. `sesame_logout()` sends `Cache-Control: no-store` on every answer, and on the logout itself adds `Clear-Site-Data: "cache", "storage"` (`src/functions.php:248, 269-270`); the session cookie is expired by `NativeSession::invalidate()`. `"cookies"` is deliberately left out of `Clear-Site-Data`: it would clear every cookie on the host and sign the user out of every other app there, not just this one (`src/functions.php:265-268`, `README.md:209-215`). The Laravel logout route sends the same headers. Tests: `FunctionsTest::testSesameLogoutSendsNoStoreAndClearSiteData:322`, `LoginRouteTest::testLogoutSendsNoStoreAndClearSiteData:98`.
 
 ### S45. Leave the session ID length at PHP's defaults
 Do not set `session.sid_length` or `session.sid_bits_per_character`. On PHP 8.4 and later they are deprecated, and the default ID is 32 hexadecimal characters (128 bits).
@@ -326,34 +326,22 @@ How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing
 ## Gaps for the backlog
 
 Risks in the current code:
-- `src/functions.php:84-86, 118` and `README.md:45-47`: no exit after a redirect, and the README example keeps running.
-- `src/Sesame.php:42-46`: a null user from the resolver still creates a session with `sesame.identity` set.
-- `src/Sesame.php:45-46`: the whole resolver result and the full identity go into the session.
-- `src/Drivers/FakeDriver.php:32`: only the exact word `production` is refused. Use an allowlist such as `local`, `development` and `testing`.
-- `src/Session/NativeSession.php:54-60`: `invalidate()` leaves an empty session with a new ID and a live cookie. Call `session_destroy()` and expire the cookie.
-- `src/Session/NativeSession.php:24, 59`: `session_regenerate_id(true)` deletes the old session at once. The PHP manual warns this can drop a session on an unstable network. Decide the trade-off and write it down.
-- `src/Drivers/CasDriver.php:86-111`: no login binding to the browser.
-- `README.md:120-121`: the example client has no timeout.
+- `src/Session/NativeSession.php:26, 83`: `session_regenerate_id(true)` deletes the old session at once. The PHP manual warns this can drop a session on an unstable network. Decide the trade-off and write it down.
+- `src/Drivers/CasDriver.php:97-108`: no login binding to the browser.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
 - `src/Drivers/CasDriver.php`: nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed`, so an app cannot tell a fresh login from a remembered one (S19).
-- `src/functions.php:118`: logout sends no `Cache-Control: no-store` or `Clear-Site-Data` (S44).
-- `src/Session/NativeSession.php:24`: use a destroy time stamp and grace period at login instead of immediate delete (S43).
-- README client example: add no-redirect and TLS-verify settings, and a timeout (S23, S42).
+- `src/Session/NativeSession.php:26`: use a destroy time stamp and grace period at login instead of immediate delete (S43).
+- README client example: add no-redirect and TLS-verify settings (S42).
 
 Missing practices:
-- Idle and absolute session timeouts, with a configurable value.
 - A `__Host-` cookie name, set by HELMET.
-- Ticket removal from the URL after login.
 - Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
 - A logging hook (PSR-3) for authentication events.
-- A written rule for the user key (driver plus ID) and for what the resolver must do on a deny.
-- A documented lifetime table for each app, covering app, SESAME and IdP sessions.
-- Tests: XXE payload, null resolver result.
+- A written rule for what the resolver must do on a deny.
 - Choose the SAML library for `saml` (still open). The `gateway` signing scheme is settled: `ES256`, `RS256` or `EdDSA`, pinned in config.
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20). Answered by the CAS owner: a CAS answer means MFA happened for the session (the opt-in `cas.assume_mfa`), and the server will add `authenticationDate`, the session-creation instant in UTC.
 - Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
-- A cache and `Clear-Site-Data` rule for logout (S44).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
 - Resolved: the `oauth2` driver is resource-server only; the `oidc` driver (0.2.0) starts browser logins.
 - A test for the `saml` library choice: feed it a document with a second signature, a DOCTYPE and a namespace trick, and expect rejection (S34, S47).

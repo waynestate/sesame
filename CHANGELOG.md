@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: BEST_PRACTICES tags now match the code: the entries whose fix is already in `src/` and `tests/` are re-tagged (`Enforced`, `Documented` or `Partly enforced`) with the code and test file:line named, and the gap list at the bottom drops the items that are closed.
+- Docs: the "Moving from wayne-cas" section now leads with the easy way, Booster's `cas-to-sesame` hop (planned with `--sesame`, needs the plan to end on PHP 8.3 or newer), then the by-hand mapping, then what Booster leaves for you (Duo 2FA is not carried, verify login on the pre-production host).
+- Docs: the cas quick start's Guzzle client now sets a `timeout` and `connect_timeout` (Guzzle has no total timeout by default), and the oauth2 quick start does the same.
+- Docs: a "Which key to store" paragraph tells apps to key their users on the driver plus the identity provider's stable identifier, never an email or a display name.
+- Docs: a note tells apps to log `AuthenticationFailed` messages and show the user one generic line, since the message can carry the CAS failure code.
+
 ## [0.3.0] - 2026-10-30
 
 - Security: the signed-in user is looked up again on every request when the app's resolver implements the new `RefreshesUser` interface, and a user who no longer exists signs the session out. Before, `Sesame::user()` returned the copy saved at sign-in, so a user whose role was removed kept it until the session ended. The wayne-cas `UserResolver` implements it (a plain find by primary key, never an import).
