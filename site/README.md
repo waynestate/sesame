@@ -4,7 +4,7 @@ A static page: `index.html`, `assets/sesame.css`, `assets/sesame.js`. No build s
 anywhere (Citadel, any web server, or `python -m http.server` inside `site/` for a look; fonts are blocked over
 `file://` in some browsers).
 
-- type: **Bungee** 400 (SIL OFL 1.1, self-hosted in `assets/fonts/` from `@fontsource`, licence in `OFL-bungee.txt`)
+- type: **Bungee** 400 (SIL OFL 1.1, self-hosted in `assets/fonts/` from `@fontsource`, license in `OFL-bungee.txt`)
   for the shop signs; Lato from WayneUI for body text; the system monospace for commands, key tags and config lines.
 - world: a key-cutting shop. A cream shop floor, a perforated pegboard, brass and nickel keys, a green service
   counter with a bell, a job ticket for every doorway, shop rules on an enamel sign, and the opening hours (the

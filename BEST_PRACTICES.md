@@ -28,7 +28,7 @@ How the stack holds it: `Enforced`. `NativeSession` throws `LogicException` when
 ### S3. Strict mode, cookie-only IDs, and HttpOnly, Secure and SameSite cookies
 Set `session.use_strict_mode=1`, `session.use_only_cookies=1`, `HttpOnly`, `Secure` on HTTPS, and `SameSite=Lax`. Do not use `Strict` on the cookie that carries login state (see S41).
 Why: strict mode stops an attacker from choosing the ID, and the flags limit theft and cross-site use. The CAS server sends the browser back to the app with a cross-site navigation, and a `Strict` cookie is not sent on it.
-Sources: [PHP session configuration](https://www.php.net/manual/en/session.configuration.php), [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html), [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) (SameSite is defence in depth only).
+Sources: [PHP session configuration](https://www.php.net/manual/en/session.configuration.php), [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html), [OWASP CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) (SameSite is defense in depth only).
 How the stack holds it: `Documented`. The README tells apps to let HELMET set the flags. HELMET's `SessionHardening::apply()` sets them, but nothing checks that the app calls it, and `NativeSession` does not check that strict mode is on.
 
 ### S4. Use a `__Host-` session cookie name
@@ -85,7 +85,7 @@ How the stack holds it: `Enforced`. The constructor throws `InvalidConfig` for a
 Reject a ticket that is not a string, is empty, is too long or has odd characters. URL-encode both `ticket` and `service` in the validation request.
 Why: an unencoded ticket allows parameter injection into the validation URL.
 Sources: [CAS Protocol 3.0 (ticket format and length)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html) (checked second pass: service tickets start with `ST-`, a service must accept 32 characters and should accept 256), [Apereo, Java CAS Client JWT disclosure, 2026-05-27](https://www.apereo.org/news/2026/java-cas-client-jwt-vulnerability-disclosure) (a ticket-validation flaw in one client that accepts JWT tickets; the page names no CVE and does not mention PHP).
-How the stack holds it: `Enforced`. `assertValidTicket()` allows letters, digits, `.`, `_` and `-` up to 256 characters, and rejects arrays. The query is built with `PHP_QUERY_RFC3986` (`src/Drivers/CasDriver.php:78-81, 105-114`). SESAME only reads the XML validation response and never parses a ticket itself, so the JWT ticket class of bug does not apply while that stays true. (The 256-character limit would also stop most JWTs, but that is a side effect, not a defence.) Tests: `testRejectsABadTicketBeforeAnyHttpCall`, `testValidateUrlEncodesServiceAndTicket`.
+How the stack holds it: `Enforced`. `assertValidTicket()` allows letters, digits, `.`, `_` and `-` up to 256 characters, and rejects arrays. The query is built with `PHP_QUERY_RFC3986` (`src/Drivers/CasDriver.php:78-81, 105-114`). SESAME only reads the XML validation response and never parses a ticket itself, so the JWT ticket class of bug does not apply while that stays true. (The 256-character limit would also stop most JWTs, but that is a side effect, not a defense.) Tests: `testRejectsABadTicketBeforeAnyHttpCall`, `testValidateUrlEncodesServiceAndTicket`.
 
 ### S13. A ticket works once
 A service ticket may be validated one time. A second use must fail.
@@ -240,7 +240,7 @@ How the stack holds it: `Not yet`. Add: a SAML POST response is a cross-site POS
 ### S36. The `oauth2` driver: verify the whole token
 Check signature, issuer, audience, expiry and scopes. That list is for JWT access tokens (RFC 9068). Read the token from the `Authorization` header, never from a query string. Reject tokens meant for another service. If the server issues opaque tokens, verify them by introspection (RFC 7662): authenticate to the endpoint over TLS, and never cache a result past its `exp`. Make the cache lifetime a config value, defaulting to 60 seconds or less.
 Why: a token valid somewhere else is not valid here.
-Sources: [RFC 9700 (OAuth 2.0 Security BCP)](https://www.rfc-editor.org/rfc/rfc9700.html) (published January 2025 as BCP 240; checked second pass: exact redirect URI matching; PKCE with S256; access tokens restricted to one resource server; sender-constrained tokens, for example DPoP or mTLS, as a SHOULD; clients that use several authorization servers must defend against mix-up attacks, with the RFC 9207 `iss` response parameter as one defence), [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068.html), [RFC 8725](https://www.rfc-editor.org/rfc/rfc8725.html), [RFC 7662 (OAuth 2.0 Token Introspection)](https://www.rfc-editor.org/rfc/rfc7662.html), [ASVS 5.0 V9](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x18-V9-Self-contained-Tokens.md).
+Sources: [RFC 9700 (OAuth 2.0 Security BCP)](https://www.rfc-editor.org/rfc/rfc9700.html) (published January 2025 as BCP 240; checked second pass: exact redirect URI matching; PKCE with S256; access tokens restricted to one resource server; sender-constrained tokens, for example DPoP or mTLS, as a SHOULD; clients that use several authorization servers must defend against mix-up attacks, with the RFC 9207 `iss` response parameter as one defense), [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068.html), [RFC 8725](https://www.rfc-editor.org/rfc/rfc8725.html), [RFC 7662 (OAuth 2.0 Token Introspection)](https://www.rfc-editor.org/rfc/rfc7662.html), [ASVS 5.0 V9](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x18-V9-Self-contained-Tokens.md).
 How the stack holds it: `Documented`. The stack's auth design lists the checks. The header-only rule is not written down, and the scopes and flows that Academica offers are still an open question. The `oauth2` driver is a resource-server check (bearer tokens in, identity out), so the client-side items (PKCE, redirect URIs, mix-up) apply only if SESAME ever starts a login itself. Decide that scope in the stack's auth design.
 
 ## 6. Build and supply chain
@@ -259,13 +259,13 @@ How the stack holds it: `Checked`. Second pass correction: the first pass said t
 
 ### S39. Run the tests on every supported PHP
 Run the suite on the lowest and the highest supported PHP.
-Why: session and XML behaviour differ between PHP versions.
+Why: session and XML behavior differ between PHP versions.
 Sources: none specific. The PHP manual notes that session settings change between versions, for example in 8.4.
 How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the Preflight `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
 
 ### S40. Compatibility shims must not bring back old weaknesses
 The wayne-cas shim (`src/WayneCas/`) maps old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
-Why: the old clients have these faults, and a shim that copies behaviour copies the faults.
+Why: the old clients have these faults, and a shim that copies behavior copies the faults.
 Sources: [ASVS 5.0 V6.8](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md).
 How the stack holds it: `Documented`. The stack's auth design says the shims are thin adapters with no rules. They are not built.
 

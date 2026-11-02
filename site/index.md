@@ -248,7 +248,7 @@ The shim keeps the old names, so most of the move is the mapping table. The agen
 A prompt for your coding agent. Copy it as it stands:
 
 ```text
-You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. SESAME ships a wayne-cas shim that keeps the old names and behaviour and logs once that it is a deprecated bridge.
+You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. SESAME ships a wayne-cas shim that keeps the old names and behavior and logs once that it is a deprecated bridge.
 
 Read first:
 - https://sesame.apps.wayne.edu/llms.txt, then the README's Moving from wayne-cas section and its mapping table.
@@ -298,7 +298,7 @@ Cross-reference
 
 ## Re-key from wayne-cas
 
-Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behaviour, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app.
+Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app.
 
 **wayne-cas names and the SESAME names that replace them**
 
