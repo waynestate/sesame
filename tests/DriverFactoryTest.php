@@ -92,6 +92,19 @@ final class DriverFactoryTest extends TestCase
         self::assertSame('gateway', $driver->name());
     }
 
+    public function testMakesAGatewayDriverWithPublicKeys(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig([
+            'public_key' => null,
+            'public_keys' => ['a' => 'key-a', 'b' => 'key-b'],
+        ]));
+
+        $driver = DriverFactory::make($config, null, null, new FakeClock(), new InMemoryReplayGuard());
+
+        self::assertInstanceOf(GatewayDriver::class, $driver);
+        self::assertSame('gateway', $driver->name());
+    }
+
     public function testGatewayWithoutAReplayGuardFailsClosed(): void
     {
         $config = Config::fromArray($this->gatewayConfig());

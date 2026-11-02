@@ -74,7 +74,7 @@ final class DriverFactory
             'gateway' => new GatewayDriver(
                 $config->gatewayHeader ?? 'X-Sesame-Assertion',
                 $config->gatewayAlgorithm,
-                self::requiredNonEmpty($config->gatewayPublicKey, 'gateway.public_key'),
+                $config->gatewayPublicKeys ?? self::requiredNonEmpty($config->gatewayPublicKey, 'gateway.public_key'),
                 self::requiredNonEmpty($config->gatewayIssuer, 'gateway.issuer'),
                 self::requiredNonEmpty($config->gatewayAudience, 'gateway.audience'),
                 $config->gatewayLeewaySeconds,
