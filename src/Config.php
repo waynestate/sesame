@@ -17,8 +17,10 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `false`) and `cas.assume_mfa` (default `false`). The `gateway` driver adds
  * `gateway.header` (default
  * `X-Sesame-Assertion`), `gateway.algorithm` (default `ES256`, only
- * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required),
- * `gateway.issuer` (required), `gateway.audience` (required),
+ * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required unless
+ * `gateway.public_keys` is set) or `gateway.public_keys` (a map of kid to
+ * key, for a gateway rotating its signing key; set this or `public_key`,
+ * not both), `gateway.issuer` (required), `gateway.audience` (required),
  * `gateway.leeway_seconds` (default `30`, a non-negative integer),
  * `gateway.trusted_proxies` (required, a non-empty array of CIDR ranges),
  * `gateway.max_lifetime` (default `300`, a positive integer: the longest an
@@ -64,6 +66,7 @@ final readonly class Config
      * @param list<string> $gatewayTrustedProxies
      * @param list<string> $oauth2RequiredScopes
      * @param list<string> $oauth2RequiredRoles
+     * @param array<string, non-empty-string>|null $gatewayPublicKeys
      */
     public function __construct(
         public string $driver,
@@ -95,6 +98,7 @@ final readonly class Config
         public string $oauth2IdentityClaim = 'preferred_username',
         public int $oauth2JwksCacheTtlSeconds = 3600,
         public ?OidcOptions $oidc = null,
+        public ?array $gatewayPublicKeys = null,
     ) {}
 
     /**
@@ -131,6 +135,7 @@ final readonly class Config
         $gatewayTrustedProxies = [];
         $gatewayMaxLifetimeSeconds = 300;
         $gatewayAllowWithoutReplayGuard = false;
+        $gatewayPublicKeys = null;
         $oauth2Issuer = null;
         $oauth2JwksUrl = null;
         $oauth2Audience = null;
@@ -176,7 +181,36 @@ final readonly class Config
                 throw new InvalidConfig('The config key "gateway.algorithm" must be "ES256", "RS256" or "EdDSA".');
             }
 
-            $gatewayPublicKey = self::requiredString($config, 'gateway.public_key');
+            // The gateway verifies against one public key, or (while it
+            // rotates its signing key) a map of kid to key: set one or the
+            // other, not both. An empty public_keys array counts as unset,
+            // and public_key is then required as before.
+            $gatewayPublicKeysRaw = $config['gateway']['public_keys'] ?? null;
+
+            if ($gatewayPublicKeysRaw !== null && ! is_array($gatewayPublicKeysRaw)) {
+                throw new InvalidConfig('The config key "gateway.public_keys" must be an array of kid to key.');
+            }
+
+            if (is_array($gatewayPublicKeysRaw) && $gatewayPublicKeysRaw !== []) {
+                foreach ($gatewayPublicKeysRaw as $kid => $key) {
+                    if (! is_string($kid) || $kid === '' || ! is_string($key) || $key === '') {
+                        throw new InvalidConfig('Each entry in "gateway.public_keys" must be a non-empty string kid mapped to a non-empty string key.');
+                    }
+                }
+
+                $gatewayPublicKeys = $gatewayPublicKeysRaw;
+
+                $gatewayPublicKeyRaw = $config['gateway']['public_key'] ?? null;
+
+                if (is_string($gatewayPublicKeyRaw) && $gatewayPublicKeyRaw !== '') {
+                    throw new InvalidConfig(
+                        'Set either "gateway.public_key" or "gateway.public_keys", not both: the gateway driver verifies each assertion against one key.',
+                    );
+                }
+            } else {
+                $gatewayPublicKey = self::requiredString($config, 'gateway.public_key');
+            }
+
             $gatewayIssuer = self::requiredString($config, 'gateway.issuer');
             $gatewayAudience = self::requiredString($config, 'gateway.audience');
             $gatewayLeewaySeconds = self::optionalNonNegativeInt($config, 'gateway.leeway_seconds', 30);
@@ -244,6 +278,7 @@ final readonly class Config
          * @var list<non-empty-string> $gatewayTrustedProxies
          * @var list<string> $oauth2RequiredScopes
          * @var list<string> $oauth2RequiredRoles
+         * @var array<string, non-empty-string>|null $gatewayPublicKeys
          */
         return new self(
             $driver,
@@ -275,6 +310,7 @@ final readonly class Config
             $oauth2IdentityClaim,
             $oauth2JwksCacheTtlSeconds,
             $oidc,
+            $gatewayPublicKeys,
         );
     }
 

@@ -289,6 +289,71 @@ final class ConfigTest extends TestCase
         Config::fromArray($this->gatewayConfig(['allow_without_replay_guard' => 'yes']));
     }
 
+    public function testReadsGatewayPublicKeys(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig([
+            'public_key' => null,
+            'public_keys' => ['a' => 'key-a', 'b' => 'key-b'],
+        ]));
+
+        self::assertSame(['a' => 'key-a', 'b' => 'key-b'], $config->gatewayPublicKeys);
+        self::assertNull($config->gatewayPublicKey);
+    }
+
+    public function testGatewayPublicKeysDefaultToNull(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig());
+
+        self::assertNull($config->gatewayPublicKeys);
+    }
+
+    public function testRejectsBothGatewayPublicKeyAndPublicKeys(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('not both');
+
+        // The helper already sets a non-empty public_key.
+        Config::fromArray($this->gatewayConfig(['public_keys' => ['a' => 'key-a']]));
+    }
+
+    public function testAnEmptyGatewayPublicKeysFallsBackToPublicKey(): void
+    {
+        $config = Config::fromArray($this->gatewayConfig(['public_keys' => []]));
+
+        self::assertNull($config->gatewayPublicKeys);
+        self::assertSame('public-key', $config->gatewayPublicKey);
+    }
+
+    public function testRejectsANonArrayGatewayPublicKeys(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "gateway.public_keys" must be an array of kid to key.');
+
+        Config::fromArray($this->gatewayConfig(['public_keys' => 'key-a']));
+    }
+
+    public function testRejectsAGatewayPublicKeysEntryWithAnEmptyKid(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Each entry in "gateway.public_keys" must be a non-empty string kid mapped to a non-empty string key.');
+
+        Config::fromArray($this->gatewayConfig([
+            'public_key' => null,
+            'public_keys' => ['' => 'key-a'],
+        ]));
+    }
+
+    public function testRejectsAGatewayPublicKeysEntryWithAnEmptyKey(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Each entry in "gateway.public_keys" must be a non-empty string kid mapped to a non-empty string key.');
+
+        Config::fromArray($this->gatewayConfig([
+            'public_key' => null,
+            'public_keys' => ['a' => ''],
+        ]));
+    }
+
     public function testReadsTheOauth2Settings(): void
     {
         $config = Config::fromArray($this->oauth2Config([
