@@ -27,6 +27,8 @@ sesame.
 Front page: [`site/index.html`](site/index.html), a static page you can open in a browser or serve from `site/`.
 On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
+Documentation: the opening of this README is the [Overview](site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](docs/) into [`site/docs/`](site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted.
+
 ## Where the code lives
 
 The canonical repository is on nougat: [enterprise-apps/sesame](https://nougat.snu.gs/enterprise-apps/sesame). git.wayne.edu and GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) are read-only mirrors of it.
