@@ -655,16 +655,10 @@ final class CasDriverTest extends TestCase
         // A PSR-18 client that fails the TLS handshake: the exception must
         // come straight back out of login(), unchanged, and nobody is signed
         // in.
-        $exception = new class('SSL: certificate subject name does not match target host')
-            extends \RuntimeException
-            implements ClientExceptionInterface
-        {
-        };
+        $exception = new class ('SSL: certificate subject name does not match target host') extends \RuntimeException implements ClientExceptionInterface {};
 
-        $http = new class($exception) implements ClientInterface {
-            public function __construct(private readonly \Throwable $failure)
-            {
-            }
+        $http = new class ($exception) implements ClientInterface {
+            public function __construct(private readonly \Throwable $failure) {}
 
             public function sendRequest(RequestInterface $request): ResponseInterface
             {
@@ -674,16 +668,12 @@ final class CasDriverTest extends TestCase
 
         $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
 
-        $step = null;
-
         try {
-            $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
             self::fail('Expected the client exception to be rethrown.');
         } catch (ClientExceptionInterface $caught) {
             self::assertSame($exception, $caught);
         }
-
-        self::assertNull($step);
     }
 
     public function testTheValidationRequestGoesOnlyToTheConfiguredHttpsHost(): void
