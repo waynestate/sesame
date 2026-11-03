@@ -31,6 +31,7 @@
     "require-dev": {
         "guzzlehttp/guzzle": "^7.9 || ^8.0",
         "laravel/pint": "^1.32",
+        "league/commonmark": "^2.10",
         "league/oauth2-client": "^2.9.1",
         "orchestra/testbench": "^10.0 || ^11.0",
         "phpstan/phpstan": "^2.1",
@@ -82,15 +83,20 @@
             "@lint",
             "@analyse",
             "@site:agent-ready-check",
+            "@docs:check",
             "@composer audit --locked"
         ],
         "site:agent-ready": "php bin/agent-ready.php",
-        "site:agent-ready-check": "php bin/agent-ready.php --check"
+        "site:agent-ready-check": "php bin/agent-ready.php --check",
+        "docs": "php bin/docs-site.php",
+        "docs:check": "php bin/docs-site.php --check"
     },
     "scripts-descriptions": {
-        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, check the agent-ready files, and audit the locked dependencies.",
+        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, check the agent-ready files, check the docs site, and audit the locked dependencies.",
         "site:agent-ready": "Rewrite the Markdown twins, llms.txt, llms-full.txt, robots.txt and sitemap.xml in site/ (Squire's agent-ready kit).",
-        "site:agent-ready-check": "Fail when the agent-ready files are stale, a page lacks its Markdown link, a prompt drifts from the docs, or the kit was edited here."
+        "site:agent-ready-check": "Fail when the agent-ready files are stale, a page lacks its Markdown link, a prompt drifts from the docs, or the kit was edited here.",
+        "docs": "Build the docs site from docs/ into site/docs/ (Squire's docs builder): render the pages, fill the generated environment reference, and stamp the current version.",
+        "docs:check": "Fail when the built docs site is stale or the generated environment reference has drifted from the source."
     },
     "config": {
         "sort-packages": true,
