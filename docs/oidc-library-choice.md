@@ -1,3 +1,8 @@
+---
+title: The oidc driver's library choice
+description: Which library the oidc driver stands on, what else was weighed, and why.
+---
+
 # The oidc driver's library choice
 
 Open sesame needs the right words, and we would rather borrow a maintained
