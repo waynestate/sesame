@@ -2,6 +2,29 @@
 <!-- Written by Squire's agent-ready kit from the pages in the site folder; do not edit. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://sesame.apps.wayne.edu/</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/changelog.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-cas.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/instance-runner.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/laravel.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/quick-start.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/raw-php.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/step-up.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/which-driver.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/wsu-values.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/install.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/oidc-library-choice.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/reference/api.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/reference/configuration.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/reference/drivers.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/reference/proof.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/troubleshooting.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/upgrading.html</loc></url>
 </urlset>

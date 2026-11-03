@@ -1,0 +1,157 @@
+---
+title: "Laravel | Sesame docs"
+description: "The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own."
+url: https://sesame.apps.wayne.edu/docs/guides/laravel.html
+llms: https://sesame.apps.wayne.edu/llms.txt
+generator: Squire agent-ready
+---
+
+# Laravel[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#laravel)
+
+The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame` and `wayne.cas` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html) and [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html) for the checks the middleware runs.
+
+## Install and publish[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#install-and-publish)
+
+The provider is discovered automatically. Publish the config with:
+
+```
+php artisan vendor:publish --tag=sesame-config
+```
+
+The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route.
+
+## Config[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#config)
+
+Config keys (in `config/sesame.php`):
+
+| Key | Env | Default | Meaning |
+| --- | --- | --- | --- |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc` or `fake`. The oidc keys are in [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html). |
+| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
+| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
+| `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
+| `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
+| `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
+| `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
+| `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
+| `gateway.issuer` | `SESAME_GATEWAY_ISSUER` | none | The `iss` claim the assertion must carry. Required for the gateway driver. |
+| `gateway.audience` | `SESAME_GATEWAY_AUDIENCE` | none | The `aud` claim the assertion must carry. Required for the gateway driver. |
+| `gateway.leeway_seconds` | `SESAME_GATEWAY_LEEWAY_SECONDS` | `30` | Clock skew allowed on the time-claim checks, in seconds. |
+| `gateway.trusted_proxies` | `SESAME_GATEWAY_TRUSTED_PROXIES` | none | Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind. Required for the gateway driver. |
+| `gateway.max_lifetime` | `SESAME_GATEWAY_MAX_LIFETIME` | `300` | The longest an assertion may live, in seconds. |
+| `gateway.replay_store` | `SESAME_GATEWAY_REPLAY_STORE` | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only). |
+| `gateway.allow_without_replay_guard` | `SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD` | `false` | Skip the replay guard. Local development only. |
+| `oauth2.issuer` | `SESAME_OAUTH2_ISSUER` | none | The `iss` claim the token must carry. Required for the oauth2 driver. |
+| `oauth2.jwks_url` | `SESAME_OAUTH2_JWKS_URL` | none | The URL of the issuer's key set. Required for the oauth2 driver. |
+| `oauth2.audience` | `SESAME_OAUTH2_AUDIENCE` | none | The `aud` claim the token must carry. Required for the oauth2 driver. |
+| `oauth2.leeway_seconds` | `SESAME_OAUTH2_LEEWAY_SECONDS` | `60` | Clock skew allowed on the time-claim checks, in seconds. |
+| `oauth2.identity_claim` | `SESAME_OAUTH2_IDENTITY_CLAIM` | `preferred_username` | The claim the username comes from: `preferred_username` or `accessid`. |
+| `oauth2.jwks_cache_ttl_seconds` | `SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS` | `3600` | How long the fetched key set is kept, in seconds. |
+| `oauth2.jwks_store` | `SESAME_OAUTH2_JWKS_STORE` | the app's default cache store | The cache store the key set is kept in (Laravel only). |
+| `oauth2.require_at_jwt` | `SESAME_OAUTH2_REQUIRE_AT_JWT` | `false` | Refuse a token whose `typ` header is not `at+jwt` (RFC 9068). Leave it off for Entra. |
+| `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
+| `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
+| `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
+| `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
+| `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
+| `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
+| `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
+
+A missing `user_resolver` fails with an error that names the wayne-cas resolver class. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.
+
+## Routes[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#routes)
+
+The routes, when `routes` is true:
+
+| Method | Path | Name |
+| --- | --- | --- |
+| `GET` | `/login` | `sesame.login` |
+| `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
+| `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
+
+Set `SESAME_ROUTES=false` when the app defines its own login and logout routes. The `auth.sesame` middleware still points at the `sesame.login` route name, so the app's login route must keep that name.
+
+## Middleware[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#middleware)
+
+Protect a route with the `auth.sesame` middleware:
+
+```php
+Route::get('/dashboard', fn () => view('dashboard'))->middleware('auth.sesame');
+```
+
+A guest is sent to the login route; a JSON guest gets a 401.
+
+Require MFA on a route with the `sesame.mfa` middleware:
+
+```php
+Route::get('/vault', fn () => view('vault'))->middleware(['auth.sesame', 'sesame.mfa']);
+```
+
+It lets the request through when the signed-in user's MFA is still good, and otherwise stops it: a 403 by default, a JSON 403 for JSON requests, and a redirect to the login route when `mfa.on_failure` is `reauth`. The allowed age comes from the route parameter when there is one, and from `mfa.max_age` when there is not:
+
+```php
+Route::get('/vault', fn () => view('vault'))->middleware(['auth.sesame', 'sesame.mfa:3600']);
+```
+
+The `sesame.context` middleware does the step-up context check on a route:
+
+```php
+Route::get('/vault', [VaultController::class, 'index'])
+    ->middleware(['web', 'auth.sesame', 'sesame.context:c1']);
+```
+
+A request without the context gets a 403, or a JSON 403 with a `message` for JSON requests. A route that names no context fails closed. See [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html).
+
+The `wayne.cas` alias is registered against SESAME's `WayneAuthenticate`, for apps moving off wayne-cas; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
+
+## Reading the user[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user)
+
+The app's user is available through the facade:
+
+```php
+$user = app(\Waynestate\Sesame\Sesame::class)->user();
+```
+
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model`; a resolver that does not implement it keeps handing back the stored copy, as it always has.
+
+The same user is available through Laravel's own auth, because the provider registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
+
+```php
+'guards' => [
+    'web' => [
+        'driver' => 'sesame',
+        'provider' => 'users',
+    ],
+],
+```
+
+and the usual calls work against the SESAME session: `auth()->user()`, `$request->user()`, `Auth::check()`, and the `auth` middleware. The note above applies here too: the guard hands back the stored copy, or the refreshed one when the resolver refreshes. A user that is not an `Illuminate\Contracts\Auth\Authenticatable` reads as `null` through the guard; the `auth.sesame` middleware still sees it, because it checks the SESAME session directly.
+
+`auth()->logout()` signs the user out of both sides, the Laravel session and the SESAME session. The identity provider's single sign-on session is left alone.
+
+## HTTP client and caches[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#http-client-and-caches)
+
+The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's `Psr\Http\Client\ClientInterface` binding when there is one, Guzzle when it is installed (with redirects off), and nothing when there is neither. Bind a client when the app has neither:
+
+```php
+app()->singleton(
+    Psr\Http\Client\ClientInterface::class,
+    fn () => new \Symfony\Component\HttpClient\Psr18Client(),
+);
+```
+
+The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The adapter wires one up from the app's cache, using the store named by `oauth2.jwks_store`, or the default store when none is named. The gateway driver's replay guard is wired the same way, from the store named by `gateway.replay_store`, so a captured assertion cannot be played back a second time.
+
+## Logging[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#logging)
+
+The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the authentication events in its normal log channels with no extra wiring: the container's `Psr\Log\LoggerInterface` binding is used when there is one. Set `sesame.log` (env `SESAME_LOG`) to `false` to turn the events off; the default is `true`. The events, their context and what is never logged are described in [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html), "Logging".
+
+## Related[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#related)
+
+- [Quick start](https://sesame.apps.wayne.edu/docs/guides/quick-start.html)
+- [Which driver](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
+- [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html)
+- [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html)
+- [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html)
+- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html)
