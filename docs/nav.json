@@ -112,6 +112,10 @@
         {
             "title": "Upgrading",
             "path": "upgrading"
+        },
+        {
+            "title": "Changelog",
+            "path": "changelog"
         }
     ],
     "source": "https://nougat.snu.gs/enterprise-apps/sesame",
