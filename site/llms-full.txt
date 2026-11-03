@@ -228,6 +228,10 @@ settings in `config/session.php`:
   Laravel does by default. A cross-site `POST` carries no `Lax` cookie at all,
   which is the defense you want; a future `saml` driver would need its own
   short-lived cookie for that reason (S35).
+- **Leave the session ID length alone** (S45). Do not set `session.sid_length` or
+  `session.sid_bits_per_character`: PHP's default ID is 32 hexadecimal characters
+  (128 bits), and on PHP 8.4 and later both settings are deprecated and raise
+  notices. A low value weakens the ID. Neither SESAME nor HELMET sets or checks them.
 
 On logout, both paths send `Cache-Control: no-store` and
 `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser

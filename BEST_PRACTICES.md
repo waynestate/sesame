@@ -301,7 +301,7 @@ How the stack holds it: `Partly enforced`. `sesame_logout()` sends `Cache-Contro
 Do not set `session.sid_length` or `session.sid_bits_per_character`. On PHP 8.4 and later they are deprecated, and the default ID is 32 hexadecimal characters (128 bits).
 Why: a low setting weakens the ID, and the settings now raise deprecation notices. OWASP asks for at least 64 bits of entropy in an ID.
 Sources: [PHP RFC, Deprecations for PHP 8.4](https://wiki.php.net/rfc/deprecations_php_8_4) (confirmed through search results, not read in full), [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
-How the stack holds it: `Not yet`. SESAME does not touch the setting. HELMET's hardening step could check it.
+How the stack holds it: `Documented`. The README ("The session cookie") tells apps to leave both settings alone. SESAME does not touch them and HELMET's hardening step does not set or check them, so nothing here tests it.
 
 ### S46. Take login time from the IdP, and read time through a clock
 Prefer the IdP's `authenticationDate` over the time SESAME received the response, and give the library a PSR-20 clock instead of calling `new DateTimeImmutable()`.
