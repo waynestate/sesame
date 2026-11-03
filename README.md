@@ -320,8 +320,16 @@ $config = Config::fromArray([
 
 // Any PSR-18 client works, for example Guzzle. Set a timeout: Guzzle has no
 // total timeout by default, so a hung CAS server would hold the request open
-// forever.
-$http = new \GuzzleHttp\Client(['timeout' => 10, 'connect_timeout' => 5]);
+// forever. Turn redirects off for the validation call (Guzzle follows up to
+// five by default, to any host or to plain http) and leave TLS verification
+// on (`verify` is true by default; never set it to false). PSR-18 has no
+// standard option for either, so the client you hand SESAME must carry them.
+$http = new \GuzzleHttp\Client([
+    'timeout' => 10,
+    'connect_timeout' => 5,
+    'allow_redirects' => false,
+    'verify' => true,
+]);
 
 $driver = DriverFactory::make($config, $http, new Psr17Factory());
 ```
