@@ -51,11 +51,14 @@ final class CasDriverTest extends TestCase
     }
 
     /**
-     * A CAS success response, with an optional authenticationDate attribute.
+     * A CAS success response, with optional authenticationDate, isFromNewLogin
+     * and longTermAuthenticationRequestTokenUsed attributes.
      */
-    private static function successXml(?string $authenticationDate = null): string
+    private static function successXml(?string $authenticationDate = null, ?string $isFromNewLogin = null, ?string $longTermToken = null): string
     {
         $date = $authenticationDate === null ? '' : '<authenticationDate>' . $authenticationDate . '</authenticationDate>' . "\n      ";
+        $newLogin = $isFromNewLogin === null ? '' : '<isFromNewLogin>' . $isFromNewLogin . '</isFromNewLogin>' . "\n      ";
+        $longTerm = $longTermToken === null ? '' : '<longTermAuthenticationRequestTokenUsed>' . $longTermToken . '</longTermAuthenticationRequestTokenUsed>' . "\n      ";
 
         return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
             . '<serviceResponse xmlns="http://www.yale.edu/tp/cas">' . "\n"
@@ -64,6 +67,8 @@ final class CasDriverTest extends TestCase
             . '    <attributes>' . "\n"
             . '      <mail>ab1234@wayne.edu</mail>' . "\n"
             . $date
+            . $newLogin
+            . $longTerm
             . '    </attributes>' . "\n"
             . '  </authenticationSuccess>' . "\n"
             . '</serviceResponse>' . "\n";
@@ -389,6 +394,55 @@ final class CasDriverTest extends TestCase
         self::assertSame('cas', $step->identity->driver);
         self::assertSame(['ab1234@wayne.edu'], $step->identity->attributes['mail']);
         self::assertCount(2, $step->identity->attributes['memberOf']);
+    }
+
+    public function testReadsIsFromNewLoginAndTheLongTermTokenFlag(): void
+    {
+        // Present true and false: the flags are read from the attributes.
+        $http = new FakeHttpClient([self::response(200, self::successXml(null, 'true', 'false'))]);
+        $driver = $this->driver($http);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertTrue($step->identity->isFromNewLogin());
+        self::assertFalse($step->identity->usedLongTermToken());
+
+        // Present false for both.
+        $http = new FakeHttpClient([self::response(200, self::successXml(null, 'false', 'true'))]);
+
+        $step = $this->driver($http)->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertFalse($step->identity->isFromNewLogin());
+        self::assertTrue($step->identity->usedLongTermToken());
+
+        // Uppercase values count too: the comparison is case-insensitive.
+        $http = new FakeHttpClient([self::response(200, self::successXml(null, 'TRUE', 'FALSE'))]);
+
+        $step = $this->driver($http)->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertTrue($step->identity->isFromNewLogin());
+        self::assertFalse($step->identity->usedLongTermToken());
+
+        // Absent: the server released no flag, so the identity says nothing.
+        $http = new FakeHttpClient([self::response(200, self::successXml())]);
+
+        $step = $this->driver($http)->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->isFromNewLogin());
+        self::assertNull($step->identity->usedLongTermToken());
+
+        // A junk value is not a boolean: it answers null, never a guess.
+        $http = new FakeHttpClient([self::response(200, self::successXml(null, 'yes', '1'))]);
+
+        $step = $this->driver($http)->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertNull($step->identity->isFromNewLogin());
+        self::assertNull($step->identity->usedLongTermToken());
     }
 
     public function testProtocolThreeUsesTheCas3ValidatePath(): void

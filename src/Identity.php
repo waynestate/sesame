@@ -49,6 +49,59 @@ final readonly class Identity
     }
 
     /**
+     * Whether the identity provider says this sign-in was a fresh, direct
+     * login, or null when it did not say so.
+     *
+     * Read from the CAS isFromNewLogin attribute: true for the string
+     * "true" (any case), false for "false", and null when the attribute is
+     * absent or carries any other value. Drivers that do not release the
+     * attribute answer null; the identity never invents one.
+     */
+    public function isFromNewLogin(): ?bool
+    {
+        return $this->booleanAttribute('isFromNewLogin');
+    }
+
+    /**
+     * Whether the identity provider says the sign-in used a long-term
+     * authentication request token, or null when it did not say so.
+     *
+     * Read from the CAS longTermAuthenticationRequestTokenUsed attribute:
+     * true for the string "true" (any case), false for "false", and null
+     * when the attribute is absent or carries any other value.
+     */
+    public function usedLongTermToken(): ?bool
+    {
+        return $this->booleanAttribute('longTermAuthenticationRequestTokenUsed');
+    }
+
+    /**
+     * A boolean attribute: true for the string "true" (any case), false for
+     * "false", and null when the attribute is absent or carries any other
+     * value.
+     */
+    private function booleanAttribute(string $name): ?bool
+    {
+        $value = $this->attribute($name);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $lower = strtolower($value);
+
+        if ($lower === 'true') {
+            return true;
+        }
+
+        if ($lower === 'false') {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
      * The authentication contexts verified for this sign-in, in the order
      * the driver reported them. Empty when no step-up was required.
      *

@@ -107,4 +107,57 @@ final class IdentityTest extends TestCase
         self::assertFalse($identity->hasAuthContext('c1'));
         self::assertFalse($identity->hasAuthContext('c3'));
     }
+
+    public function testReadsIsFromNewLoginAndTheLongTermTokenFlag(): void
+    {
+        $now = new DateTimeImmutable();
+
+        // Present true and false, in any case.
+        $identity = new Identity(
+            'jdoe',
+            [
+                'isFromNewLogin' => ['true'],
+                'longTermAuthenticationRequestTokenUsed' => ['False'],
+            ],
+            'cas',
+            $now,
+        );
+
+        self::assertTrue($identity->isFromNewLogin());
+        self::assertFalse($identity->usedLongTermToken());
+
+        // Present false for both.
+        $identity = new Identity(
+            'jdoe',
+            [
+                'isFromNewLogin' => ['FALSE'],
+                'longTermAuthenticationRequestTokenUsed' => ['false'],
+            ],
+            'cas',
+            $now,
+        );
+
+        self::assertFalse($identity->isFromNewLogin());
+        self::assertFalse($identity->usedLongTermToken());
+
+        // Absent: a driver that does not release the attributes answers null.
+        $identity = new Identity('jdoe', [], 'fake', $now);
+
+        self::assertNull($identity->isFromNewLogin());
+        self::assertNull($identity->usedLongTermToken());
+
+        // A junk value is not a boolean: null, never a guess.
+        $identity = new Identity(
+            'jdoe',
+            [
+                'isFromNewLogin' => ['yes'],
+                'longTermAuthenticationRequestTokenUsed' => ['1'],
+            ],
+            'cas',
+            $now,
+        );
+
+        self::assertNull($identity->isFromNewLogin());
+        self::assertNull($identity->usedLongTermToken());
+    }
 }
