@@ -3,12 +3,115 @@
     "tagline": "The way in. One lock, any key.",
     "items": [
         {
-            "title": "Overview",
-            "path": "index"
+            "title": "Getting Started",
+            "items": [
+                {
+                    "title": "Overview",
+                    "path": "index"
+                },
+                {
+                    "title": "Install",
+                    "path": "install"
+                },
+                {
+                    "title": "Quick start",
+                    "path": "guides/quick-start"
+                }
+            ]
         },
         {
-            "title": "The oidc driver's library choice",
-            "path": "oidc-library-choice"
+            "title": "Guides",
+            "items": [
+                {
+                    "title": "Which driver for my app?",
+                    "path": "guides/which-driver"
+                },
+                {
+                    "title": "WSU values (Playbook)",
+                    "path": "guides/wsu-values"
+                },
+                {
+                    "title": "Raw PHP",
+                    "path": "guides/raw-php"
+                },
+                {
+                    "title": "The cas driver",
+                    "path": "guides/driver-cas"
+                },
+                {
+                    "title": "The gateway driver",
+                    "path": "guides/driver-gateway"
+                },
+                {
+                    "title": "oauth2 with Entra",
+                    "path": "guides/driver-oauth2-entra"
+                },
+                {
+                    "title": "The oidc driver (Entra sign-in)",
+                    "path": "guides/driver-oidc"
+                },
+                {
+                    "title": "The oidc driver's library choice",
+                    "path": "oidc-library-choice"
+                },
+                {
+                    "title": "Session timeouts",
+                    "path": "guides/session-timeouts"
+                },
+                {
+                    "title": "Requiring MFA",
+                    "path": "guides/requiring-mfa"
+                },
+                {
+                    "title": "Step-up (authentication context)",
+                    "path": "guides/step-up"
+                },
+                {
+                    "title": "Laravel",
+                    "path": "guides/laravel"
+                },
+                {
+                    "title": "Running off Citadel",
+                    "path": "guides/running-off-citadel"
+                },
+                {
+                    "title": "Moving from wayne-cas",
+                    "path": "guides/moving-from-wayne-cas"
+                },
+                {
+                    "title": "Strongly recommended: a git.wayne.edu instance runner",
+                    "path": "guides/instance-runner"
+                }
+            ]
+        },
+        {
+            "title": "Reference",
+            "items": [
+                {
+                    "title": "Drivers",
+                    "path": "reference/drivers"
+                },
+                {
+                    "title": "Configuration",
+                    "path": "reference/configuration"
+                },
+                {
+                    "title": "API",
+                    "path": "reference/api"
+                },
+                {
+                    "title": "Proof",
+                    "path": "reference/proof"
+                }
+            ]
+        },
+        {
+            "title": "Troubleshooting",
+            "path": "troubleshooting"
+        },
+        {
+            "title": "Upgrading",
+            "path": "upgrading"
         }
     ],
     "source": "https://nougat.snu.gs/enterprise-apps/sesame",

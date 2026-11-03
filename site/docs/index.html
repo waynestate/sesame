@@ -21,9 +21,9 @@
 <div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
-    <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li><a href="../docs/index.html" aria-current="page">Overview</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li></ul></nav>
+    <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html" aria-current="page">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../docs/upgrading.html">Upgrading</a></li></ul></nav>
   </details>
-  <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li><a href="../docs/index.html" aria-current="page">Overview</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li></ul></nav>
+  <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html" aria-current="page">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../docs/upgrading.html">Upgrading</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><div align="center">
@@ -38,15 +38,72 @@
 </p>
 <p><strong>The way in. One lock, any key.</strong> Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.</p>
-<p>Checks: <code>composer ci</code> (the same command runs on GitLab and GitHub). Both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.</p>
-<p>Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.</p>
 <p>SESAME is Wayne State's protocol-neutral auth library. It returns a verified
 identity and leaves the session to the app: every driver ends in the same
 place, the app's <code>findOrImportUser(Identity)</code>, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.</p>
-<p>Front page: <a href="../index.html"><code>site/index.html</code></a>, a static page you can open in a browser or serve from <code>site/</code>.
-On Citadel it is served by the raw-PHP deploy layer in <a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame"><code>deploy/</code></a>: a Squire kit whose front controller serves <code>site/</code> behind HELMET's security headers. For local development, keep serving <code>site/</code> directly.</p>
+<h2 id="install">Install<a class="docs-heading-link" aria-label="Link to this section" href="#install">#</a></h2>
+<pre><code>composer require waynestate/sesame
+</code></pre>
+<h2 id="first-use">First use<a class="docs-heading-link" aria-label="Link to this section" href="#first-use">#</a></h2>
+<p>The quickest way to see it work is the <code>fake</code> driver in local development: no
+server to point at, no registration to make.</p>
+<pre><code class="language-php">&lt;?php
+
+declare(strict_types=1);
+
+require __DIR__.'/vendor/autoload.php';
+
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Session\NativeSession;
+use Waynestate\Sesame\UserResolver;
+
+session_start();
+
+$config = Config::fromArray([
+    'driver' =&gt; 'fake',
+    'environment' =&gt; 'local',
+    'fake' =&gt; [
+        'username' =&gt; 'jdoe',
+        'attributes' =&gt; ['cn' =&gt; ['John Doe']],
+    ],
+]);
+
+$sesame = new Sesame(
+    DriverFactory::make($config),
+    new class implements UserResolver {
+        public function findOrImportUser(Identity $identity): mixed
+        {
+            return $identity-&gt;username;
+        }
+    },
+    new NativeSession(),
+    $config,
+);
+
+sesame($sesame);
+
+// When the login has not completed, sends the redirect to the identity
+// provider and stops the script. When a ticket completes it, sends the
+// redirect to the driver's service URL and stops the script, so the ticket
+// never stays in the address bar. When the user is already signed in and
+// the request has no ticket, returns the user.
+$user = sesame_login();
+</code></pre>
+<p>Every piece named, and what the app owns and what SESAME does:
+<a href="guides/raw-php.html">Raw PHP</a>.</p>
+<h2 id="pick-your-path">Pick your path<a class="docs-heading-link" aria-label="Link to this section" href="#pick-your-path">#</a></h2>
+<ul>
+<li><a href="guides/quick-start.html">Quick start</a>: sign a user in from scratch, one step at a time.</li>
+<li><a href="install.html">Install</a>: what SESAME needs, the composer line, and how to prove it took.</li>
+<li><a href="reference/drivers.html">Reference</a>: the drivers, the configuration, the API, and the proof.</li>
+</ul>
+<p>Status: version 0.4.0, MIT license. The changelog's top heading is [Unreleased].</p>
+<p>Agents: read <a rel="noopener" href="https://sesame.apps.wayne.edu/llms.txt">llms.txt</a> first; it maps these docs for language models.</p>
 <h2 id="environment-variables">Environment variables<a class="docs-heading-link" aria-label="Link to this section" href="#environment-variables">#</a></h2>
 <p>Every environment variable SESAME reads, what it does, and its default. The table is generated from the source by
 Squire's docs builder; do not edit it by hand.</p>
@@ -396,9 +453,9 @@ Squire's docs builder; do not edit it by hand.</p>
 <!-- /generated -->
 </article>
     </main>
-    <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link docs-pager__link--next" href="../docs/oidc-library-choice.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">The oidc driver&#039;s library choice</span></a></nav>
+    <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link docs-pager__link--next" href="../docs/install.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Install</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#environment-variables">Environment variables</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install">Install</a></li><li class="docs-toc__item"><a href="#first-use">First use</a></li><li class="docs-toc__item"><a href="#pick-your-path">Pick your path</a></li><li class="docs-toc__item"><a href="#environment-variables">Environment variables</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
