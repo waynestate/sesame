@@ -35,7 +35,7 @@ How the stack holds it: `Documented`. The README tells apps to let HELMET set th
 Name the session cookie with the `__Host-` prefix. The browser then requires `Secure`, `Path=/` and no `Domain`.
 Why: a sibling subdomain under `*.apps.wayne.edu` cannot overwrite a host-only cookie.
 Sources: [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) (marks `__Host-` "recommended for session IDs"), [Cookie prefixes in the cookie spec draft](https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/) (still an Internet-Draft, revision 22, waiting at the RFC Editor as of 2026-10-27, so there is no RFC number yet).
-How the stack holds it: `Not yet`. Neither SESAME nor HELMET sets a cookie name or prefix. In Laravel the name comes from `config/session.php`, so the adapter should document a `__Host-` name there too.
+How the stack holds it: `Documented`. SESAME never sets a cookie. For raw PHP, HELMET sets the name `__Host-WSUSESSID` on HTTPS, with `Path=/` and no `Domain` (`SessionHardening::apply()`, tested in HELMET by `SessionHardeningTest::testSetsNameLifetimePathAndDomainWhenHttps`). The README now tells Laravel apps to set `SESSION_COOKIE` to a `__Host-` name with `SESSION_SECURE_COOKIE=true`, `SESSION_PATH=/` and an empty `SESSION_DOMAIN`. SESAME does not check that the app did it, and no test in this repo reads the cookie name.
 
 ### S5. Enforce idle and absolute timeouts on the server
 End the session after a period of inactivity and after a maximum lifetime, whatever the activity. Do not rely on PHP's garbage collection for this.
@@ -277,7 +277,7 @@ S47 sits in section 5 beside the other `saml` items. The rest are here.
 Use `SameSite=Lax` for the session cookie, so the browser sends it when the CAS server redirects back with a top-level GET. Do not use `Strict` for any cookie that must be present on that return. For a SAML POST response, no `Lax` or `Strict` cookie is sent, so the login-binding state (S18, S35) needs its own short-lived `SameSite=None; Secure` cookie.
 Why: with `Strict`, the cookie is missing on the very request that finishes the login, so a login binding check (S18) fails for every user. With `Lax`, a cross-site POST carries no cookie at all.
 Sources: [rfc6265bis draft, section 5.6.7.2](https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/) (the draft lets browsers send a defaulted-`Lax` cookie on a POST only if it is under about 2 minutes old, and says that is a SHOULD, so do not rely on it), [Resolution SAML SSO, SameSite note](https://wiki.resolution.de/doc/saml-sso/latest/all/knowledgebase-articles/technical/impact-of-the-changes-to-the-samesite-cookie-flag-default-behavior-in-chrome), [ComponentSpace FAQ](https://docs.componentspace.com/saml-for-asp-net-core/faq/). The vendor pages describe their own products. The CAS `Strict` consequence is my reading of the cookie rules, not a quote from a source.
-How the stack holds it: `Not yet`. S3 now says `Lax`, but nothing checks the value.
+How the stack holds it: `Documented`. S3 and the README ("The session cookie (name and SameSite)") say `Lax` and why `Strict` breaks the return from the identity provider. For raw PHP, HELMET sets `session.cookie_samesite=Lax` (`SessionHardeningTest`); Laravel defaults to `lax`. SESAME never sets the cookie and does not check the value, so a wrong value in the app is not caught here.
 
 ### S42. Do not follow redirects on the validation call, and keep host name checks on
 The call to `/p3/serviceValidate` must go to the configured CAS host and nowhere else. Turn redirects off for it. Never set TLS verification to `false`, and never replace the client's host name check.
@@ -334,12 +334,10 @@ Risks in the current code:
 - README client example: add no-redirect and TLS-verify settings (S42).
 
 Missing practices:
-- A `__Host-` cookie name, set by HELMET.
 - Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
 - A written rule for what the resolver must do on a deny.
 - Choose the SAML library for `saml` (still open). The `gateway` signing scheme is settled: `ES256`, `RS256` or `EdDSA`, pinned in config.
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20). Answered by the CAS owner: a CAS answer means MFA happened for the session (the opt-in `cas.assume_mfa`), and the server will add `authenticationDate`, the session-creation instant in UTC.
-- Decide the SameSite value for every cookie in the login flow, and write it in the README and in HELMET (S41).
 - A written rule for who may add a Composer audit ignore, since Composer 2.9 blocks advisory-hit versions by default (S38).
 - Resolved: the `oauth2` driver is resource-server only; the `oidc` driver (0.2.0) starts browser logins.
 - A test for the `saml` library choice: feed it a document with a second signature, a DOCTYPE and a namespace trick, and expect rejection (S34, S47).

@@ -208,6 +208,26 @@ $user = sesame_user();
 > SESAME's timeouts stay the authority; this only stops PHP from ending the
 > session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
+**The session cookie (name and SameSite).** SESAME never sets a cookie, so two
+choices belong to the session setup. In raw PHP HELMET makes both for you
+(`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel they are
+settings in `config/session.php`:
+
+- **Name it with the `__Host-` prefix** (S4). The browser then accepts the
+  cookie only if it is `Secure`, has `Path=/` and has no `Domain`, so a sibling
+  subdomain under `*.apps.wayne.edu` cannot overwrite it. HELMET names the
+  cookie `__Host-WSUSESSID` on HTTPS (it keeps a name your app chose). In
+  Laravel, set `SESSION_COOKIE=__Host-wsu-session`, `SESSION_SECURE_COOKIE=true`,
+  `SESSION_PATH=/` and leave `SESSION_DOMAIN` empty in `config/session.php`.
+- **Keep it `SameSite=Lax`, never `Strict`** (S41). The identity provider sends
+  the browser back to your app with a cross-site top-level `GET`, and a `Strict`
+  cookie is not sent on that request: it would be
+  missing, so the app would see no session on the return request and any login
+  binding (S18) would fail for every user. `Lax` is what HELMET sets and what
+  Laravel does by default. A cross-site `POST` carries no `Lax` cookie at all,
+  which is the defense you want; a future `saml` driver would need its own
+  short-lived cookie for that reason (S35).
+
 On logout, both paths send `Cache-Control: no-store` and
 `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser
 cannot show a signed-in page; `"cookies"` is left out on purpose, because it

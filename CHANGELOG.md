@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: a "session cookie (name and SameSite)" paragraph in the raw PHP section tells apps to use a `__Host-` cookie name and `SameSite=Lax` (never `Strict`, which drops the cookie on the return from the identity provider), says HELMET sets both for raw PHP, and gives the Laravel settings; BEST_PRACTICES S4 and S41 are now `Documented`.
+
 ## [0.4.0] - 2026-11-03
 
 - This is a pre-1.0 minor: apps that pin `^0.3` stay on 0.3.x until they move their constraint to `^0.4`. The `gateway` driver now refuses a token whose `typ` header is `at+jwt`, so read the Security line first.
-
 - Docs: the cas quick start's Guzzle client now sets `allow_redirects` to false and `verify` to true, with a note that PSR-18 has no standard option for either (S42).
 - Added: `session_ref`, a per sign-in correlation id that ties the auth events of one sign-in together in the log. `Sesame::login()` creates a fresh 16-character lowercase hex reference and stores it in the session under `sesame.session_ref`, and `sesame.login` and `sesame.logout` carry it in their context. It is not the session ID and never derived from it; a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text.
 - Added: `Identity::isFromNewLogin()` and `Identity::usedLongTermToken()` read the CAS `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` attributes (`true`, `false`, or `null` when the server did not say or sent anything else), so an app can tell a fresh login from a remembered one.
