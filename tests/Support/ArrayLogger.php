@@ -94,7 +94,7 @@ final class LogRecordList implements ArrayAccess, Countable, JsonSerializable
     public function jsonSerialize(): array
     {
         return array_map(
-            static fn (array $record): array => ['level' => $record['level'], 'context' => $record['context']],
+            static fn(array $record): array => ['level' => $record['level'], 'context' => $record['context']],
             $this->records,
         );
     }
