@@ -705,15 +705,19 @@ final class SesameEventsTest extends TestCase
             $logger,
         );
 
-        self::assertSame('the-user', $sesame->user());
-        self::assertSame('the-user', $sesame->user());
+        $first = $sesame->user();
+        $second = $sesame->user();
+
+        self::assertSame('the-user', $first);
+        self::assertSame('the-user', $second);
 
         self::assertCount(2, $logger->records);
-        foreach ($logger->records as $record) {
-            self::assertSame('warning', $record['level']);
-            self::assertSame('sesame.session_anomaly', $record['message']);
-            self::assertSame('bad_session_ref', $record['context']['reason']);
-        }
+        self::assertSame('warning', $logger->records[0]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[0]['message']);
+        self::assertSame('bad_session_ref', $logger->records[0]['context']['reason']);
+        self::assertSame('warning', $logger->records[1]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[1]['message']);
+        self::assertSame('bad_session_ref', $logger->records[1]['context']['reason']);
     }
 
     public function testAThrowingLoggerDoesNotChangeTheAnomalyPath(): void
