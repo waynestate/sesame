@@ -23,6 +23,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Driver;
@@ -105,6 +106,7 @@ class SesameServiceProvider extends ServiceProvider
                 $app->make(LaravelSession::class),
                 $this->coreConfig($app),
                 $this->clock($app),
+                $this->logger($app),
             );
         });
     }
@@ -237,6 +239,24 @@ class SesameServiceProvider extends ServiceProvider
     {
         if ($app->bound(ClockInterface::class)) {
             return $app->make(ClockInterface::class);
+        }
+
+        return null;
+    }
+
+    /**
+     * The PSR-3 logger the core logs its sign-in and sign-out events
+     * through: the app's binding when there is one and sesame.log is on,
+     * and nothing when there is neither or the app has turned logging off.
+     */
+    private function logger(Application $app): ?LoggerInterface
+    {
+        if (! (bool) $app->make(Repository::class)->get('sesame.log', true)) {
+            return null;
+        }
+
+        if ($app->bound(LoggerInterface::class)) {
+            return $app->make(LoggerInterface::class);
         }
 
         return null;
