@@ -733,6 +733,7 @@ final class CasDriverTest extends TestCase
                 'put:sesame.identity',
                 'put:sesame.signed_in_at',
                 'put:sesame.last_seen',
+                'put:sesame.session_ref',
             ],
             $log->events,
         );

@@ -408,7 +408,6 @@ final class Sesame
 
         $this->session->forget('sesame.user');
         $this->session->forget('sesame.identity');
-        $this->session->forget('sesame.session_ref');
         $this->session->invalidate();
 
         if ($user === null && ! $identity instanceof Identity) {
