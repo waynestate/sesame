@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: SESAME fails closed on a redirect and on a client exception during the CAS validation call, and tests were added to prove it (S42).
 - Docs: the cas quick start's Guzzle client now sets `allow_redirects` to false and `verify` to true, with a note that PSR-18 has no standard option for either (S42).
 - Added: `session_ref`, a per sign-in correlation id that ties the auth events of one sign-in together in the log. `Sesame::login()` creates a fresh 16-character lowercase hex reference and stores it in the session under `sesame.session_ref`, and `sesame.login` and `sesame.logout` carry it in their context. It is not the session ID and never derived from it; a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text.
 - Added: `Identity::isFromNewLogin()` and `Identity::usedLongTermToken()` read the CAS `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` attributes (`true`, `false`, or `null` when the server did not say or sent anything else), so an app can tell a fresh login from a remembered one.

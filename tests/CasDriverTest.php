@@ -12,6 +12,9 @@ use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
@@ -595,6 +598,105 @@ final class CasDriverTest extends TestCase
         $this->expectException(AuthenticationFailed::class);
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+    }
+
+    public function testAValidationRedirectIsRefusedAndNotFollowed(): void
+    {
+        // A 302 with a Location header and a valid success body: the driver
+        // must refuse the non-200 answer and never follow the redirect.
+        $http = new FakeHttpClient([
+            self::response(302, self::successXml())->withHeader('Location', 'http://evil.test/steal'),
+        ]);
+        $driver = $this->driver($http);
+
+        try {
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertStringNotContainsString('evil.test', $e->getMessage());
+            self::assertStringNotContainsString('ST-1', $e->getMessage());
+        }
+
+        self::assertCount(1, $http->requests);
+        self::assertSame('cas.test', $http->requests[0]->getUri()->getHost());
+    }
+
+    #[DataProvider('redirectStatuses')]
+    public function testEveryRedirectStatusIsRefused(int $status): void
+    {
+        $http = new FakeHttpClient([
+            self::response($status, self::successXml())->withHeader('Location', 'http://evil.test/steal'),
+        ]);
+        $driver = $this->driver($http);
+
+        $this->expectException(AuthenticationFailed::class);
+
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+    }
+
+    /**
+     * Every redirect status the CAS server or a proxy may answer with.
+     *
+     * @return array<string, array{int}>
+     */
+    public static function redirectStatuses(): array
+    {
+        return [
+            '301 moved permanently' => [301],
+            '302 found' => [302],
+            '303 see other' => [303],
+            '307 temporary redirect' => [307],
+            '308 permanent redirect' => [308],
+        ];
+    }
+
+    public function testATransportFailureIsNotSwallowedAndSignsNobodyIn(): void
+    {
+        // A PSR-18 client that fails the TLS handshake: the exception must
+        // come straight back out of login(), unchanged, and nobody is signed
+        // in.
+        $exception = new class('SSL: certificate subject name does not match target host')
+            extends \RuntimeException
+            implements ClientExceptionInterface
+        {
+        };
+
+        $http = new class($exception) implements ClientInterface {
+            public function __construct(private readonly \Throwable $failure)
+            {
+            }
+
+            public function sendRequest(RequestInterface $request): ResponseInterface
+            {
+                throw $this->failure;
+            }
+        };
+
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
+
+        $step = null;
+
+        try {
+            $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            self::fail('Expected the client exception to be rethrown.');
+        } catch (ClientExceptionInterface $caught) {
+            self::assertSame($exception, $caught);
+        }
+
+        self::assertNull($step);
+    }
+
+    public function testTheValidationRequestGoesOnlyToTheConfiguredHttpsHost(): void
+    {
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = $this->driver($http);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertCount(1, $http->requests);
+        self::assertSame('https', $http->requests[0]->getUri()->getScheme());
+        self::assertSame('cas.test', $http->requests[0]->getUri()->getHost());
     }
 
     public function testRejectsAnHttpBaseUrl(): void
