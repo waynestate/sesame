@@ -239,6 +239,30 @@ session at logout. Laravel apps use Laravel's own CSRF token instead: the
 `POST /logout` route is in the `web` middleware group, so a form needs
 `@csrf`.
 
+### Logging
+
+The facade takes an optional sixth constructor argument: a PSR-3 logger
+(`Psr\Log\LoggerInterface`). When you pass one, SESAME writes one record per
+authentication event through it:
+
+| Event | Level | When |
+|---|---|---|
+| `sesame.login` | `info` | A verified identity resolved to a user and the session was stored. |
+| `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
+| `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
+| `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
+
+Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
+in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
+`absolute_timeout`, `no_timestamps` or `user_gone`). The logger stays
+optional: without one, nothing is logged and nothing else changes.
+
+SESAME never logs tickets, session IDs, tokens or failure messages: a failed
+login records only the event, the driver and the time. Usernames have every
+control character replaced with `?` and are cut at 128 characters, so a
+username cannot forge an extra log line or flood the log. A logger that
+throws never changes what the facade returns or throws.
+
 ## Drivers
 
 | Driver | Status |
@@ -930,6 +954,7 @@ Config keys (in `config/sesame.php`):
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
 | `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
+| `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
 
 The routes, when `routes` is true:
@@ -1023,6 +1048,15 @@ app()->singleton(
 The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The
 adapter wires one up from the app's cache, using the store named by
 `oauth2.jwks_store`, or the default store when none is named.
+
+### Logging
+
+The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets
+the authentication events in its normal log channels with no extra wiring:
+the container's `Psr\Log\LoggerInterface` binding is used when there is one.
+Set `sesame.log` (env `SESAME_LOG`) to `false` to turn the events off; the
+default is `true`. The events, their context and what is never logged are
+described in "Raw PHP", "Logging".
 
 ## Running off Citadel
 

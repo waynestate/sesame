@@ -177,7 +177,7 @@ How the stack holds it: `Documented`. `AuthenticationFailed` messages carry the 
 Log logins, failures, logouts and session anomalies with user, driver and time. Never log tickets, session IDs, assertions or tokens.
 Why: you cannot investigate or detect what you did not record, and a logged secret is a leaked secret.
 Sources: [OWASP Logging](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), [OWASP Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [ASVS 5.0 V16](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) (V16.3.1 log all authentication successes and failures with the authentication type; V16.2.5 never log credentials and mask or hash session tokens; V16.4.1 encode logged data against log injection; V16.2.2 record security event times in UTC or with an offset).
-How the stack holds it: `Not yet`. SESAME has no logger or event hook. The CAS failure code and any user-supplied value (the username, the ticket text) are log-injection input, so a logging hook must encode them.
+How the stack holds it: `Partly enforced`. `Sesame` takes an optional PSR-3 logger (the Laravel adapter passes the app's logger when the container has one, and `sesame.log` turns it off) and logs `sesame.login`, `sesame.login_failed`, `sesame.login_refused` and `sesame.logout` with the event, the driver, the username and the time, plus `reason` on logout. It never logs tickets, session IDs, tokens or failure messages, and usernames have control characters replaced and are cut at 128 characters (`src/Sesame.php`, `tests/SesameEventsTest.php`, `tests/Laravel/SesameLoggingTest.php`). Still missing: session anomaly events and a correlation ID tying the events of one sign-in together.
 
 ## 4. The `fake` driver and configuration
 
@@ -337,7 +337,6 @@ Risks in the current code:
 Missing practices:
 - A `__Host-` cookie name, set by HELMET.
 - Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
-- A logging hook (PSR-3) for authentication events.
 - A written rule for what the resolver must do on a deny.
 - Choose the SAML library for `saml` (still open). The `gateway` signing scheme is settled: `ES256`, `RS256` or `EdDSA`, pinned in config.
 - Questions for the IdP owner: SAML single logout, signed assertions, released attributes, and `/p3/serviceValidate` attribute release. Add: does Academica release `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`, and does it support `renew` (S19). Answered: Academica does not send single logout POSTs (S20). Answered by the CAS owner: a CAS answer means MFA happened for the session (the opt-in `cas.assume_mfa`), and the server will add `authenticationDate`, the session-creation instant in UTC.

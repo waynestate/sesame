@@ -268,6 +268,9 @@ return [
 
     'routes' => env('SESAME_ROUTES', true),
 
+    // Log sign-in and sign-out events through the app's PSR-3 logger; false turns it off.
+    'log' => env('SESAME_LOG', true),
+
     /*
     |--------------------------------------------------------------------------
     | User resolver
