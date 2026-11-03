@@ -127,7 +127,7 @@ How the stack holds it: `Not yet`. CAS carries no state parameter, and `CasDrive
 Support `renew` and read the authentication details the server returns, so a sensitive action can require a recent, direct login.
 Why: SSO may have been satisfied hours ago, or by a remembered login.
 Sources: [CAS Protocol 3.0 (renew, authentication attributes)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html), [ASVS 5.0 V6.8.4](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md) (an app that needs a given strength or recency must check what the IdP returned, and keep a documented fallback if the IdP returns nothing), [ASVS 5.0 V7.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md) (full re-authentication before changing sensitive account attributes; narrower than "any sensitive action").
-How the stack holds it: `Partly enforced` (opt-in). The `cas.renew` option sends `renew` on the login redirect and the validation request, so an app can require a fresh, direct login; the CAS server refuses a ticket that came from an SSO session with `INVALID_TICKET`. `authenticationDate` is read for the login age (S46). Still open: `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` are not read, so an app cannot yet tell a fresh login from a remembered one. The spec says to ignore `gateway` when `renew` is set.
+How the stack holds it: `Partly enforced` (opt-in). The `cas.renew` option sends `renew` on the login redirect and the validation request, so an app can require a fresh, direct login; the CAS server refuses a ticket that came from an SSO session with `INVALID_TICKET`. `authenticationDate` is read for the login age (S46). `Identity::isFromNewLogin()` and `Identity::usedLongTermToken()` read `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` (`true`, `false`, or `null` when the server did not say), so an app can tell a fresh login from a remembered one (`src/Identity.php`, `tests/IdentityTest.php`, `tests/CasDriverTest.php`). Still open: whether Academica releases these attributes at all (a question for the CAS owner). The spec says to ignore `gateway` when `renew` is set.
 
 ### S20. Accept single logout from the CAS server
 When the CAS server ends a user's SSO session, it can POST a logout request to each app. The app should find the session by ticket and end it.
@@ -330,7 +330,6 @@ Risks in the current code:
 - `src/Drivers/CasDriver.php:97-108`: no login binding to the browser.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
-- `src/Drivers/CasDriver.php`: nothing reads `isFromNewLogin` or `longTermAuthenticationRequestTokenUsed`, so an app cannot tell a fresh login from a remembered one (S19).
 - `src/Session/NativeSession.php:26`: use a destroy time stamp and grace period at login instead of immediate delete (S43).
 - README client example: add no-redirect and TLS-verify settings (S42).
 

@@ -340,6 +340,15 @@ attribute when the server sends one. When it is missing, unparseable, or more
 than five minutes ahead of the driver's clock, the driver uses its own clock
 instead, so a bad value can never push the sign-in time into the future.
 
+With `cas.protocol` set to `3.0`, a server may also release `isFromNewLogin`
+and `longTermAuthenticationRequestTokenUsed`. The identity reads them as
+`$identity->isFromNewLogin()` and `$identity->usedLongTermToken()`: `true` or
+`false` when the server said so (any letter case), and `null` when the
+attribute is missing or is anything but `true` or `false`. SESAME never
+guesses, so an app that wants a fresh login for a sensitive action can check
+`isFromNewLogin() === true` and send the user back through `cas.renew` when it
+is anything else.
+
 `cas.assume_mfa` is off by default, and it should stay off unless the CAS
 server enforces MFA for every sign-in. A successful CAS validation then means
 MFA happened for the user's current SSO session, and the driver says so on

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added: `Identity::isFromNewLogin()` and `Identity::usedLongTermToken()` read the CAS `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed` attributes (`true`, `false`, or `null` when the server did not say or sent anything else), so an app can tell a fresh login from a remembered one.
 - Added: optional PSR-3 logging of authentication events. `Sesame` takes an optional sixth constructor argument, and the Laravel adapter passes the app's logger when the container has one; `sesame.log` (env `SESAME_LOG`, default `true`) turns the events off. The events are `sesame.login`, `sesame.login_failed`, `sesame.login_refused` and `sesame.logout`, each carrying `event`, `driver`, `username` and `at` in its context (`reason` on logout); tickets, session IDs, tokens and failure messages are never logged.
 - Added: `oauth2.require_at_jwt` (env `SESAME_OAUTH2_REQUIRE_AT_JWT`), an opt-in check that the access token's `typ` header is `at+jwt` or `application/at+jwt`. It is off by default because Microsoft Entra v2 access tokens are typed `JWT`, so requiring it would refuse every Entra token.
 - Security: the `gateway` driver refuses a token whose `typ` header is `at+jwt` or `application/at+jwt`, so an OAuth2 access token cannot be replayed as a gateway assertion. A missing `typ` or `JWT` still works.
