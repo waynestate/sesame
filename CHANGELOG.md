@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added: `sesame.session_anomaly`, a warning event for sessions whose state looks wrong or tampered with, apart from the normal timeout logouts. `Sesame::user()` logs it with `reason` `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
 - Docs: a "session cookie (name and SameSite)" paragraph in the raw PHP section tells apps to use a `__Host-` cookie name and `SameSite=Lax` (never `Strict`, which drops the cookie on the return from the identity provider), says HELMET sets both for raw PHP, and gives the Laravel settings; BEST_PRACTICES S4 and S41 are now `Documented`.
 
 ## [0.4.0] - 2026-11-03

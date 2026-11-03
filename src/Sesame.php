@@ -186,7 +186,10 @@ final class Sesame
      * and fail another. When the resolver implements RefreshesUser, the
      * stored user is looked up again before the answer, and a null result
      * signs the session out, so a deleted account stops reading as signed
-     * in from the next request on.
+     * in from the next request on. A session whose state looks wrong or
+     * tampered with (missing timestamps, a session reference that is not
+     * the 16-character lowercase hex value login() stores) is logged as a
+     * `sesame.session_anomaly` warning when a logger is set.
      *
      * @return mixed
      */
@@ -202,9 +205,28 @@ final class Sesame
         $lastSeen = $this->session->get('sesame.last_seen');
 
         if (! is_int($signedInAt) || ! is_int($lastSeen)) {
+            // The session is about to be cleared by signOut(), so the
+            // anomaly is logged first, while the stored identity and
+            // reference are still readable.
+            $this->logAnomaly('missing_timestamps');
             $this->signOut('no_timestamps');
 
             return null;
+        }
+
+        if ($this->logger !== null) {
+            $storedRef = $this->session->get('sesame.session_ref');
+
+            if ($storedRef !== null && $this->validSessionRef($storedRef) === null) {
+                // A reference that is not the 16-character lowercase hex
+                // value login() stores only breaks the correlation of this
+                // sign-in's events, so it is logged as an anomaly and left
+                // in place rather than ending the session. A session with
+                // no reference at all (started before the reference
+                // existed) is not an anomaly, and the bad value is never
+                // echoed into the log.
+                $this->logAnomaly('bad_session_ref');
+            }
         }
 
         $now = $this->clock->now()->getTimestamp();
@@ -396,14 +418,10 @@ final class Sesame
         if ($this->logger !== null) {
             $user = $this->session->get('sesame.user');
             $identity = $this->session->get('sesame.identity');
-            // The ref is read before the session is cleared, and only a
-            // 16-character lowercase hex value made by login() is trusted:
-            // anything else in the session is ignored, so a tampered
-            // session cannot inject text into the log.
-            $storedRef = $this->session->get('sesame.session_ref');
-            if (is_string($storedRef) && preg_match('/^[0-9a-f]{16}$/', $storedRef) === 1) {
-                $sessionRef = $storedRef;
-            }
+            // The ref is read before the session is cleared; only a
+            // 16-character lowercase hex value made by login() is trusted,
+            // so a tampered session cannot inject text into the log.
+            $sessionRef = $this->validSessionRef($this->session->get('sesame.session_ref'));
         }
 
         $this->session->forget('sesame.user');
@@ -427,6 +445,57 @@ final class Sesame
         }
 
         $this->log('info', 'sesame.logout', $context);
+    }
+
+    /**
+     * The stored session reference when it is a valid 16-character
+     * lowercase hex string, or null otherwise.
+     *
+     * Only a value made by login() is trusted: anything else (a non-string,
+     * a wrong length, other characters) is ignored, so a tampered session
+     * cannot inject text into the log. Shared by signOut(), user() and
+     * logAnomaly(), so the rule lives in one place.
+     */
+    private function validSessionRef(mixed $storedRef): ?string
+    {
+        return is_string($storedRef) && preg_match('/^[0-9a-f]{16}$/', $storedRef) === 1 ? $storedRef : null;
+    }
+
+    /**
+     * Write one session anomaly warning to the optional logger.
+     *
+     * An anomaly is a session whose state looks wrong or tampered with, as
+     * opposed to a normal timeout: a separate, searchable signal. The
+     * context carries the event, the reason, the driver, the log-safe
+     * username and the time, and the session reference only when the
+     * stored value is a valid 16-character lowercase hex string, so a bad
+     * reference is never echoed into the log. The write goes through log(),
+     * so a broken logger never changes what the facade returns or throws,
+     * and nothing is written when there is no logger.
+     */
+    private function logAnomaly(string $reason): void
+    {
+        if ($this->logger === null) {
+            return;
+        }
+
+        $identity = $this->session->get('sesame.identity');
+
+        $context = [
+            'event' => 'session_anomaly',
+            'reason' => $reason,
+            'driver' => $identity instanceof Identity ? $identity->driver : $this->config->driver,
+            'username' => $identity instanceof Identity ? self::safeUsername($identity->username) : null,
+            'at' => $this->now(),
+        ];
+
+        $sessionRef = $this->validSessionRef($this->session->get('sesame.session_ref'));
+
+        if ($sessionRef !== null) {
+            $context['session_ref'] = $sessionRef;
+        }
+
+        $this->log('warning', 'sesame.session_anomaly', $context);
     }
 
     /**
