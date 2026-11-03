@@ -8,7 +8,7 @@ The README and the Markdown twin of every page, joined. The index is https://ses
 
 ## README
 
-Source: https://github.com/waynestate/sesame/blob/HEAD/README.md
+Source: https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/README.md
 
 ## SESAME
 
@@ -25,12 +25,14 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
-Front page: [`site/index.html`](https://github.com/waynestate/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
-On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://github.com/waynestate/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
+Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-This repository is published from Wayne State University's internal GitLab and
-mirrored here. Changes land there first; Wayne State developers open issues
-and merge requests on the internal project.
+### Where the code lives
+
+The canonical repository is on nougat: [enterprise-apps/sesame](https://nougat.snu.gs/enterprise-apps/sesame). git.wayne.edu and GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) are read-only mirrors of it.
+Open issues and merge requests on nougat, not on the mirrors.
+This moves to git.wayne.edu once it has CI runners. Open sesame: the cave is nougat.
 
 ### Install
 
@@ -535,7 +537,7 @@ composer require league/oauth2-client
 Without it, building the driver fails with `The oidc driver needs
 league/oauth2-client. Install it with: composer require league/oauth2-client`.
 Why that library, and what else was weighed:
-[docs/oidc-library-choice.md](https://github.com/waynestate/sesame/blob/HEAD/docs/oidc-library-choice.md).
+[docs/oidc-library-choice.md](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/oidc-library-choice.md).
 
 How a sign-in runs:
 
@@ -1158,7 +1160,7 @@ Proof runs against real Wayne State applications are on a private site, [proof.a
 
 ### Tests
 
-Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://github.com/waynestate/sesame/blob/HEAD/MAINTAINING.md).
+Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/MAINTAINING.md).
 
 No PHP on the machine? Fine. Docker runs the suite:
 

@@ -15,12 +15,8 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
-Front page: [`site/index.html`](https://github.com/waynestate/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
-On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://github.com/waynestate/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
-
-This repository is published from Wayne State University's internal GitLab and
-mirrored here. Changes land there first; Wayne State developers open issues
-and merge requests on the internal project.
+Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
 Every page below is Markdown. The HTML pages send the same Markdown to a client that asks for `text/markdown`. Written by Squire's agent-ready kit from the README and the pages; do not edit.
 
@@ -38,7 +34,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 
 ## Source
 
-- [README](https://github.com/waynestate/sesame/blob/HEAD/README.md): the project's README, with install, commands and checks
+- [README](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/README.md): the project's README, with install, commands and checks
 - [Everything in one file](https://sesame.apps.wayne.edu/llms-full.txt): the README and every page above, as one Markdown file
 
 ## Optional
