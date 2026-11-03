@@ -565,4 +565,182 @@ final class SesameEventsTest extends TestCase
             self::assertArrayNotHasKey('session_ref', $logger->records[0]['context']);
         }
     }
+
+    public function testMissingTimestampsLogsAnAnomalyBeforeTheLogout(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        // No sesame.signed_in_at or sesame.last_seen: a session made
+        // before the timeouts existed.
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertNull($sesame->user());
+        self::assertSame([], $session->store);
+        self::assertCount(2, $logger->records);
+        self::assertSame('warning', $logger->records[0]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[0]['message']);
+        self::assertSame([
+            'event' => 'session_anomaly',
+            'reason' => 'missing_timestamps',
+            'driver' => 'fake',
+            'username' => 'jdoe',
+            'at' => $this->atom($clock),
+        ], $logger->records[0]['context']);
+        self::assertSame('info', $logger->records[1]['level']);
+        self::assertSame('sesame.logout', $logger->records[1]['message']);
+        self::assertSame('no_timestamps', $logger->records[1]['context']['reason']);
+    }
+
+    public function testABadSessionRefLogsAnAnomalyWithoutSigningOut(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.session_ref', "evil\nforged line");
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertSame('the-user', $sesame->user());
+        self::assertSame('the-user', $session->store['sesame.user']);
+        self::assertSame("evil\nforged line", $session->store['sesame.session_ref']);
+        self::assertCount(1, $logger->records);
+        self::assertSame('warning', $logger->records[0]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[0]['message']);
+        self::assertSame('bad_session_ref', $logger->records[0]['context']['reason']);
+        self::assertArrayNotHasKey('session_ref', $logger->records[0]['context']);
+        $everywhere = json_encode($logger->records, JSON_THROW_ON_ERROR);
+        self::assertStringNotContainsString('forged', $everywhere);
+    }
+
+    public function testNoSessionRefIsNotAnAnomaly(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        // No sesame.session_ref: a session started before the feature.
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertSame('the-user', $sesame->user());
+        self::assertSame([], $logger->records);
+    }
+
+    public function testAnAnomalyEventIsWrittenOncePerCallAndNeverWithoutALogger(): void
+    {
+        // Without a logger nothing is written and user() behaves as before.
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.session_ref', "evil\nforged line");
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        self::assertSame('the-user', $sesame->user());
+        self::assertSame('the-user', $session->store['sesame.user']);
+
+        // With a logger, each user() call on a bad reference logs exactly
+        // one anomaly.
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.session_ref', "evil\nforged line");
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        $first = $sesame->user();
+        $second = $sesame->user();
+
+        self::assertSame('the-user', $first);
+        self::assertSame('the-user', $second);
+
+        self::assertCount(2, $logger->records);
+        self::assertSame('warning', $logger->records[0]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[0]['message']);
+        self::assertSame('bad_session_ref', $logger->records[0]['context']['reason']);
+        self::assertSame('warning', $logger->records[1]['level']);
+        self::assertSame('sesame.session_anomaly', $logger->records[1]['message']);
+        self::assertSame('bad_session_ref', $logger->records[1]['context']['reason']);
+    }
+
+    public function testAThrowingLoggerDoesNotChangeTheAnomalyPath(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ThrowingLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        // No sesame.signed_in_at or sesame.last_seen.
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertNull($sesame->user());
+        self::assertSame([], $session->store);
+        self::assertSame(['sesame.session_anomaly', 'sesame.logout'], $logger->messages);
+    }
 }
