@@ -18,11 +18,15 @@ sesame.
 Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
 On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
+Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted.
+
 Every page below is Markdown. The HTML pages send the same Markdown to a client that asks for `text/markdown`. Written by Squire's agent-ready kit from the README and the pages; do not edit.
 
 ## Pages
 
 - [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
+- [Overview | Sesame docs](https://sesame.apps.wayne.edu/docs/index.md): Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.
+- [The oidc driver's library choice | Sesame docs](https://sesame.apps.wayne.edu/docs/oidc-library-choice.md): Which library the oidc driver stands on, what else was weighed, and why.
 
 ## Prompts
 
