@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Waynestate\Sesame;
 
 use Closure;
+use DateTimeZone;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Waynestate\Sesame\Clock\SystemClock;
+use Waynestate\Sesame\Exception\AuthenticationFailed;
 
 /**
  * The facade an app talks to.
@@ -31,6 +34,9 @@ final class Sesame
      * @param Driver|Closure(): Driver $driver The driver, or a factory that
      *        builds it. With a factory the driver is built on first use, so
      *        checking a session never pays for the driver's construction.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger. When given,
+     *        sign-in and sign-out events are logged through it; a logger
+     *        that throws never changes what the facade returns or throws.
      */
     public function __construct(
         Driver|Closure $driver,
@@ -38,6 +44,7 @@ final class Sesame
         private readonly SessionPort $session,
         private readonly Config $config,
         ?ClockInterface $clock = null,
+        private readonly ?LoggerInterface $logger = null,
     ) {
         $this->driverFactory = $driver;
         $this->clock = $clock ?? new SystemClock();
@@ -77,7 +84,20 @@ final class Sesame
      */
     public function login(ServerRequestInterface $request): mixed
     {
-        $step = $this->driver()->login($request);
+        try {
+            $step = $this->driver()->login($request);
+        } catch (AuthenticationFailed $failure) {
+            // The failure message can carry the ticket or other provider
+            // details, so it is never logged: only the event, the driver
+            // and the time. The exception is rethrown unchanged.
+            $this->log('warning', 'sesame.login_failed', [
+                'event' => 'login_failed',
+                'driver' => $this->config->driver,
+                'at' => $this->now(),
+            ]);
+
+            throw $failure;
+        }
 
         if (! $step instanceof Authenticated) {
             return $step;
@@ -86,6 +106,13 @@ final class Sesame
         $user = $this->resolver->findOrImportUser($step->identity);
 
         if ($user === null) {
+            $this->log('warning', 'sesame.login_refused', [
+                'event' => 'login_refused',
+                'driver' => $this->config->driver,
+                'username' => self::safeUsername($step->identity->username),
+                'at' => $this->now(),
+            ]);
+
             return null;
         }
 
@@ -108,6 +135,13 @@ final class Sesame
         ));
         $this->session->put('sesame.signed_in_at', $now);
         $this->session->put('sesame.last_seen', $now);
+
+        $this->log('info', 'sesame.login', [
+            'event' => 'login',
+            'driver' => $this->config->driver,
+            'username' => self::safeUsername($step->identity->username),
+            'at' => $this->now(),
+        ]);
 
         return $user;
     }
@@ -162,7 +196,7 @@ final class Sesame
         $lastSeen = $this->session->get('sesame.last_seen');
 
         if (! is_int($signedInAt) || ! is_int($lastSeen)) {
-            $this->signOut();
+            $this->signOut('no_timestamps');
 
             return null;
         }
@@ -171,7 +205,10 @@ final class Sesame
 
         if ($now - $lastSeen > $this->config->sessionIdleMinutes * 60
             || $now - $signedInAt > $this->config->sessionAbsoluteMinutes * 60) {
-            $this->signOut();
+            $reason = $now - $lastSeen > $this->config->sessionIdleMinutes * 60
+                ? 'idle_timeout'
+                : 'absolute_timeout';
+            $this->signOut($reason);
 
             return null;
         }
@@ -182,7 +219,7 @@ final class Sesame
             $fresh = $this->resolver->refreshUser($user);
 
             if ($fresh === null) {
-                $this->signOut();
+                $this->signOut('user_gone');
 
                 return null;
             }
@@ -256,7 +293,7 @@ final class Sesame
      */
     public function logout(string $returnTo): ?string
     {
-        $this->signOut();
+        $this->signOut('logout');
 
         return $this->driver()->logoutUrl($returnTo);
     }
@@ -272,7 +309,7 @@ final class Sesame
      */
     public function signOutLocal(): void
     {
-        $this->signOut();
+        $this->signOut('logout');
     }
 
     /**
@@ -332,12 +369,85 @@ final class Sesame
      * Clear SESAME's session keys and invalidate the session.
      *
      * The one sign-out the logout route and the timeout check both use, so
-     * they can never disagree about whether the session is dead.
+     * they can never disagree about whether the session is dead. When a
+     * user or an identity was actually stored, the sign-out is logged with
+     * its reason: the driver and the username are read from the stored
+     * identity before it is forgotten, and an empty session logs nothing.
      */
-    private function signOut(): void
+    private function signOut(string $reason): void
     {
+        // The log wants the driver and the username from the stored
+        // identity, so it is read before it is forgotten; without a
+        // logger the session is never touched beyond the sign-out itself.
+        $user = null;
+        $identity = null;
+
+        if ($this->logger !== null) {
+            $user = $this->session->get('sesame.user');
+            $identity = $this->session->get('sesame.identity');
+        }
+
         $this->session->forget('sesame.user');
         $this->session->forget('sesame.identity');
         $this->session->invalidate();
+
+        if ($user === null && ! $identity instanceof Identity) {
+            return;
+        }
+
+        $this->log('info', 'sesame.logout', [
+            'event' => 'logout',
+            'reason' => $reason,
+            'driver' => $identity instanceof Identity ? $identity->driver : $this->config->driver,
+            'username' => $identity instanceof Identity ? self::safeUsername($identity->username) : null,
+            'at' => $this->now(),
+        ]);
+    }
+
+    /**
+     * Write one event to the optional logger.
+     *
+     * A broken logger must never change what the facade returns or throws,
+     * so every call is swallowed. The context carries only the event, the
+     * driver, the log-safe username and the time: no ticket, session ID,
+     * token, assertion, cookie or header ever reaches the log.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function log(string $level, string $message, array $context): void
+    {
+        if ($this->logger === null) {
+            return;
+        }
+
+        try {
+            $this->logger->log($level, $message, $context);
+        } catch (\Throwable) {
+            // The logger is best effort: a broken one must not break the
+            // sign-in, the user check or the sign-out.
+        }
+    }
+
+    /**
+     * The clock's current time as a UTC DATE_ATOM string, for the `at`
+     * context of a logged event.
+     */
+    private function now(): string
+    {
+        return $this->clock->now()->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM);
+    }
+
+    /**
+     * Make a username safe to put in a log line.
+     *
+     * Every control character (0x00 to 0x1F and 0x7F) becomes `?`, so a
+     * username cannot forge an extra log line, and the result is cut at
+     * 128 characters, so it cannot flood the log either.
+     */
+    private static function safeUsername(string $username): string
+    {
+        $safe = preg_replace('/[\x00-\x1f\x7f]/', '?', $username) ?? '';
+
+        return substr($safe, 0, 128);
     }
 }
