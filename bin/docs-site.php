@@ -110,6 +110,10 @@ final class DocsSite
 
     private bool $writeBlocks = false;
 
+    private bool $requireTag = false;
+
+    private bool $requireRelease = false;
+
     public function __construct(string $root)
     {
         if (! is_dir($root)) {
@@ -126,6 +130,18 @@ final class DocsSite
     public function setWriteBlocks(bool $write): void
     {
         $this->writeBlocks = $write;
+    }
+
+    /** --require-tag: fail when the latest version tag does not match the docs stamp. Off by default. */
+    public function setRequireTag(bool $require): void
+    {
+        $this->requireTag = $require;
+    }
+
+    /** --require-release: fail when CHANGELOG.md has no released heading yet. Off by default. */
+    public function setRequireRelease(bool $require): void
+    {
+        $this->requireRelease = $require;
     }
 
     public function rootDir(): string
@@ -158,6 +174,7 @@ final class DocsSite
         }
         $this->checkCoverage($sources, $contents);
         $stamp = $this->versionStamp();
+        $this->checkStamp($stamp);
         $project = $this->projectTitle();
         $this->checkWayneUi();
         $this->checkKit();
@@ -563,6 +580,66 @@ final class DocsSite
         }
 
         return 'unreleased';
+    }
+
+    /**
+     * The version stamp gates: composer.json's version field must agree with the stamp, and the opt-in
+     * --require-release and --require-tag flags demand a released heading and a latest tag that matches it.
+     */
+    private function checkStamp(string $stamp): void
+    {
+        $composer = $this->root.'/composer.json';
+        if (is_file($composer)) {
+            $data = json_decode((string) file_get_contents($composer), true);
+            $version = is_array($data) ? ($data['version'] ?? null) : null;
+            if (is_string($version) && $version !== '' && $version !== $stamp) {
+                $this->findings[] = "composer.json version {$version} does not match the docs stamp {$stamp}";
+            }
+        }
+        if ($this->requireRelease && $stamp === 'unreleased') {
+            $this->findings[] = 'CHANGELOG.md has no released heading';
+        }
+        if (! $this->requireTag) {
+            return;
+        }
+        $process = proc_open(['git', 'tag', '--list', '--sort=-v:refname'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->root);
+        if (! is_resource($process)) {
+            $this->findings[] = '--require-tag: git is not available';
+
+            return;
+        }
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $code = proc_close($process);
+        if ($code !== 0) {
+            $detail = trim($stderr);
+            $more = $detail === '' ? '' : ': '.$detail;
+            $this->findings[] = "--require-tag: git tag --list exited with code {$code}{$more}";
+
+            return;
+        }
+        $tag = null;
+        foreach (explode("\n", $this->normalise($stdout)) as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (preg_match('/^v?(\d+\.\d+\.\d+)/', $line, $m) === 1) {
+                $tag = $m[1];
+
+                break;
+            }
+        }
+        if ($tag === null) {
+            $this->findings[] = '--require-tag: the repo has no version tags';
+
+            return;
+        }
+        if ($tag !== $stamp) {
+            $this->findings[] = "the docs stamp {$stamp} does not match the latest tag {$tag}";
+        }
     }
 
     private function projectTitle(): string
@@ -1777,11 +1854,13 @@ function docs_site_require_commonmark(string $root): void
 /** @param list<string> $argv */
 function docs_site_main(array $argv): int
 {
-    $usage = "Usage: php bin/docs-site.php [--root=.] [--check]\n"
+    $usage = "Usage: php bin/docs-site.php [--root=.] [--check] [--require-tag] [--require-release]\n"
         ."       php bin/docs-site.php --sync-to=<repo>   (from Squire: copy the kit and this file)\n"
         ."       php bin/docs-site.php --rehash           (from Squire: record the kit's hashes)\n";
     $root = '.';
     $check = false;
+    $requireTag = false;
+    $requireRelease = false;
     $syncTo = null;
     $rehash = false;
     foreach (array_slice($argv, 1) as $arg) {
@@ -1793,6 +1872,10 @@ function docs_site_main(array $argv): int
             $syncTo = substr($arg, 10);
         } elseif ($arg === '--check') {
             $check = true;
+        } elseif ($arg === '--require-tag') {
+            $requireTag = true;
+        } elseif ($arg === '--require-release') {
+            $requireRelease = true;
         } elseif ($arg === '--help' || $arg === '-h') {
             fwrite(STDOUT, $usage);
 
@@ -1815,6 +1898,8 @@ function docs_site_main(array $argv): int
         docs_site_require_commonmark($root);
         $tool = new DocsSite($root);
         $tool->setWriteBlocks(! $check);
+        $tool->setRequireTag($requireTag);
+        $tool->setRequireRelease($requireRelease);
         $files = $tool->build();
         $binaries = $tool->binaryFiles();
         $leftovers = $tool->leftovers($files, $binaries);
