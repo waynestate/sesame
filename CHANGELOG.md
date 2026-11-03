@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: the docs site is built by the shared builder and checked in `composer ci`.
 - Docs: the docs site now exists. Squire's docs builder renders `docs/` into `site/docs/`: an Overview page from the README's opening, the oidc library choice note, and a generated environment reference table covering all 55 `SESAME_*` settings. `composer docs` builds it, and `composer docs:check` gates it in CI.
 - Docs: the README session cookie section also says to leave `session.sid_length` and `session.sid_bits_per_character` at PHP's defaults; BEST_PRACTICES S45 is `Documented`.
 - Added: `sesame.session_anomaly`, a warning event for sessions whose state looks wrong or tampered with, apart from the normal timeout logouts. `Sesame::user()` logs it with `reason` `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
