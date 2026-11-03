@@ -75,11 +75,14 @@ final class SesameEventsTest extends TestCase
         self::assertCount(1, $logger->records);
         self::assertSame('info', $logger->records[0]['level']);
         self::assertSame('sesame.login', $logger->records[0]['message']);
+        $ref = $logger->records[0]['context']['session_ref'];
+        self::assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $ref);
         self::assertSame([
             'event' => 'login',
             'driver' => 'fake',
             'username' => 'jdoe',
             'at' => $this->atom($clock),
+            'session_ref' => $ref,
         ], $logger->records[0]['context']);
     }
 
@@ -381,5 +384,185 @@ final class SesameEventsTest extends TestCase
         self::assertSame('the-user', $sesame->user());
         self::assertSame('http://idp.local/logout', $sesame->logout('http://app.local/'));
         self::assertSame([], $session->store);
+    }
+
+    public function testLoginAndLogoutShareASessionRef(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), 'http://idp.local/logout', $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+        $sesame->logout('http://app.local/');
+
+        self::assertCount(2, $logger->records);
+        $loginRef = $logger->records[0]['context']['session_ref'];
+        self::assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $loginRef);
+        // The ref is stored in the session at login and cleared at logout.
+        self::assertSame([], $session->store);
+        self::assertSame('sesame.login', $logger->records[0]['message']);
+        self::assertSame('sesame.logout', $logger->records[1]['message']);
+        self::assertSame($loginRef, $logger->records[1]['context']['session_ref']);
+    }
+
+    public function testATimeoutLogoutCarriesTheSessionRef(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.session_ref', 'deadbeefcafebabe');
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        $clock->advance(120 * 60 + 1);
+
+        self::assertNull($sesame->user());
+        self::assertCount(1, $logger->records);
+        self::assertSame('sesame.logout', $logger->records[0]['message']);
+        self::assertSame('idle_timeout', $logger->records[0]['context']['reason']);
+        self::assertSame('deadbeefcafebabe', $logger->records[0]['context']['session_ref']);
+    }
+
+    public function testTwoSignInsGetDifferentSessionRefs(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+        $firstRef = $logger->records[0]['context']['session_ref'];
+        $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+        $secondRef = $logger->records[1]['context']['session_ref'];
+
+        self::assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $firstRef);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $secondRef);
+        self::assertNotSame($firstRef, $secondRef);
+        self::assertSame($secondRef, $session->store['sesame.session_ref']);
+    }
+
+    public function testFailedAndRefusedLoginsCarryNoSessionRef(): void
+    {
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $log = new EventLog();
+        $driver = new class ($log) implements Driver {
+            public function __construct(private readonly EventLog $log) {}
+
+            public function name(): string
+            {
+                return 'recording';
+            }
+
+            public function login(ServerRequestInterface $request): LoginStep
+            {
+                $this->log->record('login');
+
+                throw new AuthenticationFailed('INVALID_TICKET ST-abc123');
+            }
+
+            public function logoutUrl(string $returnTo): ?string
+            {
+                return null;
+            }
+
+            public function serviceUrl(): ?string
+            {
+                return null;
+            }
+        };
+        $sesame = new Sesame(
+            $driver,
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        try {
+            $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
+            self::fail('The failed login must rethrow the exception.');
+        } catch (AuthenticationFailed) {
+            // Expected.
+        }
+
+        self::assertCount(1, $logger->records);
+        self::assertSame('sesame.login_failed', $logger->records[0]['message']);
+        self::assertArrayNotHasKey('session_ref', $logger->records[0]['context']);
+
+        $refused = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(null),
+            new RecordingSession($log),
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertNull($refused->login(new ServerRequest('GET', 'http://app.local/login')));
+
+        self::assertCount(2, $logger->records);
+        self::assertSame('sesame.login_refused', $logger->records[1]['message']);
+        self::assertArrayNotHasKey('session_ref', $logger->records[1]['context']);
+    }
+
+    public function testATamperedSessionRefIsNotLogged(): void
+    {
+        foreach (['not hex at all', 'DEADBEEFCAFEFACE', 'deadbeefcafe', 'deadbeefcafebabe\nforged line', 12345] as $tampered) {
+            $clock = new FakeClock();
+            $logger = new ArrayLogger();
+            $log = new EventLog();
+            $session = new RecordingSession($log);
+            $session->put('sesame.user', 'the-user');
+            $session->put('sesame.identity', $this->identity());
+            $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+            $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+            $session->put('sesame.session_ref', $tampered);
+            $log->events = [];
+            $sesame = new Sesame(
+                new RecordingDriver(new Authenticated($this->identity()), null, $log),
+                new RecordingResolver(),
+                $session,
+                $this->config(),
+                $clock,
+                $logger,
+            );
+
+            self::assertNull($sesame->logout('http://app.local/'));
+
+            self::assertCount(1, $logger->records);
+            self::assertSame('sesame.logout', $logger->records[0]['message']);
+            self::assertArrayNotHasKey('session_ref', $logger->records[0]['context']);
+        }
     }
 }

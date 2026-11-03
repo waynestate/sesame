@@ -135,12 +135,18 @@ final class Sesame
         ));
         $this->session->put('sesame.signed_in_at', $now);
         $this->session->put('sesame.last_seen', $now);
+        // The session reference ties every auth event of this sign-in
+        // together in the log. It is fresh on every login and is never
+        // derived from the session ID, so a stolen ID reveals nothing.
+        $sessionRef = bin2hex(random_bytes(8));
+        $this->session->put('sesame.session_ref', $sessionRef);
 
         $this->log('info', 'sesame.login', [
             'event' => 'login',
             'driver' => $this->config->driver,
             'username' => self::safeUsername($step->identity->username),
             'at' => $this->now(),
+            'session_ref' => $sessionRef,
         ]);
 
         return $user;
@@ -373,6 +379,10 @@ final class Sesame
      * user or an identity was actually stored, the sign-out is logged with
      * its reason: the driver and the username are read from the stored
      * identity before it is forgotten, and an empty session logs nothing.
+     * When the session holds a valid session reference (see login()), the
+     * sign-out carries it, so the events of one sign-in stay together in
+     * the log; a reference that is not a 16-character lowercase hex string
+     * is ignored, so a tampered session cannot inject log text.
      */
     private function signOut(string $reason): void
     {
@@ -381,27 +391,43 @@ final class Sesame
         // logger the session is never touched beyond the sign-out itself.
         $user = null;
         $identity = null;
+        $sessionRef = null;
 
         if ($this->logger !== null) {
             $user = $this->session->get('sesame.user');
             $identity = $this->session->get('sesame.identity');
+            // The ref is read before the session is cleared, and only a
+            // 16-character lowercase hex value made by login() is trusted:
+            // anything else in the session is ignored, so a tampered
+            // session cannot inject text into the log.
+            $storedRef = $this->session->get('sesame.session_ref');
+            if (is_string($storedRef) && preg_match('/^[0-9a-f]{16}$/', $storedRef) === 1) {
+                $sessionRef = $storedRef;
+            }
         }
 
         $this->session->forget('sesame.user');
         $this->session->forget('sesame.identity');
+        $this->session->forget('sesame.session_ref');
         $this->session->invalidate();
 
         if ($user === null && ! $identity instanceof Identity) {
             return;
         }
 
-        $this->log('info', 'sesame.logout', [
+        $context = [
             'event' => 'logout',
             'reason' => $reason,
             'driver' => $identity instanceof Identity ? $identity->driver : $this->config->driver,
             'username' => $identity instanceof Identity ? self::safeUsername($identity->username) : null,
             'at' => $this->now(),
-        ]);
+        ];
+
+        if ($sessionRef !== null) {
+            $context['session_ref'] = $sessionRef;
+        }
+
+        $this->log('info', 'sesame.logout', $context);
     }
 
     /**
