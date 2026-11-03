@@ -18,7 +18,7 @@
   <a class="docs-header__brand" href="../../docs/index.html">Sesame</a>
   <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../../index.html">Back to Sesame</a></span>
 </header>
-<div class="docs-layout">
+<div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html" aria-current="page">API</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li></ul></nav>
@@ -27,11 +27,257 @@
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><h1 id="api">API<a class="docs-heading-link" aria-label="Link to this section" href="#api">#</a></h1>
-<p>STUB: this page is written in a later batch.</p>
+<p>The public surface of waynestate/sesame, named exactly as it is in the code under <code>src/</code>: the facade, the factory, the value objects, the ports an app implements, and the global functions the raw-PHP path calls. The incantation is a constructor.</p>
+<h2 id="classes">Classes<a class="docs-heading-link" aria-label="Link to this section" href="#classes">#</a></h2>
+<p>Unless noted, everything below is in the <code>Waynestate\Sesame</code> namespace.</p>
+<h3 id="config">Config<a class="docs-heading-link" aria-label="Link to this section" href="#config">#</a></h3>
+<p>The library's config, read from a plain array. <code>final readonly class Config</code>.</p>
+<pre><code class="language-php">public static function fromArray(#[\SensitiveParameter] array $config): self
+</code></pre>
+<p>Every constructor parameter is a public readonly property, in this order: <code>driver</code>, <code>environment</code>, <code>fakeUsername</code>, <code>fakeAttributes</code>, <code>casBaseUrl</code>, <code>casServiceUrl</code>, <code>casProtocol</code>, <code>casRenew</code>, <code>casAssumeMfa</code>, <code>sessionIdleMinutes</code>, <code>sessionAbsoluteMinutes</code>, <code>gatewayHeader</code>, <code>gatewayAlgorithm</code>, <code>gatewayPublicKey</code>, <code>gatewayIssuer</code>, <code>gatewayAudience</code>, <code>gatewayLeewaySeconds</code>, <code>gatewayTrustedProxies</code>, <code>gatewayMaxLifetimeSeconds</code>, <code>gatewayAllowWithoutReplayGuard</code>, <code>oauth2Issuer</code>, <code>oauth2JwksUrl</code>, <code>oauth2Audience</code>, <code>oauth2LeewaySeconds</code>, <code>oauth2RequiredScopes</code>, <code>oauth2RequiredRoles</code>, <code>oauth2IdentityClaim</code>, <code>oauth2JwksCacheTtlSeconds</code>, <code>oauth2RequireAtJwt</code>, <code>oidc</code> (an <code>?OidcOptions</code>) and <code>gatewayPublicKeys</code>. Keys, defaults and bounds: see <a href="configuration.html">Configuration</a>.</p>
+<h3 id="driverfactory">DriverFactory<a class="docs-heading-link" aria-label="Link to this section" href="#driverfactory">#</a></h3>
+<p>Build a driver from config. <code>final class DriverFactory</code>.</p>
+<pre><code class="language-php">public static function make(
+    Config $config,
+    ?ClientInterface $http = null,
+    ?RequestFactoryInterface $requests = null,
+    ?ClockInterface $clock = null,
+    ?ReplayGuard $replayGuard = null,
+    ?CacheInterface $jwksCache = null,
+    ?SessionPort $session = null,
+): Driver
+</code></pre>
+<p>What each argument is for:</p>
+<ul>
+<li><code>$http</code> (PSR-18) and <code>$requests</code> (PSR-17): the cas driver talks to a CAS server over HTTP, and the factory cannot build an HTTP client itself, so the app passes both.</li>
+<li><code>$clock</code> (PSR-20): optional, for the cas, gateway and oauth2 drivers' sign-in time; without one they use the system clock.</li>
+<li><code>$replayGuard</code>: the gateway driver needs one (for example a <code>Psr16ReplayGuard</code> over a PSR-16 cache), so a captured assertion cannot be replayed. Without one, the gateway driver refuses to start, unless the config says <code>gateway.allow_without_replay_guard</code> (local development only).</li>
+<li><code>$jwksCache</code> (PSR-16): the oauth2 driver keeps the fetched key set in it; without one, the oauth2 driver refuses to start. The oidc driver uses it too when passed (discovery document and key set), otherwise it keeps both in process memory.</li>
+<li><code>$session</code>: the oidc driver signs the user in through the browser, so it keeps its state, nonce and PKCE verifier in the app's session.</li>
+</ul>
+<p>A missing dependency is an <code>InvalidConfig</code> error that names what to pass, and an unknown <code>driver</code> value is one too. The oidc driver also needs league/oauth2-client, which SESAME suggests but does not require. The driver classes themselves live in <code>Waynestate\Sesame\Drivers</code>; see <a href="drivers.html">Drivers</a>.</p>
+<h3 id="sesame">Sesame<a class="docs-heading-link" aria-label="Link to this section" href="#sesame">#</a></h3>
+<p>The facade an app talks to. <code>final class Sesame</code>. It holds a driver (or a factory for one, built on first use, so checking a session never pays for the driver's construction), the app's user resolver, the app's session and the config, and it runs the one rule the code holds: every driver ends in <code>findOrImportUser(Identity)</code>, and the app owns the session. Time is read through a PSR-20 clock, so the session timeouts are testable.</p>
+<pre><code class="language-php">public function __construct(
+    Driver|Closure $driver,
+    private readonly UserResolver $resolver,
+    private readonly SessionPort $session,
+    private readonly Config $config,
+    ?ClockInterface $clock = null,
+    private readonly ?LoggerInterface $logger = null,
+)
+</code></pre>
+<pre><code class="language-php">public function login(ServerRequestInterface $request): mixed
+public function returnTo(): ?string
+public function serviceUrl(): ?string
+public function user(): mixed
+public function requireMfa(int $maxAgeSeconds = 28800): MfaResult
+public function hasAuthContext(string $id): bool
+public function logout(string $returnTo): ?string
+public function signOutLocal(): void
+public const LOGOUT_TOKEN_FIELD = 'sesame_logout_token'
+public const LOGOUT_TOKEN_KEY = 'sesame.logout_token'
+public function logoutToken(): string
+public function isLogoutToken(#[\SensitiveParameter] mixed $token): bool
+public function safeReturnTo(string $returnTo): string
+</code></pre>
+<ul>
+<li><code>login()</code>: returns the <code>Redirect</code> unchanged when the user must go to the identity provider. Otherwise it resolves the user: when the resolver returns a user it regenerates the session ID before it stores anything, and returns the user. What it stores is the user, a trimmed identity (username, driver, time, the MFA facts and the authentication contexts, but not the raw IdP attributes, so the session stays small and plain), and the timestamps that start the session's clocks. When the resolver returns null the app has refused the identity: the session is left untouched, nothing is stored, and null is returned, so a refused identity never ends up signed in. An <code>AuthenticationFailed</code> from the driver is rethrown unchanged.</li>
+<li><code>returnTo()</code>: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement <code>RemembersReturnTo</code> (the oidc driver) answer, and the value has already passed the <code>ReturnTo</code> rule.</li>
+<li><code>serviceUrl()</code>: the driver's configured service URL, or null when the driver has none.</li>
+<li><code>user()</code>: the app's user for the current session, or null when there is none. The session is checked against the timeouts before it is trusted, and a stale session is signed out on the spot, so a stale session can never pass one check and fail another. When the resolver implements <code>RefreshesUser</code>, the stored user is looked up again before the answer, and a null result signs the session out, so a deleted account stops reading as signed in from the next request on.</li>
+<li><code>requireMfa()</code>: decides whether the signed-in user's MFA is still good. The session is checked first, through <code>user()</code>, so a stale session is signed out before the MFA question is even asked; with no user, or no identity to read, the answer is <code>NO_AUTH_TIME</code>: the check fails closed.</li>
+<li><code>hasAuthContext()</code>: decides whether the signed-in identity has the given authentication context, with the same shape and the same fails-closed answer (<code>false</code>).</li>
+<li><code>logout()</code>: logs the user out of the app, then points at the identity provider. The app session is invalidated before the provider's URL is built, so a failed redirect can never leave a live session behind; the pointer goes out even when the session holds no user of its own, because the single sign-on session at the provider may still be alive there. Returns the provider's logout URL, or null when the driver has none.</li>
+<li><code>signOutLocal()</code>: clears SESAME's session keys and invalidates the session, without pointing at the identity provider. The guard's logout uses it: the provider's single sign-on session is left alone.</li>
+<li><code>logoutToken()</code>: the logout CSRF token for this session, made on first use (64 hex characters). The raw-PHP logout (<code>sesame_logout()</code>) only runs for a POST that carries this token, so another site cannot sign the user out with a link or a hidden form. Laravel apps use Laravel's own CSRF token instead (the logout route is in the web middleware group).</li>
+<li><code>isLogoutToken()</code>: whether the given token is this session's logout CSRF token. A session that never made one accepts nothing.</li>
+<li><code>safeReturnTo()</code>: the safe URL to send the user to after logout. The return-to must be an absolute https URL on the service URL's scheme, host and port; anything else sends the user to the service URL instead, so a logout can never be turned into an open redirect.</li>
+<li><code>LOGOUT_TOKEN_FIELD</code>: the form field the raw-PHP logout reads its CSRF token from. <code>LOGOUT_TOKEN_KEY</code>: the session key that holds the logout CSRF token.</li>
+</ul>
+<p>When a logger is set, sign-in and sign-out events are logged through it: a broken logger never changes what the facade returns or throws, and no ticket, session ID, token, assertion, cookie or header ever reaches the log.</p>
+<h3 id="identity">Identity<a class="docs-heading-link" aria-label="Link to this section" href="#identity">#</a></h3>
+<p>The verified identity a driver hands to the resolver. <code>final readonly class Identity</code>; the constructor refuses an empty username with <code>InvalidArgumentException</code>.</p>
+<pre><code class="language-php">public function __construct(
+    public string $username,
+    public array $attributes,
+    public string $driver,
+    public DateTimeImmutable $authenticatedAt,
+    public ?DateTimeImmutable $authTime = null,
+    public array $amr = [],
+    private array $authContexts = [],
+)
+</code></pre>
+<ul>
+<li><code>attribute(string $name): ?string</code>: the first value of one attribute, or null when the attribute is absent.</li>
+<li><code>isFromNewLogin(): ?bool</code>: read from the CAS <code>isFromNewLogin</code> attribute: true for the string &quot;true&quot; (any case), false for &quot;false&quot;, and null when the attribute is absent or carries any other value. Drivers that do not release the attribute answer null; the identity never invents one.</li>
+<li><code>usedLongTermToken(): ?bool</code>: the same shape, read from the CAS <code>longTermAuthenticationRequestTokenUsed</code> attribute.</li>
+<li><code>authContexts(): array</code>: the authentication contexts verified for this sign-in, in the order the driver reported them. Empty when no step-up was required.</li>
+<li><code>hasAuthContext(string $id): bool</code>: whether this sign-in verified the given authentication context: a membership test on the list, never an equality on the whole list.</li>
+</ul>
+<h3 id="loginstep-authenticated-redirect">LoginStep, Authenticated, Redirect<a class="docs-heading-link" aria-label="Link to this section" href="#loginstep-authenticated-redirect">#</a></h3>
+<p>A login ends in one of two shapes, both <code>final</code> and both extending the <code>abstract class LoginStep</code>, which is empty on purpose:</p>
+<pre><code class="language-php">final class Authenticated extends LoginStep
+{
+    public function __construct(
+        public readonly Identity $identity,
+    ) {}
+}
+
+final class Redirect extends LoginStep
+{
+    public function __construct(
+        public readonly string $url,
+    ) {}
+}
+</code></pre>
+<p><code>Authenticated</code>: the identity is verified; this is who the user is. <code>Redirect</code>: send the user to this URL to continue the login.</p>
+<h3 id="driver">Driver<a class="docs-heading-link" aria-label="Link to this section" href="#driver">#</a></h3>
+<p>One way to verify an identity. A driver knows one protocol and nothing about the app: it turns a request into a <code>LoginStep</code>, and the core does the rest. Switching driver is a config change with no code change.</p>
+<pre><code class="language-php">interface Driver
+{
+    public function name(): string;
+    public function login(ServerRequestInterface $request): LoginStep;
+    public function logoutUrl(string $returnTo): ?string;
+    public function serviceUrl(): ?string;
+}
+</code></pre>
+<p><code>logoutUrl()</code> is the identity provider's logout URL, or null when the driver has none; <code>serviceUrl()</code> is the configured service URL, or null, and it is the host a logout return-to must stay on.</p>
+<h3 id="userresolver-refreshesuser-remembersreturnto">UserResolver, RefreshesUser, RemembersReturnTo<a class="docs-heading-link" aria-label="Link to this section" href="#userresolver-refreshesuser-remembersreturnto">#</a></h3>
+<p>The port the app implements, and the optional extras a resolver or driver can use:</p>
+<pre><code class="language-php">interface UserResolver
+{
+    public function findOrImportUser(Identity $identity): mixed;
+}
+
+interface RefreshesUser
+{
+    public function refreshUser(mixed $user): mixed;
+}
+
+interface RemembersReturnTo
+{
+    public function returnTo(): ?string;
+}
+</code></pre>
+<p><code>UserResolver</code> is the one place every driver ends: turn a verified identity into the app's user, or return null to refuse it. <code>RefreshesUser</code> lets the app look the stored user up again on every <code>user()</code> call. <code>RemembersReturnTo</code> lets a driver remember where to send the user after the sign-in that just completed.</p>
+<h3 id="session">Session<a class="docs-heading-link" aria-label="Link to this section" href="#session">#</a></h3>
+<p>The app's session, seen through a port:</p>
+<pre><code class="language-php">interface SessionPort
+{
+    public function regenerate(): void;
+    public function get(string $key): mixed;
+    public function put(string $key, mixed $value): void;
+    public function forget(string $key): void;
+    public function invalidate(): void;
+}
+</code></pre>
+<p><code>Waynestate\Sesame\Session\NativeSession</code> is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (<code>session_start()</code>), and hardening the session cookie is HELMET's job. It reads and writes <code>$_SESSION</code> on a session that is already active, and throws <code>LogicException</code> when it is not. <code>invalidate()</code> is the one operation that retires the session: it clears the data, expires the cookie on the client, and destroys the session, so a stolen ID is dead after logout.</p>
+<h3 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h3>
+<p>The one rule that decides whether an identity's MFA is still good. <code>final class Mfa</code>:</p>
+<pre><code class="language-php">public const MFA_METHODS = ['mfa', 'otp', 'hwk', 'swk', 'fido', 'sms', 'pop'];
+public const FUTURE_SKEW_SECONDS = 60;
+public static function satisfied(Identity $identity, int $maxAgeSeconds, DateTimeImmutable $now): MfaResult
+</code></pre>
+<p>An identity satisfies MFA only when the identity provider reported a sign-in time (<code>auth_time</code>), that time is recent enough, and the sign-in used an MFA method (<code>amr</code>). Anything the provider did not report is treated as missing, so the check fails closed: a driver that carries no MFA facts is always denied. The checks run in a fixed order, so the reason is stable:</p>
+<ol>
+<li>no <code>auth_time</code>: <code>NO_AUTH_TIME</code></li>
+<li><code>auth_time</code> more than 60 seconds in the future: <code>FUTURE_AUTH_TIME</code></li>
+<li><code>auth_time</code> older than <code>$maxAgeSeconds</code>: <code>TOO_OLD</code></li>
+<li>no MFA method in <code>amr</code>: <code>NO_MFA_METHOD</code></li>
+<li>otherwise: <code>SATISFIED</code></li>
+</ol>
+<p>A sign-in exactly <code>$maxAgeSeconds</code> old is still satisfied.</p>
+<p><code>final readonly class MfaResult</code> carries the answer:</p>
+<pre><code class="language-php">public const SATISFIED = 'SATISFIED';
+public const NO_AUTH_TIME = 'NO_AUTH_TIME';
+public const NO_MFA_METHOD = 'NO_MFA_METHOD';
+public const TOO_OLD = 'TOO_OLD';
+public const FUTURE_AUTH_TIME = 'FUTURE_AUTH_TIME';
+public function __construct(
+    public bool $satisfied,
+    public string $reason,
+)
+public function message(): string
+</code></pre>
+<p><code>message()</code> is the human form of the result, for a message or a log line.</p>
+<h3 id="returnto">ReturnTo<a class="docs-heading-link" aria-label="Link to this section" href="#returnto">#</a></h3>
+<p>The one rule for a return-to URL (after login or logout). <code>final class ReturnTo</code>:</p>
+<pre><code class="language-php">public static function safe(string $returnTo, ?string $serviceUrl): string
+</code></pre>
+<p>A return-to must be an absolute URL on the same origin as the service URL: the same scheme, the same host and the same effective port (443 for https, 80 for http, when none is written), with no user name or password in it. The scheme must be https; plain http is allowed only for a localhost or 127.0.0.1 service URL, for local development. Anything else sends the user to the service URL instead, so a login or logout can never be turned into an open redirect, not even to another port on the same host. When the driver has no service URL there is nothing to check against, so the return-to is used as-is.</p>
+<h3 id="oidcoptions">OidcOptions<a class="docs-heading-link" aria-label="Link to this section" href="#oidcoptions">#</a></h3>
+<p><code>Waynestate\Sesame\Drivers\Oidc\OidcOptions</code>: the <code>oidc</code> config block, validated. <code>final readonly class OidcOptions</code>.</p>
+<pre><code class="language-php">public const ALLOWED_ALGORITHMS = ['RS256', 'RS384', 'RS512'];
+public const CLIENT_AUTH_METHODS = ['client_secret_post', 'client_secret_basic'];
+public const MAX_CACHE_TTL_SECONDS = 3600;
+public static function fromArray(#[\SensitiveParameter] array $oidc): self
+public function clientSecret(): string
+</code></pre>
+<p>The keys, their environment variables and their defaults are in the oidc table on the <a href="configuration.html">Configuration page</a>.</p>
+<h3 id="setting">Setting<a class="docs-heading-link" aria-label="Link to this section" href="#setting">#</a></h3>
+<p><code>Waynestate\Sesame\Support\Setting</code>: the one lookup for the library's shared settings. The real environment wins (getenv, then $_ENV, then $_SERVER); when it has nothing, the private waynestate/playbook package supplies Wayne State's shared values when it is installed. An empty value counts as missing, so a blank variable never shadows the playbook.</p>
+<pre><code class="language-php">public const ENVIRONMENT_ONLY = ['SESAME_OIDC_CLIENT_SECRET'];
+public static function get(string $key): ?string
+public static function env(string $key): ?string
+</code></pre>
+<p><code>get()</code> answers from the environment, then the playbook, else null. <code>env()</code> answers from the environment only, and the playbook is never consulted. A key in <code>ENVIRONMENT_ONLY</code> never falls back to the playbook, so a shared package can never supply an app's secret.</p>
+<h2 id="functions">Functions<a class="docs-heading-link" aria-label="Link to this section" href="#functions">#</a></h2>
+<p>Plain functions in the global namespace behind a <code>sesame_</code> prefix, the same shape as WayneUI's standalone path, because that is what a framework-free application can consume. Each one is guarded with <code>function_exists</code>, so two copies of this file can never collide. The app owns the session: start it with <code>session_start()</code> before calling anything here, and let HELMET set the cookie flags.</p>
+<pre><code class="language-php">function sesame(?Sesame $instance = null): Sesame
+function sesame_request(): ServerRequestInterface
+function sesame_login(): mixed
+function sesame_user(): mixed
+function sesame_require_mfa(int $maxAgeSeconds = 28800): mixed
+function sesame_require_context(string $id): mixed
+function sesame_logout_token(): string
+function sesame_logout(string $returnTo): void
+</code></pre>
+<ul>
+<li><code>sesame()</code>: hold the one <code>Sesame</code> instance for this process. Set it once at boot, read it after: <code>sesame($sesame);</code> then <code>sesame();</code>. Reading it with none set throws <code>LogicException</code>.</li>
+<li><code>sesame_request()</code>: build the PSR-7 request for the current request from the globals. The PSR-17 factories come from nyholm/psr7, which the library already requires, so the raw-PHP path needs nothing but the autoloader.</li>
+<li><code>sesame_login()</code>: run a login against the current request. When the driver answers with a <code>Redirect</code>, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with <code>state</code> and a <code>code</code> or an <code>error</code>) counts as a ticket here, and a request with <code>step_up=1</code> always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.</li>
+<li><code>sesame_user()</code>: the app's user for the current session, or null when there is none.</li>
+<li><code>sesame_require_mfa()</code>: require that the signed-in user's MFA is still good. When it is satisfied, the app's user is returned, so a protected page can read the user and the MFA proof in one call; when it is not, <code>MfaNotSatisfied</code> is thrown, carrying the result with the stable reason and the human message.</li>
+<li><code>sesame_require_context()</code>: require that the signed-in identity has the given authentication context. When it does, the app's user is returned; when it does not, <code>AuthContextNotSatisfied</code> is thrown, carrying the context id.</li>
+<li><code>sesame_logout_token()</code>: the logout CSRF token for this session, for the logout form. The token is hex, so it needs no escaping in HTML:</li>
+</ul>
+<pre><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
+  &lt;input type=&quot;hidden&quot; name=&quot;sesame_logout_token&quot; value=&quot;&lt;?= sesame_logout_token() ?&gt;&quot;&gt;
+  &lt;button&gt;Sign out&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+<ul>
+<li><code>sesame_logout()</code>: log the user out, then send them on. Invalidates the app session, redirects to the identity provider's logout URL when the driver has one, otherwise to the safe return-to, and stops the script, so no protected code runs after the redirect. CSRF guard: the logout runs only for a POST whose body carries the session's token in the <code>sesame_logout_token</code> field. A GET answers 405 with <code>Allow: POST</code>, and a POST without the right token answers 403; both leave the session alone and stop the script, so another site cannot sign the user out with an image, a link or a forged form. The response carries <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: &quot;cache&quot;, &quot;storage&quot;</code>; <code>cookies</code> is deliberately left out, so the user is not signed out of every other app on the host.</li>
+</ul>
+<h2 id="exceptions">Exceptions<a class="docs-heading-link" aria-label="Link to this section" href="#exceptions">#</a></h2>
+<p>The exceptions an app meets, in <code>Waynestate\Sesame\Exception</code>:</p>
+<ul>
+<li><code>AuthenticationFailed</code>: a driver could not verify the identity. The message can carry the ticket or other provider details, so it is never logged and should not be shown: log it for operators and show the user one generic line.</li>
+<li><code>MfaNotSatisfied</code>: the MFA check is not satisfied; carries the <code>MfaResult</code> with the stable reason and the human message.</li>
+<li><code>AuthContextNotSatisfied</code>: the identity lacks the authentication context; carries the context id.</li>
+<li><code>InvalidConfig</code>: a config error at boot: a missing or invalid key from <code>Config::fromArray()</code>, or a driver missing the dependency <code>DriverFactory::make()</code> needs.</li>
+<li><code>FakeDriverInProduction</code>: the <code>fake</code> driver refuses to boot in production.</li>
+</ul>
+<h2 id="where-the-rest-lives">Where the rest lives<a class="docs-heading-link" aria-label="Link to this section" href="#where-the-rest-lives">#</a></h2>
+<ul>
+<li>The driver implementations: <code>Waynestate\Sesame\Drivers</code> (<code>CasDriver</code>, <code>FakeDriver</code>, <code>GatewayDriver</code>, <code>OAuth2Driver</code>, <code>OidcDriver</code>, <code>ReplayGuard</code>, <code>Psr16ReplayGuard</code>), documented on the <a href="drivers.html">Drivers</a> page.</li>
+<li>The Laravel adapter: <code>Waynestate\Sesame\Laravel</code> (<code>SesameServiceProvider</code>, <code>SesameGuard</code>, <code>Authenticate</code>, <code>RequireMfa</code>, <code>RequireAuthContext</code>, <code>LaravelSession</code>, <code>LaravelPsr16Cache</code>), documented in the <a href="../guides/laravel.html">Laravel guide</a>.</li>
+<li>The wayne-cas compatibility layer: <code>Waynestate\Sesame\WayneCas</code>, documented in <a href="../guides/moving-from-wayne-cas.html">Moving from wayne-cas</a>.</li>
+</ul>
+<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<ul>
+<li><a href="drivers.html">Drivers</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="proof.html">Proof</a></li>
+<li><a href="../guides/raw-php.html">Raw PHP</a></li>
+<li><a href="../guides/laravel.html">Laravel</a></li>
+</ul>
 </article>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/reference/configuration.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Configuration</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/reference/proof.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Proof</span></a></nav>
   </div>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#classes">Classes</a></li><li class="docs-toc__item--sub"><a href="#config">Config</a></li><li class="docs-toc__item--sub"><a href="#driverfactory">DriverFactory</a></li><li class="docs-toc__item--sub"><a href="#sesame">Sesame</a></li><li class="docs-toc__item--sub"><a href="#identity">Identity</a></li><li class="docs-toc__item--sub"><a href="#loginstep-authenticated-redirect">LoginStep, Authenticated, Redirect</a></li><li class="docs-toc__item--sub"><a href="#driver">Driver</a></li><li class="docs-toc__item--sub"><a href="#userresolver-refreshesuser-remembersreturnto">UserResolver, RefreshesUser, RemembersReturnTo</a></li><li class="docs-toc__item--sub"><a href="#session">Session</a></li><li class="docs-toc__item--sub"><a href="#mfa">MFA</a></li><li class="docs-toc__item--sub"><a href="#returnto">ReturnTo</a></li><li class="docs-toc__item--sub"><a href="#oidcoptions">OidcOptions</a></li><li class="docs-toc__item--sub"><a href="#setting">Setting</a></li><li class="docs-toc__item"><a href="#functions">Functions</a></li><li class="docs-toc__item"><a href="#exceptions">Exceptions</a></li><li class="docs-toc__item"><a href="#where-the-rest-lives">Where the rest lives</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
