@@ -254,8 +254,14 @@ authentication event through it:
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
-`absolute_timeout`, `no_timestamps` or `user_gone`). The logger stays
-optional: without one, nothing is logged and nothing else changes.
+`absolute_timeout`, `no_timestamps` or `user_gone`). `sesame.login` and
+`sesame.logout` also carry `session_ref`: an opaque 16-character hex
+reference SESAME creates on every login (stored in the session under
+`sesame.session_ref`) that ties the login, timeouts and logout of one sign-in
+together in the log. It is not the session ID and never derived from it, and
+a value read back from the session that is not a 16-character lowercase hex
+string is ignored, so a tampered session cannot inject log text. The logger
+stays optional: without one, nothing is logged and nothing else changes.
 
 SESAME never logs tickets, session IDs, tokens or failure messages: a failed
 login records only the event, the driver and the time. Usernames have every
