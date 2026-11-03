@@ -18,7 +18,7 @@
   <a class="docs-header__brand" href="../../docs/index.html">Sesame</a>
   <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../../index.html">Back to Sesame</a></span>
 </header>
-<div class="docs-layout">
+<div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/proof.html" aria-current="page">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li></ul></nav>
@@ -27,11 +27,31 @@
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><h1 id="proof">Proof<a class="docs-heading-link" aria-label="Link to this section" href="#proof">#</a></h1>
-<p>STUB: this page is written in a later batch.</p>
+<p>The name does double duty: this is where SESAME proves itself. There are two kinds of proof, the private proof site that exercises the library against real Wayne State applications, and the test suite anyone can run locally.</p>
+<h2 id="the-proof-site">The proof site<a class="docs-heading-link" aria-label="Link to this section" href="#the-proof-site">#</a></h2>
+<p>Proof runs against real Wayne State applications on a private site, <a rel="noopener" href="https://proof.apps.wayne.edu/sesame/">proof.apps.wayne.edu/sesame</a>, behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.</p>
+<h2 id="tests">Tests<a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></h2>
+<p>Maintainers: how to build, test and release this project, and where its data comes from, is in <a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame/MAINTAINING.md">MAINTAINING.md</a>.</p>
+<p>No PHP on the machine? Fine. Docker runs the suite:</p>
+<pre><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
+docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
+docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.4-cli vendor/bin/phpunit
+docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpunit
+</code></pre>
+<p>Static analysis is PHPStan at level 8 from Pinstripe's strict preset (<code>vendor/waynestate/pinstripe/phpstan/strict.neon</code>, included through the <code>waynestate/pinstripe</code> dev dependency): strict rules stay on, and a call to a deprecated method fails the build. <code>composer ci</code> runs the whole gate, validate through tests, Pint and PHPStan:</p>
+<pre><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
+</code></pre>
+<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<ul>
+<li><a href="drivers.html">Drivers</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="api.html">API</a></li>
+</ul>
 </article>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/reference/api.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">API</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/troubleshooting.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Troubleshooting</span></a></nav>
   </div>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-proof-site">The proof site</a></li><li class="docs-toc__item"><a href="#tests">Tests</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents Sesame <span data-docs-version>0.4.0</span></span>

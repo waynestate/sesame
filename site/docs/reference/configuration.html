@@ -18,7 +18,7 @@
   <a class="docs-header__brand" href="../../docs/index.html">Sesame</a>
   <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../../index.html">Back to Sesame</a></span>
 </header>
-<div class="docs-layout">
+<div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html" aria-current="page">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li></ul></nav>
@@ -27,11 +27,886 @@
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><h1 id="configuration">Configuration<a class="docs-heading-link" aria-label="Link to this section" href="#configuration">#</a></h1>
-<p>STUB: this page is written in a later batch.</p>
+<p>Every setting SESAME reads, from the plain array <code>Config::fromArray()</code> takes to the environment variables the Laravel config resolves. The magic word here is a config array, not an incantation. Start here when you are wiring a driver; the driver guides show the full examples.</p>
+<h2 id="reading-config">Reading config<a class="docs-heading-link" aria-label="Link to this section" href="#reading-config">#</a></h2>
+<p>SESAME reads its config from a plain array through one method on the <code>final readonly class Config</code>:</p>
+<pre><code class="language-php">$config = Config::fromArray($configArray);
+</code></pre>
+<ul>
+<li><code>driver</code> and <code>environment</code> are always required.</li>
+<li>Each driver adds its own block: <code>fake</code>, <code>cas</code>, <code>gateway</code>, <code>oauth2</code> or <code>oidc</code>. The <code>oidc</code> block is read into <code>OidcOptions</code>; see the oidc keys below.</li>
+<li>A truthy <code>slo</code> or <code>single_logout</code> key is rejected at boot: the identity provider does not support single logout, so asking for it is a mistake to fail on at boot, not at the first logout.</li>
+<li>A missing or empty required value throws <code>InvalidConfig</code>. Four keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:</li>
+</ul>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Config key</th>
+<th>Environment setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cas.base_url</code></td>
+<td><code>SESAME_CAS_BASE_URL</code></td>
+</tr>
+<tr>
+<td><code>gateway.issuer</code></td>
+<td><code>SESAME_GATEWAY_ISSUER</code></td>
+</tr>
+<tr>
+<td><code>oauth2.issuer</code></td>
+<td><code>SESAME_OAUTH2_ISSUER</code></td>
+</tr>
+<tr>
+<td><code>oauth2.jwks_url</code></td>
+<td><code>SESAME_OAUTH2_JWKS_URL</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The message reads: <code>Missing required setting &lt;SETTING&gt;. Set it in the environment, or install waynestate/playbook (see the README).</code></p>
+<h2 id="validation">Validation<a class="docs-heading-link" aria-label="Link to this section" href="#validation">#</a></h2>
+<p>A present key with the wrong type is also an <code>InvalidConfig</code> error at boot, before any request is served:</p>
+<ul>
+<li>Booleans must be booleans: <code>cas.renew</code>, <code>cas.assume_mfa</code>, <code>gateway.allow_without_replay_guard</code>, <code>oauth2.require_at_jwt</code>.</li>
+<li>Integers: <code>gateway.leeway_seconds</code> non-negative, <code>gateway.max_lifetime</code> positive, <code>oauth2.leeway_seconds</code> non-negative and at most <code>300</code>, <code>oauth2.jwks_cache_ttl_seconds</code> positive and at most <code>86400</code>, <code>session.idle_minutes</code> and <code>session.absolute_minutes</code> positive.</li>
+<li>Enumerations: <code>cas.protocol</code> only <code>3.0</code> or <code>2.0</code>; <code>gateway.algorithm</code> only <code>ES256</code>, <code>RS256</code> or <code>EdDSA</code>; <code>oauth2.identity_claim</code> only <code>preferred_username</code> or <code>accessid</code>.</li>
+<li><code>gateway.public_key</code> and <code>gateway.public_keys</code> are mutually exclusive: set one or the other, not both. An empty <code>public_keys</code> array counts as unset, and <code>public_key</code> is then required.</li>
+<li><code>gateway.trusted_proxies</code> must be a non-empty array of non-empty strings (CIDR ranges or single IPs).</li>
+<li><code>fake.attributes</code>, <code>oauth2.required_scopes</code> and <code>oauth2.required_roles</code> must be arrays of non-empty strings.</li>
+<li>The <code>oidc</code> block must be an array; <code>OidcOptions::fromArray()</code> validates it and names the key in its errors.</li>
+</ul>
+<h2 id="environment-variables">Environment variables<a class="docs-heading-link" aria-label="Link to this section" href="#environment-variables">#</a></h2>
+<p>Every environment variable SESAME reads, what it does, and its default. The table is generated from the source by Squire's docs builder; do not edit it by hand.</p>
+<!-- generated:env -->
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Meaning</th>
+<th>Default</th>
+<th>Read in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SESAME_CAS_ASSUME_MFA</td>
+<td>Count a successful validation as an MFA sign-in; on only when the CAS server enforces MFA for every sign-in</td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_CAS_BASE_URL</td>
+<td>The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is <code>/cas</code>)</td>
+<td>none (Playbook supplies the WSU value)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_CAS_PROTOCOL</td>
+<td>The CAS protocol version; set <code>3.0</code> when the server releases attributes on <code>/p3/serviceValidate</code></td>
+<td><code>2.0</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_CAS_RENEW</td>
+<td>Send <code>renew=true</code>; leave off against Academica, which issues no ticket for it</td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_CAS_SERVICE_URL</td>
+<td>The URL the CAS server sends the user back to after verifying them</td>
+<td>none (the app's <code>/login</code> route)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_DRIVER</td>
+<td>The protocol SESAME uses to verify identities: <code>cas</code>, <code>gateway</code>, <code>oauth2</code>, <code>oidc</code> or <code>fake</code></td>
+<td><code>cas</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_FAKE_USERNAME</td>
+<td>The identity the <code>fake</code> driver returns, for local development</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_ALGORITHM</td>
+<td>The assertion's signature algorithm (<code>ES256</code>, <code>RS256</code> or <code>EdDSA</code>)</td>
+<td><code>ES256</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD</td>
+<td>Skip the replay guard entirely; local development only, never in production</td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_AUDIENCE</td>
+<td>The audience claim the gateway assertion must carry</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_HEADER</td>
+<td>The header the Drawbridge gateway sends its signed JWT assertion in</td>
+<td><code>X-Sesame-Assertion</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_ISSUER</td>
+<td>The issuer claim the gateway assertion must carry</td>
+<td>none (Playbook supplies the WSU value)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_LEEWAY_SECONDS</td>
+<td>Clock skew allowed on the assertion's time claims, in seconds</td>
+<td><code>30</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_MAX_LIFETIME</td>
+<td>The longest an assertion may live, in seconds; longer ones are refused</td>
+<td><code>300</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_PUBLIC_KEY</td>
+<td>The gateway's public key: a PEM string or a path to one for ES256 and RS256, a base64-encoded raw key or a path to one for EdDSA</td>
+<td>none (set this or <code>public_keys</code>, not both)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_REPLAY_STORE</td>
+<td>The cache store used jtis are kept in, so a captured assertion cannot be replayed</td>
+<td>none (the app's default cache store)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_GATEWAY_TRUSTED_PROXIES</td>
+<td>Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind; the request must come from one of them</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_LOG</td>
+<td>Log sign-in and sign-out events through the app's PSR-3 logger</td>
+<td><code>true</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_MFA_MAX_AGE</td>
+<td>How long a verified MFA sign-in stays good, in seconds</td>
+<td><code>28800</code> (eight hours)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_MFA_ON_FAILURE</td>
+<td>What the <code>sesame.mfa</code> middleware does when the check fails: <code>deny</code> answers 403, <code>reauth</code> sends the user back to the login route</td>
+<td><code>deny</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_AUDIENCE</td>
+<td>The audience claim the token must carry (for Entra, the app's client id)</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_IDENTITY_CLAIM</td>
+<td>The claim the username comes from: <code>preferred_username</code> or <code>accessid</code></td>
+<td><code>preferred_username</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_ISSUER</td>
+<td>The issuer of the JWT bearer tokens (Microsoft Entra ID first: the tenant's v2.0 endpoints)</td>
+<td>none (Playbook supplies the WSU value)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS</td>
+<td>How long the fetched key set is kept, in seconds; refetched at most once a minute for an unknown key id</td>
+<td><code>3600</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_JWKS_STORE</td>
+<td>The cache store the key set is kept in</td>
+<td>none (the app's default cache store)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_JWKS_URL</td>
+<td>The issuer's key set (JWKS) the tokens are verified against</td>
+<td>none (Playbook supplies the WSU value)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_LEEWAY_SECONDS</td>
+<td>Clock skew allowed on the <code>exp</code> and <code>nbf</code> checks, in seconds</td>
+<td><code>60</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_REQUIRE_AT_JWT</td>
+<td>Check the access token's <code>typ</code> header is <code>at+jwt</code> or <code>application/at+jwt</code>; off because Microsoft Entra v2 tokens are typed <code>JWT</code></td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_ASSUME_MFA</td>
+<td>Count an OIDC sign-in as an MFA sign-in</td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_AUTHORIZATION_ENDPOINT</td>
+<td>Override the authorization endpoint from the discovery document</td>
+<td>none (from discovery)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CACHE_STORE</td>
+<td>The cache store the discovery document and key set are kept in</td>
+<td>none (the app's default cache store)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CACHE_TTL_SECONDS</td>
+<td>How long the discovery document and key set are cached, in seconds</td>
+<td><code>3600</code> (maximum 3600)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CLAIMS</td>
+<td>The ID token claims passed through to the user resolver as identity attributes, comma-separated</td>
+<td><code>wsu_roles,accessid</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CLIENT_AUTH</td>
+<td>Client authentication on the token call: <code>client_secret_post</code> or <code>client_secret_basic</code></td>
+<td><code>client_secret_post</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CLIENT_ID</td>
+<td>The provider app registration's client id</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_CLIENT_SECRET</td>
+<td>The provider app registration's client secret; read from the environment only, never logged</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_END_SESSION_ENDPOINT</td>
+<td>Override the end-session endpoint from the discovery document</td>
+<td>none (from discovery)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_ISSUER</td>
+<td>The OpenID Connect issuer for browser sign-in (Microsoft Entra ID first)</td>
+<td>none (falls back to <code>SESAME_OAUTH2_ISSUER</code>; Playbook supplies the WSU value)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_JWKS_URI</td>
+<td>Override the JWKS URI from the discovery document</td>
+<td>none (from discovery)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_LEEWAY_SECONDS</td>
+<td>Clock skew allowed on the ID token's time claims, in seconds</td>
+<td><code>60</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_POST_LOGOUT_REDIRECT_URI</td>
+<td>When set, logout sends the user through the provider's end-session endpoint</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_REDIRECT_URI</td>
+<td>The redirect URI; must be registered on the app registration as a Web redirect URI</td>
+<td>none (the app's <code>/login/callback</code> route)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_ROLES_CLAIM</td>
+<td>The ID token claim the roles come from (a JSON list)</td>
+<td><code>wsu_roles</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_SCOPES</td>
+<td>The scopes requested on the authorization call, space-separated</td>
+<td><code>openid profile email</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_STEP_UP_ACR_VALUES</td>
+<td>The <code>acr_values</code> parameter a step-up login request adds</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_STEP_UP_CLAIMS</td>
+<td>The <code>claims</code> parameter a step-up login request adds</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_STEP_UP_MAX_AGE</td>
+<td>The <code>max_age</code> parameter a step-up login request adds</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_STEP_UP_PROMPT</td>
+<td>The <code>prompt</code> parameter a step-up login request adds</td>
+<td><code>login</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_TOKEN_ENDPOINT</td>
+<td>Override the token endpoint from the discovery document</td>
+<td>none (from discovery)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_USERNAME_CLAIM</td>
+<td>The ID token claim the username comes from</td>
+<td><code>accessid</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OIDC_USERNAME_FALLBACK</td>
+<td>Use the <code>preferred_username</code> prefix when the username claim is missing; off because preferred_username is user-changeable</td>
+<td><code>false</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_ROUTES</td>
+<td>Register GET <code>/login</code>, POST <code>/logout</code> and (for oidc) GET <code>/login/callback</code>; false keeps the routes in the app's own route file</td>
+<td><code>true</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_SESSION_ABSOLUTE_MINUTES</td>
+<td>The absolute lifetime in minutes: the longest a session may live, no matter how active it is</td>
+<td><code>720</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_SESSION_IDLE_MINUTES</td>
+<td>The idle timeout in minutes: the quiet time after which the session is dropped</td>
+<td><code>120</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_USER_RESOLVER</td>
+<td>The class that turns a verified identity into the app's user; it must implement <code>Waynestate\Sesame\UserResolver</code></td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+</tbody>
+</table></div>
+<!-- /generated -->
+<h2 id="wsu-values-playbook">WSU values (Playbook)<a class="docs-heading-link" aria-label="Link to this section" href="#wsu-values-playbook">#</a></h2>
+<p>Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Config key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SESAME_CAS_BASE_URL</code></td>
+<td><code>cas.base_url</code></td>
+<td>The CAS server, an absolute https:// URL.</td>
+</tr>
+<tr>
+<td><code>SESAME_GATEWAY_ISSUER</code></td>
+<td><code>gateway.issuer</code></td>
+<td>The <code>iss</code> claim the gateway assertion must carry.</td>
+</tr>
+<tr>
+<td><code>SESAME_OAUTH2_ISSUER</code></td>
+<td><code>oauth2.issuer</code></td>
+<td>The <code>iss</code> claim the bearer token must carry.</td>
+</tr>
+<tr>
+<td><code>SESAME_OAUTH2_JWKS_URL</code></td>
+<td><code>oauth2.jwks_url</code></td>
+<td>The URL of the issuer's key set.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone. See the <a href="../guides/wsu-values.html">WSU values guide</a> for how to get it.</p>
+<p>Raw-PHP apps that build their config by hand can resolve a value the same way the Laravel config does:</p>
+<pre><code class="language-php">use Waynestate\Sesame\Support\Setting;
+
+$baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
+</code></pre>
+<h2 id="example-env-block">Example .env block<a class="docs-heading-link" aria-label="Link to this section" href="#example-env-block">#</a></h2>
+<p>The Laravel oidc block, straight from the README:</p>
+<pre><code>SESAME_DRIVER=oidc
+SESAME_OIDC_CLIENT_ID=&lt;application (client) id&gt;
+SESAME_OIDC_CLIENT_SECRET=&lt;client secret value&gt;
+# SESAME_OIDC_ISSUER falls back to SESAME_OAUTH2_ISSUER (and the playbook).
+# SESAME_OIDC_REDIRECT_URI defaults to the app's /login/callback route.
+SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
+</code></pre>
+<blockquote>
+<p>[!DANGER]
+<code>SESAME_OIDC_CLIENT_SECRET</code> is environment only: never the playbook, never logged. It is held in a <code>SensitiveParameterValue</code>, so <code>var_export</code>, <code>json_encode</code> and dumps show nothing and <code>serialize</code> refuses. Keep PHP's production default <code>zend.exception_ignore_args = On</code> as well.</p>
+</blockquote>
+<h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
+<h3 id="common">Common<a class="docs-heading-link" aria-label="Link to this section" href="#common">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>driver</code></td>
+<td>Yes</td>
+<td>none</td>
+<td><code>fake</code>, <code>cas</code>, <code>gateway</code>, <code>oauth2</code> or <code>oidc</code>.</td>
+</tr>
+<tr>
+<td><code>environment</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>Always required; the <code>fake</code> driver refuses to boot in production.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="fake">fake<a class="docs-heading-link" aria-label="Link to this section" href="#fake">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fake.username</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The identity the <code>fake</code> driver returns, for local development.</td>
+</tr>
+<tr>
+<td><code>fake.attributes</code></td>
+<td>No</td>
+<td><code>[]</code></td>
+<td>Attribute name to its values, on the returned identity.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="cas">cas<a class="docs-heading-link" aria-label="Link to this section" href="#cas">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cas.base_url</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, <code>/cas</code>).</td>
+</tr>
+<tr>
+<td><code>cas.service_url</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>Where the server sends the user back to.</td>
+</tr>
+<tr>
+<td><code>cas.protocol</code></td>
+<td>No</td>
+<td><code>2.0</code></td>
+<td><code>3.0</code> or <code>2.0</code>.</td>
+</tr>
+<tr>
+<td><code>cas.renew</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Send <code>renew</code> on login and validation, so the CAS server requires a fresh, direct login.</td>
+</tr>
+<tr>
+<td><code>cas.assume_mfa</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>A successful validation counts as an MFA sign-in: the identity's <code>amr</code> includes <code>mfa</code>. On only when the CAS server enforces MFA for every sign-in.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-* headers to build it. Protocol behavior, <code>renew</code> against Academica, and the MFA facts the driver reads from <code>authenticationDate</code> are covered by the <a href="../guides/driver-cas.html">cas driver guide</a>.</p>
+<h3 id="gateway">gateway<a class="docs-heading-link" aria-label="Link to this section" href="#gateway">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gateway.header</code></td>
+<td>No</td>
+<td><code>X-Sesame-Assertion</code></td>
+<td>The one header that holds the signed assertion.</td>
+</tr>
+<tr>
+<td><code>gateway.algorithm</code></td>
+<td>No</td>
+<td><code>ES256</code></td>
+<td><code>ES256</code>, <code>RS256</code> or <code>EdDSA</code>. Pinned, so a token that claims another algorithm is refused.</td>
+</tr>
+<tr>
+<td><code>gateway.public_key</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The gateway's public key: a PEM string (or a path to one) for <code>ES256</code> and <code>RS256</code>, or a base64-encoded raw key (or a path to one) for <code>EdDSA</code>.</td>
+</tr>
+<tr>
+<td><code>gateway.public_keys</code></td>
+<td>No</td>
+<td>none</td>
+<td>A map of <code>kid</code> to public key, for rotating the gateway's signing key. Use this or <code>public_key</code>, not both.</td>
+</tr>
+<tr>
+<td><code>gateway.issuer</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The <code>iss</code> claim the assertion must carry.</td>
+</tr>
+<tr>
+<td><code>gateway.audience</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The <code>aud</code> claim the assertion must carry.</td>
+</tr>
+<tr>
+<td><code>gateway.leeway_seconds</code></td>
+<td>No</td>
+<td><code>30</code></td>
+<td>Clock skew allowed on the <code>iat</code>, <code>nbf</code> and <code>exp</code> checks, in seconds.</td>
+</tr>
+<tr>
+<td><code>gateway.trusted_proxies</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind.</td>
+</tr>
+<tr>
+<td><code>gateway.max_lifetime</code></td>
+<td>No</td>
+<td><code>300</code></td>
+<td>The longest an assertion may live (<code>exp</code> minus <code>iat</code>), in seconds. Longer assertions are refused, so a stolen long-lived token is useless.</td>
+</tr>
+<tr>
+<td><code>gateway.replay_store</code></td>
+<td>No</td>
+<td>the app's default cache store</td>
+<td>The cache store the used <code>jti</code>s are kept in (Laravel only; raw PHP passes its own PSR-16 cache to the guard).</td>
+</tr>
+<tr>
+<td><code>gateway.allow_without_replay_guard</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Skip the replay guard entirely. Local development only: a production app must keep replay protection on.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The assertion must carry <code>sub</code>, <code>iat</code>, <code>exp</code> and <code>jti</code>; the <code>sub</code> claim becomes the username. Replay protection and key rotation are covered by the <a href="../guides/driver-gateway.html">gateway driver guide</a>.</p>
+<h3 id="oauth2">oauth2<a class="docs-heading-link" aria-label="Link to this section" href="#oauth2">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Required</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oauth2.issuer</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The <code>iss</code> claim the token must carry. For Entra, the <code>issuer</code> value in the tenant's discovery document.</td>
+</tr>
+<tr>
+<td><code>oauth2.jwks_url</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The URL of the issuer's JSON Web Key Set. For Entra, the <code>jwks_uri</code> value in the tenant's discovery document.</td>
+</tr>
+<tr>
+<td><code>oauth2.audience</code></td>
+<td>Yes</td>
+<td>none</td>
+<td>The <code>aud</code> claim the token must carry. For Entra, the app's client id.</td>
+</tr>
+<tr>
+<td><code>oauth2.leeway_seconds</code></td>
+<td>No</td>
+<td><code>60</code></td>
+<td>Clock skew allowed on the <code>exp</code> and <code>nbf</code> checks, in seconds.</td>
+</tr>
+<tr>
+<td><code>oauth2.required_scopes</code></td>
+<td>No</td>
+<td><code>[]</code></td>
+<td>Scopes the token's <code>scp</code> claim must cover, all of them. An empty list checks nothing.</td>
+</tr>
+<tr>
+<td><code>oauth2.required_roles</code></td>
+<td>No</td>
+<td><code>[]</code></td>
+<td>Roles the token's <code>roles</code> claim must include, all of them. An empty list checks nothing.</td>
+</tr>
+<tr>
+<td><code>oauth2.identity_claim</code></td>
+<td>No</td>
+<td><code>preferred_username</code></td>
+<td>The claim the username comes from: <code>preferred_username</code>, or <code>accessid</code> (the UPN's mail prefix, Entra's user claim).</td>
+</tr>
+<tr>
+<td><code>oauth2.jwks_cache_ttl_seconds</code></td>
+<td>No</td>
+<td><code>3600</code></td>
+<td>How long the fetched key set is kept before it is refetched, in seconds.</td>
+</tr>
+<tr>
+<td><code>oauth2.jwks_store</code></td>
+<td>No</td>
+<td>the app's default cache store</td>
+<td>The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache).</td>
+</tr>
+<tr>
+<td><code>oauth2.require_at_jwt</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the token's <code>typ</code> header must be <code>at+jwt</code> or <code>application/at+jwt</code> (RFC 9068), and any other token is refused. <strong>Off by default on purpose:</strong> Microsoft Entra v2 access tokens are typed <code>JWT</code>, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The token must carry an <code>exp</code> claim; a token without one is refused. The Entra registration and the key set fetch are covered by the <a href="../guides/driver-oauth2-entra.html">oauth2 with Entra guide</a>.</p>
+<h3 id="oidc">oidc<a class="docs-heading-link" aria-label="Link to this section" href="#oidc">#</a></h3>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Env</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oidc.issuer</code></td>
+<td><code>SESAME_OIDC_ISSUER</code>, then <code>SESAME_OAUTH2_ISSUER</code></td>
+<td>none</td>
+<td>The issuer, exactly as the discovery document's <code>issuer</code>. Required.</td>
+</tr>
+<tr>
+<td><code>oidc.client_id</code></td>
+<td><code>SESAME_OIDC_CLIENT_ID</code></td>
+<td>none</td>
+<td>The app registration's client id; the ID token's <code>aud</code>. Required.</td>
+</tr>
+<tr>
+<td><code>oidc.client_secret</code></td>
+<td><code>SESAME_OIDC_CLIENT_SECRET</code></td>
+<td>none</td>
+<td>Environment only, never the playbook, never logged. Held in a <code>SensitiveParameterValue</code>, so <code>var_export</code>, <code>json_encode</code> and dumps show nothing and <code>serialize</code> refuses. Keep PHP's production default <code>zend.exception_ignore_args = On</code> as well. Required.</td>
+</tr>
+<tr>
+<td><code>oidc.redirect_uri</code></td>
+<td><code>SESAME_OIDC_REDIRECT_URI</code></td>
+<td>Laravel: <code>/login/callback</code></td>
+<td>Where Entra sends the browser back. https, or <code>http://localhost</code> for development. Required in raw PHP.</td>
+</tr>
+<tr>
+<td><code>oidc.scopes</code></td>
+<td><code>SESAME_OIDC_SCOPES</code></td>
+<td><code>openid profile email</code></td>
+<td><code>openid</code> is always added.</td>
+</tr>
+<tr>
+<td><code>oidc.client_auth</code></td>
+<td><code>SESAME_OIDC_CLIENT_AUTH</code></td>
+<td><code>client_secret_post</code></td>
+<td>Or <code>client_secret_basic</code>.</td>
+</tr>
+<tr>
+<td><code>oidc.username_claim</code></td>
+<td><code>SESAME_OIDC_USERNAME_CLAIM</code></td>
+<td><code>accessid</code></td>
+<td>The claim the username comes from.</td>
+</tr>
+<tr>
+<td><code>oidc.username_fallback</code></td>
+<td><code>SESAME_OIDC_USERNAME_FALLBACK</code></td>
+<td><code>false</code></td>
+<td>Opt in to the <code>preferred_username</code> prefix when the claim is missing. <code>preferred_username</code> is user-changeable; see the warning above.</td>
+</tr>
+<tr>
+<td><code>oidc.roles_claim</code></td>
+<td><code>SESAME_OIDC_ROLES_CLAIM</code></td>
+<td><code>wsu_roles</code></td>
+<td>The claim that becomes the <code>roles</code> attribute; namespaced forms are found.</td>
+</tr>
+<tr>
+<td><code>oidc.claims</code></td>
+<td><code>SESAME_OIDC_CLAIMS</code></td>
+<td><code>wsu_roles,accessid</code></td>
+<td>Claims passed to the resolver as attributes under their own names.</td>
+</tr>
+<tr>
+<td><code>oidc.assume_mfa</code></td>
+<td><code>SESAME_OIDC_ASSUME_MFA</code></td>
+<td><code>false</code></td>
+<td>Count a sign-in as MFA when Conditional Access enforces it for the app.</td>
+</tr>
+<tr>
+<td><code>oidc.algorithms</code></td>
+<td>none</td>
+<td><code>['RS256']</code></td>
+<td>The ID token algorithms allowed: <code>RS256</code>, <code>RS384</code>, <code>RS512</code> only.</td>
+</tr>
+<tr>
+<td><code>oidc.leeway_seconds</code></td>
+<td><code>SESAME_OIDC_LEEWAY_SECONDS</code></td>
+<td><code>60</code></td>
+<td>Clock skew on <code>exp</code>, <code>nbf</code> and <code>iat</code>, at most 300.</td>
+</tr>
+<tr>
+<td><code>oidc.post_logout_redirect_uri</code></td>
+<td><code>SESAME_OIDC_POST_LOGOUT_REDIRECT_URI</code></td>
+<td>none</td>
+<td>Set it to log out of Entra too.</td>
+</tr>
+<tr>
+<td><code>oidc.authorization_endpoint</code>, <code>oidc.token_endpoint</code>, <code>oidc.jwks_uri</code>, <code>oidc.end_session_endpoint</code></td>
+<td><code>SESAME_OIDC_AUTHORIZATION_ENDPOINT</code> and so on</td>
+<td>discovered</td>
+<td>Overrides; with the first three set, discovery is skipped.</td>
+</tr>
+<tr>
+<td><code>oidc.cache_ttl_seconds</code></td>
+<td><code>SESAME_OIDC_CACHE_TTL_SECONDS</code></td>
+<td><code>3600</code></td>
+<td>How long the discovery document and key set are kept, 1 to 3600 seconds (at most an hour, so a moved endpoint or revoked key does not live on).</td>
+</tr>
+<tr>
+<td><code>oidc.cache_store</code></td>
+<td><code>SESAME_OIDC_CACHE_STORE</code></td>
+<td>the default store</td>
+<td>Laravel only.</td>
+</tr>
+<tr>
+<td><code>oidc.state_ttl_seconds</code></td>
+<td>none</td>
+<td><code>600</code></td>
+<td>How long a started sign-in may take, 60 to 3600 seconds.</td>
+</tr>
+<tr>
+<td><code>oidc.step_up.prompt</code></td>
+<td><code>SESAME_OIDC_STEP_UP_PROMPT</code></td>
+<td><code>login</code></td>
+<td>Sent on a step-up only; <code>login</code> or empty.</td>
+</tr>
+<tr>
+<td><code>oidc.step_up.max_age</code></td>
+<td><code>SESAME_OIDC_STEP_UP_MAX_AGE</code></td>
+<td>none (300 enforced)</td>
+<td>Seconds; sent on a step-up only, and enforced on <code>auth_time</code>. Unset, it is not sent, but a step-up <code>auth_time</code> older than 300 seconds still fails.</td>
+</tr>
+<tr>
+<td><code>oidc.step_up.acr_values</code></td>
+<td><code>SESAME_OIDC_STEP_UP_ACR_VALUES</code></td>
+<td>none</td>
+<td>Sent on a step-up only.</td>
+</tr>
+<tr>
+<td><code>oidc.step_up.claims</code></td>
+<td><code>SESAME_OIDC_STEP_UP_CLAIMS</code></td>
+<td>none</td>
+<td>A JSON object (for example an <code>acrs</code> request for an Entra authentication context), sent on a step-up only.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Browser sign-in flow, the ID token rules and the Entra app registration are covered by the <a href="../guides/driver-oidc.html">oidc driver guide</a>.</p>
+<h3 id="session-timeouts">Session timeouts<a class="docs-heading-link" aria-label="Link to this section" href="#session-timeouts">#</a></h3>
+<p>Open sesame opens the door for a live session; a stale one finds it locked. Every signed-in session has two clocks. The idle timeout is the quiet time after which the session is dropped, and the absolute lifetime is the longest a session may live, no matter how active it is. Both are in minutes, and both are checked on every <code>user()</code> call, so a stale session is signed out on the spot the first time anything asks who is signed in.</p>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>session.idle_minutes</code></td>
+<td><code>120</code></td>
+<td>Drop the session after this much quiet time.</td>
+</tr>
+<tr>
+<td><code>session.absolute_minutes</code></td>
+<td><code>720</code></td>
+<td>End the session this long after sign-in, even if it is still active.</td>
+</tr>
+</tbody>
+</table></div>
+<p>In Laravel the keys are <code>SESAME_SESSION_IDLE_MINUTES</code> and <code>SESAME_SESSION_ABSOLUTE_MINUTES</code>.</p>
+<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<ul>
+<li><a href="drivers.html">Drivers</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="proof.html">Proof</a></li>
+<li><a href="../guides/which-driver.html">Which driver for my app?</a></li>
+<li><a href="../guides/wsu-values.html">WSU values (Playbook)</a></li>
+<li><a href="../guides/session-timeouts.html">Session timeouts</a></li>
+</ul>
 </article>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/reference/drivers.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Drivers</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/reference/api.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">API</span></a></nav>
   </div>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#reading-config">Reading config</a></li><li class="docs-toc__item"><a href="#validation">Validation</a></li><li class="docs-toc__item"><a href="#environment-variables">Environment variables</a></li><li class="docs-toc__item"><a href="#wsu-values-playbook">WSU values (Playbook)</a></li><li class="docs-toc__item"><a href="#example-env-block">Example .env block</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item--sub"><a href="#common">Common</a></li><li class="docs-toc__item--sub"><a href="#fake">fake</a></li><li class="docs-toc__item--sub"><a href="#cas">cas</a></li><li class="docs-toc__item--sub"><a href="#gateway">gateway</a></li><li class="docs-toc__item--sub"><a href="#oauth2">oauth2</a></li><li class="docs-toc__item--sub"><a href="#oidc">oidc</a></li><li class="docs-toc__item--sub"><a href="#session-timeouts">Session timeouts</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
