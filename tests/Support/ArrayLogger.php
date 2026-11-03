@@ -7,6 +7,7 @@ namespace Waynestate\Sesame\Tests\Support;
 use ArrayAccess;
 use Countable;
 use JsonSerializable;
+use LogicException;
 use Psr\Log\AbstractLogger;
 
 /**
@@ -19,6 +20,7 @@ use Psr\Log\AbstractLogger;
  */
 final class ArrayLogger extends AbstractLogger
 {
+    /** @var list<array{level: string, message: string, context: array<string, mixed>}>|LogRecordList */
     public array|LogRecordList $records = [];
 
     public function log(mixed $level, string|\Stringable $message, array $context = []): void
@@ -59,25 +61,30 @@ final class LogRecordList implements ArrayAccess, Countable, JsonSerializable
         return isset($this->records[$offset]);
     }
 
-    public function offsetGet(mixed $offset): mixed
+    /**
+     * @param int $offset
+     * @return array{level: string, message: string, context: array<string, mixed>}
+     */
+    public function offsetGet(mixed $offset): array
     {
         return $this->records[$offset];
     }
 
+    /**
+     * @param array{level: string, message: string, context: array<string, mixed>} $value
+     */
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        if ($offset === null) {
-            $this->records[] = $value;
-
-            return;
+        if ($offset !== null) {
+            throw new LogicException('Log records can only be appended, not replaced by offset.');
         }
 
-        $this->records[$offset] = $value;
+        $this->records[] = $value;
     }
 
     public function offsetUnset(mixed $offset): void
     {
-        unset($this->records[$offset]);
+        $this->records = array_values(array_diff_key($this->records, [$offset => true]));
     }
 
     public function count(): int
