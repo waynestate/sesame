@@ -698,4 +698,236 @@ final class SesameTest extends TestCase
         // match.
         self::assertFalse($sesame->hasAuthContext('c1'));
     }
+
+    public function testSessionStatusIsSignedOutWithoutAUser(): void
+    {
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+        );
+
+        self::assertSame(['signedIn' => false], $sesame->sessionStatus());
+    }
+
+    public function testSessionStatusListsTheSessionFactsWhenSignedIn(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $status = $sesame->sessionStatus();
+
+        if ($status['signedIn'] !== true) {
+            self::fail('The session is signed in.');
+        }
+
+        self::assertSame(
+            [
+                'signedIn',
+                'username',
+                'driver',
+                'authenticatedAt',
+                'authTime',
+                'amr',
+                'idleExpiresAt',
+                'absoluteExpiresAt',
+                'logoutToken',
+                'user',
+            ],
+            array_keys($status),
+        );
+        self::assertTrue($status['signedIn']);
+        self::assertSame('jdoe', $status['username']);
+        self::assertSame('fake', $status['driver']);
+        self::assertSame('2026-10-27T12:00:00+00:00', $status['authenticatedAt']);
+        self::assertNull($status['authTime']);
+        self::assertSame([], $status['amr']);
+        self::assertNull($status['user']);
+    }
+
+    public function testSessionStatusReportsTheExpiryTimesFromTheClock(): void
+    {
+        $clock = new FakeClock();
+        $start = $clock->now()->getTimestamp();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $start);
+        $session->put('sesame.last_seen', $start);
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(['sessionIdleMinutes' => 30, 'sessionAbsoluteMinutes' => 240]),
+            $clock,
+        );
+
+        // The poll itself counts as activity, so the idle expiry runs from
+        // the poll, while the absolute expiry still runs from the sign-in.
+        $clock->advance(90);
+
+        $status = $sesame->sessionStatus();
+
+        if ($status['signedIn'] !== true) {
+            self::fail('The session is signed in.');
+        }
+
+        self::assertSame(
+            (new DateTimeImmutable('@' . ($start + 90 + 30 * 60)))->format(DATE_ATOM),
+            $status['idleExpiresAt'],
+        );
+        self::assertSame(
+            (new DateTimeImmutable('@' . ($start + 240 * 60)))->format(DATE_ATOM),
+            $status['absoluteExpiresAt'],
+        );
+    }
+
+    public function testSessionStatusNeverContainsRawAttributes(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $session->put('sesame.session_ref', '0123456789abcdef');
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $json = json_encode($sesame->sessionStatus());
+
+        self::assertIsString($json);
+        self::assertStringNotContainsString('John Doe', $json);
+        self::assertStringNotContainsString('0123456789abcdef', $json);
+    }
+
+    public function testSessionStatusAppliesTheDescribeUserClosure(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $received = null;
+        $status = $sesame->sessionStatus(function (mixed $user) use (&$received): array {
+            $received = $user;
+
+            return ['name' => 'John Doe', 'admin' => true];
+        });
+
+        if ($status['signedIn'] !== true) {
+            self::fail('The session is signed in.');
+        }
+
+        self::assertSame('the-user', $received);
+        self::assertSame(['name' => 'John Doe', 'admin' => true], $status['user']);
+    }
+
+    public function testSessionStatusRejectsADescribeUserClosureThatReturnsANonArray(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', $this->identity());
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('The describeUser closure must return an array.');
+
+        $sesame->sessionStatus(fn (): string => 'not-an-array');
+    }
+
+    public function testSessionStatusSignsOutAnExpiredSession(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $clock->advance(120 * 60 + 1);
+
+        self::assertSame(['signedIn' => false], $sesame->sessionStatus());
+        self::assertArrayNotHasKey('sesame.user', $session->store);
+        self::assertSame([], $session->store);
+    }
+
+    public function testTmpMissingIdentityAnswersSignedOutAndLeavesTheSessionAlone(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', 'not-an-identity');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        self::assertSame(['signedIn' => false], $sesame->sessionStatus());
+        self::assertSame('the-user', $session->store['sesame.user'], 'The session is left alone.');
+        self::assertSame('not-an-identity', $session->store['sesame.identity']);
+        self::assertNotContains('invalidate', $log->events);
+        self::assertNotContains('forget:sesame.user', $log->events);
+    }
 }

@@ -288,6 +288,100 @@ final class Sesame
     }
 
     /**
+     * The session facts a single-page app needs to ask the server "am I
+     * signed in, who, until when" in one round trip.
+     *
+     * The session is checked through user() first, so the idle and absolute
+     * timeouts, the RefreshesUser reload and the anomaly logging all apply,
+     * and a poll counts as activity: it moves the session's last_seen. When
+     * there is no user (or the stored identity is not readable), the answer
+     * is exactly ['signedIn' => false]; a missing identity is logged as a
+     * sesame.session_anomaly warning (reason missing_identity) when a logger
+     * is set, but the session itself is left alone.
+     *
+     * When someone is signed in, the answer carries, in this order:
+     *   - signedIn: true,
+     *   - username: the stored identity's username,
+     *   - driver: the identity's driver name,
+     *   - authenticatedAt: when the identity provider verified the sign-in,
+     *     as a UTC DATE_ATOM string,
+     *   - authTime: when the last MFA sign-in happened, the same format, or
+     *     null when the provider did not report one,
+     *   - amr: the authentication methods the provider verified, a list of
+     *     strings,
+     *   - idleExpiresAt: the last activity plus the idle timeout, as a UTC
+     *     DATE_ATOM string,
+     *   - absoluteExpiresAt: the sign-in plus the absolute lifetime, as a
+     *     UTC DATE_ATOM string,
+     *   - logoutToken: the CSRF token the SPA posts to sign out, and
+     *   - user: the app's own projection of the user, null when
+     *     $describeUser is null.
+     *
+     * SESAME never puts the app's user object into the answer by itself. The
+     * app supplies $describeUser, a closure that takes the user user()
+     * returned and must return the array of fields the app wants shown;
+     * anything else throws an \UnexpectedValueException. The raw IdP
+     * attributes, the session id and the session reference never appear in
+     * the answer.
+     *
+     * @param (Closure(mixed): mixed)|null $describeUser
+     * @return array{signedIn: false}|array{signedIn: true, username: string, driver: string, authenticatedAt: string, authTime: string|null, amr: list<string>, idleExpiresAt: string, absoluteExpiresAt: string, logoutToken: string, user: array<string, mixed>|null}
+     */
+    public function sessionStatus(?Closure $describeUser = null): array
+    {
+        $user = $this->user();
+
+        if ($user === null) {
+            return ['signedIn' => false];
+        }
+
+        $identity = $this->session->get('sesame.identity');
+
+        if (! $identity instanceof Identity) {
+            // A user with no readable identity is a tampered or half-built
+            // session. It is answered as signed out and logged as an
+            // anomaly, but the session is left alone: user() already ran
+            // the sign-out that belongs to it.
+            $this->logAnomaly('missing_identity');
+
+            return ['signedIn' => false];
+        }
+
+        $signedInAt = $this->session->get('sesame.signed_in_at');
+        $lastSeen = $this->session->get('sesame.last_seen');
+
+        if (! is_int($signedInAt) || ! is_int($lastSeen)) {
+            // user() signs out a session that lost its timestamps before it
+            // returns a user, so this branch is unreachable; the guard
+            // keeps the types honest.
+            return ['signedIn' => false];
+        }
+
+        $userData = null;
+
+        if ($describeUser !== null) {
+            $userData = $describeUser($user);
+
+            if (! is_array($userData)) {
+                throw new \UnexpectedValueException('The describeUser closure must return an array.');
+            }
+        }
+
+        return [
+            'signedIn' => true,
+            'username' => $identity->username,
+            'driver' => $identity->driver,
+            'authenticatedAt' => $identity->authenticatedAt->format(DATE_ATOM),
+            'authTime' => $identity->authTime?->format(DATE_ATOM),
+            'amr' => $identity->amr,
+            'idleExpiresAt' => (new \DateTimeImmutable('@' . ($lastSeen + $this->config->sessionIdleMinutes * 60)))->format(DATE_ATOM),
+            'absoluteExpiresAt' => (new \DateTimeImmutable('@' . ($signedInAt + $this->config->sessionAbsoluteMinutes * 60)))->format(DATE_ATOM),
+            'logoutToken' => $this->logoutToken(),
+            'user' => $userData,
+        ];
+    }
+
+    /**
      * Decide whether the signed-in identity has the given authentication
      * context.
      *
