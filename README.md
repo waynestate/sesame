@@ -188,6 +188,25 @@ or be shared between providers. For the cas driver that identifier is the
 the oidc section keys on `iss` plus `sub`, or `tid` plus `oid`, never the
 username alone.
 
+### Refusing a sign-in
+
+A verified identity is not a permission to use your app. To refuse the
+person, return `null` from `findOrImportUser`. When you do, SESAME stores
+nothing, does not regenerate the session, returns `null` from `login()`, and
+logs `sesame.login_refused` (with the username made safe) when a logger is
+set. Your app then shows one generic "you do not have access" page, never the
+reason, and must not start its own session for that person. Do not throw for
+a normal deny: throwing is for errors, and a refused sign-in is not one.
+
+```php
+// A resolver that refuses: null when the account is not found or disabled.
+public function findOrImportUser(Identity $identity): mixed
+{
+    $account = Account::findByKey($identity->driver, $identity->username);
+    return $account !== null && $account->enabled ? $account : null;
+}
+```
+
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
 user and identity in it, but it never starts a session and never touches a
