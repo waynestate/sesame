@@ -40,6 +40,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: CI pins Preflight 0.1.4 (GitLab component includes and the GitHub reusable workflow at its tag commit); the deploy layer sets minimum-stability to stable.</li>
 <li>Docs: a &quot;session cookie (name and SameSite)&quot; paragraph in the raw PHP section tells apps to use a <code>__Host-</code> cookie name and <code>SameSite=Lax</code> (never <code>Strict</code>, which drops the cookie on the return from the identity provider), says HELMET sets both for raw PHP, and gives the Laravel settings; BEST_PRACTICES S4 and S41 are now <code>Documented</code>.</li>
 <li>Docs: SESAME fails closed on a redirect and on a client exception during the CAS validation call, and tests were added to prove it (S42).</li>
+<li>Docs: a &quot;Refusing a sign-in&quot; section says what a resolver does on a deny, and the CERT Polska CVE-2026-15243 check is recorded (Java clients only; no PHP client named).</li>
 </ul>
 <h2 id="0-4-0-2026-11-03">[0.4.0] - 2026-11-03<a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></h2>
 <ul>

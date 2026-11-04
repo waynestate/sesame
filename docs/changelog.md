@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed: CI pins Preflight 0.1.4 (GitLab component includes and the GitHub reusable workflow at its tag commit); the deploy layer sets minimum-stability to stable.
 - Docs: a "session cookie (name and SameSite)" paragraph in the raw PHP section tells apps to use a `__Host-` cookie name and `SameSite=Lax` (never `Strict`, which drops the cookie on the return from the identity provider), says HELMET sets both for raw PHP, and gives the Laravel settings; BEST_PRACTICES S4 and S41 are now `Documented`.
 - Docs: SESAME fails closed on a redirect and on a client exception during the CAS validation call, and tests were added to prove it (S42).
+- Docs: a "Refusing a sign-in" section says what a resolver does on a deny, and the CERT Polska CVE-2026-15243 check is recorded (Java clients only; no PHP client named).
 
 ## [0.4.0] - 2026-11-03
 
