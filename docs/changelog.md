@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added: `Sesame::sessionStatus()`, the session facts a single-page app needs (who, driver, sign-in time, idle and absolute expiry, the logout token), with an optional closure that adds the app's own user fields. The raw PHP function, the Laravel route and the Vue package follow.
 - Docs: the docs site is built by the shared builder and checked in `composer ci`.
 - Docs: the docs site now exists. Squire's docs builder renders `docs/` into `site/docs/`: an Overview page from the README's opening, the oidc library choice note, and a generated environment reference table covering all 55 `SESAME_*` settings. `composer docs` builds it, and `composer docs:check` gates it in CI.
 - Docs: the README session cookie section also says to leave `session.sid_length` and `session.sid_bits_per_character` at PHP's defaults; BEST_PRACTICES S45 is `Documented`.

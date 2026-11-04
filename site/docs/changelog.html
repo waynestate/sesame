@@ -32,6 +32,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
+<li>Added: <code>Sesame::sessionStatus()</code>, the session facts a single-page app needs (who, driver, sign-in time, idle and absolute expiry, the logout token), with an optional closure that adds the app's own user fields. The raw PHP function, the Laravel route and the Vue package follow.</li>
 <li>Docs: the docs site is built by the shared builder and checked in <code>composer ci</code>.</li>
 <li>Docs: the docs site now exists. Squire's docs builder renders <code>docs/</code> into <code>site/docs/</code>: an Overview page from the README's opening, the oidc library choice note, and a generated environment reference table covering all 55 <code>SESAME_*</code> settings. <code>composer docs</code> builds it, and <code>composer docs:check</code> gates it in CI.</li>
 <li>Docs: the README session cookie section also says to leave <code>session.sid_length</code> and <code>session.sid_bits_per_character</code> at PHP's defaults; BEST_PRACTICES S45 is <code>Documented</code>.</li>

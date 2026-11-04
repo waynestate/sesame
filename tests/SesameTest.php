@@ -879,7 +879,7 @@ final class SesameTest extends TestCase
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('The describeUser closure must return an array.');
 
-        $sesame->sessionStatus(fn (): string => 'not-an-array');
+        $sesame->sessionStatus(fn(): string => 'not-an-array');
     }
 
     public function testSessionStatusSignsOutAnExpiredSession(): void
