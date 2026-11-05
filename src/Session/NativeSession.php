@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Session;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
+use InvalidArgumentException;
 use LogicException;
+use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
+use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\SessionPort;
 
 /**
@@ -16,14 +23,55 @@ use Waynestate\Sesame\SessionPort;
  * is already active. `invalidate()` is the one operation that retires the
  * session: it clears the data, expires the cookie on the client, and destroys
  * the session, so a stolen ID is dead after logout.
+ *
+ * `regenerate()` does not delete the old session at once. It marks the old
+ * session with a "destroyed at" time and the new ID, keeps it for a grace
+ * period (60 seconds by default), and moves on to the new ID with the same
+ * data, so a user whose browser is still sending the old ID after a slow
+ * network does not lose the login. A use of the old ID after the grace is
+ * treated as a possible hijack: the session is retired, a clean one is
+ * started, and `sesame.session_anomaly` is logged as a warning when a logger
+ * is set. Pass `graceSeconds: 0` to restore the old behavior, where the old
+ * session is deleted at once.
  */
 final class NativeSession implements SessionPort
 {
+    private bool $checked = false;
+
+    public function __construct(
+        private readonly int $graceSeconds = 60,
+        private readonly ?LoggerInterface $logger = null,
+        private readonly ?ClockInterface $clock = null,
+    ) {
+        if ($this->graceSeconds < 0) {
+            throw new InvalidArgumentException('The grace period cannot be negative.');
+        }
+    }
+
     public function regenerate(): void
     {
         $this->requireActive();
 
-        session_regenerate_id(true);
+        if ($this->graceSeconds === 0) {
+            session_regenerate_id(true);
+
+            return;
+        }
+
+        $newId = $this->createId();
+
+        $_SESSION['sesame.destroyed_at'] = (int) $this->now()->format('U');
+        $_SESSION['sesame.new_session_id'] = $newId;
+
+        // The data is copied explicitly: starting the new session replaces
+        // $_SESSION with the new session's (empty) contents.
+        $data = $_SESSION;
+
+        session_write_close();
+        session_id($newId);
+        session_start();
+        $_SESSION = $data;
+        unset($_SESSION['sesame.destroyed_at'], $_SESSION['sesame.new_session_id']);
     }
 
     public function get(string $key): mixed
@@ -88,5 +136,96 @@ final class NativeSession implements SessionPort
         if (session_status() !== PHP_SESSION_ACTIVE) {
             throw new LogicException('No session is active. Start one before using NativeSession.');
         }
+
+        if ($this->checked) {
+            return;
+        }
+
+        $this->checked = true;
+
+        $this->rejectExpiredOldSession();
+    }
+
+    /**
+     * Retire a reused old session whose grace period has passed.
+     *
+     * A session marked with a "destroyed at" time is an old ID that
+     * regenerate() kept for a short grace. While the grace lasts, the user
+     * may still be on the old ID after a slow network, so the session keeps
+     * working. After the grace (or with a marker that is not an int), the
+     * reuse is treated as a possible hijack: the anomaly is logged, the
+     * session is destroyed, and a clean one is started, so the caller sees
+     * an empty session and the old ID is dead.
+     */
+    private function rejectExpiredOldSession(): void
+    {
+        $destroyedAt = $_SESSION['sesame.destroyed_at'] ?? null;
+
+        if ($destroyedAt === null) {
+            return;
+        }
+
+        $withinGrace = is_int($destroyedAt)
+            && ((int) $this->now()->format('U') - $destroyedAt) <= $this->graceSeconds;
+
+        if ($withinGrace) {
+            return;
+        }
+
+        $this->logAnomaly();
+
+        $_SESSION = [];
+        session_destroy();
+        session_id($this->createId());
+        session_start();
+    }
+
+    /**
+     * Write the anomaly warning to the optional logger.
+     *
+     * The context carries the event, the reason and the time only: no
+     * session ID, no username, nothing from `$_SESSION`, so a tampered
+     * session cannot inject text into the log. The write is best effort,
+     * like Sesame's logging: a broken logger must not change what the
+     * caller sees.
+     */
+    private function logAnomaly(): void
+    {
+        if ($this->logger === null) {
+            return;
+        }
+
+        try {
+            $this->logger->log(
+                'warning',
+                'sesame.session_anomaly',
+                [
+                    'event' => 'session_anomaly',
+                    'reason' => 'destroyed_session_reused',
+                    'at' => $this->now()->setTimezone(new DateTimeZone('UTC'))->format(DateTimeInterface::ATOM),
+                ],
+            );
+        } catch (\Throwable) {
+            // Best effort: a broken logger must not break the request.
+        }
+    }
+
+    /**
+     * A fresh session ID from PHP, or an error when PHP cannot make one.
+     */
+    private function createId(): string
+    {
+        $id = session_create_id();
+
+        if ($id === false) {
+            throw new LogicException('PHP could not create a new session ID.');
+        }
+
+        return $id;
+    }
+
+    private function now(): DateTimeImmutable
+    {
+        return ($this->clock ?? new SystemClock())->now();
     }
 }
