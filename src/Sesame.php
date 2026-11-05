@@ -371,8 +371,11 @@ final class Sesame
             'signedIn' => true,
             'username' => $identity->username,
             'driver' => $identity->driver,
-            'authenticatedAt' => $identity->authenticatedAt->format(DATE_ATOM),
-            'authTime' => $identity->authTime?->format(DATE_ATOM),
+            // The identity's times may carry the provider's offset, so both
+            // are moved to UTC before they are formatted: the answer is UTC
+            // no matter which driver made the identity.
+            'authenticatedAt' => $identity->authenticatedAt->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM),
+            'authTime' => $identity->authTime?->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM),
             'amr' => $identity->amr,
             'idleExpiresAt' => (new \DateTimeImmutable('@' . ($lastSeen + $this->config->sessionIdleMinutes * 60)))->format(DATE_ATOM),
             'absoluteExpiresAt' => (new \DateTimeImmutable('@' . ($signedInAt + $this->config->sessionAbsoluteMinutes * 60)))->format(DATE_ATOM),

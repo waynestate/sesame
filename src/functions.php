@@ -272,3 +272,49 @@ if (! function_exists('sesame_logout')) {
         exit;
     }
 }
+
+if (! function_exists('sesame_status')) {
+
+    /**
+     * Answer the single-page app's "who am I" question with JSON.
+     *
+     * Sends the session facts as a 200 when someone is signed in, and
+     * {"signedIn":false} as a 401 when no one is, then stops the script, so
+     * no protected code runs after the answer. Every answer carries
+     * Cache-Control: no-store, Content-Type: application/json; charset=utf-8
+     * and X-Content-Type-Options: nosniff, so a browser or proxy never caches
+     * who is signed in and never reinterprets the body.
+     *
+     * Only GET (and HEAD) ask the question; any other method answers 405
+     * with "Allow: GET, HEAD", leaves the session alone and stops the
+     * script. A poll counts as activity: it moves the session's last_seen,
+     * so read it on page load and after sign-in, not on a timer.
+     *
+     * @param (Closure(mixed): mixed)|null $describeUser Adds the app's own
+     *        user fields to the answer, as Sesame::sessionStatus() does.
+     */
+    function sesame_status(?Closure $describeUser = null): void
+    {
+        $method = strtoupper(is_string($_SERVER['REQUEST_METHOD'] ?? null) ? $_SERVER['REQUEST_METHOD'] : 'GET');
+
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            header('Allow: GET, HEAD', true);
+            header('Cache-Control: no-store', true);
+            header('Content-Type: application/json; charset=utf-8', true);
+            header('X-Content-Type-Options: nosniff', true);
+            http_response_code(405);
+
+            exit;
+        }
+
+        $status = sesame()->sessionStatus($describeUser);
+
+        header('Cache-Control: no-store', true);
+        header('Content-Type: application/json; charset=utf-8', true);
+        header('X-Content-Type-Options: nosniff', true);
+        http_response_code($status['signedIn'] ? 200 : 401);
+        echo json_encode($status, JSON_THROW_ON_ERROR);
+
+        exit;
+    }
+}

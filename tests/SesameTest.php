@@ -760,6 +760,43 @@ final class SesameTest extends TestCase
         self::assertNull($status['user']);
     }
 
+    public function testSessionStatusReportsTimesInUtc(): void
+    {
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        // The provider reported the sign-in in its own offset; the answer
+        // must still be UTC.
+        $identity = new Identity(
+            'jdoe',
+            [],
+            'fake',
+            new DateTimeImmutable('2026-10-27T17:30:00+05:00'),
+            new DateTimeImmutable('2026-10-27T17:29:00+05:00'),
+        );
+        $session->put('sesame.identity', $identity);
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($identity), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+        );
+
+        $status = $sesame->sessionStatus();
+
+        if ($status['signedIn'] !== true) {
+            self::fail('The session is signed in.');
+        }
+
+        self::assertSame('2026-10-27T12:30:00+00:00', $status['authenticatedAt']);
+        self::assertSame('2026-10-27T12:29:00+00:00', $status['authTime']);
+    }
+
     public function testSessionStatusReportsTheExpiryTimesFromTheClock(): void
     {
         $clock = new FakeClock();
