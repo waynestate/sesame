@@ -244,6 +244,51 @@ final class ConfigTest extends TestCase
         ]);
     }
 
+    public function testReadsCasRequirePendingLoginWhenSet(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'require_pending_login' => false,
+            ],
+        ]);
+
+        self::assertFalse($config->casRequirePendingLogin);
+    }
+
+    public function testCasRequirePendingLoginDefaultsToTrue(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+            ],
+        ]);
+
+        self::assertTrue($config->casRequirePendingLogin);
+    }
+
+    public function testRejectsANonBooleanCasRequirePendingLogin(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "cas.require_pending_login" must be a boolean.');
+
+        Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'require_pending_login' => 'yes',
+            ],
+        ]);
+    }
+
     public function testGatewayMaxLifetimeDefaultsToFiveMinutes(): void
     {
         $config = Config::fromArray($this->gatewayConfig());

@@ -23,6 +23,7 @@ declare(strict_types=1);
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Session\NativeSession;
 
 $config = Config::fromArray([
     'driver' => 'cas',
@@ -49,10 +50,14 @@ $http = new \GuzzleHttp\Client([
     'verify' => true,
 ]);
 
-$driver = DriverFactory::make($config, $http, new Psr17Factory());
+// The app's session, seen through the port. The cas driver keeps its
+// pending-login marker there (see "Binding the sign-in to the browser" below).
+$session = new NativeSession();
+
+$driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, null, $session);
 ```
 
-Then build the Sesame facade with the driver, as in the Raw PHP section of the README.
+Then build the Sesame facade with the driver and the same session, as in the Raw PHP section of the README.
 
 ## Config keys
 
@@ -63,6 +68,7 @@ Then build the Sesame facade with the driver, as in the Raw PHP section of the R
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 | `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
+| `cas.require_pending_login` | No | `true` | Bind each sign-in to the browser that started it (blocks login CSRF). Off only for an app that must accept a ticket for a login it did not start, a link from the CAS login page. |
 
 The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-* headers to build it.
 
@@ -85,6 +91,12 @@ With `cas.protocol` set to `3.0`, a server may also release `isFromNewLogin` and
 `cas.assume_mfa` is off by default, and it should stay off unless the CAS server enforces MFA for every sign-in. A successful CAS validation then means MFA happened for the user's current SSO session, and the driver says so on the identity: its `amr` includes `mfa`. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
 
 The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS `authenticationDate` attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.
+
+## Binding the sign-in to the browser
+
+With `cas.require_pending_login` on (the default), the driver stores a marker in the app's session before it sends the browser to CAS, and a returning ticket is accepted only against a live marker. The marker is single use and lives ten minutes, and the session keeps at most five of them, one per open sign-in tab, newest kept. A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF: an attacker who signs in through CAS for their own account cannot make a victim's browser deliver the attacker's ticket, because the victim's session holds no marker.
+
+The driver needs the app's session for the marker, so pass it to `DriverFactory::make()` as the seventh argument (the example above passes a `NativeSession`). Set `cas.require_pending_login` to `false` only for an app that must accept a ticket for a login it did not start, for example a link from the CAS login page itself; that reopens login CSRF, so keep such an opt-out deliberate.
 
 > [!WARNING]
 > On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.

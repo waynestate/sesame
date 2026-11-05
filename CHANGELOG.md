@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the cas driver binds each sign-in to the browser that started it: it stores a pending-login marker in the app's session before the redirect to CAS, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call, which blocks login CSRF. Apps that build the driver by hand must pass the app's SessionPort to `DriverFactory::make()`, and an app that must accept a ticket for a login it did not start (a link from the CAS login page) must set `cas.require_pending_login` to false.
+- Added: `cas.require_pending_login` (env `SESAME_CAS_REQUIRE_PENDING_LOGIN`, default `true`) switches the cas login binding off.
+- Tests: the cas login binding is covered end to end: a ticket with no marker, an expired marker, a reused marker, the natural start-and-return flow, the five-marker cap, the switch off, and the missing-session refusal.
 - Added: `Sesame::sessionStatus()`, the session facts a single-page app needs (who, driver, sign-in time, idle and absolute expiry, the logout token), with an optional closure that adds the app's own user fields. The raw PHP function, the Laravel route and the Vue package follow.
 - Docs: the docs site is built by the shared builder and checked in `composer ci`.
 - Docs: the docs site now exists. Squire's docs builder renders `docs/` into `site/docs/`: an Overview page from the README's opening, the oidc library choice note, and a generated environment reference table covering all 55 `SESAME_*` settings. `composer docs` builds it, and `composer docs:check` gates it in CI.

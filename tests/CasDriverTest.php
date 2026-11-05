@@ -18,6 +18,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\Cas\PendingLogin;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
@@ -40,7 +41,10 @@ final class CasDriverTest extends TestCase
 
     private function driver(FakeHttpClient $http, string $protocol = '3.0', bool $renew = false, bool $assumeMfa = false, ?ClockInterface $clock = null): CasDriver
     {
-        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew, $assumeMfa, $clock);
+        // No session and binding off: these tests exercise ticket shape,
+        // URLs, MFA facts and XML parsing, not login binding. The binding
+        // itself is covered by the testLoginBinding* tests below.
+        return new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), $protocol, $renew, $assumeMfa, $clock, null, false);
     }
 
     private static function response(int $status, string $body): ResponseInterface
@@ -221,7 +225,8 @@ final class CasDriverTest extends TestCase
     {
         $service = 'https://app.test/login?next=/a b&c=d';
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
-        $driver = new CasDriver(self::BASE, $service, $http, new Psr17Factory(), '3.0', true);
+        // Binding off: this test is about URL encoding, not login binding.
+        $driver = new CasDriver(self::BASE, $service, $http, new Psr17Factory(), '3.0', true, false, new FakeClock(), null, false);
 
         $redirect = $driver->login(new ServerRequest('GET', 'https://app.test/'));
 
@@ -471,7 +476,8 @@ final class CasDriverTest extends TestCase
     public function testTheDefaultProtocolIsTwoAndValidatesAgainstServiceValidate(): void
     {
         $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
-        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
+        // Binding off: this test is about the default protocol path.
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, new FakeClock(), null, false);
 
         $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
 
@@ -666,7 +672,8 @@ final class CasDriverTest extends TestCase
             }
         };
 
-        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory());
+        // Binding off: this test is about transport failure propagation.
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, new FakeClock(), null, false);
 
         try {
             $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
@@ -727,7 +734,8 @@ final class CasDriverTest extends TestCase
     public function testStripsOneTrailingSlashFromTheBaseUrl(): void
     {
         $http = new FakeHttpClient();
-        $driver = new CasDriver(self::BASE . '/', self::SERVICE, $http, new Psr17Factory());
+        // Binding off: this test is about base URL normalization.
+        $driver = new CasDriver(self::BASE . '/', self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, new FakeClock(), null, false);
 
         $step = $driver->login(new ServerRequest('GET', self::SERVICE));
 
@@ -832,5 +840,159 @@ final class CasDriverTest extends TestCase
         self::assertSame('the-user', $session->store['sesame.user']);
         self::assertInstanceOf(Identity::class, $resolver->identity);
         self::assertSame('ab1234', $resolver->identity->username);
+    }
+
+    public function testLoginBindingRejectsATicketWithNoPendingLogin(): void
+    {
+        // A ticket arrives but this browser never started a sign-in: the
+        // login CSRF case. It is refused before any HTTP call.
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $session = new RecordingSession(new EventLog());
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, new FakeClock(), $session);
+
+        try {
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertSame(
+                'This sign-in was not started in this browser, or it took too long. Start again from the app.',
+                $e->getMessage(),
+            );
+        }
+
+        self::assertSame([], $http->requests, 'No validation call when there is no pending login.');
+    }
+
+    public function testLoginBindingRejectsAnExpiredMarker(): void
+    {
+        $clock = new FakeClock();
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $session = new RecordingSession(new EventLog());
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, $clock, $session);
+
+        $redirect = $driver->login(new ServerRequest('GET', self::SERVICE));
+
+        self::assertInstanceOf(Redirect::class, $redirect);
+
+        // The marker lives ten minutes; past that it is gone.
+        $clock->advance(601);
+
+        try {
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertSame(
+                'This sign-in was not started in this browser, or it took too long. Start again from the app.',
+                $e->getMessage(),
+            );
+        }
+
+        self::assertSame([], $http->requests, 'No validation call for an expired marker.');
+    }
+
+    public function testLoginBindingRejectsAReusedMarker(): void
+    {
+        // The marker is single use: the first ticket spends it, so a second
+        // ticket finds nothing even though the CAS server would still
+        // answer.
+        $http = new FakeHttpClient([
+            self::response(200, self::fixture('success.xml')),
+            self::response(200, self::fixture('success.xml')),
+        ]);
+        $session = new RecordingSession(new EventLog());
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, new FakeClock(), $session);
+
+        $driver->login(new ServerRequest('GET', self::SERVICE));
+
+        $first = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $first);
+
+        try {
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-2'));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertSame(
+                'This sign-in was not started in this browser, or it took too long. Start again from the app.',
+                $e->getMessage(),
+            );
+        }
+
+        self::assertCount(1, $http->requests, 'The second ticket never reaches the CAS server.');
+    }
+
+    public function testLoginBindingAcceptsTheBrowserThatStarted(): void
+    {
+        // The natural flow: the app sends the browser to CAS, the browser
+        // comes back with a ticket, and the marker says this browser did
+        // start the sign-in.
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $session = new RecordingSession(new EventLog());
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, new FakeClock(), $session);
+
+        $redirect = $driver->login(new ServerRequest('GET', self::SERVICE));
+
+        self::assertInstanceOf(Redirect::class, $redirect);
+        self::assertArrayHasKey(PendingLogin::SESSION_KEY, $session->store, 'The redirect stores the marker.');
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('ab1234', $step->identity->username);
+        self::assertArrayNotHasKey(PendingLogin::SESSION_KEY, $session->store, 'The marker is spent.');
+        self::assertCount(1, $http->requests);
+    }
+
+    public function testTheLoginBindingKeepsAtMostFiveMarkers(): void
+    {
+        // Six tabs, six redirects: the session keeps only the five newest
+        // markers, so a browser cannot grow the session without bound.
+        $http = new FakeHttpClient();
+        $session = new RecordingSession(new EventLog());
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, new FakeClock(), $session);
+
+        for ($i = 0; $i < 6; $i++) {
+            $step = $driver->login(new ServerRequest('GET', self::SERVICE));
+            self::assertInstanceOf(Redirect::class, $step);
+        }
+
+        $pending = $session->store[PendingLogin::SESSION_KEY];
+
+        self::assertIsArray($pending);
+        self::assertCount(5, $pending);
+
+        foreach ($pending as $marker) {
+            self::assertIsArray($marker);
+
+            $id = $marker['id'];
+            $expires = $marker['expires'];
+
+            self::assertIsString($id);
+            self::assertIsInt($expires);
+            self::assertSame(32, strlen($id), 'The marker id is 16 random bytes in hex.');
+        }
+    }
+
+    public function testBindingCanBeTurnedOffWithoutASession(): void
+    {
+        // With require_pending_login off the driver boots without a session
+        // and accepts a ticket exactly as before the binding existed.
+        $http = new FakeHttpClient([self::response(200, self::fixture('success.xml'))]);
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '3.0', false, false, new FakeClock(), null, false);
+
+        $step = $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertCount(1, $http->requests);
+    }
+
+    public function testTheDriverRefusesToStartWithoutASessionWhenBindingIsOn(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage(
+            'The cas driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make(), or set cas.require_pending_login to false.',
+        );
+
+        new CasDriver(self::BASE, self::SERVICE, new FakeHttpClient(), new Psr17Factory());
     }
 }

@@ -51,6 +51,9 @@ final class LoginRegeneratesTest extends LaravelTestCase
         $app['config']->set('sesame.driver', 'cas');
         $app['config']->set('sesame.cas.base_url', 'https://cas.test/cas');
         $app['config']->set('sesame.cas.service_url', 'https://app.test/login');
+        // Binding off: this test is about session regeneration, not login
+        // binding.
+        $app['config']->set('sesame.cas.require_pending_login', false);
         $app->instance(ClientInterface::class, $this->casHttpClient());
 
         /** @var \Illuminate\Contracts\Session\Session $store */

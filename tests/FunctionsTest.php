@@ -536,7 +536,8 @@ use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 $success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
-$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory());
+// Binding off: this script exercises the raw login function, not login binding.
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory(), '2.0', false, false, null, null, false);
 $sesame = new Sesame(
     $driver,
     new RecordingResolver('the-user'),
@@ -579,7 +580,8 @@ session_start();
 
 $success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
 $http = new FakeHttpClient([$success]);
-$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', $http, new Psr17Factory());
+// Binding off: this script exercises the loop guard, not login binding.
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', $http, new Psr17Factory(), '2.0', false, false, null, null, false);
 $sesame = new Sesame(
     $driver,
     new RecordingResolver('the-user'),
@@ -655,7 +657,8 @@ use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 $success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
-$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory());
+// Binding off: this script exercises the refused resolver, not login binding.
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', new FakeHttpClient([$success]), new Psr17Factory(), '2.0', false, false, null, null, false);
 $sesame = new Sesame(
     $driver,
     new RecordingResolver(null),
