@@ -83,7 +83,9 @@ class SesameServiceProvider extends ServiceProvider
                     'oidc' => $this->jwksCache($app, 'sesame.oidc.cache_store'),
                     default => null,
                 },
-                $config->driver === 'oidc' ? $app->make(LaravelSession::class) : null,
+                // The oidc driver keeps its sign-in state in the session, and
+                // the cas driver keeps its pending-login marker there.
+                in_array($config->driver, ['oidc', 'cas'], true) ? $app->make(LaravelSession::class) : null,
             );
         });
 

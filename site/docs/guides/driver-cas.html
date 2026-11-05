@@ -58,6 +58,7 @@ declare(strict_types=1);
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Session\NativeSession;
 
 $config = Config::fromArray([
     'driver' =&gt; 'cas',
@@ -84,9 +85,13 @@ $http = new \GuzzleHttp\Client([
     'verify' =&gt; true,
 ]);
 
-$driver = DriverFactory::make($config, $http, new Psr17Factory());
+// The app's session, seen through the port. The cas driver keeps its
+// pending-login marker there (see &quot;Binding the sign-in to the browser&quot; below).
+$session = new NativeSession();
+
+$driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, null, $session);
 </code></pre>
-<p>Then build the Sesame facade with the driver, as in the Raw PHP section of the README.</p>
+<p>Then build the Sesame facade with the driver and the same session, as in the Raw PHP section of the README.</p>
 <h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -128,6 +133,12 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory());
 <td><code>false</code></td>
 <td>A successful validation counts as an MFA sign-in: the identity's <code>amr</code> includes <code>mfa</code>. On only when the CAS server enforces MFA for every sign-in.</td>
 </tr>
+<tr>
+<td><code>cas.require_pending_login</code></td>
+<td>No</td>
+<td><code>true</code></td>
+<td>Bind each sign-in to the browser that started it (blocks login CSRF). Off only for an app that must accept a ticket for a login it did not start, a link from the CAS login page.</td>
+</tr>
 </tbody>
 </table></div>
 <p>The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-* headers to build it.</p>
@@ -141,6 +152,9 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory());
 <h2 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h2>
 <p><code>cas.assume_mfa</code> is off by default, and it should stay off unless the CAS server enforces MFA for every sign-in. A successful CAS validation then means MFA happened for the user's current SSO session, and the driver says so on the identity: its <code>amr</code> includes <code>mfa</code>. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.</p>
 <p>The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS <code>authenticationDate</code> attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.</p>
+<h2 id="binding-the-sign-in-to-the-browser">Binding the sign-in to the browser<a class="docs-heading-link" aria-label="Link to this section" href="#binding-the-sign-in-to-the-browser">#</a></h2>
+<p>With <code>cas.require_pending_login</code> on (the default), the driver stores a marker in the app's session before it sends the browser to CAS, and a returning ticket is accepted only against a live marker. The marker is single use and lives ten minutes, and the session keeps at most five of them, one per open sign-in tab, newest kept. A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF: an attacker who signs in through CAS for their own account cannot make a victim's browser deliver the attacker's ticket, because the victim's session holds no marker.</p>
+<p>The driver needs the app's session for the marker, so pass it to <code>DriverFactory::make()</code> as the seventh argument (the example above passes a <code>NativeSession</code>). Set <code>cas.require_pending_login</code> to <code>false</code> only for an app that must accept a ticket for a login it did not start, for example a link from the CAS login page itself; that reopens login CSRF, so keep such an opt-out deliberate.</p>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>On a failed login, show a generic line, not the exception. An <code>AuthenticationFailed</code> message can carry the CAS failure code (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.</p></aside>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>
@@ -151,7 +165,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory());
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/raw-php.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Raw PHP</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/driver-gateway.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">The gateway driver</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#protocol">Protocol</a></li><li class="docs-toc__item"><a href="#renew">Renew</a></li><li class="docs-toc__item"><a href="#sign-in-time">Sign-in time</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#protocol">Protocol</a></li><li class="docs-toc__item"><a href="#renew">Renew</a></li><li class="docs-toc__item"><a href="#sign-in-time">Sign-in time</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#binding-the-sign-in-to-the-browser">Binding the sign-in to the browser</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.4.0</span></span>

@@ -14,12 +14,14 @@ use SimpleXMLElement;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\Driver;
+use Waynestate\Sesame\Drivers\Cas\PendingLogin;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\ReturnTo;
+use Waynestate\Sesame\SessionPort;
 
 /**
  * The CAS driver, CAS 2.0 against Academica by default.
@@ -50,6 +52,18 @@ use Waynestate\Sesame\ReturnTo;
  * authenticationDate when the server sent one. The driver never invents an
  * authTime: with no authenticationDate, the MFA time stays unset and the
  * MFA check answers NO_AUTH_TIME.
+ *
+ * Login binding: with require_pending_login on (the default), the driver
+ * stores a marker in the app's session before it sends the browser to CAS,
+ * and a returning ticket is accepted only against a live marker. That stops
+ * login CSRF, where an attacker signs in through CAS for their own account
+ * and makes a victim's browser deliver the attacker's ticket: the victim's
+ * session holds no marker, so the ticket is refused before any HTTP call.
+ * The marker is single use and lives ten minutes. The constructor needs the
+ * app's SessionPort for this; pass it as the seventh argument of
+ * DriverFactory::make() or set cas.require_pending_login to false (off only
+ * for an app that must accept a ticket for a login it did not start, a link
+ * from the CAS login page).
  */
 final class CasDriver implements Driver
 {
@@ -61,6 +75,8 @@ final class CasDriver implements Driver
 
     private readonly ClockInterface $clock;
 
+    private readonly ?PendingLogin $pending;
+
     public function __construct(
         string $baseUrl,
         private readonly string $serviceUrl,
@@ -70,6 +86,8 @@ final class CasDriver implements Driver
         private readonly bool $renew = false,
         private readonly bool $assumeMfa = false,
         ?ClockInterface $clock = null,
+        ?SessionPort $session = null,
+        bool $requirePendingLogin = true,
     ) {
         $this->base = self::absoluteHttps($baseUrl, 'cas.base_url');
 
@@ -87,6 +105,16 @@ final class CasDriver implements Driver
         }
 
         $this->clock = $clock ?? new SystemClock();
+
+        if ($requirePendingLogin && $session === null) {
+            throw new InvalidConfig('The cas driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make(), or set cas.require_pending_login to false.');
+        }
+
+        // Binding off means "accept a ticket as before", even when a session
+        // is available, so the marker helper exists only when binding is on.
+        $this->pending = $session === null || ! $requirePendingLogin
+            ? null
+            : new PendingLogin($session, $this->clock);
     }
 
     public function name(): string
@@ -99,10 +127,21 @@ final class CasDriver implements Driver
         $ticket = $request->getQueryParams()['ticket'] ?? null;
 
         if ($ticket === null) {
+            // Remember that this browser started a sign-in, so its ticket is
+            // accepted when it comes back and nobody else's is.
+            $this->pending?->put();
+
             return new Redirect($this->base . '/login?' . http_build_query($this->loginQuery(), '', '&', PHP_QUERY_RFC3986));
         }
 
         $this->assertValidTicket($ticket);
+
+        // The ticket must belong to a sign-in this browser started. The
+        // marker is taken before any HTTP call, and it is consumed whether
+        // or not the validation succeeds, so a replayed ticket finds nothing.
+        if ($this->pending !== null && $this->pending->take() === null) {
+            throw new AuthenticationFailed('This sign-in was not started in this browser, or it took too long. Start again from the app.');
+        }
 
         $path = $this->protocol === '3.0' ? '/p3/serviceValidate' : '/serviceValidate';
         $query = http_build_query($this->loginQuery() + ['ticket' => $ticket], '', '&', PHP_QUERY_RFC3986);

@@ -37,10 +37,12 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * oauth2 driver refuses to start.
  *
  * The oidc driver signs the user in through the browser, so it keeps its
- * state, nonce and PKCE verifier in the app's session: pass the app's
- * SessionPort as the seventh argument. It fetches the discovery document
- * and the key set over HTTP (the PSR-18 client and PSR-17 factory), and
- * keeps both in the PSR-16 cache when one is passed (sixth argument),
+ * state, nonce and PKCE verifier in the app's session, and the cas driver
+ * keeps its pending-login marker there too, so a ticket is accepted only
+ * for a sign-in this browser started: pass the app's SessionPort as the
+ * seventh argument for either driver. The oidc driver fetches the discovery
+ * document and the key set over HTTP (the PSR-18 client and PSR-17 factory),
+ * and keeps both in the PSR-16 cache when one is passed (sixth argument),
  * otherwise in process memory. It also needs league/oauth2-client, which
  * SESAME suggests but does not require.
  */
@@ -70,6 +72,8 @@ final class DriverFactory
                 $config->casRenew,
                 $config->casAssumeMfa,
                 $clock,
+                $session,
+                $config->casRequirePendingLogin,
             ),
             'gateway' => new GatewayDriver(
                 $config->gatewayHeader ?? 'X-Sesame-Assertion',

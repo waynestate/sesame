@@ -57,6 +57,10 @@ return [
         // On only when the CAS server enforces MFA for every sign-in: a
         // successful validation then counts as an MFA sign-in.
         'assume_mfa' => env('SESAME_CAS_ASSUME_MFA', false),
+        // Leave on. Off only for an app that must accept a ticket for a login
+        // it did not start (a link from the CAS login page); that opens login
+        // CSRF.
+        'require_pending_login' => env('SESAME_CAS_REQUIRE_PENDING_LOGIN', true),
     ],
 
     /*

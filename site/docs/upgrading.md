@@ -10,6 +10,29 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## Unreleased[#](https://sesame.apps.wayne.edu/docs/upgrading.html#unreleased)
+
+**Breaking.** The `cas` driver now binds each sign-in to the browser that started it: before the redirect to CAS it stores a pending-login marker in the app's session, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF. Two consequences for apps on the `cas` driver:
+
+1. Apps that build the driver by hand must pass the app's `SessionPort` as the seventh argument to `DriverFactory::make()`; without it the driver refuses to start with `InvalidConfig` unless the binding is switched off. The Laravel adapter passes the app's session itself, so Laravel apps need no code change.
+2. An app that accepts a ticket for a login it did not start (a link from the CAS login page) must set `cas.require_pending_login` (env `SESAME_CAS_REQUIRE_PENDING_LOGIN`) to `false`; that reopens login CSRF, so keep the opt-out deliberate.
+
+**Deprecated.** Nothing is deprecated in this release.
+
+**Steps.**
+
+1. Move the constraint and update:
+   ```
+   composer require waynestate/sesame:^0.5
+   ```
+2. If the app builds the `cas` driver by hand (raw PHP), pass the app's session as the seventh argument to `DriverFactory::make()`:
+   ```php
+   $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, null, new NativeSession());
+   ```
+3. Only if the app must accept a ticket for a login it did not start (a link from the CAS login page), set `cas.require_pending_login` to `false` (env `SESAME_CAS_REQUIRE_PENDING_LOGIN`).
+
+**How to verify.** Sign in through CAS the normal way (the app sends the browser to CAS, the browser returns with the ticket); the sign-in succeeds and the marker is spent. Then deliver a just-issued ticket from a browser profile that never started a sign-in: it is refused with `This sign-in was not started in this browser, or it took too long. Start again from the app.`, and no HTTP call reaches the CAS server. `tests/CasDriverTest.php` covers all of it under the frozen names `testLoginBinding*`.
+
 ## 0.4.0 (2026-11-03)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-4-0-2026-11-03)
 
 **Breaking.** The `gateway` driver now refuses a token whose `typ` header is `at+jwt` or `application/at+jwt`, so an OAuth2 access token cannot be replayed as a gateway assertion. A missing `typ` or `JWT` still works. This is a pre-1.0 minor: apps that pin `^0.3` stay on 0.3.x until they move their constraint to `^0.4`.

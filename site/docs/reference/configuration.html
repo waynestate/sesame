@@ -133,6 +133,12 @@
 <td>config/sesame.php</td>
 </tr>
 <tr>
+<td>SESAME_CAS_REQUIRE_PENDING_LOGIN</td>
+<td>Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry</td>
+<td><code>true</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
 <td>SESAME_CAS_SERVICE_URL</td>
 <td>The URL the CAS server sends the user back to after verifying them</td>
 <td>none (the app's <code>/login</code> route)</td>

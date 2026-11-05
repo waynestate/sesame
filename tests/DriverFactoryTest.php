@@ -16,8 +16,10 @@ use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Drivers\OAuth2Driver;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Tests\Support\ArrayCache;
+use Waynestate\Sesame\Tests\Support\EventLog;
 use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 final class DriverFactoryTest extends TestCase
 {
@@ -43,6 +45,38 @@ final class DriverFactoryTest extends TestCase
             'cas' => [
                 'base_url' => 'https://cas.test/cas',
                 'service_url' => 'https://app.test/login',
+            ],
+        ]);
+
+        // The login binding is on by default, so the factory needs the app
+        // session for the cas driver.
+        $driver = DriverFactory::make($config, new FakeHttpClient(), new Psr17Factory(), null, null, null, new RecordingSession(new EventLog()));
+
+        self::assertInstanceOf(CasDriver::class, $driver);
+        self::assertSame('cas', $driver->name());
+    }
+
+    public function testCasWithoutASessionNamesTheMissingSession(): void
+    {
+        $config = $this->casConfig();
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage(
+            'The cas driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make(), or set cas.require_pending_login to false.',
+        );
+
+        DriverFactory::make($config, new FakeHttpClient(), new Psr17Factory());
+    }
+
+    public function testCasBootsWithoutASessionWhenBindingIsOff(): void
+    {
+        $config = Config::fromArray([
+            'driver' => 'cas',
+            'environment' => 'local',
+            'cas' => [
+                'base_url' => 'https://cas.test/cas',
+                'service_url' => 'https://app.test/login',
+                'require_pending_login' => false,
             ],
         ]);
 

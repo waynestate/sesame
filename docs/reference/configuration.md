@@ -52,6 +52,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_CAS_BASE_URL | The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is `/cas`) | none (Playbook supplies the WSU value) | config/sesame.php |
 | SESAME_CAS_PROTOCOL | The CAS protocol version; set `3.0` when the server releases attributes on `/p3/serviceValidate` | `2.0` | config/sesame.php |
 | SESAME_CAS_RENEW | Send `renew=true`; leave off against Academica, which issues no ticket for it | `false` | config/sesame.php |
+| SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
 | SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them | none (the app's `/login` route) | config/sesame.php |
 | SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc` or `fake` | `cas` | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |

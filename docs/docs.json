@@ -36,6 +36,10 @@
                     "Count a successful validation as an MFA sign-in; on only when the CAS server enforces MFA for every sign-in",
                     "`false`"
                 ],
+                "SESAME_CAS_REQUIRE_PENDING_LOGIN": [
+                    "Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry",
+                    "`true`"
+                ],
                 "SESAME_FAKE_USERNAME": [
                     "The identity the `fake` driver returns, for local development",
                     "none"
