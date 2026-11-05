@@ -289,7 +289,7 @@ How the stack holds it: `Documented`, not enforced. SESAME reads only the respon
 Prefer to keep the old session for a short grace period, marked with a "destroyed at" time and the new ID, over deleting it at once. Treat use of the old ID after the grace period as a possible hijack and force a new login.
 Why: the PHP manual says `session_regenerate_id()` does not handle an unstable network well and a user can lose the session. Immediate deletion also removes the chance to detect a stolen ID being replayed.
 Sources: [PHP manual, session_regenerate_id](https://www.php.net/manual/en/function.session-regenerate-id.php) (its example uses 300 seconds, which is the example's choice and not a rule).
-How the stack holds it: `Not yet`. `NativeSession::regenerate()` calls `session_regenerate_id(true)`. The first pass listed this as a trade-off to decide; the manual's own advice is the grace period. For logout the immediate delete is right (S7). For login it is the open question.
+How the stack holds it: `Enforced`. `NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID, keeps it for a 60 second grace (the constructor takes `graceSeconds`; `graceSeconds: 0` restores the immediate delete), and copies the data to the new session (`src/Session/NativeSession.php:51`). A use of the old ID after the grace is treated as a possible hijack: the session is retired, a clean one is started, and `sesame.session_anomaly` is logged as a warning with `reason` `destroyed_session_reused` when a logger is set (`src/Session/NativeSession.php:160`). The Laravel adapter uses the framework's own regenerate and is unchanged. For logout the immediate delete is still right (S7). Tests: `NativeSessionTest` (`testRegenerateKeepsTheOldSessionDuringTheGrace:48`, `testTheOldSessionIsStillUsableWithinTheGrace:98`, `testTheOldSessionIsRejectedAfterTheGraceAndLogged:143`, `testZeroGraceDeletesTheOldSessionAtOnce:209`, `testANegativeGraceIsRefused:244`, `testTheAnomalyLogCarriesNoSessionIdOrData:251`).
 
 ### S44. Mark logout and login responses as not cacheable, and clear browser data
 Send `Cache-Control: no-store` on responses that carry session data. On logout also send `Clear-Site-Data: "cache", "cookies", "storage"`, and still expire the session cookie.
@@ -326,11 +326,11 @@ How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing
 ## Gaps for the backlog
 
 Risks in the current code:
-- `src/Session/NativeSession.php:26, 83`: `session_regenerate_id(true)` deletes the old session at once. The PHP manual warns this can drop a session on an unstable network. Decide the trade-off and write it down.
+- Done: the immediate delete at login is gone (S43): `NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID and keeps it for a 60 second grace, so a user on a bad network does not lose the login; a use of the old ID after the grace is rejected and logged as `sesame.session_anomaly`. Proven by `NativeSessionTest` (S43).
 - `src/Drivers/CasDriver.php:97-108`: no login binding to the browser.
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
-- `src/Session/NativeSession.php:26`: use a destroy time stamp and grace period at login instead of immediate delete (S43).
+- Done: the destroy time stamp and grace period at login are implemented in `NativeSession` (S43); `graceSeconds: 0` restores the immediate delete.
 - README client example: add no-redirect and TLS-verify settings (S42).
 
 Missing practices:
