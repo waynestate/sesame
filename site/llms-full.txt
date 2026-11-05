@@ -1711,7 +1711,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 
 Source: https://sesame.apps.wayne.edu/docs/changelog.html
 
-## Changelog | SESAME docs
+## Changelog[#](https://sesame.apps.wayne.edu/docs/changelog.html#changelog)
 
 All notable changes to this project will be documented in this file.
 

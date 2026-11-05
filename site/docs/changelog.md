@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Changelog | SESAME docs
+# Changelog[#](https://sesame.apps.wayne.edu/docs/changelog.html#changelog)
 
 All notable changes to this project will be documented in this file.
 
