@@ -1,5 +1,5 @@
 ---
-title: "Session timeouts | Sesame docs"
+title: "Session timeouts | SESAME docs"
 description: "Every signed-in session has two clocks: an idle timeout that drops it after quiet time and an absolute lifetime that ends it no matter how active it is."
 url: https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html
 llms: https://sesame.apps.wayne.edu/llms.txt

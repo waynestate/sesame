@@ -1,5 +1,5 @@
 ---
-title: "Proof | Sesame docs"
+title: "Proof | SESAME docs"
 description: "Proof runs against real Wayne State applications on a private site, behind a Wayne State employee sign-in."
 url: https://sesame.apps.wayne.edu/docs/reference/proof.html
 llms: https://sesame.apps.wayne.edu/llms.txt

@@ -1,5 +1,5 @@
 ---
-title: "The cas driver | Sesame docs"
+title: "The cas driver | SESAME docs"
 description: "Sign in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration."
 url: https://sesame.apps.wayne.edu/docs/guides/driver-cas.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -89,7 +89,9 @@ With `cas.protocol` set to `3.0`, a server may also release `isFromNewLogin` and
 
 The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS `authenticationDate` attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.
 
-> \[!WARNING\] On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
+Warning
+
+On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
 
 ## Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#related)
 

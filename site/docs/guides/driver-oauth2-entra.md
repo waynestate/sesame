@@ -1,5 +1,5 @@
 ---
-title: "oauth2 with Entra | Sesame docs"
+title: "oauth2 with Entra | SESAME docs"
 description: "Sign in from a JWT bearer token verified against the issuer's key set, RS256 only, Microsoft Entra ID first, APIs only."
 url: https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -66,7 +66,9 @@ Then build the Sesame facade with the driver, as in the [Raw PHP](https://sesame
 | `oauth2.jwks_store` | No | the app's default cache store | The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache). |
 | `oauth2.require_at_jwt` | No | `false` | When `true`, the token's `typ` header must be `at+jwt` or `application/at+jwt` (RFC 9068), and any other token is refused. **Off by default on purpose:** Microsoft Entra v2 access tokens are typed `JWT`, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens. |
 
-> \[!WARNING\] Leave `oauth2.require_at_jwt` off for Entra. Microsoft Entra v2 access tokens are typed `JWT`, so requiring `at+jwt` refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.
+Warning
+
+Leave `oauth2.require_at_jwt` off for Entra. Microsoft Entra v2 access tokens are typed `JWT`, so requiring `at+jwt` refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.
 
 ## What the token must carry[#](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html#what-the-token-must-carry)
 

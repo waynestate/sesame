@@ -1,0 +1,1068 @@
+/* ============================================================================
+   SESAME docs theme (2026-11-05).
+
+   The docs pages are the back room of the same key shop as the front page
+   (site/assets/sesame.css): the cream shop floor, the slate cut line for
+   anything you type, the gold Copy button on its end, Bungee for the signs,
+   kicker labels with their tiny key, paper key tags for the notes, tear-off
+   job tickets for the pager and the green counter for the footer. Nothing
+   new was invented; every value below comes from the front page's tokens.
+
+   How it gets onto the pages: docs/docs.json "theme" names this file and
+   docs/_header.html. The docs builder copies this file to
+   site/docs/theme/sesame.css and links it after the kit's docs.css, so the
+   --dk-* tokens and the rules below win without !important. The kit's
+   docs.css stays byte for byte Squire's.
+
+   The front page has no dark mode, so the dark set is derived (the shop after
+   hours: deep green-black floor, cream text, brass where the day uses green),
+   as mapped in the stack's docs theme notes.
+
+   File map: 1. fonts and tokens  2. frame  3. shop sign (masthead)
+             4. sidebar and menu  5. article  6. code  7. tables, notes, tabs
+             8. toc, pager, footer  9. dark  10. responsive
+             11. motion (no-preference only)  12. print
+   ========================================================================== */
+
+/* ---------------------------------------------------- 1. fonts and tokens */
+
+@font-face {
+  font-family: "Bungee";
+  src: url("../../assets/fonts/bungee-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* The front page's palette, under the same names (with an s- prefix). */
+  --s-green: #0c5449;
+  --s-green-deep: #08352f;
+  --s-gold: #ffcc33;
+  --s-gold-hi: #ffd65c;
+  --s-cream: #f4f1ea;
+  --s-paper: #fbf9f4;
+  --s-ink: #1d2b27;
+  --s-ink-muted: #46554f;
+  --s-slate: #314842;
+  --s-peg: #e7dfcc;
+  --s-brass: #d6a73c;
+  --s-brass-dark: #8a6a1e;
+  --s-copper-dark: #7a4524;
+  --s-tag: #fffaf0;
+  --s-shadow: 0 1px 0 rgba(29, 43, 39, 0.06), 0 10px 24px -12px rgba(29, 43, 39, 0.35);
+  --s-sign: "Bungee", "Lato", "Arial Black", sans-serif;
+  --s-body: var(--wsu-font-family-body, Lato, Calibri, "Helvetica Neue", Arial, sans-serif);
+  --s-ease-swing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --s-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Roles, so the dark set only swaps values. */
+  --s-head-bg: var(--s-cream);
+  --s-head-line: var(--s-slate);
+  --s-title: var(--s-green);       /* Bungee signs: brand name, h1, h2 */
+  --s-kicker: var(--s-slate);      /* the mono labels with the key */
+  --s-hover: var(--s-peg);         /* nav pill hover */
+  --s-slab: var(--s-slate);        /* the cut line, for what you type */
+  --s-slab-ink: #f4f1ea;
+  --s-slab-line: var(--s-slate);
+  --s-inline-code: rgba(12, 84, 73, 0.08);
+  --s-card: var(--s-paper);        /* tickets and tables */
+  --s-card-line: var(--s-slate);
+  --s-hairline: rgba(49, 72, 66, 0.2);
+  --s-tear: rgba(49, 72, 66, 0.35);
+  --s-row-hover: #fff3c7;
+  --s-note-bg: var(--s-tag);
+  --s-hole: var(--s-cream);        /* punched holes show the floor through */
+  --s-foot-bg: var(--s-green-deep);
+  --s-foot-ink: #e9e4d8;
+  --s-string: var(--s-slate);
+  --s-note: var(--s-green);
+  --s-tip: var(--s-slate);
+  --s-warning: var(--s-brass-dark);
+  --s-danger: var(--s-copper-dark);
+
+  /* The kit's tokens, set from the palette above. */
+  --dk-bg: var(--s-cream);
+  --dk-ink: var(--s-ink);
+  --dk-muted: var(--s-ink-muted);
+  --dk-rule: var(--s-peg);
+  --dk-accent: var(--s-green);
+  --dk-on-accent: #ffffff;
+  --dk-code-bg: var(--s-inline-code);
+  --dk-note: var(--s-note);
+  --dk-tip: var(--s-tip);
+  --dk-warning: var(--s-warning);
+  --dk-danger: var(--s-danger);
+  --dk-display: var(--s-body);
+  --dk-mono: var(--wsu-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  --dk-radius: 10px;
+  --dk-focus: var(--s-green);
+  --dk-focus-w: 3px;
+  --dk-focus-o: 3px;
+  --dk-sidebar: 15.5rem;
+  --dk-prose-max: 46rem;
+  --dk-gap: clamp(16px, 3vw, 32px);
+
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------- 2. frame */
+
+html {
+  background: var(--dk-bg);
+}
+
+body {
+  margin: 0;
+  color: var(--dk-ink);
+  background: var(--dk-bg);
+  font-family: var(--s-body);
+  line-height: 1.55;
+}
+
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: var(--dk-focus-w) solid var(--dk-focus);
+  outline-offset: var(--dk-focus-o);
+}
+
+/* The tiny key from the front page's kickers: ring bow, blade, two teeth. */
+.docs-nav__label::before,
+.docs-toc__title::before,
+.docs-callout__label::before,
+.docs-menu summary::before {
+  content: "";
+  flex: none;
+  inline-size: 26px;
+  block-size: 12px;
+  background:
+    radial-gradient(circle at 6px 6px, transparent 2.2px, currentColor 2.6px 5.6px, transparent 6px),
+    linear-gradient(currentColor, currentColor) 11px 4.5px / 15px 3px no-repeat,
+    linear-gradient(currentColor, currentColor) 18px 7px / 2.5px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 23px 7px / 2.5px 3px no-repeat;
+}
+
+/* -------------------------------------------------- 3. shop sign (masthead) */
+
+.shop-head {
+  position: relative;
+  z-index: 5;
+  background: var(--s-head-bg);
+  border-block-end: 2px solid var(--s-head-line);
+}
+
+.shop-head__row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-sizing: border-box;
+  max-inline-size: 100rem;
+  min-block-size: 64px;
+  margin-inline: auto;
+  padding-inline: var(--dk-gap);
+}
+
+.brand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  color: var(--s-title);
+  text-decoration: none;
+}
+
+.brand img {
+  border-radius: 8px;
+}
+
+.brand__name {
+  font-family: var(--s-sign);
+  font-size: 1.25rem;
+}
+
+.shop-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-inline-start: auto;
+}
+
+.shop-nav a {
+  padding: 4px 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--dk-ink);
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+.shop-nav a:hover {
+  background: var(--s-hover);
+}
+
+/* You are here: the front page's dashed stamp around the Docs pill. */
+.shop-nav a[aria-current="page"] {
+  color: var(--s-title);
+  background: var(--s-hover);
+  border: 2px dashed var(--s-head-line);
+}
+
+/* The Open sign, hung on two strings. */
+.open-sign {
+  position: relative;
+  display: block;
+  flex: none;
+  align-self: flex-start;
+  inline-size: 76px;
+  block-size: 64px;
+  text-decoration: none;
+}
+
+.open-sign__strings {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 2px;
+  inline-size: 44px;
+  block-size: 20px;
+  translate: -50% 0;
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 1px), var(--s-string) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) left / 50% 100% no-repeat,
+    linear-gradient(to bottom left, transparent calc(50% - 1px), var(--s-string) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) right / 50% 100% no-repeat;
+}
+
+.open-sign__face {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 20px;
+  translate: -50% 0;
+  padding: 4px 10px 3px;
+  font-family: var(--s-sign);
+  font-size: 0.9rem;
+  color: var(--s-gold);
+  background: var(--s-green);
+  border: 2px solid var(--s-gold);
+  border-radius: 6px;
+  box-shadow: var(--s-shadow);
+  transform-origin: 50% -18px;
+}
+
+.open-sign:hover .open-sign__face,
+.open-sign:focus-visible .open-sign__face {
+  background: var(--s-green-deep);
+}
+
+/* --------------------------------------------------- 4. sidebar and menu */
+
+.docs-layout {
+  gap: 1.5rem clamp(1.75rem, 1rem + 2.5vw, 3.5rem);
+  padding-block: 2.25rem 3.5rem;
+  padding-inline: var(--dk-gap);
+}
+
+/* Group labels are the front page's kickers. */
+.docs-nav__label {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin: 1.5rem 0 0.4rem;
+  font-family: var(--dk-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--s-kicker);
+}
+
+/* Group lists are plain <ul> inside the kit's list: no bullets, no indent. */
+.docs-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A group's pages hang off a dashed tear line, like the job tickets. */
+.docs-nav__group > ul {
+  margin-inline-start: 0.35rem;
+  padding-inline-start: 0.4rem;
+  border-inline-start: 2px dashed var(--s-tear);
+}
+
+.docs-nav__group + li {
+  margin-top: 1rem;
+}
+
+.docs-nav a {
+  position: relative;
+  padding: 0.38rem 0.75rem;
+  font-size: 0.97rem;
+  line-height: 1.35;
+  color: var(--dk-ink);
+  border-radius: 6px;
+}
+
+.docs-nav a:hover {
+  color: var(--dk-ink);
+  background: var(--s-hover);
+}
+
+/* The page you are on is the gold tag: "you are here" on the key ring,
+   cut like the Try a key button, with its punched hole. */
+.docs-nav a[aria-current="page"] {
+  padding-inline-start: 1.9rem;
+  font-weight: 700;
+  color: var(--s-ink);
+  background: var(--s-gold);
+  border-radius: 6px 999px 999px 6px;
+}
+
+.docs-nav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  inset-block-start: 50%;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: var(--s-hole);
+  box-shadow: inset 0 0 0 2px var(--s-brass-dark);
+}
+
+.docs-menu summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  min-block-size: 44px;
+  box-sizing: border-box;
+  padding: 0.4rem 1rem;
+  font-family: var(--dk-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--s-kicker);
+  background: var(--s-card);
+  border: 2px solid var(--s-card-line);
+  border-radius: var(--dk-radius);
+  list-style: none;
+}
+
+.docs-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The caret sits at the far end. */
+.docs-menu summary::after {
+  content: "";
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-inline-start: auto;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  rotate: 45deg;
+  translate: 0 -2px;
+}
+
+.docs-menu[open] summary::after {
+  rotate: 225deg;
+  translate: 0 2px;
+}
+
+.docs-menu[open] > .docs-nav {
+  padding: 0.25rem 0.25rem 0.75rem;
+}
+
+/* ------------------------------------------------------------- 5. article */
+
+.docs-article {
+  font-family: var(--s-body);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--dk-ink);
+}
+
+.docs-article h1,
+.docs-article h2,
+.docs-article h3 {
+  scroll-margin-top: 1.25rem;
+  text-wrap: balance;
+}
+
+/* The title is a shop sign, with a brass key hung under it. */
+.docs-article h1 {
+  margin: 0 0 1.6rem;
+  font-family: var(--s-sign);
+  font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.2rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--s-title);
+  overflow-wrap: break-word;
+}
+
+.docs-article h1::after {
+  content: "";
+  display: block;
+  inline-size: 52px;
+  block-size: 24px;
+  margin-block-start: 0.9rem;
+  color: var(--s-brass);
+  background:
+    radial-gradient(circle at 12px 12px, transparent 4.4px, currentColor 5.2px 11.2px, transparent 12px),
+    linear-gradient(currentColor, currentColor) 22px 9px / 30px 6px no-repeat,
+    linear-gradient(currentColor, currentColor) 36px 14px / 5px 8px no-repeat,
+    linear-gradient(currentColor, currentColor) 46px 14px / 5px 6px no-repeat;
+  transform-origin: 12px 12px;
+}
+
+.docs-article h2 {
+  margin: 3rem 0 1rem;
+  padding-bottom: 0.5rem;
+  font-family: var(--s-sign);
+  font-size: clamp(1.35rem, 1.15rem + 0.8vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: var(--s-title);
+  border-bottom: 2px dashed var(--s-tear);
+  overflow-wrap: break-word;
+}
+
+.docs-article h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.25;
+  color: var(--dk-ink);
+}
+
+/* Code in a sign keeps the mono face and its case. */
+.docs-article :is(h1, h2, h3) code {
+  padding: 0.05em 0.3em;
+  font-size: 0.78em;
+  font-weight: 700;
+}
+
+.docs-heading-link {
+  color: var(--dk-muted);
+}
+
+.docs-article a {
+  color: var(--dk-accent);
+  text-underline-offset: 0.18em;
+}
+
+.docs-article a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.docs-article strong {
+  font-weight: 900;
+}
+
+.docs-article :is(ul, ol) {
+  padding-inline-start: 1.4rem;
+}
+
+.docs-article li {
+  margin-block: 0.3rem;
+}
+
+.docs-article li::marker {
+  font-weight: 700;
+  color: var(--dk-accent);
+}
+
+.docs-article img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+.docs-article hr {
+  margin-block: 2.5rem;
+  border: 0;
+  border-block-start: 2px dashed var(--s-tear);
+}
+
+/* ---------------------------------------------------------------- 6. code */
+
+.docs-article code {
+  padding: 0.05em 0.35em;
+  font-size: 0.9em;
+  background: var(--dk-code-bg);
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* What you type: the front page's slate cut line and ticket code. Lines keep
+   their shape, so a long one scrolls instead of wrapping. */
+.docs-article pre {
+  margin: 1.1rem 0 1.4rem;
+  padding: 14px 16px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--s-slab-ink);
+  background: var(--s-slab);
+  border: 1px solid var(--s-slab-line);
+  border-radius: 8px;
+  box-shadow: var(--s-shadow);
+  tab-size: 4;
+  scrollbar-color: #5b736c transparent;
+}
+
+.docs-article pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border-radius: 0;
+  overflow-wrap: normal;
+}
+
+/* With docs.js the block sits in .docs-copy: the slab moves to the wrapper
+   and the pre stops short of a gutter, so the Copy button never covers a
+   command. The button is the cut line's: gold, flush on the end. */
+.docs-copy {
+  margin: 1.1rem 0 1.4rem;
+  background: var(--s-slab);
+  border: 1px solid var(--s-slab-line);
+  border-radius: 8px;
+  box-shadow: var(--s-shadow);
+}
+
+.docs-copy > pre {
+  margin: 0;
+  margin-inline-end: 5.5rem;
+  padding-inline-end: 0.75rem;
+  background: transparent;
+  border: 0;
+  border-radius: 8px 0 0 8px;
+  box-shadow: none;
+}
+
+.docs-copy__button {
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  min-inline-size: 5.5rem;
+  /* As tall as a one-line block, so a single command reads as the cut line. */
+  min-block-size: calc(0.875rem * 1.6 + 28px);
+  padding: 0 1rem;
+  font-family: var(--s-body);
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #14201d;
+  background: var(--s-gold);
+  border: 0;
+  border-radius: 0 7px 0 8px;
+}
+
+.docs-copy__button:hover {
+  color: #14201d;
+  background: var(--s-gold-hi);
+}
+
+/* The front page's Copy focus: gold ring inside, slate between. */
+.docs-copy__button:focus-visible {
+  outline: 3px solid var(--s-gold);
+  outline-offset: -6px;
+  box-shadow: inset 0 0 0 3px var(--s-slate);
+}
+
+/* A block that scrolls sideways takes focus (docs.js): gold ring inside the slab. */
+.docs-article pre:focus-visible {
+  outline: 3px solid var(--s-gold);
+  outline-offset: -4px;
+}
+
+/* ------------------------------------------------ 7. tables, notes, tabs */
+
+/* Tables are the cross-reference chart: paper, slate frame, slate header row. */
+.docs-table {
+  margin: 1.25rem 0 1.5rem;
+  background: var(--s-card);
+  border: 2px solid var(--s-card-line);
+  border-radius: 12px;
+  box-shadow: var(--s-shadow);
+}
+
+.docs-article table {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.docs-article th {
+  padding: 12px 16px;
+  font-family: var(--dk-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f4f1ea;
+  background: var(--s-slate);
+  border-bottom: 0;
+}
+
+.docs-article td {
+  padding: 10px 16px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--s-hairline);
+}
+
+/* A setting name keeps its shape in a cell: the column sizes to it, and it
+   only breaks if it would spill out of the table. */
+.docs-article td code {
+  overflow-wrap: break-word;
+}
+
+.docs-article tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.docs-article tbody tr:hover {
+  background: var(--s-row-hover);
+}
+
+/* Notes and callouts are paper key tags: a punched hole on the left, the
+   edge in the color of the kind of note, the label a kicker with its key. */
+.docs-article blockquote,
+.docs-callout {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 0.9rem 1.2rem 0.9rem 2.6rem;
+  color: var(--dk-ink);
+  background: var(--s-note-bg);
+  border: 2px solid var(--s-card-line);
+  border-radius: 6px 12px 12px 6px;
+}
+
+.docs-article blockquote::before,
+.docs-callout::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.9rem;
+  inset-block-start: 1.35rem;
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 50%;
+  background: var(--s-hole);
+  box-shadow: inset 0 0 0 2px currentColor;
+  color: var(--s-card-line);
+}
+
+.docs-article blockquote > :last-child,
+.docs-callout > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-callout__label {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin: 0 0 0.45rem;
+  font-family: var(--dk-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.docs-callout--note { border-color: var(--s-note); }
+.docs-callout--note::after,
+.docs-callout--note .docs-callout__label { color: var(--s-note); }
+.docs-callout--tip { border-color: var(--s-tip); }
+.docs-callout--tip::after,
+.docs-callout--tip .docs-callout__label { color: var(--s-tip); }
+.docs-callout--warning { border-color: var(--s-warning); }
+.docs-callout--warning::after,
+.docs-callout--warning .docs-callout__label { color: var(--s-warning); }
+.docs-callout--danger { border-color: var(--s-danger); }
+.docs-callout--danger::after,
+.docs-callout--danger .docs-callout__label { color: var(--s-danger); }
+
+/* Code tabs: the pegboard's blanks. The chosen one is lit gold. */
+.docs-tabs__tab {
+  font-weight: 700;
+  color: var(--dk-ink);
+  background: var(--s-card);
+  border: 2px solid var(--s-card-line);
+  border-radius: 999px;
+}
+
+.docs-tabs__tab:hover {
+  color: var(--dk-ink);
+  background: var(--s-hover);
+  border-color: var(--s-card-line);
+}
+
+.docs-tabs__tab[aria-selected="true"] {
+  color: var(--s-ink);
+  background: var(--s-gold);
+  border-color: var(--s-brass-dark);
+  box-shadow: none;
+}
+
+.docs-tabs__label {
+  font-family: var(--dk-mono);
+  letter-spacing: 0.16em;
+  color: var(--s-kicker);
+}
+
+/* ------------------------------------------------ 8. toc, pager, footer */
+
+.docs-toc__title {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-family: var(--dk-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--s-kicker);
+}
+
+.docs-toc__list {
+  border-left: 2px dashed var(--s-tear);
+}
+
+.docs-toc__item a {
+  margin-inline-start: -2px;
+  font-size: 0.93rem;
+  line-height: 1.4;
+  border-inline-start: 2px solid transparent;
+}
+
+.docs-toc__item a:hover {
+  color: var(--dk-accent);
+  border-inline-start-color: var(--dk-accent);
+}
+
+/* Previous and next are tear-off job tickets: punched top edge, dashed tear
+   line, a mono job number and a sign-painted title. */
+.docs-pager {
+  margin-top: 3rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.docs-pager__link {
+  position: relative;
+  box-sizing: border-box;
+  flex: 1 1 0;
+  max-width: 22rem;
+  padding: 30px 18px 16px;
+  background: var(--s-card);
+  border-radius: 4px;
+  -webkit-mask: radial-gradient(circle 7px at 50% 0, transparent 98%, #000) top / 22px 100% repeat-x;
+          mask: radial-gradient(circle 7px at 50% 0, transparent 98%, #000) top / 22px 100% repeat-x;
+}
+
+.docs-pager__link::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 16px;
+  border-top: 2px dashed var(--s-tear);
+}
+
+.docs-pager__link--next {
+  margin-inline-start: auto;
+}
+
+.docs-pager__link:hover {
+  background: var(--s-tag);
+}
+
+/* The mask would clip an outer ring, so the focus ring sits inside the ticket. */
+.docs-pager__link:focus-visible {
+  outline-offset: -6px;
+}
+
+.docs-pager__dir {
+  font-family: var(--dk-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-kicker);
+}
+
+.docs-pager__title {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--s-sign);
+  font-size: 1.1rem;
+  line-height: 1.15;
+  color: var(--s-title);
+  text-decoration: none;
+}
+
+/* The footer is the front page's: green counter under a gold edge, full bleed. */
+.docs-footer {
+  flex-wrap: wrap;
+  padding: 28px var(--dk-gap);
+  color: var(--s-foot-ink);
+  background: var(--s-foot-bg);
+  /* The gold edge runs full bleed through a border-image outset, which paints
+     past the box without widening the page (an absolute strip would scroll). */
+  border-top: 6px solid var(--s-gold);
+  border-image: linear-gradient(var(--s-gold), var(--s-gold)) 1 / 6px 0 0 0 / 0 100vmax;
+  box-shadow: 0 0 0 100vmax var(--s-foot-bg);
+  clip-path: inset(0 -100vmax);
+}
+
+.docs-footer a {
+  color: #ffffff;
+}
+
+.docs-footer a:focus-visible {
+  outline-color: var(--s-gold);
+}
+
+.docs-footer::after {
+  content: "No key under the mat. We checked.";
+  flex-basis: 100%;
+  font-family: var(--dk-mono);
+  color: var(--s-gold);
+}
+
+/* ---------------------------------------------------------------- 9. dark */
+
+/* Derived: the front page has no dark mode. The shop after hours: the floor
+   goes deep green-black, the text cream, and brass takes green's place so
+   links and signs stay lit. The gold Copy button and current-page tag keep
+   their day colors; they are lights, and lights stay on. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --s-head-bg: #14201d;
+    --s-head-line: #4a5f58;
+    --s-title: #e2b94f;
+    --s-kicker: #bcc6c0;
+    --s-hover: #26352f;
+    --s-slab: #314842;
+    --s-slab-ink: #f1ebdc;
+    --s-slab-line: #4a5f58;
+    --s-inline-code: #1d2c28;
+    --s-card: #1d2c28;
+    --s-card-line: #4a5f58;
+    --s-hairline: #33443f;
+    --s-tear: #4a5f58;
+    --s-row-hover: #26352f;
+    --s-note-bg: #1d2c28;
+    --s-hole: #14201d;
+    --s-tag: #26352f;
+    --s-foot-bg: #0b1311;
+    --s-string: #8a9a94;
+    --s-note: #8fd1c0;
+    --s-tip: #bcc6c0;
+    --s-warning: #e2b94f;
+    --s-danger: #e8a77a;
+
+    --dk-bg: #14201d;
+    --dk-ink: #f1ebdc;
+    --dk-muted: #bcc6c0;
+    --dk-rule: #33443f;
+    --dk-accent: #e2b94f;
+    --dk-on-accent: #14201d;
+    --dk-focus: #e2b94f;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --s-head-bg: #14201d;
+  --s-head-line: #4a5f58;
+  --s-title: #e2b94f;
+  --s-kicker: #bcc6c0;
+  --s-hover: #26352f;
+  --s-slab: #314842;
+  --s-slab-ink: #f1ebdc;
+  --s-slab-line: #4a5f58;
+  --s-inline-code: #1d2c28;
+  --s-card: #1d2c28;
+  --s-card-line: #4a5f58;
+  --s-hairline: #33443f;
+  --s-tear: #4a5f58;
+  --s-row-hover: #26352f;
+  --s-note-bg: #1d2c28;
+  --s-hole: #14201d;
+  --s-tag: #26352f;
+  --s-foot-bg: #0b1311;
+  --s-string: #8a9a94;
+  --s-note: #8fd1c0;
+  --s-tip: #bcc6c0;
+  --s-warning: #e2b94f;
+  --s-danger: #e8a77a;
+
+  --dk-bg: #14201d;
+  --dk-ink: #f1ebdc;
+  --dk-muted: #bcc6c0;
+  --dk-rule: #33443f;
+  --dk-accent: #e2b94f;
+  --dk-on-accent: #14201d;
+  --dk-focus: #e2b94f;
+
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------- 10. responsive */
+
+@media (min-width: 760px) {
+  /* The sidebar stays in reach while the page scrolls. */
+  .docs-nav--sidebar {
+    position: sticky;
+    top: 1.25rem;
+    max-block-size: calc(100vh - 2.5rem);
+    overflow-y: auto;
+    padding-inline-end: 0.25rem;
+  }
+
+  .docs-nav--sidebar > .docs-nav__list > li:first-child > .docs-nav__label {
+    margin-top: 0;
+  }
+}
+
+/* Tablet: the front page's section links give way to the docs' own. */
+@media (max-width: 1100px) {
+  .shop-nav a[href*="index.html#"] {
+    display: none;
+  }
+}
+
+/* Phone: the brand and the Open sign, as on the front page (which drops its
+   nav at 860px). The docs menu below the sign carries the rest. */
+@media (max-width: 860px) {
+  .shop-nav {
+    display: none;
+  }
+
+  .open-sign {
+    margin-inline-start: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .docs-layout {
+    padding-block-start: 1.25rem;
+  }
+
+  /* No room for a gutter: the Copy button takes a band above the code
+     instead, still flush in the slab's corner. */
+  .docs-article pre {
+    font-size: 0.8125rem;
+  }
+
+  .docs-copy > pre {
+    margin-inline-end: 0;
+    padding-block-start: 3.2rem;
+    padding-inline-end: 1rem;
+    border-radius: 8px;
+  }
+
+  .docs-pager {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .docs-pager__link {
+    max-width: none;
+  }
+
+  .docs-pager__link--next {
+    text-align: left;
+  }
+}
+
+/* ------------------------------------------- 11. motion (no-preference) */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* The key under the title drops onto its hook and swings still, once. */
+  .docs-article h1::after {
+    animation: key-hang 1.2s var(--s-ease-out) 0.2s both;
+  }
+
+  /* The Open sign swings when you reach for it, as on the front page. */
+  .open-sign:hover .open-sign__face,
+  .open-sign:focus-visible .open-sign__face {
+    animation: sign-swing 0.9s ease-out;
+  }
+
+  .docs-pager__link {
+    transition: translate 0.35s var(--s-ease-swing), background-color 0.2s;
+  }
+
+  .docs-pager__link:hover {
+    translate: 0 -3px;
+  }
+
+  .shop-nav a,
+  .docs-nav a,
+  .docs-copy__button,
+  .docs-article tbody tr {
+    transition: background-color 0.15s, color 0.15s;
+  }
+}
+
+@keyframes key-hang {
+  0% { opacity: 0; transform: translateY(-12px) rotate(-14deg); }
+  35% { opacity: 1; }
+  60% { transform: translateY(0) rotate(6deg); }
+  80% { transform: rotate(-2deg); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes sign-swing {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(9deg); }
+  50% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+  100% { transform: rotate(0); }
+}
+
+/* -------------------------------------------------------------- 12. print */
+
+@media print {
+  .shop-nav,
+  .open-sign {
+    display: none;
+  }
+
+  .docs-article pre,
+  .docs-copy {
+    color: #1d2b27;
+    background: #ffffff;
+    border-color: #314842;
+    box-shadow: none;
+  }
+
+  .docs-copy > pre {
+    margin-inline-end: 0;
+    white-space: pre-wrap;
+  }
+
+  .docs-copy__button {
+    display: none;
+  }
+
+  .docs-pager__link {
+    -webkit-mask: none;
+            mask: none;
+  }
+
+  .docs-footer {
+    color: #1d2b27;
+    background: none;
+    box-shadow: none;
+    clip-path: none;
+  }
+
+  .docs-footer a {
+    color: #0c5449;
+  }
+}

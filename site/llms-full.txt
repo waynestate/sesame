@@ -28,7 +28,7 @@ sesame.
 Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
 On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted.
+Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
 
 ### Where the code lives
 
@@ -1711,7 +1711,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 
 Source: https://sesame.apps.wayne.edu/docs/changelog.html
 
-## Changelog | Sesame docs
+## Changelog | SESAME docs
 
 All notable changes to this project will be documented in this file.
 
@@ -1719,6 +1719,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the docs pages wear the front page's key shop. The same shop sign and main menu (Docs marked current, the Open sign hung on its strings), Bungee titles with a brass key under each, kicker labels, slate code slabs with the gold Copy button, notes and callouts as paper key tags, job-ticket pager and the green counter footer. A derived after-hours dark mode, and motion only when the system allows it. The project name reads SESAME in page titles.
 - Changed: NativeSession keeps the old session for a 60 second grace after regenerate (marked with a destroyed-at time), then rejects its reuse and logs sesame.session_anomaly; pass graceSeconds: 0 for the old immediate delete (S43). Laravel is unchanged.
 - Added: `Sesame::sessionStatus()`, the session facts a single-page app needs (who, driver, sign-in time, idle and absolute expiry, the logout token), with an optional closure that adds the app's own user fields. The raw PHP function, the Laravel route and the Vue package follow.
 - Added: `sesame_status()` (raw PHP) and `GET /sesame/status` (Laravel), the JSON answer a single-page app reads to see who is signed in (200 with the session facts, 401 when signed out, never cacheable); `authenticatedAt` and `authTime` in `sessionStatus()` are now always UTC.
@@ -1923,7 +1924,9 @@ With `cas.protocol` set to `3.0`, a server may also release `isFromNewLogin` and
 
 The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS `authenticationDate` attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.
 
-> \[!WARNING\] On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
+Warning
+
+On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#related)
 
@@ -1938,7 +1941,9 @@ Source: https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html
 
 This page sets up the `gateway` driver, the recommended path on Citadel: it verifies the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header. Configure the driver below, then read the key rotation steps before you rotate the gateway's signing key.
 
-> \[!NOTE\] Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.
+Note
+
+Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.
 
 ### How it verifies[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#how-it-verifies)
 
@@ -2092,7 +2097,9 @@ Then build the Sesame facade with the driver, as in the [Raw PHP](https://sesame
 | `oauth2.jwks_store` | No | the app's default cache store | The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache). |
 | `oauth2.require_at_jwt` | No | `false` | When `true`, the token's `typ` header must be `at+jwt` or `application/at+jwt` (RFC 9068), and any other token is refused. **Off by default on purpose:** Microsoft Entra v2 access tokens are typed `JWT`, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens. |
 
-> \[!WARNING\] Leave `oauth2.require_at_jwt` off for Entra. Microsoft Entra v2 access tokens are typed `JWT`, so requiring `at+jwt` refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.
+Warning
+
+Leave `oauth2.require_at_jwt` off for Entra. Microsoft Entra v2 access tokens are typed `JWT`, so requiring `at+jwt` refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.
 
 ### What the token must carry[#](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html#what-the-token-must-carry)
 
@@ -2118,7 +2125,9 @@ Source: https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html
 
 The goal: sign a person into your app through the browser, straight at Microsoft Entra ID, with OpenID Connect. This page walks through how a sign-in runs, every config key, and the one-time Entra app registration; then set the driver up on the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) or [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html) page.
 
-> \[!NOTE\] This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
+Note
+
+This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
 
 ### What you need[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#what-you-need)
 
@@ -2146,7 +2155,9 @@ Without it, building the driver fails with `The oidc driver needs league/oauth2-
 
 The username comes from `oidc.username_claim` (default `accessid`, the UPN's prefix). When the token has no such claim, the sign-in fails with `oidc.missing_claim` and the error names the settings to change. `oidc.username_fallback` (off by default) uses the part of `preferred_username` before the `@` instead.
 
-> \[!WARNING\] `preferred_username` can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (`iss` plus `sub`, or `tid` plus `oid`).
+Warning
+
+`preferred_username` can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (`iss` plus `sub`, or `tid` plus `oid`).
 
 The roles claim (`oidc.roles_claim`, default `wsu_roles`) becomes the `roles` attribute; a mapped claim that arrives under a custom-claim namespace (`http://schemas.example.test/claims/wsu_roles` or `extn.wsu_roles`) is found by its short name. The exact name and the namespaced forms are counted together: two or more candidates (an exact `wsu_roles` beside a namespaced one, say) count as none. `oidc.claims` (default `wsu_roles,accessid`) lists the claims passed to the resolver under their own names, so `$identity->attributes['wsu_roles']` works. Set `roles_claim` (and `claims`) to `wsuRoles` to keep the old name. `iss`, `sub`, `oid`, `tid`, `email`, `name` and `preferred_username` are attributes too; key the app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the username alone.
 
@@ -2254,7 +2265,9 @@ The adapter registers `GET /login/callback` (`sesame.callback`) beside `GET /log
 | `oidc.step_up.acr_values` | `SESAME_OIDC_STEP_UP_ACR_VALUES` | none | Sent on a step-up only. |
 | `oidc.step_up.claims` | `SESAME_OIDC_STEP_UP_CLAIMS` | none | A JSON object (for example an `acrs` request for an Entra authentication context), sent on a step-up only. |
 
-> \[!DANGER\] `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
+Danger
+
+`SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
 ### The Entra app registration[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-entra-app-registration)
 
@@ -2495,11 +2508,15 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 
-> \[!NOTE\] It never runs app code: the old files are read with conservative patterns, and anything it cannot move safely comes back as a manual note that names the file.
+Note
+
+It never runs app code: the old files are read with conservative patterns, and anything it cannot move safely comes back as a manual note that names the file.
 
 ### By hand[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#by-hand)
 
-> \[!WARNING\] The shim keeps the wayne-cas names and behavior, and it says once (in the log) that it is a deprecated bridge.
+Warning
+
+The shim keeps the wayne-cas names and behavior, and it says once (in the log) that it is a deprecated bridge.
 
 #### The mapping[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-mapping)
 
@@ -2593,7 +2610,8 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
    
    session_start();
    ```
-   > \[!NOTE\] Set `session.gc_maxlifetime` to at least SESAME's idle timeout. PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so on the defaults a raw-PHP app signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. Set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
+   Note
+   Set `session.gc_maxlifetime` to at least SESAME's idle timeout. PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so on the defaults a raw-PHP app signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. Set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
    Expected: the session is started, and the autoload file sees the package.
 3. **Configure the `fake` driver for local development.**
    ```php
@@ -2723,7 +2741,9 @@ The app owns the session: start it with `session_start()`, and let HELMET set th
 $user = sesame_user();
 ```
 
-> \[!WARNING\] **Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
+Warning
+
+**Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
 ### The session cookie (name and SameSite)[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#the-session-cookie-name-and-samesite)
 
@@ -2856,7 +2876,9 @@ if (! $result->satisfied) {
 
 The gateway and oidc drivers report MFA facts from the token's `auth_time` and `amr` claims (the oidc driver also has `oidc.assume_mfa`, see [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html)). The cas driver reports none by default, because CAS carries no usable MFA signal, so a cas identity fails the check. With `cas.assume_mfa` on, a cas identity carries `mfa` in its `amr` and its MFA time from the CAS `authenticationDate` attribute, so the check can pass when the CAS server enforces MFA for every sign-in.
 
-> \[!WARNING\] Turn on `cas.assume_mfa` only when the CAS server enforces MFA for every sign-in. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
+Warning
+
+Turn on `cas.assume_mfa` only when the CAS server enforces MFA for every sign-in. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
 
 ### In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html#in-laravel)
 
@@ -2903,7 +2925,9 @@ The `gateway` driver trusts only a signed assertion, never a bare header. A sour
 
 Its replay guard remembers used `jti`s in a cache store, so that store must be shared too (Redis or a database), for the same reason as the session store: a local-file cache would let a replayed assertion pass on another replica.
 
-> \[!WARNING\] A local-file replay store is unsafe on a multi-replica host: a replayed assertion would pass on another replica. Share the store (Redis or a database).
+Warning
+
+A local-file replay store is unsafe on a multi-replica host: a replayed assertion would pass on another replica. Share the store (Redis or a database).
 
 ### The session store[#](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html#the-session-store)
 
@@ -3084,7 +3108,9 @@ A page that needs fresh credentials sends the user to `login.php?step_up=1` in r
 
 The gateway and oidc drivers report authentication contexts (the oidc driver from the ID token's `acrs` claim, after a step-up that asked for one through `oidc.step_up.claims`). A cas identity has none, so a cas identity always fails the check.
 
-> \[!NOTE\] The `acrs` claim feeds `hasAuthContext()`, while `auth_time` and `amr` feed the MFA check. They are separate facts: a context says the sign-in went through a stronger path, and the MFA facts say when and how.
+Note
+
+The `acrs` claim feeds `hasAuthContext()`, while `auth_time` and `amr` feed the MFA check. They are separate facts: a context says the sign-in went through a stronger path, and the MFA facts say when and how.
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#related)
 
@@ -3309,7 +3335,9 @@ Source: https://sesame.apps.wayne.edu/docs/install.html
 composer require waynestate/sesame
 ```
 
-> \[!NOTE\] The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
+Note
+
+The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
 
 ### Verify[#](https://sesame.apps.wayne.edu/docs/install.html#verify)
 
@@ -3841,7 +3869,9 @@ SESAME_OIDC_CLIENT_SECRET=<client secret value>
 SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 ```
 
-> \[!DANGER\] `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
+Danger
+
+`SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
 ### Config keys[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#config-keys)
 
@@ -4229,9 +4259,13 @@ $http = new \GuzzleHttp\Client([
 
 **Check.** Run the suite; the fail-closed behavior on a redirect and on a client exception is proven by tests (S42):
 
+docker
+
 ```bash
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 ```
+
+local
 
 ```bash
 vendor/bin/phpunit
@@ -4349,15 +4383,21 @@ The environment always wins: a set variable beats the playbook, and an empty one
 
 **Check.** Refetch; the file arrives as plain `KEY=value` lines. Copy the ones you need into your app's `.env` (or your Citadel environment); SESAME does not read `.env.playbook` itself.
 
+linux
+
 ```bash
 curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -o .env.playbook
 ```
+
+windows
 
 ```powershell
 Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -OutFile .env.playbook
 ```
 
-> \[!WARNING\] The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
+Warning
+
+The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
 
 #### The app still reads wayne-cas names and you expect SESAME behavior[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior)
 
@@ -4377,9 +4417,13 @@ Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https:
 
 **Check.** Rerun the gate locally:
 
+docker
+
 ```bash
 docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
 ```
+
+local
 
 ```bash
 composer ci

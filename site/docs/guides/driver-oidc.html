@@ -4,21 +4,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The oidc driver (Entra sign-in) | Sesame docs</title>
+<title>The oidc driver (Entra sign-in) | SESAME docs</title>
 <meta name="description" content="Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs.">
 <meta name="docs-version" content="0.4.0">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
+<link rel="stylesheet" href="../../docs/theme/sesame.css">
 <link rel="alternate" type="text/markdown" href="driver-oidc.md">
 <script src="../../assets/docs.js" defer></script>
 </head>
 <body>
 <a class="wsu-skip-link" href="#main">Skip to content</a>
-<header class="docs-header">
-  <a class="docs-header__brand" href="../../docs/index.html">Sesame</a>
-  <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../../index.html">Back to Sesame</a></span>
-</header>
-<div class="docs-layout docs-layout--toc">
+<header class="shop-head">
+  <div class="shop-head__row">
+    <a class="brand" href="../../index.html">
+      <img src="../../brand/sesame-avatar-256.png" width="36" height="36" alt="">
+      <span class="brand__name">SESAME</span>
+    </a>
+    <nav class="shop-nav" aria-label="Site">
+      <a href="../../index.html#keys">Keys</a>
+      <a href="../../index.html#duplicator">Duplicator</a>
+      <a href="../../index.html#start">Doorways</a>
+      <a href="../../index.html#rules">Rules</a>
+      <a href="../../index.html#wayne-cas">wayne-cas</a>
+      <a href="../../index.html#agents">Agents</a>
+      <a href="../../index.html#ring">Key ring</a>
+      <a href="../../docs/index.html" aria-current="page">Docs</a>
+      <a href="https://proof.apps.wayne.edu/sesame/">Proof</a>
+    </nav>
+    <a class="open-sign" href="../../docs/guides/quick-start.html" aria-label="Open: go to the quick start">
+      <span class="open-sign__strings" aria-hidden="true"></span>
+      <span class="open-sign__face" aria-hidden="true">Open</span>
+    </a>
+  </div>
+</header><div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html" aria-current="page">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
@@ -28,10 +47,7 @@
     <main id="main">
       <article class="docs-article"><h1 id="the-oidc-driver-entra-sign-in">The oidc driver (Entra sign-in)<a class="docs-heading-link" aria-label="Link to this section" href="#the-oidc-driver-entra-sign-in">#</a></h1>
 <p>The goal: sign a person into your app through the browser, straight at Microsoft Entra ID, with OpenID Connect. This page walks through how a sign-in runs, every config key, and the one-time Entra app registration; then set the driver up on the <a href="raw-php.html">Raw PHP</a> or <a href="laravel.html">Laravel</a> page.</p>
-<blockquote>
-<p>[!NOTE]
-This is the exception, not the default. On Citadel prefer the <code>gateway</code> driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see &quot;The Entra app registration&quot; below).</p>
-</blockquote>
+<aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>This is the exception, not the default. On Citadel prefer the <code>gateway</code> driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see &quot;The Entra app registration&quot; below).</p></aside>
 <h2 id="what-you-need">What you need<a class="docs-heading-link" aria-label="Link to this section" href="#what-you-need">#</a></h2>
 <p>Open sesame, said straight to Entra. The oidc driver signs a person in
 through the browser with OpenID Connect: the authorization code flow with
@@ -82,10 +98,7 @@ a step-up is never unbounded. In Laravel, <code>sesame.mfa</code> with
 sign-in fails with <code>oidc.missing_claim</code> and the error names the settings to
 change. <code>oidc.username_fallback</code> (off by default) uses the part of
 <code>preferred_username</code> before the <code>@</code> instead.</p>
-<blockquote>
-<p>[!WARNING]
-<code>preferred_username</code> can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (<code>iss</code> plus <code>sub</code>, or <code>tid</code> plus <code>oid</code>).</p>
-</blockquote>
+<aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p><code>preferred_username</code> can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (<code>iss</code> plus <code>sub</code>, or <code>tid</code> plus <code>oid</code>).</p></aside>
 <p>The roles claim (<code>oidc.roles_claim</code>,
 default <code>wsu_roles</code>) becomes the <code>roles</code> attribute; a mapped claim that
 arrives under a custom-claim namespace
@@ -328,10 +341,7 @@ right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 </tr>
 </tbody>
 </table></div>
-<blockquote>
-<p>[!DANGER]
-<code>SESAME_OIDC_CLIENT_SECRET</code> is environment only: never the playbook, never logged. It is held in a <code>SensitiveParameterValue</code>, so <code>var_export</code>, <code>json_encode</code> and dumps show nothing and <code>serialize</code> refuses. Keep PHP's production default <code>zend.exception_ignore_args = On</code> as well.</p>
-</blockquote>
+<aside class="docs-callout docs-callout--danger" role="note"><p class="docs-callout__label">Danger</p><p><code>SESAME_OIDC_CLIENT_SECRET</code> is environment only: never the playbook, never logged. It is held in a <code>SensitiveParameterValue</code>, so <code>var_export</code>, <code>json_encode</code> and dumps show nothing and <code>serialize</code> refuses. Keep PHP's production default <code>zend.exception_ignore_args = On</code> as well.</p></aside>
 <h2 id="the-entra-app-registration">The Entra app registration<a class="docs-heading-link" aria-label="Link to this section" href="#the-entra-app-registration">#</a></h2>
 <p>What the developer (or the Entra admin) sets on the app registration:</p>
 <ul>
@@ -376,7 +386,7 @@ tenant id comes from the playbook or the environment, never from code.</p>
   <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#what-you-need">What you need</a></li><li class="docs-toc__item"><a href="#how-a-sign-in-runs">How a sign-in runs</a></li><li class="docs-toc__item"><a href="#silent-sso-and-step-up">Silent SSO and step-up</a></li><li class="docs-toc__item"><a href="#identity-roles-and-claims">Identity, roles and claims</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#return-to-and-logout">Return-to and logout</a></li><li class="docs-toc__item"><a href="#raw-php">Raw PHP</a></li><li class="docs-toc__item"><a href="#laravel">Laravel</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#the-entra-app-registration">The Entra app registration</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
   <span><a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> Mirrors: <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">git.wayne.edu</a> <a rel="noopener" href="https://github.com/waynestate/sesame">GitHub</a> <a href="driver-oidc.md">Markdown</a></span>
 </footer>
 </body>

@@ -1,5 +1,5 @@
 ---
-title: "The oidc driver (Entra sign-in) | Sesame docs"
+title: "The oidc driver (Entra sign-in) | SESAME docs"
 description: "Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs."
 url: https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -10,7 +10,9 @@ generator: Squire agent-ready
 
 The goal: sign a person into your app through the browser, straight at Microsoft Entra ID, with OpenID Connect. This page walks through how a sign-in runs, every config key, and the one-time Entra app registration; then set the driver up on the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) or [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html) page.
 
-> \[!NOTE\] This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
+Note
+
+This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
 
 ## What you need[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#what-you-need)
 
@@ -38,7 +40,9 @@ Without it, building the driver fails with `The oidc driver needs league/oauth2-
 
 The username comes from `oidc.username_claim` (default `accessid`, the UPN's prefix). When the token has no such claim, the sign-in fails with `oidc.missing_claim` and the error names the settings to change. `oidc.username_fallback` (off by default) uses the part of `preferred_username` before the `@` instead.
 
-> \[!WARNING\] `preferred_username` can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (`iss` plus `sub`, or `tid` plus `oid`).
+Warning
+
+`preferred_username` can be changed by the user or an admin (a renamed UPN, a guest account), so a fallback username is no stable account key. Turn the fallback on only when the app keys its users on something else (`iss` plus `sub`, or `tid` plus `oid`).
 
 The roles claim (`oidc.roles_claim`, default `wsu_roles`) becomes the `roles` attribute; a mapped claim that arrives under a custom-claim namespace (`http://schemas.example.test/claims/wsu_roles` or `extn.wsu_roles`) is found by its short name. The exact name and the namespaced forms are counted together: two or more candidates (an exact `wsu_roles` beside a namespaced one, say) count as none. `oidc.claims` (default `wsu_roles,accessid`) lists the claims passed to the resolver under their own names, so `$identity->attributes['wsu_roles']` works. Set `roles_claim` (and `claims`) to `wsuRoles` to keep the old name. `iss`, `sub`, `oid`, `tid`, `email`, `name` and `preferred_username` are attributes too; key the app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the username alone.
 
@@ -146,7 +150,9 @@ The adapter registers `GET /login/callback` (`sesame.callback`) beside `GET /log
 | `oidc.step_up.acr_values` | `SESAME_OIDC_STEP_UP_ACR_VALUES` | none | Sent on a step-up only. |
 | `oidc.step_up.claims` | `SESAME_OIDC_STEP_UP_CLAIMS` | none | A JSON object (for example an `acrs` request for an Entra authentication context), sent on a step-up only. |
 
-> \[!DANGER\] `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
+Danger
+
+`SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
 ## The Entra app registration[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-entra-app-registration)
 

@@ -1,5 +1,5 @@
 ---
-title: "The gateway driver | Sesame docs"
+title: "The gateway driver | SESAME docs"
 description: "The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header."
 url: https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -10,7 +10,9 @@ generator: Squire agent-ready
 
 This page sets up the `gateway` driver, the recommended path on Citadel: it verifies the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header. Configure the driver below, then read the key rotation steps before you rotate the gateway's signing key.
 
-> \[!NOTE\] Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.
+Note
+
+Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.
 
 ## How it verifies[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#how-it-verifies)
 

@@ -1,5 +1,5 @@
 ---
-title: "Configuration | Sesame docs"
+title: "Configuration | SESAME docs"
 description: "Every SESAME config key, its environment variable, its default and its meaning."
 url: https://sesame.apps.wayne.edu/docs/reference/configuration.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -140,7 +140,9 @@ SESAME_OIDC_CLIENT_SECRET=<client secret value>
 SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 ```
 
-> \[!DANGER\] `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
+Danger
+
+`SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
 ## Config keys[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#config-keys)
 

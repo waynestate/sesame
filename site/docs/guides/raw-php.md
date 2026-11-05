@@ -1,5 +1,5 @@
 ---
-title: "Raw PHP | Sesame docs"
+title: "Raw PHP | SESAME docs"
 description: "How a framework-free PHP app starts the session, builds the Sesame facade, signs the user in, and reads the user back."
 url: https://sesame.apps.wayne.edu/docs/guides/raw-php.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -71,7 +71,9 @@ The app owns the session: start it with `session_start()`, and let HELMET set th
 $user = sesame_user();
 ```
 
-> \[!WARNING\] **Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
+Warning
+
+**Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
 ## The session cookie (name and SameSite)[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#the-session-cookie-name-and-samesite)
 

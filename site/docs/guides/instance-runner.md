@@ -1,5 +1,5 @@
 ---
-title: "Strongly recommended: a git.wayne.edu instance runner | Sesame docs"
+title: "Strongly recommended: a git.wayne.edu instance runner | SESAME docs"
 description: "git.wayne.edu has no runners today, so CI runs on the test GitLab instance, and every product in the stack strongly recommends a git.wayne.edu instance runner."
 url: https://sesame.apps.wayne.edu/docs/guides/instance-runner.html
 llms: https://sesame.apps.wayne.edu/llms.txt

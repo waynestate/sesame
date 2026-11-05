@@ -1,5 +1,5 @@
 ---
-title: "Drivers | Sesame docs"
+title: "Drivers | SESAME docs"
 description: "The full list of drivers and their status: fake, cas, gateway, saml, oauth2 and oidc."
 url: https://sesame.apps.wayne.edu/docs/reference/drivers.html
 llms: https://sesame.apps.wayne.edu/llms.txt

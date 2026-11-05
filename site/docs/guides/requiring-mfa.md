@@ -1,5 +1,5 @@
 ---
-title: "Requiring MFA | Sesame docs"
+title: "Requiring MFA | SESAME docs"
 description: "Require proof that the user's MFA is still good, and pick what happens when the check fails: deny with 403, or send the user back to login."
 url: https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -69,7 +69,9 @@ if (! $result->satisfied) {
 
 The gateway and oidc drivers report MFA facts from the token's `auth_time` and `amr` claims (the oidc driver also has `oidc.assume_mfa`, see [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html)). The cas driver reports none by default, because CAS carries no usable MFA signal, so a cas identity fails the check. With `cas.assume_mfa` on, a cas identity carries `mfa` in its `amr` and its MFA time from the CAS `authenticationDate` attribute, so the check can pass when the CAS server enforces MFA for every sign-in.
 
-> \[!WARNING\] Turn on `cas.assume_mfa` only when the CAS server enforces MFA for every sign-in. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
+Warning
+
+Turn on `cas.assume_mfa` only when the CAS server enforces MFA for every sign-in. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
 
 ## In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html#in-laravel)
 

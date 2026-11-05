@@ -1,5 +1,5 @@
 ---
-title: "Troubleshooting | Sesame docs"
+title: "Troubleshooting | SESAME docs"
 description: "What to try when a sign-in fails, and what the errors mean."
 url: https://sesame.apps.wayne.edu/docs/troubleshooting.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -57,9 +57,13 @@ $http = new \GuzzleHttp\Client([
 
 **Check.** Run the suite; the fail-closed behavior on a redirect and on a client exception is proven by tests (S42):
 
+docker
+
 ```bash
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 ```
+
+local
 
 ```bash
 vendor/bin/phpunit
@@ -177,15 +181,21 @@ The environment always wins: a set variable beats the playbook, and an empty one
 
 **Check.** Refetch; the file arrives as plain `KEY=value` lines. Copy the ones you need into your app's `.env` (or your Citadel environment); SESAME does not read `.env.playbook` itself.
 
+linux
+
 ```bash
 curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -o .env.playbook
 ```
+
+windows
 
 ```powershell
 Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -OutFile .env.playbook
 ```
 
-> \[!WARNING\] The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
+Warning
+
+The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
 
 ### The app still reads wayne-cas names and you expect SESAME behavior[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior)
 
@@ -205,9 +215,13 @@ Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https:
 
 **Check.** Rerun the gate locally:
 
+docker
+
 ```bash
 docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
 ```
+
+local
 
 ```bash
 composer ci

@@ -18,39 +18,39 @@ sesame.
 Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
 On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted.
+Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
 
 Every page below is Markdown. The HTML pages send the same Markdown to a client that asks for `text/markdown`. Written by Squire's agent-ready kit from the README and the pages; do not edit.
 
 ## Pages
 
 - [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
-- [Changelog | Sesame docs](https://sesame.apps.wayne.edu/docs/changelog.md): All notable changes to this project.
-- [The cas driver | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/driver-cas.md): Sign in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration.
-- [The gateway driver | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.md): The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header.
-- [oauth2 with Entra | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.md): Sign in from a JWT bearer token verified against the issuer's key set, RS256 only, Microsoft Entra ID first, APIs only.
-- [The oidc driver (Entra sign-in) | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.md): Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs.
-- [Strongly recommended: a git.wayne.edu instance runner | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/instance-runner.md): git.wayne.edu has no runners today, so CI runs on the test GitLab instance, and every product in the stack strongly recommends a git.wayne.edu instance runner.
-- [Laravel | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/laravel.md): The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.
-- [Moving from wayne-cas | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.md): Apps that use wayne-cas can move to SESAME without rewriting their auth, through Booster's cas-to-sesame hop or by hand.
-- [Quick start | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/quick-start.md): Sign a user in from scratch with the fake driver, one step at a time.
-- [Raw PHP | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/raw-php.md): How a framework-free PHP app starts the session, builds the Sesame facade, signs the user in, and reads the user back.
-- [Requiring MFA | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.md): Require proof that the user's MFA is still good, and pick what happens when the check fails: deny with 403, or send the user back to login.
-- [Running off Citadel | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.md): SESAME takes its config from the app and has no platform address in code, so a move to another host is a config change, not a code change.
-- [Session timeouts | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.md): Every signed-in session has two clocks: an idle timeout that drops it after quiet time and an absolute lifetime that ends it no matter how active it is.
-- [Single-page apps | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.md): A single-page app reads a JSON answer to see who is signed in: sesame_status() in raw PHP and GET /sesame/status in Laravel, 200 with the session facts or 401 when signed out, never cacheable.
-- [Step-up (authentication context) | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/step-up.md): Send the user back through a stronger sign-in mid-session, with the prompt, max_age, acr_values and claims parameters a step-up request adds.
-- [Which driver for my app? | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/which-driver.md): A table that matches your situation to a driver and tells you the Entra registration it needs.
-- [WSU values (Playbook) | Sesame docs](https://sesame.apps.wayne.edu/docs/guides/wsu-values.md): Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
-- [Overview | Sesame docs](https://sesame.apps.wayne.edu/docs/index.md): Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.
-- [Install | Sesame docs](https://sesame.apps.wayne.edu/docs/install.md): What SESAME needs, the one composer line, and how to prove it took.
-- [The oidc driver's library choice | Sesame docs](https://sesame.apps.wayne.edu/docs/oidc-library-choice.md): Which library the oidc driver stands on, what else was weighed, and why.
-- [API | Sesame docs](https://sesame.apps.wayne.edu/docs/reference/api.md): The classes and global functions an app uses: Config, DriverFactory, Sesame, the session, the resolver, and the sesame_* functions.
-- [Configuration | Sesame docs](https://sesame.apps.wayne.edu/docs/reference/configuration.md): Every SESAME config key, its environment variable, its default and its meaning.
-- [Drivers | Sesame docs](https://sesame.apps.wayne.edu/docs/reference/drivers.md): The full list of drivers and their status: fake, cas, gateway, saml, oauth2 and oidc.
-- [Proof | Sesame docs](https://sesame.apps.wayne.edu/docs/reference/proof.md): Proof runs against real Wayne State applications on a private site, behind a Wayne State employee sign-in.
-- [Troubleshooting | Sesame docs](https://sesame.apps.wayne.edu/docs/troubleshooting.md): What to try when a sign-in fails, and what the errors mean.
-- [Upgrading | Sesame docs](https://sesame.apps.wayne.edu/docs/upgrading.md): How to move between SESAME versions.
+- [Changelog | SESAME docs](https://sesame.apps.wayne.edu/docs/changelog.md): All notable changes to this project.
+- [The cas driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-cas.md): Sign in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration.
+- [The gateway driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.md): The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header.
+- [oauth2 with Entra | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.md): Sign in from a JWT bearer token verified against the issuer's key set, RS256 only, Microsoft Entra ID first, APIs only.
+- [The oidc driver (Entra sign-in) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.md): Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs.
+- [Strongly recommended: a git.wayne.edu instance runner | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/instance-runner.md): git.wayne.edu has no runners today, so CI runs on the test GitLab instance, and every product in the stack strongly recommends a git.wayne.edu instance runner.
+- [Laravel | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/laravel.md): The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.
+- [Moving from wayne-cas | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.md): Apps that use wayne-cas can move to SESAME without rewriting their auth, through Booster's cas-to-sesame hop or by hand.
+- [Quick start | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/quick-start.md): Sign a user in from scratch with the fake driver, one step at a time.
+- [Raw PHP | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/raw-php.md): How a framework-free PHP app starts the session, builds the Sesame facade, signs the user in, and reads the user back.
+- [Requiring MFA | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.md): Require proof that the user's MFA is still good, and pick what happens when the check fails: deny with 403, or send the user back to login.
+- [Running off Citadel | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.md): SESAME takes its config from the app and has no platform address in code, so a move to another host is a config change, not a code change.
+- [Session timeouts | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.md): Every signed-in session has two clocks: an idle timeout that drops it after quiet time and an absolute lifetime that ends it no matter how active it is.
+- [Single-page apps | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.md): A single-page app reads a JSON answer to see who is signed in: sesame_status() in raw PHP and GET /sesame/status in Laravel, 200 with the session facts or 401 when signed out, never cacheable.
+- [Step-up (authentication context) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/step-up.md): Send the user back through a stronger sign-in mid-session, with the prompt, max_age, acr_values and claims parameters a step-up request adds.
+- [Which driver for my app? | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/which-driver.md): A table that matches your situation to a driver and tells you the Entra registration it needs.
+- [WSU values (Playbook) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/wsu-values.md): Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
+- [Overview | SESAME docs](https://sesame.apps.wayne.edu/docs/index.md): Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.
+- [Install | SESAME docs](https://sesame.apps.wayne.edu/docs/install.md): What SESAME needs, the one composer line, and how to prove it took.
+- [The oidc driver's library choice | SESAME docs](https://sesame.apps.wayne.edu/docs/oidc-library-choice.md): Which library the oidc driver stands on, what else was weighed, and why.
+- [API | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/api.md): The classes and global functions an app uses: Config, DriverFactory, Sesame, the session, the resolver, and the sesame_* functions.
+- [Configuration | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/configuration.md): Every SESAME config key, its environment variable, its default and its meaning.
+- [Drivers | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/drivers.md): The full list of drivers and their status: fake, cas, gateway, saml, oauth2 and oidc.
+- [Proof | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/proof.md): Proof runs against real Wayne State applications on a private site, behind a Wayne State employee sign-in.
+- [Troubleshooting | SESAME docs](https://sesame.apps.wayne.edu/docs/troubleshooting.md): What to try when a sign-in fails, and what the errors mean.
+- [Upgrading | SESAME docs](https://sesame.apps.wayne.edu/docs/upgrading.md): How to move between SESAME versions.
 
 ## Prompts
 

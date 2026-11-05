@@ -1,5 +1,5 @@
 ---
-title: "Install | Sesame docs"
+title: "Install | SESAME docs"
 description: "What SESAME needs, the one composer line, and how to prove it took."
 url: https://sesame.apps.wayne.edu/docs/install.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -20,7 +20,9 @@ generator: Squire agent-ready
 composer require waynestate/sesame
 ```
 
-> \[!NOTE\] The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
+Note
+
+The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
 
 ## Verify[#](https://sesame.apps.wayne.edu/docs/install.html#verify)
 

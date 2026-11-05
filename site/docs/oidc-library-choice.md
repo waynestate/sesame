@@ -1,5 +1,5 @@
 ---
-title: "The oidc driver's library choice | Sesame docs"
+title: "The oidc driver's library choice | SESAME docs"
 description: "Which library the oidc driver stands on, what else was weighed, and why."
 url: https://sesame.apps.wayne.edu/docs/oidc-library-choice.html
 llms: https://sesame.apps.wayne.edu/llms.txt

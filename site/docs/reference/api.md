@@ -1,5 +1,5 @@
 ---
-title: "API | Sesame docs"
+title: "API | SESAME docs"
 description: "The classes and global functions an app uses: Config, DriverFactory, Sesame, the session, the resolver, and the sesame_* functions."
 url: https://sesame.apps.wayne.edu/docs/reference/api.html
 llms: https://sesame.apps.wayne.edu/llms.txt

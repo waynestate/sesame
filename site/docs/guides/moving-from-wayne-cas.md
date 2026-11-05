@@ -1,5 +1,5 @@
 ---
-title: "Moving from wayne-cas | Sesame docs"
+title: "Moving from wayne-cas | SESAME docs"
 description: "Apps that use wayne-cas can move to SESAME without rewriting their auth, through Booster's cas-to-sesame hop or by hand."
 url: https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -22,11 +22,15 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 
-> \[!NOTE\] It never runs app code: the old files are read with conservative patterns, and anything it cannot move safely comes back as a manual note that names the file.
+Note
+
+It never runs app code: the old files are read with conservative patterns, and anything it cannot move safely comes back as a manual note that names the file.
 
 ## By hand[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#by-hand)
 
-> \[!WARNING\] The shim keeps the wayne-cas names and behavior, and it says once (in the log) that it is a deprecated bridge.
+Warning
+
+The shim keeps the wayne-cas names and behavior, and it says once (in the log) that it is a deprecated bridge.
 
 ### The mapping[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-mapping)
 

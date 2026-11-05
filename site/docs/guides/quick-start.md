@@ -1,5 +1,5 @@
 ---
-title: "Quick start | Sesame docs"
+title: "Quick start | SESAME docs"
 description: "Sign a user in from scratch with the fake driver, one step at a time."
 url: https://sesame.apps.wayne.edu/docs/guides/quick-start.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -25,7 +25,8 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
    
    session_start();
    ```
-   > \[!NOTE\] Set `session.gc_maxlifetime` to at least SESAME's idle timeout. PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so on the defaults a raw-PHP app signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. Set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
+   Note
+   Set `session.gc_maxlifetime` to at least SESAME's idle timeout. PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so on the defaults a raw-PHP app signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. Set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
    Expected: the session is started, and the autoload file sees the package.
 3. **Configure the `fake` driver for local development.**
    ```php

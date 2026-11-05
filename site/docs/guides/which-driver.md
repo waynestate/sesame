@@ -1,5 +1,5 @@
 ---
-title: "Which driver for my app? | Sesame docs"
+title: "Which driver for my app? | SESAME docs"
 description: "A table that matches your situation to a driver and tells you the Entra registration it needs."
 url: https://sesame.apps.wayne.edu/docs/guides/which-driver.html
 llms: https://sesame.apps.wayne.edu/llms.txt

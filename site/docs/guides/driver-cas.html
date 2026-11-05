@@ -4,21 +4,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The cas driver | Sesame docs</title>
+<title>The cas driver | SESAME docs</title>
 <meta name="description" content="Sign in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration.">
 <meta name="docs-version" content="0.4.0">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
+<link rel="stylesheet" href="../../docs/theme/sesame.css">
 <link rel="alternate" type="text/markdown" href="driver-cas.md">
 <script src="../../assets/docs.js" defer></script>
 </head>
 <body>
 <a class="wsu-skip-link" href="#main">Skip to content</a>
-<header class="docs-header">
-  <a class="docs-header__brand" href="../../docs/index.html">Sesame</a>
-  <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../../index.html">Back to Sesame</a></span>
-</header>
-<div class="docs-layout docs-layout--toc">
+<header class="shop-head">
+  <div class="shop-head__row">
+    <a class="brand" href="../../index.html">
+      <img src="../../brand/sesame-avatar-256.png" width="36" height="36" alt="">
+      <span class="brand__name">SESAME</span>
+    </a>
+    <nav class="shop-nav" aria-label="Site">
+      <a href="../../index.html#keys">Keys</a>
+      <a href="../../index.html#duplicator">Duplicator</a>
+      <a href="../../index.html#start">Doorways</a>
+      <a href="../../index.html#rules">Rules</a>
+      <a href="../../index.html#wayne-cas">wayne-cas</a>
+      <a href="../../index.html#agents">Agents</a>
+      <a href="../../index.html#ring">Key ring</a>
+      <a href="../../docs/index.html" aria-current="page">Docs</a>
+      <a href="https://proof.apps.wayne.edu/sesame/">Proof</a>
+    </nav>
+    <a class="open-sign" href="../../docs/guides/quick-start.html" aria-label="Open: go to the quick start">
+      <span class="open-sign__strings" aria-hidden="true"></span>
+      <span class="open-sign__face" aria-hidden="true">Open</span>
+    </a>
+  </div>
+</header><div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html" aria-current="page">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
@@ -122,10 +141,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory());
 <h2 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h2>
 <p><code>cas.assume_mfa</code> is off by default, and it should stay off unless the CAS server enforces MFA for every sign-in. A successful CAS validation then means MFA happened for the user's current SSO session, and the driver says so on the identity: its <code>amr</code> includes <code>mfa</code>. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.</p>
 <p>The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS <code>authenticationDate</code> attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.</p>
-<blockquote>
-<p>[!WARNING]
-On a failed login, show a generic line, not the exception. An <code>AuthenticationFailed</code> message can carry the CAS failure code (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.</p>
-</blockquote>
+<aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>On a failed login, show a generic line, not the exception. An <code>AuthenticationFailed</code> message can carry the CAS failure code (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.</p></aside>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>
 <li><a href="running-off-citadel.html">Running off Citadel</a></li>
@@ -138,7 +154,7 @@ On a failed login, show a generic line, not the exception. An <code>Authenticati
   <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#protocol">Protocol</a></li><li class="docs-toc__item"><a href="#renew">Renew</a></li><li class="docs-toc__item"><a href="#sign-in-time">Sign-in time</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
   <span><a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> Mirrors: <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">git.wayne.edu</a> <a rel="noopener" href="https://github.com/waynestate/sesame">GitHub</a> <a href="driver-cas.md">Markdown</a></span>
 </footer>
 </body>

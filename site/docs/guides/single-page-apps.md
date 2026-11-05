@@ -1,5 +1,5 @@
 ---
-title: "Single-page apps | Sesame docs"
+title: "Single-page apps | SESAME docs"
 description: "A single-page app reads a JSON answer to see who is signed in: sesame_status() in raw PHP and GET /sesame/status in Laravel, 200 with the session facts or 401 when signed out, never cacheable."
 url: https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html
 llms: https://sesame.apps.wayne.edu/llms.txt

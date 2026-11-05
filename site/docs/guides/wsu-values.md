@@ -1,5 +1,5 @@
 ---
-title: "WSU values (Playbook) | Sesame docs"
+title: "WSU values (Playbook) | SESAME docs"
 description: "Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions."
 url: https://sesame.apps.wayne.edu/docs/guides/wsu-values.html
 llms: https://sesame.apps.wayne.edu/llms.txt

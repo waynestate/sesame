@@ -1,5 +1,5 @@
 ---
-title: "Overview | Sesame docs"
+title: "Overview | SESAME docs"
 description: "Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app."
 url: https://sesame.apps.wayne.edu/docs/
 llms: https://sesame.apps.wayne.edu/llms.txt

@@ -1,12 +1,12 @@
 ---
-title: "Changelog | Sesame docs"
+title: "Changelog | SESAME docs"
 description: "All notable changes to this project."
 url: https://sesame.apps.wayne.edu/docs/changelog.html
 llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Changelog | Sesame docs
+# Changelog | SESAME docs
 
 All notable changes to this project will be documented in this file.
 
@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the docs pages wear the front page's key shop. The same shop sign and main menu (Docs marked current, the Open sign hung on its strings), Bungee titles with a brass key under each, kicker labels, slate code slabs with the gold Copy button, notes and callouts as paper key tags, job-ticket pager and the green counter footer. A derived after-hours dark mode, and motion only when the system allows it. The project name reads SESAME in page titles.
 - Changed: NativeSession keeps the old session for a 60 second grace after regenerate (marked with a destroyed-at time), then rejects its reuse and logs sesame.session_anomaly; pass graceSeconds: 0 for the old immediate delete (S43). Laravel is unchanged.
 - Added: `Sesame::sessionStatus()`, the session facts a single-page app needs (who, driver, sign-in time, idle and absolute expiry, the logout token), with an optional closure that adds the app's own user fields. The raw PHP function, the Laravel route and the Vue package follow.
 - Added: `sesame_status()` (raw PHP) and `GET /sesame/status` (Laravel), the JSON answer a single-page app reads to see who is signed in (200 with the session facts, 401 when signed out, never cacheable); `authenticatedAt` and `authTime` in `sessionStatus()` are now always UTC.

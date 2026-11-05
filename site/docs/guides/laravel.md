@@ -1,5 +1,5 @@
 ---
-title: "Laravel | Sesame docs"
+title: "Laravel | SESAME docs"
 description: "The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own."
 url: https://sesame.apps.wayne.edu/docs/guides/laravel.html
 llms: https://sesame.apps.wayne.edu/llms.txt

@@ -1,5 +1,5 @@
 ---
-title: "Step-up (authentication context) | Sesame docs"
+title: "Step-up (authentication context) | SESAME docs"
 description: "Send the user back through a stronger sign-in mid-session, with the prompt, max_age, acr_values and claims parameters a step-up request adds."
 url: https://sesame.apps.wayne.edu/docs/guides/step-up.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -66,7 +66,9 @@ A page that needs fresh credentials sends the user to `login.php?step_up=1` in r
 
 The gateway and oidc drivers report authentication contexts (the oidc driver from the ID token's `acrs` claim, after a step-up that asked for one through `oidc.step_up.claims`). A cas identity has none, so a cas identity always fails the check.
 
-> \[!NOTE\] The `acrs` claim feeds `hasAuthContext()`, while `auth_time` and `amr` feed the MFA check. They are separate facts: a context says the sign-in went through a stronger path, and the MFA facts say when and how.
+Note
+
+The `acrs` claim feeds `hasAuthContext()`, while `auth_time` and `amr` feed the MFA check. They are separate facts: a context says the sign-in went through a stronger path, and the MFA facts say when and how.
 
 ## Related[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#related)
 

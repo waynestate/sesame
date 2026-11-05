@@ -4,21 +4,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Troubleshooting | Sesame docs</title>
+<title>Troubleshooting | SESAME docs</title>
 <meta name="description" content="What to try when a sign-in fails, and what the errors mean.">
 <meta name="docs-version" content="0.4.0">
 <link rel="stylesheet" href="../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../assets/docs.css">
+<link rel="stylesheet" href="../docs/theme/sesame.css">
 <link rel="alternate" type="text/markdown" href="troubleshooting.md">
 <script src="../assets/docs.js" defer></script>
 </head>
 <body>
 <a class="wsu-skip-link" href="#main">Skip to content</a>
-<header class="docs-header">
-  <a class="docs-header__brand" href="../docs/index.html">Sesame</a>
-  <span><a class="docs-header__home" rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> <a class="docs-header__home" href="../index.html">Back to Sesame</a></span>
-</header>
-<div class="docs-layout docs-layout--toc">
+<header class="shop-head">
+  <div class="shop-head__row">
+    <a class="brand" href="../index.html">
+      <img src="../brand/sesame-avatar-256.png" width="36" height="36" alt="">
+      <span class="brand__name">SESAME</span>
+    </a>
+    <nav class="shop-nav" aria-label="Site">
+      <a href="../index.html#keys">Keys</a>
+      <a href="../index.html#duplicator">Duplicator</a>
+      <a href="../index.html#start">Doorways</a>
+      <a href="../index.html#rules">Rules</a>
+      <a href="../index.html#wayne-cas">wayne-cas</a>
+      <a href="../index.html#agents">Agents</a>
+      <a href="../index.html#ring">Key ring</a>
+      <a href="../docs/index.html" aria-current="page">Docs</a>
+      <a href="https://proof.apps.wayne.edu/sesame/">Proof</a>
+    </nav>
+    <a class="open-sign" href="../docs/guides/quick-start.html" aria-label="Open: go to the quick start">
+      <span class="open-sign__strings" aria-hidden="true"></span>
+      <span class="open-sign__face" aria-hidden="true">Open</span>
+    </a>
+  </div>
+</header><div class="docs-layout docs-layout--toc">
   <details class="docs-menu">
     <summary>Menu</summary>
     <nav class="docs-nav" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html" aria-current="page">Troubleshooting</a></li><li><a href="../docs/upgrading.html">Upgrading</a></li><li><a href="../docs/changelog.html">Changelog</a></li></ul></nav>
@@ -77,10 +96,10 @@ validation call, and TLS verification on:</p>
 </code></pre>
 <p><strong>Check.</strong> Run the suite; the fail-closed behavior on a redirect and on a
 client exception is proven by tests (S42):</p>
-<pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
-</code></pre>
-<pre><code class="language-bash">vendor/bin/phpunit
-</code></pre>
+<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
+</code></pre></div>
+<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre><code class="language-bash">vendor/bin/phpunit
+</code></pre></div></div>
 <h3 id="a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the user<a class="docs-heading-link" aria-label="Link to this section" href="#a-failed-login-shows-the-cas-failure-code-to-the-user">#</a></h3>
 <p><strong>Cause.</strong> An <code>AuthenticationFailed</code> message can carry the CAS failure code
 (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused
@@ -210,16 +229,13 @@ your own: <code>read_api</code> for curl, <code>read_repository</code> for clone
 <p><strong>Check.</strong> Refetch; the file arrives as plain <code>KEY=value</code> lines. Copy the ones
 you need into your app's <code>.env</code> (or your Citadel environment); SESAME does not
 read <code>.env.playbook</code> itself.</p>
-<pre><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
-</code></pre>
-<pre><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
-</code></pre>
-<blockquote>
-<p>[!WARNING]
-The token in those commands is a secret. Keep it in the environment, never
+<div class="docs-tabs" data-tabs="linux|windows"><div class="docs-tabs__panel" data-tab-label="linux"><p class="docs-tabs__label">linux</p><pre><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
+</code></pre></div>
+<div class="docs-tabs__panel" data-tab-label="windows"><p class="docs-tabs__label">windows</p><pre><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
+</code></pre></div></div>
+<aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>The token in those commands is a secret. Keep it in the environment, never
 in the repository, and remember Composer keeps the git.wayne.edu
-credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry.</p>
-</blockquote>
+credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry.</p></aside>
 <h3 id="the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">The app still reads wayne-cas names and you expect SESAME behavior<a class="docs-heading-link" aria-label="Link to this section" href="#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">#</a></h3>
 <p><strong>Cause.</strong> The app moved to SESAME through the shim, which keeps the
 wayne-cas names and behavior and says once (in the log) that it is a
@@ -242,10 +258,10 @@ means the same thing on both sides.</p>
 Pinstripe's strict preset, where a call to a deprecated method fails the
 build.</p>
 <p><strong>Check.</strong> Rerun the gate locally:</p>
-<pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
-</code></pre>
-<pre><code class="language-bash">composer ci
-</code></pre>
+<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
+</code></pre></div>
+<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre><code class="language-bash">composer ci
+</code></pre></div></div>
 <h3 id="composer-docs-check-fails-in-ci"><code>composer docs:check</code> fails in CI<a class="docs-heading-link" aria-label="Link to this section" href="#composer-docs-check-fails-in-ci">#</a></h3>
 <p><strong>Cause.</strong> The built docs site is stale, or the generated environment
 reference has drifted from the source.</p>
@@ -279,10 +295,10 @@ project is in MAINTAINING.md.</p>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../docs/reference/proof.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Proof</span></a><a class="docs-pager__link docs-pager__link--next" href="../docs/upgrading.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Upgrading</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#sign-in-fails">Sign-in fails</a></li><li class="docs-toc__item--sub"><a href="#the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">The oidc driver fails to build: The oidc driver needs league/oauth2-client</a></li><li class="docs-toc__item--sub"><a href="#a-cas-login-loops-back-to-the-cas-login-page">A cas login loops back to the CAS login page</a></li><li class="docs-toc__item--sub"><a href="#cas-validation-redirects-to-the-login-page-or-attributes-are-missing">CAS validation redirects to the login page, or attributes are missing</a></li><li class="docs-toc__item--sub"><a href="#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">A sign-in fails on a hung or slow CAS server, or a client that is set up wrong</a></li><li class="docs-toc__item--sub"><a href="#a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the user</a></li><li class="docs-toc__item--sub"><a href="#the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">The gateway driver refuses every assertion from an untrusted peer</a></li><li class="docs-toc__item--sub"><a href="#the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">The gateway driver throws InvalidConfig naming a key at boot</a></li><li class="docs-toc__item--sub"><a href="#a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">A truthy slo (or single_logout) config key is rejected at boot</a></li><li class="docs-toc__item--sub"><a href="#the-fake-driver-refuses-to-boot-in-production">The fake driver refuses to boot in production</a></li><li class="docs-toc__item"><a href="#the-session-ends-too-soon-or-looks-wrong">The session ends too soon, or looks wrong</a></li><li class="docs-toc__item--sub"><a href="#a-raw-php-app-signs-people-out-after-24-quiet-minutes">A raw-PHP app signs people out after 24 quiet minutes</a></li><li class="docs-toc__item--sub"><a href="#the-log-carries-a-sesame-session-anomaly-warning">The log carries a sesame.session_anomaly warning</a></li><li class="docs-toc__item--sub"><a href="#the-session-is-missing-on-the-return-from-the-identity-provider">The session is missing on the return from the identity provider</a></li><li class="docs-toc__item--sub"><a href="#a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the spot</a></li><li class="docs-toc__item"><a href="#config-and-playbook">Config and playbook</a></li><li class="docs-toc__item--sub"><a href="#boot-fails-missing-required-setting-sesame">Boot fails: Missing required setting SESAME_....</a></li><li class="docs-toc__item--sub"><a href="#fetching-the-playbook-answers-404">Fetching the playbook answers 404</a></li><li class="docs-toc__item--sub"><a href="#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">The app still reads wayne-cas names and you expect SESAME behavior</a></li><li class="docs-toc__item"><a href="#build-ci-and-docs">Build, CI and docs</a></li><li class="docs-toc__item--sub"><a href="#composer-ci-fails">composer ci fails</a></li><li class="docs-toc__item--sub"><a href="#composer-docs-check-fails-in-ci">composer docs:check fails in CI</a></li><li class="docs-toc__item--sub"><a href="#no-php-on-the-machine-and-the-suite-will-not-run">No PHP on the machine, and the suite will not run</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#sign-in-fails">Sign-in fails</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">The oidc driver fails to build: The oidc driver needs league/oauth2-client</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-cas-login-loops-back-to-the-cas-login-page">A cas login loops back to the CAS login page</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#cas-validation-redirects-to-the-login-page-or-attributes-are-missing">CAS validation redirects to the login page, or attributes are missing</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">A sign-in fails on a hung or slow CAS server, or a client that is set up wrong</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the user</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">The gateway driver refuses every assertion from an untrusted peer</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">The gateway driver throws InvalidConfig naming a key at boot</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">A truthy slo (or single_logout) config key is rejected at boot</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-fake-driver-refuses-to-boot-in-production">The fake driver refuses to boot in production</a></li><li class="docs-toc__item"><a href="#the-session-ends-too-soon-or-looks-wrong">The session ends too soon, or looks wrong</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-raw-php-app-signs-people-out-after-24-quiet-minutes">A raw-PHP app signs people out after 24 quiet minutes</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-log-carries-a-sesame-session-anomaly-warning">The log carries a sesame.session_anomaly warning</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-session-is-missing-on-the-return-from-the-identity-provider">The session is missing on the return from the identity provider</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the spot</a></li><li class="docs-toc__item"><a href="#config-and-playbook">Config and playbook</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#boot-fails-missing-required-setting-sesame">Boot fails: Missing required setting SESAME_....</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fetching-the-playbook-answers-404">Fetching the playbook answers 404</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">The app still reads wayne-cas names and you expect SESAME behavior</a></li><li class="docs-toc__item"><a href="#build-ci-and-docs">Build, CI and docs</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#composer-ci-fails">composer ci fails</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#composer-docs-check-fails-in-ci">composer docs:check fails in CI</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#no-php-on-the-machine-and-the-suite-will-not-run">No PHP on the machine, and the suite will not run</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents Sesame <span data-docs-version>0.4.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
   <span><a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> Mirrors: <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">git.wayne.edu</a> <a rel="noopener" href="https://github.com/waynestate/sesame">GitHub</a> <a href="troubleshooting.md">Markdown</a></span>
 </footer>
 </body>

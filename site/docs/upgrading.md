@@ -1,5 +1,5 @@
 ---
-title: "Upgrading | Sesame docs"
+title: "Upgrading | SESAME docs"
 description: "How to move between SESAME versions."
 url: https://sesame.apps.wayne.edu/docs/upgrading.html
 llms: https://sesame.apps.wayne.edu/llms.txt

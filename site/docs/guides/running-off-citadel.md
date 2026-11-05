@@ -1,5 +1,5 @@
 ---
-title: "Running off Citadel | Sesame docs"
+title: "Running off Citadel | SESAME docs"
 description: "SESAME takes its config from the app and has no platform address in code, so a move to another host is a config change, not a code change."
 url: https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html
 llms: https://sesame.apps.wayne.edu/llms.txt
@@ -22,7 +22,9 @@ The `gateway` driver trusts only a signed assertion, never a bare header. A sour
 
 Its replay guard remembers used `jti`s in a cache store, so that store must be shared too (Redis or a database), for the same reason as the session store: a local-file cache would let a replayed assertion pass on another replica.
 
-> \[!WARNING\] A local-file replay store is unsafe on a multi-replica host: a replayed assertion would pass on another replica. Share the store (Redis or a database).
+Warning
+
+A local-file replay store is unsafe on a multi-replica host: a replayed assertion would pass on another replica. Share the store (Redis or a database).
 
 ## The session store[#](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html#the-session-store)
 
