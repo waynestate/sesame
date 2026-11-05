@@ -1,0 +1,30 @@
+<!--
+  The docs pages wear the front page's shop sign (site/index.html, .shop-head). The docs builder puts the header
+  element below in place of its generic one on every page, rewrites the relative links (written as if from site/) to
+  the page's depth and marks the Docs link aria-current. Styles: docs/theme/sesame.css.
+  Keep the links in step with the front page's nav. The Open sign still hangs in the window: here it opens the quick
+  start, since the docs are where the doorways are.
+-->
+<header class="shop-head">
+  <div class="shop-head__row">
+    <a class="brand" href="index.html">
+      <img src="brand/sesame-avatar-256.png" width="36" height="36" alt="">
+      <span class="brand__name">SESAME</span>
+    </a>
+    <nav class="shop-nav" aria-label="Site">
+      <a href="index.html#keys">Keys</a>
+      <a href="index.html#duplicator">Duplicator</a>
+      <a href="index.html#start">Doorways</a>
+      <a href="index.html#rules">Rules</a>
+      <a href="index.html#wayne-cas">wayne-cas</a>
+      <a href="index.html#agents">Agents</a>
+      <a href="index.html#ring">Key ring</a>
+      <a href="docs/index.html">Docs</a>
+      <a href="https://proof.apps.wayne.edu/sesame/">Proof</a>
+    </nav>
+    <a class="open-sign" href="docs/guides/quick-start.html" aria-label="Open: go to the quick start">
+      <span class="open-sign__strings" aria-hidden="true"></span>
+      <span class="open-sign__face" aria-hidden="true">Open</span>
+    </a>
+  </div>
+</header>

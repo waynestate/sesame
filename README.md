@@ -27,7 +27,7 @@ sesame.
 Front page: [`site/index.html`](site/index.html), a static page you can open in a browser or serve from `site/`.
 On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-Documentation: the opening of this README is the [Overview](site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](docs/) into [`site/docs/`](site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted.
+Documentation: the opening of this README is the [Overview](site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](docs/) into [`site/docs/`](site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
 
 ## Where the code lives
 
