@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Laravel;
 
+use Closure;
 use GuzzleHttp\Client;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Cache\CacheManager;
@@ -308,6 +309,30 @@ class SesameServiceProvider extends ServiceProvider
                     ->header('Cache-Control', 'no-store')
                     ->header('Clear-Site-Data', '"cache", "storage"');
             })->name('sesame.logout');
+
+            // The single-page app's "who am I": the session facts as JSON,
+            // 200 when someone is signed in, 401 when no one is, never
+            // cacheable. The app's own user fields come from a closure it
+            // bound as sesame.describe_user; without one the answer's user
+            // field is null. A binding of anything other than a closure
+            // reads as no extra fields, not an error.
+            $router->get('/sesame/status', function () {
+                $describe = null;
+
+                if ($this->app->bound('sesame.describe_user')) {
+                    $bound = $this->app->make('sesame.describe_user');
+
+                    if ($bound instanceof Closure) {
+                        $describe = $bound;
+                    }
+                }
+
+                $status = $this->app->make(Sesame::class)->sessionStatus($describe);
+
+                return response()->json($status, $status['signedIn'] ? 200 : 401)
+                    ->header('Cache-Control', 'no-store')
+                    ->header('X-Content-Type-Options', 'nosniff');
+            })->name('sesame.status');
         });
     }
 

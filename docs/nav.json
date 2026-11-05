@@ -59,6 +59,10 @@
                     "path": "guides/session-timeouts"
                 },
                 {
+                    "title": "Single-page apps",
+                    "path": "guides/single-page-apps"
+                },
+                {
                     "title": "Requiring MFA",
                     "path": "guides/requiring-mfa"
                 },
