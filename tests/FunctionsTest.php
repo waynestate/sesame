@@ -420,6 +420,141 @@ PHP;
         self::assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
     }
 
+    public function testSesameStatusAnswersSignedOutWith401AndStopsTheScript(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(false));
+
+        try {
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:' . $port . '/status');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(401, $status);
+        self::assertSame('application/json; charset=utf-8', $headers['content-type'] ?? null);
+        self::assertSame('{"signedIn":false}', $body);
+
+        // The child-process half: the script must stop at sesame_status(),
+        // so the marker line never runs.
+        $body = <<<'PHP'
+use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingDriver;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$log = new EventLog();
+$identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable());
+$sesame = new Sesame(
+    new RecordingDriver(new Authenticated($identity), null, $log),
+    new RecordingResolver(),
+    new RecordingSession($log),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+);
+sesame($sesame);
+
+$_SERVER['REQUEST_METHOD'] = 'GET';
+sesame_status();
+
+echo 'CONTINUED_AFTER_STATUS';
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+
+        self::assertStringContainsString('{"signedIn":false}', $output);
+        self::assertStringNotContainsString('CONTINUED_AFTER_STATUS', $output);
+    }
+
+    public function testSesameStatusAnswersSignedInWith200AndTheSessionFacts(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(true));
+
+        try {
+            [$status, $headers, $body] = $this->httpGet('http://127.0.0.1:' . $port . '/status');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(200, $status);
+        self::assertSame('application/json; charset=utf-8', $headers['content-type'] ?? null);
+
+        $answer = json_decode($body, true);
+
+        self::assertIsArray($answer);
+        self::assertTrue($answer['signedIn']);
+        self::assertSame('jdoe', $answer['username']);
+        self::assertSame('fake', $answer['driver']);
+        self::assertSame('2026-10-27T12:00:00+00:00', $answer['authenticatedAt']);
+        self::assertNull($answer['authTime']);
+        self::assertSame([], $answer['amr']);
+        self::assertIsString($answer['idleExpiresAt']);
+        self::assertIsString($answer['absoluteExpiresAt']);
+        self::assertIsString($answer['logoutToken']);
+        self::assertNotSame('', $answer['logoutToken']);
+        self::assertNull($answer['user']);
+    }
+
+    public function testSesameStatusRefusesAPost(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(true, true));
+
+        try {
+            [$status, $headers, $body] = $this->httpPost('http://127.0.0.1:' . $port . '/status', []);
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(405, $status);
+        self::assertSame('GET, HEAD', $headers['allow'] ?? null);
+        self::assertStringContainsString('no-store', $headers['cache-control'] ?? '');
+        self::assertArrayNotHasKey('location', $headers);
+        // The refused method leaves the session alone: the shutdown marker
+        // reports the signed-in user still in place.
+        self::assertStringContainsString('SESSION_KEPT', $body);
+    }
+
+    public function testSesameStatusSendsNoStore(): void
+    {
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(true));
+
+        try {
+            [$signedInStatus, $signedInHeaders] = $this->httpGet('http://127.0.0.1:' . $port . '/status');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(200, $signedInStatus);
+        self::assertSame('no-store', $signedInHeaders['cache-control'] ?? null);
+        self::assertSame('nosniff', $signedInHeaders['x-content-type-options'] ?? null);
+
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(false));
+
+        try {
+            [$signedOutStatus, $signedOutHeaders] = $this->httpGet('http://127.0.0.1:' . $port . '/status');
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(401, $signedOutStatus);
+        self::assertSame('no-store', $signedOutHeaders['cache-control'] ?? null);
+        self::assertSame('nosniff', $signedOutHeaders['x-content-type-options'] ?? null);
+
+        [$process, $port, $pipes, $file] = $this->startServer($this->statusRouterScript(true, true));
+
+        try {
+            [$refusedStatus, $refusedHeaders] = $this->httpPost('http://127.0.0.1:' . $port . '/status', []);
+        } finally {
+            $this->stopServer($process, $pipes, $file);
+        }
+
+        self::assertSame(405, $refusedStatus);
+        self::assertSame('no-store', $refusedHeaders['cache-control'] ?? null);
+        self::assertSame('nosniff', $refusedHeaders['x-content-type-options'] ?? null);
+    }
+
     public function testSafeReturnToKeepsAnHttpsReturnToOnTheServiceHost(): void
     {
         $sesame = $this->sesameWithServiceUrl('https://app.test/login');
@@ -709,12 +844,73 @@ $sesame = new Sesame(
 );
 sesame($sesame);
 
-register_shutdown_function(static function () use ($session): void {
+ register_shutdown_function(static function () use ($session): void {
     echo isset($session->store['sesame.user']) ? 'SESSION_KEPT' : 'SESSION_CLEARED';
 });
 
 sesame_logout('http://app.local/');
 PHP;
+
+        return $this->childScript($body);
+    }
+
+    /**
+     * The router script for the status tests: it boots SESAME with a session
+     * that is signed in or not, then answers every request with the raw
+     * status. When $reportSession is set, a shutdown function appends the
+     * session's state to the body, so a refused method can be checked for
+     * leaving the session alone.
+     *
+     * The script runs in the global namespace, so it must not `use` the
+     * global DateTimeImmutable: that import has no effect and PHP prints a
+     * warning for it, which would send output before the status headers.
+     */
+    private function statusRouterScript(bool $signedIn, bool $reportSession = false): string
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Authenticated;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingDriver;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$log = new EventLog();
+$identity = new Identity('jdoe', [], 'fake', new DateTimeImmutable('2026-10-27T12:00:00+00:00'));
+$session = new RecordingSession($log);
+if (__SIGNED_IN__) {
+    $session->store['sesame.user'] = 'the-user';
+    $session->store['sesame.identity'] = $identity;
+    $session->store['sesame.signed_in_at'] = time();
+    $session->store['sesame.last_seen'] = time();
+}
+$sesame = new Sesame(
+    new RecordingDriver(new Authenticated($identity), null, $log),
+    new RecordingResolver(),
+    $session,
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+);
+sesame($sesame);
+
+__REPORT_SESSION__
+sesame_status();
+PHP;
+
+        $body = str_replace('__SIGNED_IN__', var_export($signedIn, true), $body);
+        $body = str_replace(
+            '__REPORT_SESSION__',
+            $reportSession
+                ? <<<'PHP'
+register_shutdown_function(static function () use ($session): void {
+    echo isset($session->store['sesame.user']) ? 'SESSION_KEPT' : 'SESSION_CLEARED';
+});
+
+PHP
+                : '',
+            $body,
+        );
 
         return $this->childScript($body);
     }
