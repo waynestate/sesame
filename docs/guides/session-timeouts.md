@@ -31,6 +31,18 @@ On login the session stores the sign-in time and the last activity time, and
 session. A session made before the timeouts existed (a user, no timestamps)
 counts as expired.
 
+## Regeneration grace
+
+On login the session ID is regenerated. For the native PHP session the old
+ID is not deleted at once: it is marked with a "destroyed at" time and the
+new ID and kept for a 60 second grace, so a user whose browser is still
+sending the old ID after a slow network does not lose the login. After the
+grace, any use of the old ID is treated as a possible hijack: the session is
+retired, a clean one is started, and `sesame.session_anomaly` is logged as a
+warning with `reason` `destroyed_session_reused`. Pass `graceSeconds: 0` to
+`new NativeSession()` to restore the old behavior, where the old session is
+deleted at once. Laravel uses the framework's own regenerate.
+
 ## In Laravel
 
 In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and
