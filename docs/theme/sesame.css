@@ -544,7 +544,8 @@ body {
   inset-block-start: 0;
   inset-inline-end: 0;
   min-inline-size: 5.5rem;
-  min-block-size: 2.75rem;
+  /* As tall as a one-line block, so a single command reads as the cut line. */
+  min-block-size: calc(0.875rem * 1.6 + 28px);
   padding: 0 1rem;
   font-family: var(--s-body);
   font-size: 0.95rem;
@@ -799,23 +800,16 @@ body {
 
 /* The footer is the front page's: green counter under a gold edge, full bleed. */
 .docs-footer {
-  position: relative;
   flex-wrap: wrap;
-  padding: 34px var(--dk-gap) 28px;
+  padding: 28px var(--dk-gap);
   color: var(--s-foot-ink);
   background: var(--s-foot-bg);
-  border-top: 0;
+  /* The gold edge runs full bleed through a border-image outset, which paints
+     past the box without widening the page (an absolute strip would scroll). */
+  border-top: 6px solid var(--s-gold);
+  border-image: linear-gradient(var(--s-gold), var(--s-gold)) 1 / 6px 0 0 0 / 0 100vmax;
   box-shadow: 0 0 0 100vmax var(--s-foot-bg);
   clip-path: inset(0 -100vmax);
-}
-
-.docs-footer::before {
-  content: "";
-  position: absolute;
-  inset-inline: -100vmax;
-  inset-block-start: 0;
-  block-size: 6px;
-  background: var(--s-gold);
 }
 
 .docs-footer a {
@@ -846,9 +840,9 @@ body {
     --s-title: #e2b94f;
     --s-kicker: #bcc6c0;
     --s-hover: #26352f;
-    --s-slab: #0e1714;
+    --s-slab: #314842;
     --s-slab-ink: #f1ebdc;
-    --s-slab-line: #33443f;
+    --s-slab-line: #4a5f58;
     --s-inline-code: #1d2c28;
     --s-card: #1d2c28;
     --s-card-line: #4a5f58;
@@ -883,9 +877,9 @@ body {
   --s-title: #e2b94f;
   --s-kicker: #bcc6c0;
   --s-hover: #26352f;
-  --s-slab: #0e1714;
+  --s-slab: #314842;
   --s-slab-ink: #f1ebdc;
-  --s-slab-line: #33443f;
+  --s-slab-line: #4a5f58;
   --s-inline-code: #1d2c28;
   --s-card: #1d2c28;
   --s-card-line: #4a5f58;
