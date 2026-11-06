@@ -14,9 +14,14 @@
    --dk-* tokens and the rules below win without !important. The kit's
    docs.css stays byte for byte Squire's.
 
+   One piece of the front page's magic comes along: the gold light out of the
+   open door, falling behind each page's title (and opening once, when motion
+   is welcome), with the brass key that drops onto its hook under it.
+
    The front page has no dark mode, so the dark set is derived (the shop after
-   hours: deep green-black floor, cream text, brass where the day uses green),
-   as mapped in the stack's docs theme notes.
+   hours: a dark walnut bench, cream text, brass where the day uses green).
+   Green keeps to the places the front page puts it: the counter, the Open
+   sign and the mark, never the page itself.
 
    File map: 1. fonts and tokens  2. frame  3. shop sign (masthead)
              4. sidebar and menu  5. article  6. code  7. tables, notes, tabs
@@ -80,6 +85,9 @@
   --s-tip: var(--s-slate);
   --s-warning: var(--s-brass-dark);
   --s-danger: var(--s-copper-dark);
+  --s-spill-top: rgba(255, 204, 51, 0.34);   /* the hero's spill, a little quieter */
+  --s-spill-mid: rgba(255, 204, 51, 0.14);
+  --s-window: var(--s-slate);      /* the frame round a picture of the shop */
 
   /* The kit's tokens, set from the palette above. */
   --dk-bg: var(--s-cream);
@@ -388,8 +396,16 @@ body {
   text-wrap: balance;
 }
 
+/* The article is its own stacking layer, so the door light below can sit
+   behind the words without going behind the page. */
+.docs-article {
+  position: relative;
+  isolation: isolate;
+}
+
 /* The title is a shop sign, with a brass key hung under it. */
 .docs-article h1 {
+  position: relative;
   margin: 0 0 1.6rem;
   font-family: var(--s-sign);
   font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.2rem);
@@ -413,6 +429,28 @@ body {
     linear-gradient(currentColor, currentColor) 36px 14px / 5px 8px no-repeat,
     linear-gradient(currentColor, currentColor) 46px 14px / 5px 6px no-repeat;
   transform-origin: 12px 12px;
+}
+
+/* The front page's one piece of magic, carried in: the light out of the open
+   door. On the front page it spills from the mark down behind the name; here
+   it falls from the top of the column behind the title, narrow at the
+   threshold, widening, and gone before the first paragraph is done. The
+   same clipped beam and the same gold, a little quieter, so the words stand in
+   the light without being read through it. Ink and green stay well past AA on
+   the palest gold. */
+.docs-article h1::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -2.25rem;
+  inset-inline-start: 50%;
+  inline-size: min(100vw - 2rem, 44rem);
+  block-size: 19rem;
+  translate: -50% 0;
+  background: linear-gradient(to bottom, var(--s-spill-top), var(--s-spill-mid) 40%, transparent 85%);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  pointer-events: none;
 }
 
 .docs-article h2 {
@@ -476,6 +514,32 @@ body {
 .docs-article img {
   max-inline-size: 100%;
   block-size: auto;
+}
+
+/* The overview opens on a picture of the shop front: hung in a slate window
+   frame like the duplicator, with room before the sign below it. */
+.docs-article > div[align="center"]:first-child {
+  margin-block-end: 2.75rem;
+}
+
+.docs-article > div[align="center"]:first-child img {
+  display: block;
+  box-sizing: border-box;
+  border: 3px solid var(--s-window);
+  border-radius: 14px;
+  box-shadow: var(--s-shadow);
+}
+
+/* Badges sit in a row with a little air, not stacked on each other. */
+.docs-article h1 + p:has(> img, > a > img) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.docs-article h1 + p:has(> img, > a > img) img {
+  display: block;
 }
 
 .docs-article hr {
@@ -829,80 +893,102 @@ body {
 
 /* ---------------------------------------------------------------- 9. dark */
 
-/* Derived: the front page has no dark mode. The shop after hours: the floor
-   goes deep green-black, the text cream, and brass takes green's place so
-   links and signs stay lit. The gold Copy button and current-page tag keep
-   their day colors; they are lights, and lights stay on. */
+/* Derived: the front page has no dark mode. The shop after hours: the lights
+   are down over a dark walnut workbench, the paper is still cream, and brass
+   takes green's place on the signs so they stay lit. Green is not the
+   wallpaper here either: it stays where the front page keeps it, on the
+   counter (the footer), the Open sign and the mark. The slate cut line, the
+   gold Copy button and the gold "you are here" tag keep their day colors;
+   they are lights, and lights stay on. The door light still falls behind the
+   title, dimmer, the way a lamp reads at night. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --s-head-bg: #14201d;
-    --s-head-line: #4a5f58;
-    --s-title: #e2b94f;
-    --s-kicker: #bcc6c0;
-    --s-hover: #26352f;
+    --s-head-bg: #1c1a17;
+    --s-head-line: #4d4840;
+    --s-title: #e6be55;
+    --s-kicker: #cbc3b2;
+    --s-hover: #302d27;
     --s-slab: #314842;
     --s-slab-ink: #f1ebdc;
     --s-slab-line: #4a5f58;
-    --s-inline-code: #1d2c28;
-    --s-card: #1d2c28;
-    --s-card-line: #4a5f58;
-    --s-hairline: #33443f;
-    --s-tear: #4a5f58;
-    --s-row-hover: #26352f;
-    --s-note-bg: #1d2c28;
-    --s-hole: #14201d;
-    --s-tag: #26352f;
-    --s-foot-bg: #0b1311;
-    --s-string: #8a9a94;
+    --s-inline-code: #2c2924;
+    --s-card: #25231f;
+    --s-card-line: #575147;
+    --s-hairline: #3a3630;
+    --s-tear: #5c564c;
+    --s-row-hover: #302d27;
+    --s-note-bg: #25231f;
+    --s-hole: #1c1a17;
+    --s-tag: #302d27;
+    --s-foot-bg: var(--s-green-deep);
+    --s-foot-ink: #e9e4d8;
+    --s-string: #9d968a;
     --s-note: #8fd1c0;
-    --s-tip: #bcc6c0;
-    --s-warning: #e2b94f;
-    --s-danger: #e8a77a;
+    --s-tip: #cbc3b2;
+    --s-warning: #e6be55;
+    --s-danger: #eba97c;
+    --s-spill-top: rgba(255, 204, 51, 0.13);
+    --s-spill-mid: rgba(255, 204, 51, 0.05);
+    --s-window: #575147;
 
-    --dk-bg: #14201d;
+    --dk-bg: #1c1a17;
     --dk-ink: #f1ebdc;
-    --dk-muted: #bcc6c0;
-    --dk-rule: #33443f;
-    --dk-accent: #e2b94f;
-    --dk-on-accent: #14201d;
-    --dk-focus: #e2b94f;
+    --dk-muted: #cbc3b2;
+    --dk-rule: #3a3630;
+    --dk-accent: #e6be55;
+    --dk-on-accent: #1c1a17;
+    --dk-focus: #e6be55;
+    --dk-code-bg: var(--s-inline-code);
+    --dk-note: var(--s-note);
+    --dk-tip: var(--s-tip);
+    --dk-warning: var(--s-warning);
+    --dk-danger: var(--s-danger);
 
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --s-head-bg: #14201d;
-  --s-head-line: #4a5f58;
-  --s-title: #e2b94f;
-  --s-kicker: #bcc6c0;
-  --s-hover: #26352f;
+  --s-head-bg: #1c1a17;
+  --s-head-line: #4d4840;
+  --s-title: #e6be55;
+  --s-kicker: #cbc3b2;
+  --s-hover: #302d27;
   --s-slab: #314842;
   --s-slab-ink: #f1ebdc;
   --s-slab-line: #4a5f58;
-  --s-inline-code: #1d2c28;
-  --s-card: #1d2c28;
-  --s-card-line: #4a5f58;
-  --s-hairline: #33443f;
-  --s-tear: #4a5f58;
-  --s-row-hover: #26352f;
-  --s-note-bg: #1d2c28;
-  --s-hole: #14201d;
-  --s-tag: #26352f;
-  --s-foot-bg: #0b1311;
-  --s-string: #8a9a94;
+  --s-inline-code: #2c2924;
+  --s-card: #25231f;
+  --s-card-line: #575147;
+  --s-hairline: #3a3630;
+  --s-tear: #5c564c;
+  --s-row-hover: #302d27;
+  --s-note-bg: #25231f;
+  --s-hole: #1c1a17;
+  --s-tag: #302d27;
+  --s-foot-bg: var(--s-green-deep);
+  --s-foot-ink: #e9e4d8;
+  --s-string: #9d968a;
   --s-note: #8fd1c0;
-  --s-tip: #bcc6c0;
-  --s-warning: #e2b94f;
-  --s-danger: #e8a77a;
+  --s-tip: #cbc3b2;
+  --s-warning: #e6be55;
+  --s-danger: #eba97c;
+  --s-spill-top: rgba(255, 204, 51, 0.13);
+  --s-spill-mid: rgba(255, 204, 51, 0.05);
+  --s-window: #575147;
 
-  --dk-bg: #14201d;
+  --dk-bg: #1c1a17;
   --dk-ink: #f1ebdc;
-  --dk-muted: #bcc6c0;
-  --dk-rule: #33443f;
-  --dk-accent: #e2b94f;
-  --dk-on-accent: #14201d;
-  --dk-focus: #e2b94f;
+  --dk-muted: #cbc3b2;
+  --dk-rule: #3a3630;
+  --dk-accent: #e6be55;
+  --dk-on-accent: #1c1a17;
+  --dk-focus: #e6be55;
+  --dk-code-bg: var(--s-inline-code);
+  --dk-note: var(--s-note);
+  --dk-tip: var(--s-tip);
+  --dk-warning: var(--s-warning);
+  --dk-danger: var(--s-danger);
 
   color-scheme: dark;
 }
@@ -987,6 +1073,11 @@ body {
     animation: key-hang 1.2s var(--s-ease-out) 0.2s both;
   }
 
+  /* The door light opens down the page once, as it does under the mark. */
+  .docs-article h1::before {
+    animation: spill-open 1.1s var(--s-ease-out) both;
+  }
+
   /* The Open sign swings when you reach for it, as on the front page. */
   .open-sign:hover .open-sign__face,
   .open-sign:focus-visible .open-sign__face {
@@ -1017,6 +1108,11 @@ body {
   100% { transform: rotate(0); }
 }
 
+@keyframes spill-open {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
 @keyframes sign-swing {
   0% { transform: rotate(0); }
   25% { transform: rotate(9deg); }
@@ -1029,7 +1125,8 @@ body {
 
 @media print {
   .shop-nav,
-  .open-sign {
+  .open-sign,
+  .docs-article h1::before {
     display: none;
   }
 
