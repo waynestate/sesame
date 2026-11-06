@@ -115,6 +115,15 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>
 <p>Docs: a &quot;Refusing a sign-in&quot; section says what a resolver does on a deny, and the CERT Polska CVE-2026-15243 check is recorded (Java clients only; no PHP client named).</p>
 </li>
+<li>
+<p>Added: <code>scripts/a11y.sh</code> (Linux, macOS) and <code>scripts/a11y.ps1</code> (Windows), a site accessibility gate that runs axe-core with the WCAG 2.2 AA tag set against the committed front page and every docs page, in light and dark at two widths, inside Docker so no host browser is needed.</p>
+</li>
+<li>
+<p>Fixed: code blocks on the docs pages are keyboard focusable (<code>tabindex=&quot;0&quot;</code>), so a block that scrolls sideways on a narrow screen can be reached and scrolled from the keyboard (axe <code>scrollable-region-focusable</code>). The docs builder adds the attribute; the pages were rebuilt.</p>
+</li>
+<li>
+<p>Fixed: &quot;On this page&quot; sub-items on the docs pages carry the base item classes again, so the kit's block link styles apply and the links meet the minimum target size (axe <code>target-size</code>). The docs builder sets both classes; the pages were rebuilt.</p>
+</li>
 </ul>
 <h2 id="0-4-0-2026-11-03">[0.4.0] - 2026-11-03<a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></h2>
 <ul>

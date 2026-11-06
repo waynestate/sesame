@@ -57,7 +57,7 @@ driver.</p>
 suggests but does not require. Without it, building the driver fails with
 <code>The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client</code>.</p>
 <p><strong>Fix.</strong> Install the library:</p>
-<pre><code>composer require league/oauth2-client
+<pre tabindex="0"><code>composer require league/oauth2-client
 </code></pre>
 <p><strong>Check.</strong> Build the driver again; the error is gone and the sign-in starts.
 The driver's behavior is covered by <code>tests/OidcDriverTest.php</code>.</p>
@@ -87,7 +87,7 @@ by default, so a hung CAS server would hold the request open forever, and it
 follows up to five redirects by default, to any host or to plain http.</p>
 <p><strong>Fix.</strong> Hand SESAME a client with a timeout, redirects off for the
 validation call, and TLS verification on:</p>
-<pre><code class="language-php">$http = new \GuzzleHttp\Client([
+<pre tabindex="0"><code class="language-php">$http = new \GuzzleHttp\Client([
     'timeout' =&gt; 10,
     'connect_timeout' =&gt; 5,
     'allow_redirects' =&gt; false,
@@ -96,9 +96,9 @@ validation call, and TLS verification on:</p>
 </code></pre>
 <p><strong>Check.</strong> Run the suite; the fail-closed behavior on a redirect and on a
 client exception is proven by tests (S42):</p>
-<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
+<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre tabindex="0"><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
 </code></pre></div>
-<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre><code class="language-bash">vendor/bin/phpunit
+<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre tabindex="0"><code class="language-bash">vendor/bin/phpunit
 </code></pre></div></div>
 <h3 id="a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the user<a class="docs-heading-link" aria-label="Link to this section" href="#a-failed-login-shows-the-cas-failure-code-to-the-user">#</a></h3>
 <p><strong>Cause.</strong> An <code>AuthenticationFailed</code> message can carry the CAS failure code
@@ -155,7 +155,7 @@ times 60) in <code>php.ini</code> or the FPM pool, or call
 <code>ini_set('session.gc_maxlifetime', '7200')</code> before <code>session_start()</code>. Laravel
 apps set <code>SESSION_LIFETIME</code> (minutes) instead.</p>
 <p><strong>Check.</strong> The exact call the sources use, in the oidc raw-PHP example:</p>
-<pre><code class="language-php">ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+<pre tabindex="0"><code class="language-php">ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
 </code></pre>
 <p>Then sit a signed-in session for more than 24 quiet minutes; it stays signed
 in until the idle timeout (120 minutes by default) drops it.</p>
@@ -209,13 +209,13 @@ environment is empty, is not installed. A missing routed setting fails with
 <code>Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).</code></p>
 <p><strong>Fix.</strong> Set the variable in the environment, as with every other setting, or
 install the playbook:</p>
-<pre><code class="language-json">{
+<pre tabindex="0"><code class="language-json">{
     &quot;repositories&quot;: [
         { &quot;type&quot;: &quot;vcs&quot;, &quot;url&quot;: &quot;https://git.wayne.edu/enterprise-apps/playbook.git&quot; }
     ]
 }
 </code></pre>
-<pre><code>composer require waynestate/playbook
+<pre tabindex="0"><code>composer require waynestate/playbook
 </code></pre>
 <p>The environment always wins: a set variable beats the playbook, and an empty
 one counts as unset.</p>
@@ -229,9 +229,9 @@ your own: <code>read_api</code> for curl, <code>read_repository</code> for clone
 <p><strong>Check.</strong> Refetch; the file arrives as plain <code>KEY=value</code> lines. Copy the ones
 you need into your app's <code>.env</code> (or your Citadel environment); SESAME does not
 read <code>.env.playbook</code> itself.</p>
-<div class="docs-tabs" data-tabs="linux|windows"><div class="docs-tabs__panel" data-tab-label="linux"><p class="docs-tabs__label">linux</p><pre><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
+<div class="docs-tabs" data-tabs="linux|windows"><div class="docs-tabs__panel" data-tab-label="linux"><p class="docs-tabs__label">linux</p><pre tabindex="0"><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
 </code></pre></div>
-<div class="docs-tabs__panel" data-tab-label="windows"><p class="docs-tabs__label">windows</p><pre><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
+<div class="docs-tabs__panel" data-tab-label="windows"><p class="docs-tabs__label">windows</p><pre tabindex="0"><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
 </code></pre></div></div>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>The token in those commands is a secret. Keep it in the environment, never
 in the repository, and remember Composer keeps the git.wayne.edu
@@ -258,15 +258,15 @@ means the same thing on both sides.</p>
 Pinstripe's strict preset, where a call to a deprecated method fails the
 build.</p>
 <p><strong>Check.</strong> Rerun the gate locally:</p>
-<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
+<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre tabindex="0"><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
 </code></pre></div>
-<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre><code class="language-bash">composer ci
+<div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre tabindex="0"><code class="language-bash">composer ci
 </code></pre></div></div>
 <h3 id="composer-docs-check-fails-in-ci"><code>composer docs:check</code> fails in CI<a class="docs-heading-link" aria-label="Link to this section" href="#composer-docs-check-fails-in-ci">#</a></h3>
 <p><strong>Cause.</strong> The built docs site is stale, or the generated environment
 reference has drifted from the source.</p>
 <p><strong>Fix.</strong> Rebuild the docs site:</p>
-<pre><code>composer docs
+<pre tabindex="0"><code>composer docs
 </code></pre>
 <p><strong>Check.</strong> <code>composer docs:check</code> passes again, and the rebuilt pages under
 <code>site/docs/</code> match what you committed.</p>
@@ -274,7 +274,7 @@ reference has drifted from the source.</p>
 <p><strong>Cause.</strong> The developer machine has no PHP, so <code>vendor/bin/phpunit</code> cannot
 start.</p>
 <p><strong>Fix.</strong> Docker runs the suite:</p>
-<pre><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
+<pre tabindex="0"><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpunit

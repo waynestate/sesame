@@ -50,7 +50,7 @@
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>The bridge is deprecated on arrival. It exists so the move off Wayne Auth is small and provable today; plan the move to SESAME's native calls next (the last section). It says so once per process, as a silenced <code>E_USER_DEPRECATED</code> that reaches your error log but never the page.</p></aside>
 <h2 id="does-this-fit-my-app">Does this fit my app?<a class="docs-heading-link" aria-label="Link to this section" href="#does-this-fit-my-app">#</a></h2>
 <p>The bridge keeps the API of the classic <code>WayneAuth</code> class, the one apps copy into <code>lib/</code> or next to their pages:</p>
-<pre><code class="language-php">$wayne_auth = new WayneAuth($config['wayneauth']);
+<pre tabindex="0"><code class="language-php">$wayne_auth = new WayneAuth($config['wayneauth']);
 if ($wayne_auth-&gt;authenticateSSO() == true) {
     $accessid = $wayne_auth-&gt;getAccessID();
 } else {
@@ -69,7 +69,7 @@ if ($wayne_auth-&gt;authenticateSSO() == true) {
 <li>Require SESAME with Composer (<code>composer require waynestate/sesame guzzlehttp/guzzle</code>). Guzzle is the HTTP client the cas driver uses to check tickets; any PSR-18 client works if you pass it yourself.</li>
 <li>Add the app's SESAME config file, for example <code>config/sesame.php</code>:</li>
 </ol>
-<pre><code class="language-php">&lt;?php
+<pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
 
@@ -89,7 +89,7 @@ WayneAuth::boot([
 <ol start="3">
 <li>Change the one line that loaded the old class:</li>
 </ol>
-<pre><code class="language-php">// Before
+<pre tabindex="0"><code class="language-php">// Before
 require_once('lib/WayneAuth/WayneAuth.php');
 
 // After

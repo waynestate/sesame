@@ -61,12 +61,12 @@ on, work down toward the one you want, and run the checks after each hop.</p>
 <ol>
 <li>
 <p>Move the constraint and update:</p>
-<pre><code>composer require waynestate/sesame:^0.5
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.5
 </code></pre>
 </li>
 <li>
 <p>If the app builds the <code>cas</code> driver by hand (raw PHP), pass the app's session as the seventh argument to <code>DriverFactory::make()</code>:</p>
-<pre><code class="language-php">$driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, null, new NativeSession());
+<pre tabindex="0"><code class="language-php">$driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, null, new NativeSession());
 </code></pre>
 </li>
 <li>
