@@ -35,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: a "session cookie (name and SameSite)" paragraph in the raw PHP section tells apps to use a `__Host-` cookie name and `SameSite=Lax` (never `Strict`, which drops the cookie on the return from the identity provider), says HELMET sets both for raw PHP, and gives the Laravel settings; BEST_PRACTICES S4 and S41 are now `Documented`.
 - Docs: SESAME fails closed on a redirect and on a client exception during the CAS validation call, and tests were added to prove it (S42).
 - Docs: a "Refusing a sign-in" section says what a resolver does on a deny, and the CERT Polska CVE-2026-15243 check is recorded (Java clients only; no PHP client named).
+- Added: `scripts/a11y.sh` (Linux, macOS) and `scripts/a11y.ps1` (Windows), a site accessibility gate that runs axe-core with the WCAG 2.2 AA tag set against the committed front page and every docs page, in light and dark at two widths, inside Docker so no host browser is needed.
+- Fixed: code blocks on the docs pages are keyboard focusable (`tabindex="0"`), so a block that scrolls sideways on a narrow screen can be reached and scrolled from the keyboard (axe `scrollable-region-focusable`). The docs builder adds the attribute; the pages were rebuilt.
+- Fixed: "On this page" sub-items on the docs pages carry the base item classes again, so the kit's block link styles apply and the links meet the minimum target size (axe `target-size`). The docs builder sets both classes; the pages were rebuilt.
 
 ## \[0.4.0\] - 2026-11-03[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-4-0-2026-11-03)
 

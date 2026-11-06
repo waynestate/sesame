@@ -49,7 +49,7 @@
 <p>Every setting SESAME reads, from the plain array <code>Config::fromArray()</code> takes to the environment variables the Laravel config resolves. The magic word here is a config array, not an incantation. Start here when you are wiring a driver; the driver guides show the full examples.</p>
 <h2 id="reading-config">Reading config<a class="docs-heading-link" aria-label="Link to this section" href="#reading-config">#</a></h2>
 <p>SESAME reads its config from a plain array through one method on the <code>final readonly class Config</code>:</p>
-<pre><code class="language-php">$config = Config::fromArray($configArray);
+<pre tabindex="0"><code class="language-php">$config = Config::fromArray($configArray);
 </code></pre>
 <ul>
 <li><code>driver</code> and <code>environment</code> are always required.</li>
@@ -482,13 +482,13 @@
 </table></div>
 <p>Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone. See the <a href="../guides/wsu-values.html">WSU values guide</a> for how to get it.</p>
 <p>Raw-PHP apps that build their config by hand can resolve a value the same way the Laravel config does:</p>
-<pre><code class="language-php">use Waynestate\Sesame\Support\Setting;
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Support\Setting;
 
 $baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
 </code></pre>
 <h2 id="example-env-block">Example .env block<a class="docs-heading-link" aria-label="Link to this section" href="#example-env-block">#</a></h2>
 <p>The Laravel oidc block, straight from the README:</p>
-<pre><code>SESAME_DRIVER=oidc
+<pre tabindex="0"><code>SESAME_DRIVER=oidc
 SESAME_OIDC_CLIENT_ID=&lt;application (client) id&gt;
 SESAME_OIDC_CLIENT_SECRET=&lt;client secret value&gt;
 # SESAME_OIDC_ISSUER falls back to SESAME_OAUTH2_ISSUER (and the playbook).

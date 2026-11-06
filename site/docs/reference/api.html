@@ -51,12 +51,12 @@
 <p>Unless noted, everything below is in the <code>Waynestate\Sesame</code> namespace.</p>
 <h3 id="config">Config<a class="docs-heading-link" aria-label="Link to this section" href="#config">#</a></h3>
 <p>The library's config, read from a plain array. <code>final readonly class Config</code>.</p>
-<pre><code class="language-php">public static function fromArray(#[\SensitiveParameter] array $config): self
+<pre tabindex="0"><code class="language-php">public static function fromArray(#[\SensitiveParameter] array $config): self
 </code></pre>
 <p>Every constructor parameter is a public readonly property, in this order: <code>driver</code>, <code>environment</code>, <code>fakeUsername</code>, <code>fakeAttributes</code>, <code>casBaseUrl</code>, <code>casServiceUrl</code>, <code>casProtocol</code>, <code>casRenew</code>, <code>casAssumeMfa</code>, <code>sessionIdleMinutes</code>, <code>sessionAbsoluteMinutes</code>, <code>gatewayHeader</code>, <code>gatewayAlgorithm</code>, <code>gatewayPublicKey</code>, <code>gatewayIssuer</code>, <code>gatewayAudience</code>, <code>gatewayLeewaySeconds</code>, <code>gatewayTrustedProxies</code>, <code>gatewayMaxLifetimeSeconds</code>, <code>gatewayAllowWithoutReplayGuard</code>, <code>oauth2Issuer</code>, <code>oauth2JwksUrl</code>, <code>oauth2Audience</code>, <code>oauth2LeewaySeconds</code>, <code>oauth2RequiredScopes</code>, <code>oauth2RequiredRoles</code>, <code>oauth2IdentityClaim</code>, <code>oauth2JwksCacheTtlSeconds</code>, <code>oauth2RequireAtJwt</code>, <code>oidc</code> (an <code>?OidcOptions</code>) and <code>gatewayPublicKeys</code>. Keys, defaults and bounds: see <a href="configuration.html">Configuration</a>.</p>
 <h3 id="driverfactory">DriverFactory<a class="docs-heading-link" aria-label="Link to this section" href="#driverfactory">#</a></h3>
 <p>Build a driver from config. <code>final class DriverFactory</code>.</p>
-<pre><code class="language-php">public static function make(
+<pre tabindex="0"><code class="language-php">public static function make(
     Config $config,
     ?ClientInterface $http = null,
     ?RequestFactoryInterface $requests = null,
@@ -77,7 +77,7 @@
 <p>A missing dependency is an <code>InvalidConfig</code> error that names what to pass, and an unknown <code>driver</code> value is one too. The oidc driver also needs league/oauth2-client, which SESAME suggests but does not require. The driver classes themselves live in <code>Waynestate\Sesame\Drivers</code>; see <a href="drivers.html">Drivers</a>.</p>
 <h3 id="sesame">Sesame<a class="docs-heading-link" aria-label="Link to this section" href="#sesame">#</a></h3>
 <p>The facade an app talks to. <code>final class Sesame</code>. It holds a driver (or a factory for one, built on first use, so checking a session never pays for the driver's construction), the app's user resolver, the app's session and the config, and it runs the one rule the code holds: every driver ends in <code>findOrImportUser(Identity)</code>, and the app owns the session. Time is read through a PSR-20 clock, so the session timeouts are testable.</p>
-<pre><code class="language-php">public function __construct(
+<pre tabindex="0"><code class="language-php">public function __construct(
     Driver|Closure $driver,
     private readonly UserResolver $resolver,
     private readonly SessionPort $session,
@@ -86,7 +86,7 @@
     private readonly ?LoggerInterface $logger = null,
 )
 </code></pre>
-<pre><code class="language-php">public function login(ServerRequestInterface $request): mixed
+<pre tabindex="0"><code class="language-php">public function login(ServerRequestInterface $request): mixed
 public function returnTo(): ?string
 public function serviceUrl(): ?string
 public function user(): mixed
@@ -117,7 +117,7 @@ public function safeReturnTo(string $returnTo): string
 <p>When a logger is set, sign-in and sign-out events are logged through it: a broken logger never changes what the facade returns or throws, and no ticket, session ID, token, assertion, cookie or header ever reaches the log.</p>
 <h3 id="identity">Identity<a class="docs-heading-link" aria-label="Link to this section" href="#identity">#</a></h3>
 <p>The verified identity a driver hands to the resolver. <code>final readonly class Identity</code>; the constructor refuses an empty username with <code>InvalidArgumentException</code>.</p>
-<pre><code class="language-php">public function __construct(
+<pre tabindex="0"><code class="language-php">public function __construct(
     public string $username,
     public array $attributes,
     public string $driver,
@@ -136,7 +136,7 @@ public function safeReturnTo(string $returnTo): string
 </ul>
 <h3 id="loginstep-authenticated-redirect">LoginStep, Authenticated, Redirect<a class="docs-heading-link" aria-label="Link to this section" href="#loginstep-authenticated-redirect">#</a></h3>
 <p>A login ends in one of two shapes, both <code>final</code> and both extending the <code>abstract class LoginStep</code>, which is empty on purpose:</p>
-<pre><code class="language-php">final class Authenticated extends LoginStep
+<pre tabindex="0"><code class="language-php">final class Authenticated extends LoginStep
 {
     public function __construct(
         public readonly Identity $identity,
@@ -153,7 +153,7 @@ final class Redirect extends LoginStep
 <p><code>Authenticated</code>: the identity is verified; this is who the user is. <code>Redirect</code>: send the user to this URL to continue the login.</p>
 <h3 id="driver">Driver<a class="docs-heading-link" aria-label="Link to this section" href="#driver">#</a></h3>
 <p>One way to verify an identity. A driver knows one protocol and nothing about the app: it turns a request into a <code>LoginStep</code>, and the core does the rest. Switching driver is a config change with no code change.</p>
-<pre><code class="language-php">interface Driver
+<pre tabindex="0"><code class="language-php">interface Driver
 {
     public function name(): string;
     public function login(ServerRequestInterface $request): LoginStep;
@@ -164,7 +164,7 @@ final class Redirect extends LoginStep
 <p><code>logoutUrl()</code> is the identity provider's logout URL, or null when the driver has none; <code>serviceUrl()</code> is the configured service URL, or null, and it is the host a logout return-to must stay on.</p>
 <h3 id="userresolver-refreshesuser-remembersreturnto">UserResolver, RefreshesUser, RemembersReturnTo<a class="docs-heading-link" aria-label="Link to this section" href="#userresolver-refreshesuser-remembersreturnto">#</a></h3>
 <p>The port the app implements, and the optional extras a resolver or driver can use:</p>
-<pre><code class="language-php">interface UserResolver
+<pre tabindex="0"><code class="language-php">interface UserResolver
 {
     public function findOrImportUser(Identity $identity): mixed;
 }
@@ -182,7 +182,7 @@ interface RemembersReturnTo
 <p><code>UserResolver</code> is the one place every driver ends: turn a verified identity into the app's user, or return null to refuse it. <code>RefreshesUser</code> lets the app look the stored user up again on every <code>user()</code> call. <code>RemembersReturnTo</code> lets a driver remember where to send the user after the sign-in that just completed.</p>
 <h3 id="session">Session<a class="docs-heading-link" aria-label="Link to this section" href="#session">#</a></h3>
 <p>The app's session, seen through a port:</p>
-<pre><code class="language-php">interface SessionPort
+<pre tabindex="0"><code class="language-php">interface SessionPort
 {
     public function regenerate(): void;
     public function get(string $key): mixed;
@@ -194,7 +194,7 @@ interface RemembersReturnTo
 <p><code>Waynestate\Sesame\Session\NativeSession</code> is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (<code>session_start()</code>), and hardening the session cookie is HELMET's job. It reads and writes <code>$_SESSION</code> on a session that is already active, and throws <code>LogicException</code> when it is not. <code>invalidate()</code> is the one operation that retires the session: it clears the data, expires the cookie on the client, and destroys the session, so a stolen ID is dead after logout.</p>
 <h3 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h3>
 <p>The one rule that decides whether an identity's MFA is still good. <code>final class Mfa</code>:</p>
-<pre><code class="language-php">public const MFA_METHODS = ['mfa', 'otp', 'hwk', 'swk', 'fido', 'sms', 'pop'];
+<pre tabindex="0"><code class="language-php">public const MFA_METHODS = ['mfa', 'otp', 'hwk', 'swk', 'fido', 'sms', 'pop'];
 public const FUTURE_SKEW_SECONDS = 60;
 public static function satisfied(Identity $identity, int $maxAgeSeconds, DateTimeImmutable $now): MfaResult
 </code></pre>
@@ -208,7 +208,7 @@ public static function satisfied(Identity $identity, int $maxAgeSeconds, DateTim
 </ol>
 <p>A sign-in exactly <code>$maxAgeSeconds</code> old is still satisfied.</p>
 <p><code>final readonly class MfaResult</code> carries the answer:</p>
-<pre><code class="language-php">public const SATISFIED = 'SATISFIED';
+<pre tabindex="0"><code class="language-php">public const SATISFIED = 'SATISFIED';
 public const NO_AUTH_TIME = 'NO_AUTH_TIME';
 public const NO_MFA_METHOD = 'NO_MFA_METHOD';
 public const TOO_OLD = 'TOO_OLD';
@@ -222,12 +222,12 @@ public function message(): string
 <p><code>message()</code> is the human form of the result, for a message or a log line.</p>
 <h3 id="returnto">ReturnTo<a class="docs-heading-link" aria-label="Link to this section" href="#returnto">#</a></h3>
 <p>The one rule for a return-to URL (after login or logout). <code>final class ReturnTo</code>:</p>
-<pre><code class="language-php">public static function safe(string $returnTo, ?string $serviceUrl): string
+<pre tabindex="0"><code class="language-php">public static function safe(string $returnTo, ?string $serviceUrl): string
 </code></pre>
 <p>A return-to must be an absolute URL on the same origin as the service URL: the same scheme, the same host and the same effective port (443 for https, 80 for http, when none is written), with no user name or password in it. The scheme must be https; plain http is allowed only for a localhost or 127.0.0.1 service URL, for local development. Anything else sends the user to the service URL instead, so a login or logout can never be turned into an open redirect, not even to another port on the same host. When the driver has no service URL there is nothing to check against, so the return-to is used as-is.</p>
 <h3 id="oidcoptions">OidcOptions<a class="docs-heading-link" aria-label="Link to this section" href="#oidcoptions">#</a></h3>
 <p><code>Waynestate\Sesame\Drivers\Oidc\OidcOptions</code>: the <code>oidc</code> config block, validated. <code>final readonly class OidcOptions</code>.</p>
-<pre><code class="language-php">public const ALLOWED_ALGORITHMS = ['RS256', 'RS384', 'RS512'];
+<pre tabindex="0"><code class="language-php">public const ALLOWED_ALGORITHMS = ['RS256', 'RS384', 'RS512'];
 public const CLIENT_AUTH_METHODS = ['client_secret_post', 'client_secret_basic'];
 public const MAX_CACHE_TTL_SECONDS = 3600;
 public static function fromArray(#[\SensitiveParameter] array $oidc): self
@@ -236,14 +236,14 @@ public function clientSecret(): string
 <p>The keys, their environment variables and their defaults are in the oidc table on the <a href="configuration.html">Configuration page</a>.</p>
 <h3 id="setting">Setting<a class="docs-heading-link" aria-label="Link to this section" href="#setting">#</a></h3>
 <p><code>Waynestate\Sesame\Support\Setting</code>: the one lookup for the library's shared settings. The real environment wins (getenv, then $_ENV, then $_SERVER); when it has nothing, the private waynestate/playbook package supplies Wayne State's shared values when it is installed. An empty value counts as missing, so a blank variable never shadows the playbook.</p>
-<pre><code class="language-php">public const ENVIRONMENT_ONLY = ['SESAME_OIDC_CLIENT_SECRET'];
+<pre tabindex="0"><code class="language-php">public const ENVIRONMENT_ONLY = ['SESAME_OIDC_CLIENT_SECRET'];
 public static function get(string $key): ?string
 public static function env(string $key): ?string
 </code></pre>
 <p><code>get()</code> answers from the environment, then the playbook, else null. <code>env()</code> answers from the environment only, and the playbook is never consulted. A key in <code>ENVIRONMENT_ONLY</code> never falls back to the playbook, so a shared package can never supply an app's secret.</p>
 <h2 id="functions">Functions<a class="docs-heading-link" aria-label="Link to this section" href="#functions">#</a></h2>
 <p>Plain functions in the global namespace behind a <code>sesame_</code> prefix, the same shape as WayneUI's standalone path, because that is what a framework-free application can consume. Each one is guarded with <code>function_exists</code>, so two copies of this file can never collide. The app owns the session: start it with <code>session_start()</code> before calling anything here, and let HELMET set the cookie flags.</p>
-<pre><code class="language-php">function sesame(?Sesame $instance = null): Sesame
+<pre tabindex="0"><code class="language-php">function sesame(?Sesame $instance = null): Sesame
 function sesame_request(): ServerRequestInterface
 function sesame_login(): mixed
 function sesame_user(): mixed
@@ -261,7 +261,7 @@ function sesame_logout(string $returnTo): void
 <li><code>sesame_require_context()</code>: require that the signed-in identity has the given authentication context. When it does, the app's user is returned; when it does not, <code>AuthContextNotSatisfied</code> is thrown, carrying the context id.</li>
 <li><code>sesame_logout_token()</code>: the logout CSRF token for this session, for the logout form. The token is hex, so it needs no escaping in HTML:</li>
 </ul>
-<pre><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
+<pre tabindex="0"><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
   &lt;input type=&quot;hidden&quot; name=&quot;sesame_logout_token&quot; value=&quot;&lt;?= sesame_logout_token() ?&gt;&quot;&gt;
   &lt;button&gt;Sign out&lt;/button&gt;
 &lt;/form&gt;

@@ -52,13 +52,13 @@
 <h2 id="tests">Tests<a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></h2>
 <p>Maintainers: how to build, test and release this project, and where its data comes from, is in <a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame/MAINTAINING.md">MAINTAINING.md</a>.</p>
 <p>No PHP on the machine? Fine. Docker runs the suite:</p>
-<pre><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
+<pre tabindex="0"><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpunit
 </code></pre>
 <p>Static analysis is PHPStan at level 8 from Pinstripe's strict preset (<code>vendor/waynestate/pinstripe/phpstan/strict.neon</code>, included through the <code>waynestate/pinstripe</code> dev dependency): strict rules stay on, and a call to a deprecated method fails the build. <code>composer ci</code> runs the whole gate, validate through tests, Pint and PHPStan:</p>
-<pre><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
+<pre tabindex="0"><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
 </code></pre>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>

@@ -129,14 +129,14 @@
 </table></div>
 <h2 id="raw-php">Raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></h2>
 <p>In raw PHP, a protected page reads the user and the MFA proof in one call:</p>
-<pre><code class="language-php">// Throws MfaNotSatisfied when the MFA check is not satisfied.
+<pre tabindex="0"><code class="language-php">// Throws MfaNotSatisfied when the MFA check is not satisfied.
 $user = sesame_require_mfa();
 </code></pre>
 <p>Or, with a custom max age:</p>
-<pre><code class="language-php">$user = sesame_require_mfa(3600);
+<pre tabindex="0"><code class="language-php">$user = sesame_require_mfa(3600);
 </code></pre>
 <p>The core method returns the result instead of throwing:</p>
-<pre><code class="language-php">$result = $sesame-&gt;requireMfa();
+<pre tabindex="0"><code class="language-php">$result = $sesame-&gt;requireMfa();
 
 if (! $result-&gt;satisfied) {
     // $result-&gt;reason is a stable code; $result-&gt;message() is the human text.
@@ -147,10 +147,10 @@ if (! $result-&gt;satisfied) {
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>Turn on <code>cas.assume_mfa</code> only when the CAS server enforces MFA for every sign-in. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.</p></aside>
 <h2 id="in-laravel">In Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#in-laravel">#</a></h2>
 <p>Require MFA on a route with the <code>sesame.mfa</code> middleware:</p>
-<pre><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa']);
+<pre tabindex="0"><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa']);
 </code></pre>
 <p>It lets the request through when the signed-in user's MFA is still good, and otherwise stops it: a 403 by default, a JSON 403 for JSON requests, and a redirect to the login route when <code>mfa.on_failure</code> is <code>reauth</code>. The allowed age comes from the route parameter when there is one, and from <code>mfa.max_age</code> when there is not:</p>
-<pre><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa:3600']);
+<pre tabindex="0"><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa:3600']);
 </code></pre>
 <p>The <code>mfa.on_failure</code> setting picks what a failed check does: <code>deny</code> (the default) answers a 403, and <code>reauth</code> sends the user back to the login route. With the oidc driver, <code>reauth</code> asks the provider for a step-up, so the user comes back with a fresh <code>auth_time</code>; see <a href="step-up.html">Step-up (authentication context)</a>.</p>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>

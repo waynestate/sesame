@@ -2670,6 +2670,7 @@ final class DocsSite
         $content = (string) (new HtmlRenderer($env))->renderDocument($document)->getContent();
         $content = $this->wrapTables($content);
         $content = $this->labelTasks($content);
+        $content = $this->focusCodeBlocks($content);
 
         $title = trim((string) ($meta['title'] ?? ''));
         if ($title === '') {
@@ -2847,6 +2848,12 @@ final class DocsSite
             static fn (array $m): string => '<div class="docs-table" role="region" aria-label="Table" tabindex="0">'.$m[0].'</div>',
             $html,
         );
+    }
+
+    /** Code blocks scroll sideways on narrow screens; give them keyboard access, like the table wrappers. */
+    private function focusCodeBlocks(string $html): string
+    {
+        return (string) preg_replace('/<pre>/', '<pre tabindex="0">', $html);
     }
 
     /** @return array{0: array<string, string>, 1: string} front matter keys and the body */

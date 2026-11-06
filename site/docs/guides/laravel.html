@@ -49,7 +49,7 @@
 <p>The Laravel adapter is a service provider that binds the core into the container, registers the <code>auth.sesame</code> and <code>wayne.cas</code> middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see <a href="requiring-mfa.html">Requiring MFA</a> and <a href="step-up.html">Step-up (authentication context)</a> for the checks the middleware runs.</p>
 <h2 id="install-and-publish">Install and publish<a class="docs-heading-link" aria-label="Link to this section" href="#install-and-publish">#</a></h2>
 <p>The provider is discovered automatically. Publish the config with:</p>
-<pre><code>php artisan vendor:publish --tag=sesame-config
+<pre tabindex="0"><code>php artisan vendor:publish --tag=sesame-config
 </code></pre>
 <p>The app's environment becomes the core's <code>environment</code>, the <code>cas.service_url</code> falls back to the app's <code>/login</code> route when the app has not set one, and the oidc driver's <code>redirect_uri</code> falls back to the app's <code>/login/callback</code> route.</p>
 <h2 id="config">Config<a class="docs-heading-link" aria-label="Link to this section" href="#config">#</a></h2>
@@ -284,28 +284,28 @@
 <p>Set <code>SESAME_ROUTES=false</code> when the app defines its own login and logout routes. The <code>auth.sesame</code> middleware still points at the <code>sesame.login</code> route name, so the app's login route must keep that name.</p>
 <h2 id="middleware">Middleware<a class="docs-heading-link" aria-label="Link to this section" href="#middleware">#</a></h2>
 <p>Protect a route with the <code>auth.sesame</code> middleware:</p>
-<pre><code class="language-php">Route::get('/dashboard', fn () =&gt; view('dashboard'))-&gt;middleware('auth.sesame');
+<pre tabindex="0"><code class="language-php">Route::get('/dashboard', fn () =&gt; view('dashboard'))-&gt;middleware('auth.sesame');
 </code></pre>
 <p>A guest is sent to the login route; a JSON guest gets a 401.</p>
 <p>Require MFA on a route with the <code>sesame.mfa</code> middleware:</p>
-<pre><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa']);
+<pre tabindex="0"><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa']);
 </code></pre>
 <p>It lets the request through when the signed-in user's MFA is still good, and otherwise stops it: a 403 by default, a JSON 403 for JSON requests, and a redirect to the login route when <code>mfa.on_failure</code> is <code>reauth</code>. The allowed age comes from the route parameter when there is one, and from <code>mfa.max_age</code> when there is not:</p>
-<pre><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa:3600']);
+<pre tabindex="0"><code class="language-php">Route::get('/vault', fn () =&gt; view('vault'))-&gt;middleware(['auth.sesame', 'sesame.mfa:3600']);
 </code></pre>
 <p>The <code>sesame.context</code> middleware does the step-up context check on a route:</p>
-<pre><code class="language-php">Route::get('/vault', [VaultController::class, 'index'])
+<pre tabindex="0"><code class="language-php">Route::get('/vault', [VaultController::class, 'index'])
     -&gt;middleware(['web', 'auth.sesame', 'sesame.context:c1']);
 </code></pre>
 <p>A request without the context gets a 403, or a JSON 403 with a <code>message</code> for JSON requests. A route that names no context fails closed. See <a href="step-up.html">Step-up (authentication context)</a>.</p>
 <p>The <code>wayne.cas</code> alias is registered against SESAME's <code>WayneAuthenticate</code>, for apps moving off wayne-cas; see <a href="moving-from-wayne-cas.html">Moving from wayne-cas</a>.</p>
 <h2 id="reading-the-user">Reading the user<a class="docs-heading-link" aria-label="Link to this section" href="#reading-the-user">#</a></h2>
 <p>The app's user is available through the facade:</p>
-<pre><code class="language-php">$user = app(\Waynestate\Sesame\Sesame::class)-&gt;user();
+<pre tabindex="0"><code class="language-php">$user = app(\Waynestate\Sesame\Sesame::class)-&gt;user();
 </code></pre>
 <p>SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements <code>Waynestate\Sesame\RefreshesUser</code>: its <code>refreshUser($user)</code> runs on every request, and a <code>null</code> answer signs the session out. The wayne-cas shim already implements it, looking the user up through <code>auth.providers.users.model</code>; a resolver that does not implement it keeps handing back the stored copy, as it always has.</p>
 <p>The same user is available through Laravel's own auth, because the provider registers a <code>sesame</code> guard driver. Point a guard in <code>config/auth.php</code> at it:</p>
-<pre><code class="language-php">'guards' =&gt; [
+<pre tabindex="0"><code class="language-php">'guards' =&gt; [
     'web' =&gt; [
         'driver' =&gt; 'sesame',
         'provider' =&gt; 'users',
@@ -316,7 +316,7 @@
 <p><code>auth()-&gt;logout()</code> signs the user out of both sides, the Laravel session and the SESAME session. The identity provider's single sign-on session is left alone.</p>
 <h2 id="http-client-and-caches">HTTP client and caches<a class="docs-heading-link" aria-label="Link to this section" href="#http-client-and-caches">#</a></h2>
 <p>The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's <code>Psr\Http\Client\ClientInterface</code> binding when there is one, Guzzle when it is installed (with redirects off), and nothing when there is neither. Bind a client when the app has neither:</p>
-<pre><code class="language-php">app()-&gt;singleton(
+<pre tabindex="0"><code class="language-php">app()-&gt;singleton(
     Psr\Http\Client\ClientInterface::class,
     fn () =&gt; new \Symfony\Component\HttpClient\Psr18Client(),
 );

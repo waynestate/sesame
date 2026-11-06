@@ -85,7 +85,7 @@ constraint to <code>^0.4</code>.</p>
 <ol>
 <li>
 <p>Move the constraint and update:</p>
-<pre><code>composer require waynestate/sesame:^0.4
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.4
 </code></pre>
 </li>
 <li>
@@ -105,7 +105,7 @@ to public key for key rotation without a coordinated window.</p>
 </li>
 </ol>
 <p><strong>How to verify.</strong> Run the gate:</p>
-<pre><code>composer ci
+<pre tabindex="0"><code>composer ci
 </code></pre>
 <p>then sign in through the gateway with a normal assertion (missing <code>typ</code> or
 <code>JWT</code>) and confirm a replayed <code>at+jwt</code> token is refused.</p>
@@ -124,7 +124,7 @@ artisan commands, queue workers and tests.</p>
 <ol>
 <li>
 <p>Update the package:</p>
-<pre><code>composer require waynestate/sesame:^0.3
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.3
 </code></pre>
 </li>
 <li>
@@ -154,7 +154,7 @@ Entra sends. Apps that relied on the old default must set <code>roles_claim</cod
 <ol>
 <li>
 <p>Update the package:</p>
-<pre><code>composer require waynestate/sesame:^0.2
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.2
 </code></pre>
 </li>
 <li>
@@ -171,7 +171,7 @@ arrive under the claim you named.</p>
 fixes the oauth2 peg on the site, writes project names as words except
 acronyms, fixes stale capability claims, and shows the oidc driver on the
 site. Upgrade with:</p>
-<pre><code>composer require waynestate/sesame:^0.2
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.2
 </code></pre>
 <h2 id="0-2-0-2026-10-29">0.2.0 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-0-2026-10-29">#</a></h2>
 <p><strong>Breaking.</strong> Raw PHP: <code>sesame_logout()</code> is POST-only with a CSRF token. It
@@ -192,12 +192,12 @@ Plain http is accepted only for a localhost or 127.0.0.1 service URL. And
 <ol>
 <li>
 <p>Update the package:</p>
-<pre><code>composer require waynestate/sesame:^0.2
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.2
 </code></pre>
 </li>
 <li>
 <p>In raw-PHP apps, replace the logout link with a POST form:</p>
-<pre><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
+<pre tabindex="0"><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
   &lt;input type=&quot;hidden&quot; name=&quot;sesame_logout_token&quot; value=&quot;&lt;?= sesame_logout_token() ?&gt;&quot;&gt;
   &lt;button&gt;Sign out&lt;/button&gt;
 &lt;/form&gt;
@@ -225,7 +225,7 @@ is empty the private <code>waynestate/playbook</code> package supplies the value
 suggested, never required), and a missing routed setting now fails with
 <code>Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).</code> instead of naming the config key.
 Upgrade with:</p>
-<pre><code>composer require waynestate/sesame:^0.1
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.1
 </code></pre>
 <h2 id="0-1-2-2026-10-29">0.1.2 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-2-2026-10-29">#</a></h2>
 <p>No breaks in this release: the CAS driver reads <code>serviceValidate</code> responses by
@@ -233,7 +233,7 @@ namespace URI instead of prefix, so a body that binds the <code>cas:</code> pref
 different namespace can no longer be read as a success, while a body that
 binds another prefix (or none) to the real CAS namespace keeps working.
 Upgrade with:</p>
-<pre><code>composer require waynestate/sesame:^0.1
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.1
 </code></pre>
 <h2 id="0-1-1-2026-10-29">0.1.1 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-1-2026-10-29">#</a></h2>
 <p><strong>Breaking.</strong> A truthy <code>slo</code> (or <code>single_logout</code>) config key is now rejected
@@ -245,7 +245,7 @@ logout. An app that sets it must remove the key or it will not boot.</p>
 <ol>
 <li>
 <p>Update the package:</p>
-<pre><code>composer require waynestate/sesame:^0.1
+<pre tabindex="0"><code>composer require waynestate/sesame:^0.1
 </code></pre>
 </li>
 <li>
@@ -265,7 +265,7 @@ context check fails closed when there is no user or no identity.
 <code>tests/Laravel/RequireAuthContextTest.php</code> covers the context check.</p>
 <h2 id="0-1-0-2026-10-27">0.1.0 (2026-10-27)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-0-2026-10-27">#</a></h2>
 <p>First tagged release. There is nothing to upgrade from. Install with:</p>
-<pre><code>composer require waynestate/sesame
+<pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>

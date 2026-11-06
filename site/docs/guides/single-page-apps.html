@@ -55,7 +55,7 @@ answer carries.</p>
 <p>SESAME answers the question two ways: <code>sesame_status()</code> in raw PHP and the
 <code>GET /sesame/status</code> route in Laravel. Both send the session facts with a 200
 when someone is signed in, and <code>{&quot;signedIn&quot;:false}</code> with a 401 when no one is:</p>
-<pre><code class="language-json">{
+<pre tabindex="0"><code class="language-json">{
     &quot;signedIn&quot;: true,
     &quot;username&quot;: &quot;jdoe&quot;,
     &quot;driver&quot;: &quot;cas&quot;,
@@ -69,14 +69,14 @@ when someone is signed in, and <code>{&quot;signedIn&quot;:false}</code> with a 
 }
 </code></pre>
 <p>and, when signed out:</p>
-<pre><code class="language-json">{&quot;signedIn&quot;:false}
+<pre tabindex="0"><code class="language-json">{&quot;signedIn&quot;:false}
 </code></pre>
 <p>The times are always UTC. Every answer carries <code>Cache-Control: no-store</code>,
 <code>Content-Type: application/json; charset=utf-8</code> and <code>X-Content-Type-Options: nosniff</code>, so a browser or proxy never caches who is signed in.</p>
 <h2 id="in-raw-php">In raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#in-raw-php">#</a></h2>
 <p>Put the function at the end of a small endpoint script, after the same
 bootstrap a protected page uses:</p>
-<pre><code class="language-php">// status.php
+<pre tabindex="0"><code class="language-php">// status.php
 require __DIR__.'/bootstrap.php'; // your usual session_start() and sesame($sesame)
 
 sesame_status();

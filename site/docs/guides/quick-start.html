@@ -52,13 +52,13 @@ driver, which needs no server and no registration. Every snippet below is the
 <ol>
 <li>
 <p><strong>Require the package.</strong></p>
-<pre><code>composer require waynestate/sesame
+<pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
 <p>Expected: <code>waynestate/sesame</code> is in <code>composer.json</code> and installed in <code>vendor/</code>.</p>
 </li>
 <li>
 <p><strong>Start the session.</strong> The app owns the session; SESAME never starts one.</p>
-<pre><code class="language-php">&lt;?php
+<pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
 
@@ -77,7 +77,7 @@ times 60) in <code>php.ini</code> or the FPM pool, or call
 </li>
 <li>
 <p><strong>Configure the <code>fake</code> driver for local development.</strong></p>
-<pre><code class="language-php">use Waynestate\Sesame\Config;
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Config;
 
 $config = Config::fromArray([
     'driver' =&gt; 'fake',
@@ -93,7 +93,7 @@ identity the driver will return.</p>
 </li>
 <li>
 <p><strong>Build the facade and hand it to the functions.</strong></p>
-<pre><code class="language-php">use Waynestate\Sesame\DriverFactory;
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
@@ -118,7 +118,7 @@ a config to work with.</p>
 </li>
 <li>
 <p><strong>Sign the user in.</strong></p>
-<pre><code class="language-php">$user = sesame_login();
+<pre tabindex="0"><code class="language-php">$user = sesame_login();
 </code></pre>
 <p>Expected: when the login has not completed, SESAME sends the redirect to
 the identity provider and stops the script; when a ticket completes it, it
@@ -129,7 +129,7 @@ that user is the one your resolver made from <code>jdoe</code>.</p>
 </li>
 <li>
 <p><strong>Read the user on a protected page.</strong></p>
-<pre><code class="language-php">$user = sesame_user();
+<pre tabindex="0"><code class="language-php">$user = sesame_user();
 </code></pre>
 <p>Expected: the user the login stored in the session.</p>
 </li>

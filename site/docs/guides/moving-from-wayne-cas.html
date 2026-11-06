@@ -100,7 +100,7 @@
 </table></div>
 <h3 id="the-model">The model<a class="docs-heading-link" aria-label="Link to this section" href="#the-model">#</a></h3>
 <p>The model. wayne-cas found the user through the model's static <code>findOrImportUser</code>, with the verified username as the access ID. The shim keeps that, and the model keeps its wayne-cas shape:</p>
-<pre><code class="language-php">class User extends Model implements WayneCasable
+<pre tabindex="0"><code class="language-php">class User extends Model implements WayneCasable
 {
     use Notifiable, ReadOnlyAttributes;
 

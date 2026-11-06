@@ -85,33 +85,33 @@
 <p>Get it through Composer, fetch the values into a <code>.env.playbook</code> file, or clone the repository.</p>
 <h3 id="composer">Composer<a class="docs-heading-link" aria-label="Link to this section" href="#composer">#</a></h3>
 <p>Add the repository to your <code>composer.json</code>:</p>
-<pre><code class="language-json">{
+<pre tabindex="0"><code class="language-json">{
     &quot;repositories&quot;: [
         { &quot;type&quot;: &quot;vcs&quot;, &quot;url&quot;: &quot;https://git.wayne.edu/enterprise-apps/playbook.git&quot; }
     ]
 }
 </code></pre>
 <p>then require it:</p>
-<pre><code class="language-bash">composer require waynestate/playbook
+<pre tabindex="0"><code class="language-bash">composer require waynestate/playbook
 </code></pre>
 <p>Composer keeps the git.wayne.edu credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry, so later installs do not ask again.</p>
 <h3 id="fetch-the-values">Fetch the values<a class="docs-heading-link" aria-label="Link to this section" href="#fetch-the-values">#</a></h3>
 <p><strong>curl (Linux, macOS).</strong></p>
-<pre><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
+<pre tabindex="0"><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
 </code></pre>
 <p><strong>PowerShell (Windows).</strong></p>
-<pre><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
+<pre tabindex="0"><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
 </code></pre>
 <h3 id="a-clone">A clone<a class="docs-heading-link" aria-label="Link to this section" href="#a-clone">#</a></h3>
 <p>When the app keeps its private dependencies by hand:</p>
-<pre><code class="language-bash">git clone https://git.wayne.edu/enterprise-apps/playbook.git
+<pre tabindex="0"><code class="language-bash">git clone https://git.wayne.edu/enterprise-apps/playbook.git
 </code></pre>
 <h2 id="use-the-values">Use the values<a class="docs-heading-link" aria-label="Link to this section" href="#use-the-values">#</a></h2>
 <p>A fetched <code>.env.playbook</code> is plain <code>KEY=value</code> lines: copy the ones you need into your app's <code>.env</code> (or your Citadel environment). SESAME does not read <code>.env.playbook</code> itself.</p>
 <p>The token is your own: <code>read_api</code> for curl, <code>read_repository</code> for clone and Composer.</p>
 <p>Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access.</p>
 <p>Raw-PHP apps that build their config by hand can resolve a value the same way the Laravel config does:</p>
-<pre><code class="language-php">use Waynestate\Sesame\Support\Setting;
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Support\Setting;
 
 $baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
 </code></pre>

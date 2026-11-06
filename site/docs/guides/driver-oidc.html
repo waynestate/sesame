@@ -54,7 +54,7 @@ through the browser with OpenID Connect: the authorization code flow with
 PKCE (S256), the ID token checked against the issuer's key set. It is the
 Entra-direct path beside <code>cas</code> and <code>gateway</code> (Drawbridge), and it
 needs <code>league/oauth2-client</code>, which SESAME suggests but does not require:</p>
-<pre><code>composer require league/oauth2-client
+<pre tabindex="0"><code>composer require league/oauth2-client
 </code></pre>
 <p>Without it, building the driver fails with <code>The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client</code>.
 Why that library, and what else was weighed:
@@ -132,7 +132,7 @@ the callback, <code>sesame_login()</code> and the Laravel route send the user th
 be registered on the app registration. Without it, logout stays local and
 the Entra session lives on (the next sign-in is silent).</p>
 <h2 id="raw-php">Raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></h2>
-<pre><code class="language-php">&lt;?php
+<pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
 
@@ -183,7 +183,7 @@ $user = sesame_login();
 <p>A protected page sends a guest to <code>login.php?return_to=&lt;its own https URL&gt;</code>,
 and a page that needs fresh credentials to <code>login.php?step_up=1</code>.</p>
 <h2 id="laravel">Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></h2>
-<pre><code>SESAME_DRIVER=oidc
+<pre tabindex="0"><code>SESAME_DRIVER=oidc
 SESAME_OIDC_CLIENT_ID=&lt;application (client) id&gt;
 SESAME_OIDC_CLIENT_SECRET=&lt;client secret value&gt;
 # SESAME_OIDC_ISSUER falls back to SESAME_OAUTH2_ISSUER (and the playbook).

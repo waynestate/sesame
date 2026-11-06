@@ -54,7 +54,7 @@
 symfony/http-client. SESAME suggests one, it does not require one.</li>
 </ul>
 <h2 id="install-1">Install<a class="docs-heading-link" aria-label="Link to this section" href="#install-1">#</a></h2>
-<pre><code>composer require waynestate/sesame
+<pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>The <code>oidc</code> driver also needs <code>league/oauth2-client</code>, which SESAME suggests
 but does not require: <code>composer require league/oauth2-client</code>. Without it,
@@ -63,7 +63,7 @@ building the driver fails with: <code>The oidc driver needs league/oauth2-client
 <p>The quickest proof that SESAME is active is a sign-in. In local development,
 configure the <code>fake</code> driver (the <a href="guides/quick-start.html">Quick start</a> walks
 through it), then call:</p>
-<pre><code class="language-php">$user = sesame_login();
+<pre tabindex="0"><code class="language-php">$user = sesame_login();
 </code></pre>
 <p>Expected: when the login has not completed, SESAME sends the redirect to the
 identity provider and stops the script; when the user is already signed in

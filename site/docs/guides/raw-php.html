@@ -48,7 +48,7 @@
       <article class="docs-article"><h1 id="raw-php">Raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></h1>
 <p>This page shows how a framework-free PHP app boots SESAME, signs the user in, reads the user back, and signs the user out. Start with the boot example, then wire up your protected pages.</p>
 <h2 id="boot-the-app">Boot the app<a class="docs-heading-link" aria-label="Link to this section" href="#boot-the-app">#</a></h2>
-<pre><code class="language-php">&lt;?php
+<pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
 
@@ -97,7 +97,7 @@ $user = sesame_login();
 <p>Your <code>findOrImportUser</code> looks the person up in the app's own store, so key that store on the driver plus the identity provider's own stable identifier, never on an email or a display name, which can change or be shared between providers. For the cas driver that identifier is the <code>username</code> (the Access ID), so the key is <code>$identity-&gt;driver</code> plus <code>$identity-&gt;username</code>. Other drivers name their stable identifier differently: the oidc section keys on <code>iss</code> plus <code>sub</code>, or <code>tid</code> plus <code>oid</code>, never the username alone.</p>
 <h2 id="session-ownership">Session ownership<a class="docs-heading-link" aria-label="Link to this section" href="#session-ownership">#</a></h2>
 <p>The app owns the session: start it with <code>session_start()</code>, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never starts a session and never touches a cookie. <code>sesame_login()</code> and <code>sesame_logout()</code> stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with <code>sesame_user()</code>:</p>
-<pre><code class="language-php">$user = sesame_user();
+<pre tabindex="0"><code class="language-php">$user = sesame_user();
 </code></pre>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p><strong>Set <code>session.gc_maxlifetime</code> to at least SESAME's idle timeout.</strong> PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set <code>session.gc_maxlifetime = 7200</code> (your <code>session.idle_minutes</code> times 60) in <code>php.ini</code> or the FPM pool, or call <code>ini_set('session.gc_maxlifetime', '7200')</code> before <code>session_start()</code>. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set <code>SESSION_LIFETIME</code> (minutes) instead.</p></aside>
 <h2 id="the-session-cookie-name-and-samesite">The session cookie (name and SameSite)<a class="docs-heading-link" aria-label="Link to this section" href="#the-session-cookie-name-and-samesite">#</a></h2>
@@ -110,12 +110,12 @@ $user = sesame_login();
 <p>On logout, both paths send <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: &quot;cache&quot;, &quot;storage&quot;</code> so a back button or a shared browser cannot show a signed-in page; <code>&quot;cookies&quot;</code> is left out on purpose, because it would clear every cookie on the host and sign the user out of every other app on wayne.edu, not just this one. Single logout is not supported, the identity provider cannot sign the user out of the app's other sessions, so SESAME rejects a truthy <code>slo</code> (or <code>single_logout</code>) config key at boot.</p>
 <h2 id="logout">Logout<a class="docs-heading-link" aria-label="Link to this section" href="#logout">#</a></h2>
 <p>Logout is POST-only, with a CSRF token. <code>sesame_logout()</code> runs only for a POST whose body carries the session's <code>sesame_logout_token</code>; a GET answers 405 (<code>Allow: POST</code>) and a POST without the right token answers 403, and both leave the session alone. So another site cannot sign the user out with an image, a link or a forged form. Put the token in the sign-out form:</p>
-<pre><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
+<pre tabindex="0"><code class="language-php">&lt;form method=&quot;post&quot; action=&quot;/logout.php&quot;&gt;
   &lt;input type=&quot;hidden&quot; name=&quot;sesame_logout_token&quot; value=&quot;&lt;?= sesame_logout_token() ?&gt;&quot;&gt;
   &lt;button&gt;Sign out&lt;/button&gt;
 &lt;/form&gt;
 </code></pre>
-<pre><code class="language-php">// logout.php
+<pre tabindex="0"><code class="language-php">// logout.php
 sesame_logout('https://app.example.test/');
 </code></pre>
 <p>The token lives in the session, is made on first use and dies with the session at logout. Laravel apps use Laravel's own CSRF token instead: the <code>POST /logout</code> route is in the <code>web</code> middleware group, so a form needs <code>@csrf</code>.</p>
