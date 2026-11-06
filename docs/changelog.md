@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Security: the front-page deploy layer moves to Symfony 7.4.23 (symfony/http-foundation and symfony/yaml advisories, including CVE-2026-118514).
 - Added: the Wayne Auth bridge, `Waynestate\Sesame\WayneAuth\WayneAuth`, deprecated on arrival. Apps on the old Wayne Auth SSO cookie keep `new WayneAuth($config)`, `authenticateSSO()`, `getAccessID()` and `_parseSSOCookie('v')`, and sign people in through SESAME's cas driver instead; the one code change is the line that loaded the old class, which now requires the app's SESAME config file calling `WayneAuth::boot()`. Guests go to CAS from inside `authenticateSSO()` (or get `false` with `on_guest => deny`), a ticket that does not validate throws `AuthenticationFailed` rather than looping, the password mode (`'d'`) throws because CAS never releases the password, and `accessid_case` fixes the AccessID's case for apps that compare it. `boot()` refuses to start while the old class is still loaded, and re-reads SESAME's session values for apps that start the session before Composer's autoloader.
 - Docs: a "Moving off Wayne Auth" guide (the one-line swap, the options, the call-by-call differences, the checks before shipping and the native next step), linked from "Moving from wayne-cas", the API reference and the README.
 - Tests: the bridge is covered against the real cas driver on the fake HTTP client, and a fixture page written the Wayne Auth way signs in end to end under PHP's built-in server.

@@ -53,6 +53,9 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
 <li>
+<p>Security: the front-page deploy layer moves to Symfony 7.4.23 (symfony/http-foundation and symfony/yaml advisories, including CVE-2026-118514).</p>
+</li>
+<li>
 <p>Added: the Wayne Auth bridge, <code>Waynestate\Sesame\WayneAuth\WayneAuth</code>, deprecated on arrival. Apps on the old Wayne Auth SSO cookie keep <code>new WayneAuth($config)</code>, <code>authenticateSSO()</code>, <code>getAccessID()</code> and <code>_parseSSOCookie('v')</code>, and sign people in through SESAME's cas driver instead; the one code change is the line that loaded the old class, which now requires the app's SESAME config file calling <code>WayneAuth::boot()</code>. Guests go to CAS from inside <code>authenticateSSO()</code> (or get <code>false</code> with <code>on_guest =&gt; deny</code>), a ticket that does not validate throws <code>AuthenticationFailed</code> rather than looping, the password mode (<code>'d'</code>) throws because CAS never releases the password, and <code>accessid_case</code> fixes the AccessID's case for apps that compare it. <code>boot()</code> refuses to start while the old class is still loaded, and re-reads SESAME's session values for apps that start the session before Composer's autoloader.</p>
 </li>
 <li>
