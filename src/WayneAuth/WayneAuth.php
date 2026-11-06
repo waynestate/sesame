@@ -137,7 +137,8 @@ class WayneAuth
      * CAS needs one to remember the sign-in).
      *
      * The cas driver needs a PSR-18 client. Pass one, or install
-     * guzzlehttp/guzzle and the bridge builds one with a 10 second timeout.
+     * guzzlehttp/guzzle and the bridge builds one with a 10 second timeout, redirects off and TLS
+     * verification on.
      *
      * Options: `on_guest` (`redirect`, the default, or `deny`) and
      * `accessid_case` (`asis`, the default, `upper` or `lower`).
@@ -454,7 +455,9 @@ class WayneAuth
         }
 
         if (class_exists(GuzzleClient::class)) {
-            return new GuzzleClient(['timeout' => 10, 'connect_timeout' => 5]);
+            // The settings the cas driver guide asks of any client: a total
+            // timeout, no redirects on the validation call, TLS verified.
+            return new GuzzleClient(['timeout' => 10, 'connect_timeout' => 5, 'allow_redirects' => false, 'verify' => true]);
         }
 
         throw new InvalidConfig('The Wayne Auth bridge needs a PSR-18 client for the cas driver. Install guzzlehttp/guzzle, or pass $http to WayneAuth::boot().');

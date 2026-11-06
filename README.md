@@ -1351,6 +1351,30 @@ once and leaves the 2FA to the app.
   `auth.providers.users.model`), so check that signed-in pages and any Gate
   or policy checks still work.
 
+## Moving off Wayne Auth
+
+Apps still on the old Wayne Auth SSO cookie (`new WayneAuth($config)`,
+`authenticateSSO()`, `getAccessID()`) stop letting anyone in when that
+deprecated service is retired. SESAME's Wayne Auth bridge keeps those calls
+and signs people in through CAS instead, so the move is one line: the
+`require` that loaded the old class becomes a `require` of the app's SESAME
+config file, which calls `Waynestate\Sesame\WayneAuth\WayneAuth::boot()`.
+
+```php
+// Before
+require_once('lib/WayneAuth/WayneAuth.php');
+
+// After
+require_once('config/sesame.php'); // calls WayneAuth::boot([...cas config...])
+```
+
+The bridge is deprecated on arrival: it is the short step, and SESAME's
+native `sesame_login()` is the next one. Wayne Auth's password mode
+(`_parseSSOCookie('d')`) has no equivalent, because CAS never gives an app the
+password. The full guide, with the call-by-call differences and the checks
+to run before shipping, is
+[Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
+
 ## Proof
 
 Proof runs against real Wayne State applications are on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in.

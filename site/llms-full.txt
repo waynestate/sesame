@@ -1339,6 +1339,30 @@ once and leaves the 2FA to the app.
   `auth.providers.users.model`), so check that signed-in pages and any Gate
   or policy checks still work.
 
+### Moving off Wayne Auth
+
+Apps still on the old Wayne Auth SSO cookie (`new WayneAuth($config)`,
+`authenticateSSO()`, `getAccessID()`) stop letting anyone in when that
+deprecated service is retired. SESAME's Wayne Auth bridge keeps those calls
+and signs people in through CAS instead, so the move is one line: the
+`require` that loaded the old class becomes a `require` of the app's SESAME
+config file, which calls `Waynestate\Sesame\WayneAuth\WayneAuth::boot()`.
+
+```php
+// Before
+require_once('lib/WayneAuth/WayneAuth.php');
+
+// After
+require_once('config/sesame.php'); // calls WayneAuth::boot([...cas config...])
+```
+
+The bridge is deprecated on arrival: it is the short step, and SESAME's
+native `sesame_login()` is the next one. Wayne Auth's password mode
+(`_parseSSOCookie('d')`) has no equivalent, because CAS never gives an app the
+password. The full guide, with the call-by-call differences and the checks
+to run before shipping, is
+[Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
+
 ### Proof
 
 Proof runs against real Wayne State applications are on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in.
@@ -1719,6 +1743,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Added: the Wayne Auth bridge, `Waynestate\Sesame\WayneAuth\WayneAuth`, deprecated on arrival. Apps on the old Wayne Auth SSO cookie keep `new WayneAuth($config)`, `authenticateSSO()`, `getAccessID()` and `_parseSSOCookie('v')`, and sign people in through SESAME's cas driver instead; the one code change is the line that loaded the old class, which now requires the app's SESAME config file calling `WayneAuth::boot()`. Guests go to CAS from inside `authenticateSSO()` (or get `false` with `on_guest => deny`), a ticket that does not validate throws `AuthenticationFailed` rather than looping, the password mode (`'d'`) throws because CAS never releases the password, and `accessid_case` fixes the AccessID's case for apps that compare it. `boot()` refuses to start while the old class is still loaded, and re-reads SESAME's session values for apps that start the session before Composer's autoloader.
+- Docs: a "Moving off Wayne Auth" guide (the one-line swap, the options, the call-by-call differences, the checks before shipping and the native next step), linked from "Moving from wayne-cas", the API reference and the README.
+- Tests: the bridge is covered against the real cas driver on the fake HTTP client, and a fixture page written the Wayne Auth way signs in end to end under PHP's built-in server.
 - Docs: the docs pages sit closer to the front page. The light out of the open door now falls behind each page's title (opening once when motion is allowed), the Overview's picture of the shop hangs in a slate frame, and the badges sit in a row. The after-hours dark mode moved off the green-black floor to a warm dark bench: green stays where the front page puts it (the counter footer, the Open sign, the mark), and inline code and callout colors follow the theme in dark.
 - Docs: the docs pages wear the front page's key shop. The same shop sign and main menu (Docs marked current, the Open sign hung on its strings), Bungee titles with a brass key under each, kicker labels, slate code slabs with the gold Copy button, notes and callouts as paper key tags, job-ticket pager and the green counter footer. A derived after-hours dark mode, and motion only when the system allows it. The project name reads SESAME in page titles.
 - Changed: NativeSession keeps the old session for a 60 second grace after regenerate (marked with a destroyed-at time), then rejects its reuse and logs sesame.session_anomaly; pass graceSeconds: 0 for the old immediate delete (S43). Laravel is unchanged.
@@ -2512,6 +2539,10 @@ Source: https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html
 
 Apps that use wayne-cas can move to SESAME without rewriting their auth. Open sesame, indeed: the same door, a new lock. The easy way is Booster's `cas-to-sesame` hop; the by-hand path is below it.
 
+Note
+
+Still on the older Wayne Auth SSO cookie (`new WayneAuth(...)`, `authenticateSSO()`) rather than wayne-cas? See [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html): a bridge keeps those calls and moves the sign-in to CAS with a one-line change.
+
 ### The easy way: Booster's `cas-to-sesame` hop[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-easy-way-booster-s-cas-to-sesame-hop)
 
 Booster plans the hop with `--sesame`, and leaves it out with a warning when the plan ends below PHP 8.3, which SESAME needs. It lands just before the hop from Laravel 10 to 11, and while PHP is still below 8.3 the PHP hops go first. What the hop does:
@@ -2602,6 +2633,145 @@ The service URL. wayne-cas built the service URL from the current request. SESAM
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
 - [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)
 - [Running off Citadel](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html)
+- [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html)
+
+---
+
+Source: https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html
+
+## Moving off Wayne Auth[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#moving-off-wayne-auth)
+
+Older WSU PHP apps sign people in through **Wayne Auth**: a small PHP class reads the SSO cookie and checks it with the Wayne Auth service over a socket. Wayne Auth is deprecated. When the service is retired, every app still calling it stops letting anyone in, whatever PHP version it runs. SESAME's Wayne Auth bridge turns that move into a one-line change: the app keeps its `new WayneAuth(...)`, `authenticateSSO()` and `getAccessID()` calls, and they sign people in through CAS instead. Open sesame, say the magic words you already know.
+
+Warning
+
+The bridge is deprecated on arrival. It exists so the move off Wayne Auth is small and provable today; plan the move to SESAME's native calls next (the last section). It says so once per process, as a silenced `E_USER_DEPRECATED` that reaches your error log but never the page.
+
+### Does this fit my app?[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#does-this-fit-my-app)
+
+The bridge keeps the API of the classic `WayneAuth` class, the one apps copy into `lib/` or next to their pages:
+
+```php
+$wayne_auth = new WayneAuth($config['wayneauth']);
+if ($wayne_auth->authenticateSSO() == true) {
+    $accessid = $wayne_auth->getAccessID();
+} else {
+    header('Location: ' . $config['auth']['login_url'] . $config['general']['url_root']);
+    exit;
+}
+```
+
+If your app looks like that, read on. Other Wayne Auth shapes need a hand move to `sesame_login()` (see [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)):
+
+- An app that reads the `validUser` cookie itself and posts it to a cookie validator, or to the Wayne Auth HTTP gateway.
+- An app that asks Wayne Auth for the user's **password** (`_parseSSOCookie('d')`, or a client built with `'d'`). CAS never gives an app the password, so no bridge can; that app needs a different design (a service account, or the target system's own SSO).
+
+SESAME needs PHP 8.3 or newer. An app on older PHP moves its PHP first ([Booster](https://github.com/waynestate/booster) does that part).
+
+### The one-line swap[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-one-line-swap)
+
+1. Require SESAME with Composer (`composer require waynestate/sesame guzzlehttp/guzzle`). Guzzle is the HTTP client the cas driver uses to check tickets; any PSR-18 client works if you pass it yourself.
+2. Add the app's SESAME config file, for example `config/sesame.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Waynestate\Sesame\WayneAuth\WayneAuth;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+WayneAuth::boot([
+    'driver' => 'cas',
+    'environment' => 'production',
+    'cas' => [
+        'base_url' => 'https://login.wayne.edu/cas',
+        'service_url' => 'https://app.apps.wayne.edu/',
+    ],
+]);
+```
+
+3. Change the one line that loaded the old class:
+
+```php
+// Before
+require_once('lib/WayneAuth/WayneAuth.php');
+
+// After
+require_once('config/sesame.php');
+```
+
+That is the whole code change. `boot()` builds SESAME, registers it with `sesame()`, and makes the old global name `WayneAuth` point at the bridge, so every `new WayneAuth($config['wayneauth'])` in the app gets the bridge. An app that refers to the class by a `use` line can import `Waynestate\Sesame\WayneAuth\WayneAuth` instead. Delete the old class file once nothing loads it: `boot()` refuses to start while a different `WayneAuth` class is loaded, so a half-done swap fails loudly instead of quietly keeping Wayne Auth.
+
+The `cas.service_url` is where CAS sends people back: the page that calls `authenticateSSO()` (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's `forward_url` sent them to the app's root. With [Playbook](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html) installed, or `SESAME_CAS_BASE_URL` set, `base_url` can be left out.
+
+#### The session[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
+
+The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Let HELMET harden it if you can ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the cookie settings), and set `session.gc_maxlifetime` to at least the idle timeout.
+
+Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: `boot()` re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.
+
+#### Options[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#options)
+
+`boot()` takes a few more arguments, all optional:
+
+| Argument | Default | What it does |
+| --- | --- | --- |
+| `$http` | Guzzle, 10 second timeout, redirects off | The PSR-18 client for the ticket check |
+| `$requests` | nyholm/psr7's factory | The PSR-17 request factory |
+| `$resolver` | the verified username | Your `UserResolver`, when the app wants its own user object stored in the session |
+| `$options['on_guest']` | `redirect` | `redirect` sends a visitor who is not signed in to CAS from inside `authenticateSSO()`; `deny` answers `false` the way Wayne Auth did, so the app's own else branch runs |
+| `$options['accessid_case']` | `asis` | `upper` or `lower` when the app compares the AccessID against a list written in one case |
+| `$logger` | none | A PSR-3 logger for SESAME's sign-in events |
+
+With `on_guest` left at `redirect`, the app's old else branch (the redirect to the Wayne Auth login page) never runs again, so the old login URL in its config stops mattering. With `deny`, point that login URL at a page of your own that calls `sesame_login()`.
+
+### What changes, call by call[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#what-changes-call-by-call)
+
+| Wayne Auth | The bridge |
+| --- | --- |
+| `new WayneAuth($config)` | Same. The old keys (`sso_host`, `sso_port`, `ldap_host`, `timeout` and the rest) are accepted and ignored; `$wayne_auth->config` still holds them |
+| `authenticateSSO()` true | Same: someone is signed in. SESAME's idle (120 minutes) and absolute (12 hours) timeouts apply |
+| `authenticateSSO()` false for a visitor with no cookie | Sends the visitor to CAS and stops the script (`on_guest => redirect`), or `false` (`on_guest => deny`) |
+| (nothing) | A visitor coming back from CAS with a ticket: the ticket is checked, the user is stored, and the browser is sent on to the service URL without the ticket |
+| (nothing) | A ticket that does not check out throws `AuthenticationFailed`. Answering `false` would send the browser to CAS and back forever |
+| `false` for a refused visitor | Your resolver returned `null`: `false`, nothing stored |
+| `getAccessID()` | The CAS username, the same AccessID. `$wayne_auth->accessid` is set too |
+| `_parseSSOCookie('v')` | `['verified' => true, 'accessid' => ..., 'timeout' => seconds left]`, or `['verified' => false]`; never redirects |
+| `_parseSSOCookie('d')` (the password) | Throws `LogicException`. CAS never gives an app the password |
+| Signing out through the SSO logout page | A POST form to a page that calls `sesame_logout()` ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#logout)); it ends the app's session and sends the browser to the CAS logout |
+
+Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the `Identity` your resolver receives, once you move to the native calls.
+
+### Check it before you ship[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
+
+1. On a laptop, boot with the `fake` driver (`'driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'ab1234']]`): every page should say who is signed in without any CAS server.
+2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
+3. Leave the tab alone past the idle timeout and reload: you should go through CAS again (silently, if your CAS session is still alive).
+4. Grep the app for `validUser`, `sso_host` and `_parseSSOCookie('d')`: none should be left doing work.
+
+SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (`tests/WayneAuthLegacyAppTest.php`).
+
+### Going native later[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#going-native-later)
+
+The bridge is three thin calls over SESAME's raw-PHP functions. When you have a quiet afternoon:
+
+| Bridge | Native |
+| --- | --- |
+| `require_once('config/sesame.php')` with `WayneAuth::boot()` | the same file, building `Sesame` as in [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) and calling `sesame($sesame)` |
+| `if ($wayne_auth->authenticateSSO()) { ... } else { redirect }` | `$user = sesame_login();` (it sends guests to CAS and stops the script) |
+| `$wayne_auth->getAccessID()` | the username your `UserResolver` received, or `sesame()->sessionStatus()['username']` |
+| `authorized_ids` checks after the sign-in | your resolver returns `null` for anyone not allowed, so they are never signed in |
+
+Then delete the config line that calls `boot()`, and the bridge is gone.
+
+### Related[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#related)
+
+- [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)
+- [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)
+- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html)
+- [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html)
 
 ---
 
@@ -3738,6 +3908,7 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 - The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html) page.
 - The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`), documented in the [Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html).
 - The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
+- The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/reference/api.html#related)
 

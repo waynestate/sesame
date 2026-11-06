@@ -83,6 +83,10 @@
                     "path": "guides/moving-from-wayne-cas"
                 },
                 {
+                    "title": "Moving off Wayne Auth",
+                    "path": "guides/moving-off-wayne-auth"
+                },
+                {
                     "title": "Strongly recommended: a git.wayne.edu instance runner",
                     "path": "guides/instance-runner"
                 }

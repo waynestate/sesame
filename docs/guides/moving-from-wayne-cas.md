@@ -7,6 +7,9 @@ description: Apps that use wayne-cas can move to SESAME without rewriting their 
 
 Apps that use wayne-cas can move to SESAME without rewriting their auth. Open sesame, indeed: the same door, a new lock. The easy way is Booster's `cas-to-sesame` hop; the by-hand path is below it.
 
+> [!NOTE]
+> Still on the older Wayne Auth SSO cookie (`new WayneAuth(...)`, `authenticateSSO()`) rather than wayne-cas? See [Moving off Wayne Auth](moving-off-wayne-auth.md): a bridge keeps those calls and moves the sign-in to CAS with a one-line change.
+
 ## The easy way: Booster's `cas-to-sesame` hop
 
 Booster plans the hop with `--sesame`, and leaves it out with a warning when the plan ends below PHP 8.3, which SESAME needs. It lands just before the hop from Laravel 10 to 11, and while PHP is still below 8.3 the PHP hops go first. What the hop does:
@@ -95,3 +98,4 @@ The service URL. wayne-cas built the service URL from the current request. SESAM
 - [Which driver for my app?](which-driver.md)
 - [The cas driver](driver-cas.md)
 - [Running off Citadel](running-off-citadel.md)
+- [Moving off Wayne Auth](moving-off-wayne-auth.md)
