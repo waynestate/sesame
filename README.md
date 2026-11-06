@@ -1402,6 +1402,15 @@ validate through tests, Pint and PHPStan:
 docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
 ```
 
+The committed site gets checked in a real browser too: axe-core with the WCAG 2.2 AA
+tag set, run in Docker through Playwright, so no host browser is needed. It looks at
+the front page and every docs page, in light and dark at two widths:
+
+```
+scripts/a11y.sh      # Linux and macOS
+scripts/a11y.ps1     # Windows
+```
+
 ## Strongly recommended: a git.wayne.edu instance runner
 
 git.wayne.edu has no runners today, so CI for this repo runs on the test

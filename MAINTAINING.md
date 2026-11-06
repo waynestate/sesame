@@ -29,6 +29,7 @@ issues and merge requests go to nougat. Nobody pushes to the mirrors.
 | All checks (what CI runs) | `composer ci` |
 | Only the tests | `composer test` |
 | Fix code style | `composer fix` |
+| Site accessibility gate (axe-core, WCAG 2.2 AA, in Docker) | `scripts/a11y.sh` (Linux, macOS) or `scripts/a11y.ps1` (Windows) |
 
 With only Docker (the same lines work in PowerShell and sh):
 
