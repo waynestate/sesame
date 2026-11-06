@@ -5,6 +5,27 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        # The legacy fixture app is written the old way on purpose (the
+        # global WayneAuth name exists only at run time, made by boot()).
+        - tests/fixtures/*
+    ignoreErrors:
+        # The Wayne Auth bridge is @deprecated on purpose (a bridge, deprecated
+        # on arrival); its own tests still have to use it.
+        -
+            identifiers:
+                - new.deprecatedClass
+                - staticMethod.deprecatedClass
+                - classConstant.deprecatedClass
+                - class.extendsDeprecatedClass
+                - parameter.deprecatedClass
+                - method.deprecatedClass
+                - return.deprecatedClass
+                - property.deprecatedClass
+            paths:
+                - tests/WayneAuthBridgeTest.php
+                - tests/Support/TestableWayneAuth.php
+            reportUnmatched: false
     phpVersion:
         min: 80300
         max: 80599
