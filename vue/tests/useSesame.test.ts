@@ -128,7 +128,7 @@ describe('useSesame', () => {
     expect(form).not.toBeNull();
     expect(form?.method).toBe('post');
     expect(form?.getAttribute('action')).toBe('/logout');
-    const token = form?.querySelector('input[name="sesame_logout_token"]');
+    const token = form?.querySelector<HTMLInputElement>('input[name="sesame_logout_token"]');
     expect(token).not.toBeNull();
     expect(token?.value).toBe('3f7a1c9e8b2d4a6f');
     submitSpy.mockRestore();
