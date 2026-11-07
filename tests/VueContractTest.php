@@ -47,17 +47,18 @@ final class VueContractTest extends TestCase
     }
 
     /**
-     * One of the Vue fixtures, decoded.
+     * One of the Vue fixtures, decoded. The name is the file name under
+     * vue/tests/fixtures/, for example status-signed-in.json.
      *
      * @return array<string, mixed>
      */
     private function fixture(string $name): array
     {
-        $path = dirname(__DIR__) . '/vue/tests/fixtures/' . $name . '.json';
+        $path = dirname(__DIR__) . '/vue/tests/fixtures/' . $name;
         $json = file_get_contents($path);
-        self::assertNotFalse($json, 'The Vue fixture ' . $name . '.json is missing.');
+        self::assertNotFalse($json, 'The Vue fixture ' . $name . ' is missing.');
         $decoded = json_decode($json, true);
-        self::assertIsArray($decoded, 'The Vue fixture ' . $name . '.json is not a JSON object.');
+        self::assertIsArray($decoded, 'The Vue fixture ' . $name . ' is not a JSON object.');
 
         return $decoded;
     }
@@ -79,7 +80,7 @@ final class VueContractTest extends TestCase
 
     public function testTheSignedInAnswerMatchesTheVueFixtureShape(): void
     {
-        $fixture = $this->fixture('status-signed-in');
+        $fixture = $this->fixture('status-signed-in.json');
         $clock = new FakeClock();
         $log = new EventLog();
         $session = new RecordingSession($log);
@@ -119,7 +120,7 @@ final class VueContractTest extends TestCase
 
     public function testTheSignedOutAnswerEqualsTheVueFixture(): void
     {
-        $fixture = $this->fixture('status-signed-out');
+        $fixture = $this->fixture('status-signed-out.json');
         $log = new EventLog();
         $sesame = new Sesame(
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
