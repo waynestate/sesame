@@ -289,10 +289,13 @@ final class GatewayDriver implements Driver
      *
      * The signature is checked first, with the algorithm pinned from config,
      * so a token that claims a different algorithm (or "none") is refused
-     * before its signature is looked at. When several keys are configured
-     * (a gateway rotating its signing key), the token's kid header names the
-     * key that verifies it: a missing or unknown kid is refused like a bad
-     * signature, and the kid is never echoed back in the message. Then the
+     * before its signature is looked at. When a map of keys is configured
+     * (gateway.public_keys or gateway.jwks_file, for a gateway rotating its
+     * signing key), the token's kid header names the key that verifies it:
+     * an unknown kid is refused like a bad signature, and so is a missing
+     * kid when two or more keys are listed. With exactly one listed key, a
+     * token without a kid is verified with that key. The kid is never
+     * echoed back in the message. Then the
      * issuer, audience and time claims (iat, nbf, exp) are checked, with the
      * configured leeway for clock skew.
      */
@@ -309,15 +312,24 @@ final class GatewayDriver implements Driver
                 throw new InvalidConfig('The gateway driver has no configured public key.');
             }
 
-            $kid = $token->headers()->get('kid');
+            $headers = $token->headers();
 
-            if (! is_string($kid) || ! array_key_exists($kid, $keys)) {
-                throw new AuthenticationFailed(
-                    'The signed assertion does not name a configured gateway key (gateway.signature).',
-                );
+            if (! $headers->has('kid') && count($keys) === 1) {
+                // One listed key and a token that names none: there is
+                // nothing to choose between, so the one key verifies it,
+                // the same as gateway.public_key would.
+                $key = $keys[array_key_first($keys)];
+            } else {
+                $kid = $headers->get('kid');
+
+                if (! is_string($kid) || ! array_key_exists($kid, $keys)) {
+                    throw new AuthenticationFailed(
+                        'The signed assertion does not name a configured gateway key (gateway.signature).',
+                    );
+                }
+
+                $key = $keys[$kid];
             }
-
-            $key = $keys[$kid];
         }
 
         $leeway = new DateInterval('PT' . $this->leewaySeconds . 'S');

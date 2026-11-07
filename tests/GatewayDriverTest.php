@@ -867,6 +867,64 @@ final class GatewayDriverTest extends TestCase
         self::assertRejected($driver, $this->request($token), 'gateway.signature');
     }
 
+    public function testOneListedKeyVerifiesATokenWithoutAKid(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        // One listed key and no kid: nothing to choose between, so the one
+        // key verifies it, the same as gateway.public_key would.
+        $driver = $this->driver($clock, 'ES256', ['only' => $publicKey]);
+
+        $step = $driver->login($this->request($this->buildToken($signer, $privateKey, $clock)));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(self::SUBJECT, $step->identity->username);
+    }
+
+    public function testOneListedKeyStillChecksTheSignatureOfATokenWithoutAKid(): void
+    {
+        $clock = new FakeClock();
+        [, , $publicKey] = $this->keys('ES256');
+        [$signer, $strangerKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['only' => $publicKey]);
+
+        self::assertRejected($driver, $this->request($this->buildToken($signer, $strangerKey, $clock)), 'gateway.signature');
+    }
+
+    public function testOneListedKeyRefusesATokenThatNamesAnotherKid(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['only' => $publicKey]);
+        // Signed by the listed key, but it names a kid the app never listed.
+        $token = $this->buildToken($signer, $privateKey, $clock, ['kid' => 'retired']);
+
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
+    }
+
+    public function testOneListedKeyRefusesATokenWithANonStringKid(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        $driver = $this->driver($clock, 'ES256', ['only' => $publicKey]);
+        $token = $this->buildToken($signer, $privateKey, $clock, ['kid' => 7]);
+
+        self::assertRejected($driver, $this->request($token), 'gateway.signature');
+    }
+
+    public function testASinglePublicKeyIgnoresTheKid(): void
+    {
+        $clock = new FakeClock();
+        [$signer, $privateKey, $publicKey] = $this->keys('ES256');
+        // gateway.public_key never looked at kid, and still does not: a
+        // single-key app keeps working when the gateway starts naming keys.
+        $driver = $this->driver($clock, 'ES256', $publicKey);
+
+        $step = $driver->login($this->request($this->buildToken($signer, $privateKey, $clock, ['kid' => 'drawbridge-2026-11'])));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+    }
+
     public function testRejectsAListedKeyTokenWithAnUnknownKidWithoutEchoingIt(): void
     {
         $clock = new FakeClock();

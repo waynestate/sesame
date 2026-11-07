@@ -54,7 +54,11 @@
                 ],
                 "SESAME_GATEWAY_PUBLIC_KEY": [
                     "The gateway's public key: a PEM string or a path to one for ES256 and RS256, a base64-encoded raw key or a path to one for EdDSA",
-                    "none (set this or `public_keys`, not both)"
+                    "none (set this, `public_keys` or `jwks_file`, only one)"
+                ],
+                "SESAME_GATEWAY_JWKS_FILE": [
+                    "A path to a JWKS file holding the gateway's public keys by `kid` (Drawbridge's `keys:jwks` writes it: the current key and the next), read at boot",
+                    "none (set this, `public_key` or `public_keys`, only one)"
                 ],
                 "SESAME_GATEWAY_ISSUER": [
                     "The issuer claim the gateway assertion must carry",

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame;
 
+use Waynestate\Sesame\Drivers\GatewayKeySet;
 use Waynestate\Sesame\Drivers\Oidc\OidcOptions;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
@@ -19,9 +20,11 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * `gateway.header` (default
  * `X-Sesame-Assertion`), `gateway.algorithm` (default `ES256`, only
  * `ES256`, `RS256` or `EdDSA`), `gateway.public_key` (required unless
- * `gateway.public_keys` is set) or `gateway.public_keys` (a map of kid to
- * key, for a gateway rotating its signing key; set this or `public_key`,
- * not both), `gateway.issuer` (required), `gateway.audience` (required),
+ * `gateway.public_keys` or `gateway.jwks_file` is set), `gateway.public_keys`
+ * (a map of kid to key, for a gateway rotating its signing key) or
+ * `gateway.jwks_file` (a path to a JWKS file holding the same keys, read at
+ * boot by GatewayKeySet; set exactly one of the three), `gateway.issuer`
+ * (required), `gateway.audience` (required),
  * `gateway.leeway_seconds` (default `30`, a non-negative integer),
  * `gateway.trusted_proxies` (required, a non-empty array of CIDR ranges),
  * `gateway.max_lifetime` (default `300`, a positive integer: the longest an
@@ -105,6 +108,7 @@ final readonly class Config
         public bool $oauth2RequireAtJwt = false,
         public ?OidcOptions $oidc = null,
         public ?array $gatewayPublicKeys = null,
+        public ?string $gatewayJwksFile = null,
     ) {}
 
     /**
@@ -143,6 +147,7 @@ final readonly class Config
         $gatewayMaxLifetimeSeconds = 300;
         $gatewayAllowWithoutReplayGuard = false;
         $gatewayPublicKeys = null;
+        $gatewayJwksFile = null;
         $oauth2Issuer = null;
         $oauth2JwksUrl = null;
         $oauth2Audience = null;
@@ -191,16 +196,36 @@ final readonly class Config
             }
 
             // The gateway verifies against one public key, or (while it
-            // rotates its signing key) a map of kid to key: set one or the
-            // other, not both. An empty public_keys array counts as unset,
-            // and public_key is then required as before.
+            // rotates its signing key) a map of kid to key, given in PHP as
+            // public_keys or as a JWKS file (jwks_file, settable from the
+            // environment): set exactly one. An empty public_keys array or
+            // jwks_file counts as unset, and public_key is then required.
             $gatewayPublicKeysRaw = $config['gateway']['public_keys'] ?? null;
 
             if ($gatewayPublicKeysRaw !== null && ! is_array($gatewayPublicKeysRaw)) {
                 throw new InvalidConfig('The config key "gateway.public_keys" must be an array of kid to key.');
             }
 
-            if (is_array($gatewayPublicKeysRaw) && $gatewayPublicKeysRaw !== []) {
+            $gatewayJwksFileRaw = $config['gateway']['jwks_file'] ?? null;
+
+            if ($gatewayJwksFileRaw !== null && ! is_string($gatewayJwksFileRaw)) {
+                throw new InvalidConfig('The config key "gateway.jwks_file" must be a path to a JWKS file.');
+            }
+
+            if (is_string($gatewayJwksFileRaw) && trim($gatewayJwksFileRaw) !== '') {
+                $gatewayPublicKeyRaw = $config['gateway']['public_key'] ?? null;
+
+                if ((is_string($gatewayPublicKeyRaw) && $gatewayPublicKeyRaw !== '') || (is_array($gatewayPublicKeysRaw) && $gatewayPublicKeysRaw !== [])) {
+                    throw new InvalidConfig(
+                        'Set only one of "gateway.public_key", "gateway.public_keys" and "gateway.jwks_file": they are three ways to give the same keys.',
+                    );
+                }
+
+                $gatewayJwksFile = trim($gatewayJwksFileRaw);
+                // Read at boot, so a missing or bad key set stops the app
+                // here instead of refusing the first sign-in.
+                $gatewayPublicKeys = GatewayKeySet::fromFile($gatewayJwksFile, $gatewayAlgorithm);
+            } elseif (is_array($gatewayPublicKeysRaw) && $gatewayPublicKeysRaw !== []) {
                 foreach ($gatewayPublicKeysRaw as $kid => $key) {
                     if (! is_string($kid) || $kid === '' || ! is_string($key) || $key === '') {
                         throw new InvalidConfig('Each entry in "gateway.public_keys" must be a non-empty string kid mapped to a non-empty string key.');
@@ -323,6 +348,7 @@ final readonly class Config
             $oauth2RequireAtJwt,
             $oidc,
             $gatewayPublicKeys,
+            $gatewayJwksFile,
         );
     }
 
