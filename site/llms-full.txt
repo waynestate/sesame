@@ -1758,6 +1758,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added: the Wayne Auth bridge, `Waynestate\Sesame\WayneAuth\WayneAuth`, deprecated on arrival. Apps on the old Wayne Auth SSO cookie keep `new WayneAuth($config)`, `authenticateSSO()`, `getAccessID()` and `_parseSSOCookie('v')`, and sign people in through SESAME's cas driver instead; the one code change is the line that loaded the old class, which now requires the app's SESAME config file calling `WayneAuth::boot()`. Guests go to CAS from inside `authenticateSSO()` (or get `false` with `on_guest => deny`), a ticket that does not validate throws `AuthenticationFailed` rather than looping, the password mode (`'d'`) throws because CAS never releases the password, and `accessid_case` fixes the AccessID's case for apps that compare it. `boot()` refuses to start while the old class is still loaded, and re-reads SESAME's session values for apps that start the session before Composer's autoloader.
 - Docs: a "Moving off Wayne Auth" guide (the one-line swap, the options, the call-by-call differences, the checks before shipping and the native next step), linked from "Moving from wayne-cas", the API reference and the README.
 - Tests: the bridge is covered against the real cas driver on the fake HTTP client, and a fixture page written the Wayne Auth way signs in end to end under PHP's built-in server.
+- Changed: The Laravel guide says Laravel 13 apps must implement `RefreshesUser`, because JSON sessions hand back the stored user as an array.
 - Docs: the docs pages sit closer to the front page. The light out of the open door now falls behind each page's title (opening once when motion is allowed), the Overview's picture of the shop hangs in a slate frame, and the badges sit in a row. The after-hours dark mode moved off the green-black floor to a warm dark bench: green stays where the front page puts it (the counter footer, the Open sign, the mark), and inline code and callout colors follow the theme in dark.
 - Docs: the docs pages wear the front page's key shop. The same shop sign and main menu (Docs marked current, the Open sign hung on its strings), Bungee titles with a brass key under each, kicker labels, slate code slabs with the gold Copy button, notes and callouts as paper key tags, job-ticket pager and the green counter footer. A derived after-hours dark mode, and motion only when the system allows it. The project name reads SESAME in page titles.
 - Changed: NativeSession keeps the old session for a 60 second grace after regenerate (marked with a destroyed-at time), then rejects its reuse and logs sesame.session_anomaly; pass graceSeconds: 0 for the old immediate delete (S43). Laravel is unchanged.
@@ -2504,6 +2505,25 @@ $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
 SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model`; a resolver that does not implement it keeps handing back the stored copy, as it always has.
+
+On Laravel 13, implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and the guard sees nobody. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
+
+```php
+public function refreshUser(mixed $user): mixed
+{
+    $username = match (true) {
+        $user instanceof User => $user->username,
+        is_array($user) => $user['username'] ?? null,
+        default => null,
+    };
+
+    if (! is_string($username) || $username === '') {
+        return null;
+    }
+
+    return User::where('username', $username)->first();
+}
+```
 
 The same user is available through Laravel's own auth, because the provider registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
 
@@ -4696,6 +4716,8 @@ How to move between SESAME versions. Each section below is one released version 
 2. An app that accepts a ticket for a login it did not start (a link from the CAS login page) must set `cas.require_pending_login` (env `SESAME_CAS_REQUIRE_PENDING_LOGIN`) to `false`; that reopens login CSRF, so keep the opt-out deliberate.
 
 **Deprecated.** Nothing is deprecated in this release.
+
+**Changed.** On Laravel 13, implement `RefreshesUser` in the app's resolver: Laravel 13 stores sessions as JSON, so the stored user comes back as an array, and the method must look the user up again; see [Reading the user](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user).
 
 **Steps.**
 

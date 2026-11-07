@@ -19,6 +19,8 @@ How to move between SESAME versions. Each section below is one released version 
 
 **Deprecated.** Nothing is deprecated in this release.
 
+**Changed.** On Laravel 13, implement `RefreshesUser` in the app's resolver: Laravel 13 stores sessions as JSON, so the stored user comes back as an array, and the method must look the user up again; see [Reading the user](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user).
+
 **Steps.**
 
 1. Move the constraint and update:

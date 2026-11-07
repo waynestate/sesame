@@ -115,6 +115,25 @@ $user = app(\Waynestate\Sesame\Sesame::class)->user();
 
 SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model`; a resolver that does not implement it keeps handing back the stored copy, as it always has.
 
+On Laravel 13, implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and the guard sees nobody. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
+
+```php
+public function refreshUser(mixed $user): mixed
+{
+    $username = match (true) {
+        $user instanceof User => $user->username,
+        is_array($user) => $user['username'] ?? null,
+        default => null,
+    };
+
+    if (! is_string($username) || $username === '') {
+        return null;
+    }
+
+    return User::where('username', $username)->first();
+}
+```
+
 The same user is available through Laravel's own auth, because the provider registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
 
 ```php

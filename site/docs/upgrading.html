@@ -57,6 +57,7 @@ on, work down toward the one you want, and run the checks after each hop.</p>
 <li>An app that accepts a ticket for a login it did not start (a link from the CAS login page) must set <code>cas.require_pending_login</code> (env <code>SESAME_CAS_REQUIRE_PENDING_LOGIN</code>) to <code>false</code>; that reopens login CSRF, so keep the opt-out deliberate.</li>
 </ol>
 <p><strong>Deprecated.</strong> Nothing is deprecated in this release.</p>
+<p><strong>Changed.</strong> On Laravel 13, implement <code>RefreshesUser</code> in the app's resolver: Laravel 13 stores sessions as JSON, so the stored user comes back as an array, and the method must look the user up again; see <a href="guides/laravel.html#reading-the-user">Reading the user</a>.</p>
 <p><strong>Steps.</strong></p>
 <ol>
 <li>
