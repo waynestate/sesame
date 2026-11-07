@@ -31,9 +31,9 @@ Documentation: the opening of this README is the [Overview](site/docs/index.html
 
 ## Where the code lives
 
-The canonical repository is on nougat: [enterprise-apps/sesame](https://nougat.snu.gs/enterprise-apps/sesame). git.wayne.edu and GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) are read-only mirrors of it.
-Open issues and merge requests on nougat, not on the mirrors.
-This moves to git.wayne.edu once it has CI runners. Open sesame: the cave is nougat.
+The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu (clone over SSH as `git@git.wayne.edu:enterprise-apps/sesame.git`, or over HTTPS). Open issues and merge requests there, and make tags there, by the maintainer, with an approver.
+GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it.
+CI runs on git.wayne.edu. Open sesame: the cave has a new address.
 
 ## Install
 
@@ -1413,9 +1413,9 @@ scripts/a11y.ps1     # Windows
 
 ## Strongly recommended: a git.wayne.edu instance runner
 
-git.wayne.edu has no runners today, so CI for this repo runs on the test
-GitLab instance. Every product in the stack strongly recommends a
-git.wayne.edu instance runner.
+CI for this repo runs on git.wayne.edu, on the instance runner. Every product
+in the stack strongly recommends the same for apps on git.wayne.edu: one
+shared runner, one less surprise per pipeline.
 
 <details>
 <summary><b>The brand board</b>: the mark, lockups, palette and type</summary>
@@ -1426,7 +1426,7 @@ git.wayne.edu instance runner.
 <div align="center"><b>Same door, every key</b><br><sub>WayneUI and the stack. Each one gets in its own way.</sub></div>
 
 <div align="center">
-  <a href="https://github.com/waynestate/wayne-ui" title="WayneUI"><img src="docs/readme/cast/wayneui.png" width="40" alt="WayneUI"></a>
+  <a href="https://git.wayne.edu/enterprise-apps/wayne-ui" title="WayneUI"><img src="docs/readme/cast/wayneui.png" width="40" alt="WayneUI"></a>
   <a href="https://github.com/waynestate/creed" title="CREED"><img src="docs/readme/cast/creed.png" width="40" alt="CREED"></a>
   <a href="https://github.com/waynestate/proctor" title="PROCTOR"><img src="docs/readme/cast/proctor.png" width="40" alt="PROCTOR"></a>
   <a href="https://github.com/waynestate/sesame" title="SESAME"><img src="docs/readme/cast/sesame.png" width="40" alt="SESAME"></a>
@@ -1437,7 +1437,7 @@ git.wayne.edu instance runner.
   <a href="https://github.com/waynestate/pinstripe" title="Pinstripe"><img src="docs/readme/cast/pinstripe.png" width="40" alt="Pinstripe"></a>
   <a href="https://github.com/waynestate/booster" title="Booster"><img src="docs/readme/cast/booster.png" width="40" alt="Booster"></a>
   <a href="https://github.com/waynestate/rollcall" title="Rollcall"><img src="docs/readme/cast/rollcall.png" width="40" alt="Rollcall"></a>
-  <a href="https://nougat.snu.gs/enterprise-apps/drawbridge" title="Drawbridge"><img src="docs/readme/cast/drawbridge.png" width="40" alt="Drawbridge"></a>
+  <a href="https://git.wayne.edu/enterprise-apps/drawbridge" title="Drawbridge"><img src="docs/readme/cast/drawbridge.png" width="40" alt="Drawbridge"></a>
   <a href="https://github.com/waynestate/advisor" title="ADVISOR"><img src="docs/readme/cast/advisor.png" width="40" alt="ADVISOR"></a>
   <a href="https://github.com/waynestate/weld" title="WELD"><img src="docs/readme/cast/weld.png" width="40" alt="WELD"></a>
 </div>

@@ -126,15 +126,5 @@
             "path": "changelog"
         }
     ],
-    "source": "https://nougat.snu.gs/enterprise-apps/sesame",
-    "mirrors": [
-        {
-            "title": "git.wayne.edu",
-            "url": "https://git.wayne.edu/enterprise-apps/sesame"
-        },
-        {
-            "title": "GitHub",
-            "url": "https://github.com/waynestate/sesame"
-        }
-    ]
+    "source": "https://github.com/waynestate/sesame"
 }

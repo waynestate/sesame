@@ -25,6 +25,10 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
+## Where the code lives
+
+The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.
+
 ## Install
 
 ```

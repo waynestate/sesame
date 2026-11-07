@@ -3,8 +3,8 @@
     "description": "Wayne State's protocol-neutral auth library: it returns a verified identity and leaves the session to the app.",
     "homepage": "https://sesame.apps.wayne.edu/",
     "support": {
-        "source": "https://nougat.snu.gs/enterprise-apps/sesame",
-        "issues": "https://nougat.snu.gs/enterprise-apps/sesame/-/issues"
+        "source": "https://github.com/waynestate/sesame",
+        "issues": "https://git.wayne.edu/enterprise-apps/sesame/-/issues"
     },
     "license": "MIT",
     "type": "library",

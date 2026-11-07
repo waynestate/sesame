@@ -17,9 +17,10 @@ tests for every refusal. Open sesame, but only for the right people.
 
 ## Where it lives
 
-Development happens on nougat, the canonical repository ([enterprise-apps/sesame](https://nougat.snu.gs/enterprise-apps/sesame)).
-This GitHub repository and git.wayne.edu are read-only mirrors: `main` and tags are copied automatically. Changes,
-issues and merge requests go to nougat. Nobody pushes to the mirrors.
+Development happens on git.wayne.edu, the canonical repository ([enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame)).
+Changes, issues and merge requests go there, and tags are made there, by the maintainer, with an approver.
+GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror: `main` and tags are
+copied automatically, Packagist reads from it, and nobody pushes to it.
 
 ## Build and test
 
@@ -74,7 +75,7 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
    heading. (0.1.0 predates the heading convention, so it has none.)
 2. `composer ci` green locally, then on both pipelines for that commit.
 3. Run a secrets scan of the history and check that nothing internal (server names, people, IDs) is in the tree.
-4. Tag `X.Y.Z` (no `v`) on nougat. The mirror carries the tag to GitHub, and Packagist picks it up from there.
+4. Tag `X.Y.Z` (no `v`) on git.wayne.edu. The mirror carries the tag to GitHub, and Packagist picks it up from there.
 5. A release needs a maintainer's approval, and a security-relevant change deserves a second reviewer. Never move or
    delete a published tag.
 
