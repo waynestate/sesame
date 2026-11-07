@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: CI caches Composer downloads per lock file (`.composer-cache`, keyed on `composer.lock` and `deploy/composer.lock`), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.
+
 ## \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
 
 - Added: `gateway.jwks_file` (env `SESAME_GATEWAY_JWKS_FILE`), a path to a JWKS file of the gateway's public keys by `kid`, the file Drawbridge's `keys:jwks` publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated `kid`, more than 8 keys or a key of the wrong type for `gateway.algorithm` stops the app with `InvalidConfig`. Set one of `public_key`, `public_keys` and `jwks_file`.

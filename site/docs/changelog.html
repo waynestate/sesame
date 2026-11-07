@@ -51,6 +51,9 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
+<ul>
+<li>Changed: CI caches Composer downloads per lock file (<code>.composer-cache</code>, keyed on <code>composer.lock</code> and <code>deploy/composer.lock</code>), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.</li>
+</ul>
 <h2 id="0-5-0-2026-11-07">[0.5.0] - 2026-11-07<a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></h2>
 <ul>
 <li>
