@@ -48,6 +48,8 @@ final class VueContractTest extends TestCase
 
     /**
      * One of the Vue fixtures, decoded.
+     *
+     * @return array<string, mixed>
      */
     private function fixture(string $name): array
     {
@@ -109,7 +111,7 @@ final class VueContractTest extends TestCase
         foreach ($fixture as $key => $expected) {
             self::assertSame(
                 $this->jsonType($expected),
-                $this->jsonType($status[(string) $key]),
+                $this->jsonType($status[$key]),
                 'The type of "' . $key . '" drifted from the Vue fixture.',
             );
         }

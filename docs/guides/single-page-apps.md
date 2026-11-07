@@ -67,7 +67,7 @@ so the session is available; a GET needs no CSRF token), and
 
 ## With Vue
 
-This repo ships a thin Vue adapter for the answer: [`vue/`](../vue/README.md)
+This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/vue/README.md)
 gives you `useSesame()` (or `createSesame()` as an app-wide plugin) with
 reactive `signedIn`, `user` and `expired`, a `refresh()` for real user
 actions, and a `logout()` that posts the sign-out form. It never polls, for
