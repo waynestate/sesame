@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
+
 - Added: `gateway.jwks_file` (env `SESAME_GATEWAY_JWKS_FILE`), a path to a JWKS file of the gateway's public keys by `kid`, the file Drawbridge's `keys:jwks` publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated `kid`, more than 8 keys or a key of the wrong type for `gateway.algorithm` stops the app with `InvalidConfig`. Set one of `public_key`, `public_keys` and `jwks_file`.
 - Changed: with exactly one key listed (`public_keys` or `jwks_file`), an assertion with no `kid` is verified with that key instead of refused; a `kid` that names another key is still refused, and with two or more keys a missing `kid` is still refused. `gateway.public_key` still ignores `kid`.
 - Docs: the gateway driver guide covers the key set file and the rotation from the app's side.

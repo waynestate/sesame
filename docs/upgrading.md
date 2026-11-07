@@ -10,7 +10,7 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
-## Unreleased
+## 0.5.0 (2026-11-07)
 
 **Breaking.** The `cas` driver now binds each sign-in to the browser that started it: before the redirect to CAS it stores a pending-login marker in the app's session, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF. Two consequences for apps on the `cas` driver:
 
