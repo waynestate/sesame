@@ -317,7 +317,15 @@
 </tr>
 <tr>
 <td>Public keys</td>
-<td><code>gateway.public_keys</code> as a map of <code>kid</code> to key, or a single <code>gateway.public_key</code></td>
+<td>a single <code>gateway.public_key</code>, <code>gateway.public_keys</code> as a map of <code>kid</code> to key, or <code>gateway.jwks_file</code>, a JWKS file of the same keys read at boot</td>
+</tr>
+<tr>
+<td>Choosing a key</td>
+<td>the token's <code>kid</code> names the listed key; an unknown <code>kid</code> is refused, and so is a missing one when two or more keys are listed (one listed key verifies a token without a <code>kid</code>)</td>
+</tr>
+<tr>
+<td>Key set file limits</td>
+<td>at most 64 KB and 8 keys, public keys only, one <code>kid</code> each, the type <code>gateway.algorithm</code> needs</td>
 </tr>
 </tbody>
 </table></div>
@@ -337,6 +345,18 @@
 <tr>
 <td>Empty key map</td>
 <td><code>The config key &quot;gateway.public_keys&quot; must be a non-empty map of kid to key.</code></td>
+</tr>
+<tr>
+<td>Two key settings with a key set file</td>
+<td><code>Set only one of &quot;gateway.public_key&quot;, &quot;gateway.public_keys&quot; and &quot;gateway.jwks_file&quot;: they are three ways to give the same keys.</code></td>
+</tr>
+<tr>
+<td>Missing key set file</td>
+<td><code>The gateway key set file named by &quot;gateway.jwks_file&quot; does not exist or cannot be read.</code></td>
+</tr>
+<tr>
+<td>Private key material in the key set</td>
+<td><code>The key &quot;&lt;kid&gt;&quot; in the gateway key set (&quot;gateway.jwks_file&quot;) holds private key material. Publish only the public half, and treat that private key as exposed.</code></td>
 </tr>
 </tbody>
 </table></div>

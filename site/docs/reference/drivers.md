@@ -118,7 +118,9 @@ Signed JWT assertions from the Drawbridge gateway. "Open Sesame", but only the r
 | Max assertion lifetime | 300 seconds (the constructor default for `maxLifetimeSeconds`) |
 | Replay guard | Required unless `gateway.allow_without_replay_guard` is on (local development only) |
 | Required claims | A subject, an issue time and an expiry, plus the `jti` for the replay guard |
-| Public keys | `gateway.public_keys` as a map of `kid` to key, or a single `gateway.public_key` |
+| Public keys | a single `gateway.public_key`, `gateway.public_keys` as a map of `kid` to key, or `gateway.jwks_file`, a JWKS file of the same keys read at boot |
+| Choosing a key | the token's `kid` names the listed key; an unknown `kid` is refused, and so is a missing one when two or more keys are listed (one listed key verifies a token without a `kid`) |
+| Key set file limits | at most 64 KB and 8 keys, public keys only, one `kid` each, the type `gateway.algorithm` needs |
 
 The exact error messages:
 
@@ -126,6 +128,9 @@ The exact error messages:
 | --- | --- |
 | No replay guard | `The gateway driver needs a ReplayGuard so a captured assertion cannot be replayed. Pass one to the driver (or to DriverFactory::make()), or set gateway.allow_without_replay_guard to true for local development only.` |
 | Empty key map | `The config key "gateway.public_keys" must be a non-empty map of kid to key.` |
+| Two key settings with a key set file | `Set only one of "gateway.public_key", "gateway.public_keys" and "gateway.jwks_file": they are three ways to give the same keys.` |
+| Missing key set file | `The gateway key set file named by "gateway.jwks_file" does not exist or cannot be read.` |
+| Private key material in the key set | `The key "<kid>" in the gateway key set ("gateway.jwks_file") holds private key material. Publish only the public half, and treat that private key as exposed.` |
 
 ## oauth2[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#oauth2)
 

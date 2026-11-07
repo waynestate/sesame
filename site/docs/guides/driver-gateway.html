@@ -106,7 +106,7 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 </tr>
 <tr>
 <td><code>gateway.public_key</code></td>
-<td>Yes</td>
+<td>Yes, unless <code>public_keys</code> or <code>jwks_file</code> is set</td>
 <td>none</td>
 <td>The gateway's public key: a PEM string (or a path to one) for <code>ES256</code> and <code>RS256</code>, or a base64-encoded raw key (or a path to one) for <code>EdDSA</code>.</td>
 </tr>
@@ -114,7 +114,13 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 <td><code>gateway.public_keys</code></td>
 <td>No</td>
 <td>none</td>
-<td>A map of <code>kid</code> to public key, for rotating the gateway's signing key. Use this or <code>public_key</code>, not both.</td>
+<td>A map of <code>kid</code> to public key, for rotating the gateway's signing key.</td>
+</tr>
+<tr>
+<td><code>gateway.jwks_file</code></td>
+<td>No</td>
+<td>none</td>
+<td>A path to a JWKS file of the gateway's public keys by <code>kid</code> (Drawbridge's <code>keys:jwks</code> writes it), read at boot. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>.</td>
 </tr>
 <tr>
 <td><code>gateway.issuer</code></td>
@@ -164,16 +170,31 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 <p>The assertion must carry <code>sub</code>, <code>iat</code>, <code>exp</code> and <code>jti</code>; the <code>sub</code> claim becomes the username. The optional <code>email</code>, <code>name</code> and <code>affiliations</code> claims become read-only identity attributes. The sign-in time on the identity comes from the driver's clock.</p>
 <p>The optional <code>auth_time</code> and <code>amr</code> claims become the identity's MFA facts, for <code>requireMfa()</code>. <code>auth_time</code> is the epoch seconds of the user's last MFA sign-in; <code>amr</code> is the list of methods they used. A missing or malformed <code>auth_time</code> leaves the MFA time unset, and a missing or malformed <code>amr</code> leaves the method list empty, so a claim the gateway did not verify can never satisfy the check.</p>
 <h2 id="rotating-the-gateway-s-signing-key">Rotating the gateway's signing key<a class="docs-heading-link" aria-label="Link to this section" href="#rotating-the-gateway-s-signing-key">#</a></h2>
-<p>The gateway may list two public keys at once, so a key rotation needs no coordinated window. The driver reads the <code>kid</code> header of each assertion and verifies it with the key listed under that <code>kid</code>; an assertion with a missing or unknown <code>kid</code> is refused, and so is one signed by the other listed key under the wrong <code>kid</code>. The algorithm stays pinned from config for every key.</p>
+<p>The gateway signs with one key at a time and names it in the <code>kid</code> header of every assertion. An app may list several public keys at once, so a key rotation needs no coordinated window. The driver verifies each assertion with the key listed under its <code>kid</code>; an unknown <code>kid</code> is refused, and so is one signed by another listed key under the wrong <code>kid</code>. With two or more keys listed, an assertion with no <code>kid</code> is refused; with exactly one, it is verified with that key, so a single-key setup keeps working. The algorithm stays pinned from config for every key.</p>
+<h3 id="the-key-set-file">The key set file<a class="docs-heading-link" aria-label="Link to this section" href="#the-key-set-file">#</a></h3>
+<p>The easy way to list the keys is the key set file Drawbridge publishes (<code>bin/drawbridge keys:jwks</code>): a standard JWKS file that always holds the gateway's current key and its next one. Point <code>gateway.jwks_file</code> (or <code>SESAME_GATEWAY_JWKS_FILE</code>) at it. Public keys are not secrets, so the file may live in your repository or on a read-only mount.</p>
+<pre tabindex="0"><code class="language-dotenv">SESAME_GATEWAY_JWKS_FILE=/var/www/app/config/drawbridge-keys.json
+</code></pre>
+<p>SESAME reads the file at boot and stops with an <code>InvalidConfig</code> error, before any request is served, when the file:</p>
+<ul>
+<li>is missing, unreadable or larger than 64 KB;</li>
+<li>is not a JWKS document (a JSON object with a non-empty <code>keys</code> list) or holds more than 8 keys;</li>
+<li>has a key without a <code>kid</code>, or lists a <code>kid</code> twice;</li>
+<li>holds any private key material (<code>d</code>, <code>p</code>, <code>q</code>, <code>dp</code>, <code>dq</code>, <code>qi</code>, <code>oth</code> or <code>k</code>); if this happens, treat that private key as exposed;</li>
+<li>has a key of the wrong type for <code>gateway.algorithm</code> (ES256 needs EC P-256, RS256 needs RSA of 2048 bits or more, EdDSA needs OKP Ed25519), or an <code>alg</code> or <code>use</code> that does not match.</li>
+</ul>
+<h3 id="a-rotation-from-the-app-s-side">A rotation, from the app's side<a class="docs-heading-link" aria-label="Link to this section" href="#a-rotation-from-the-app-s-side">#</a></h3>
 <ol>
-<li>Add the new public key to <code>gateway.public_keys</code> under its <code>kid</code>, next to the old one, and deploy every app.</li>
-<li>Switch the gateway's <code>DRAWBRIDGE_SIGNING_KEY_ID</code> and its private key to the new pair. New assertions carry the new <code>kid</code>, and the old ones still verify against the old key until they expire.</li>
-<li>After the old assertions have expired (they live 60 seconds by default; <code>gateway.max_lifetime</code> is the ceiling), remove the old entry. With one key left, you can go back to <code>gateway.public_key</code>.</li>
+<li>The gateway switches to its next key. Your app already trusts it, because it was in the file all along: nothing to do.</li>
+<li>Drawbridge publishes a new file (the new current key and a new next key; the retired key is gone). Deploy it, or refresh the mount, when you can. Until then the old file still works.</li>
 </ol>
+<p>Drawbridge's <a rel="noopener" href="https://drawbridge.apps.wayne.edu/docs/guides/rotating-the-signing-key.html">rotation guide</a> has the gateway's side and the emergency steps.</p>
+<h3 id="the-same-keys-in-php-config">The same keys in PHP config<a class="docs-heading-link" aria-label="Link to this section" href="#the-same-keys-in-php-config">#</a></h3>
+<p><code>gateway.public_keys</code> takes the same keys as a map. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>, never two.</p>
 <pre tabindex="0"><code class="language-php">'gateway' =&gt; [
     'public_keys' =&gt; [
-        '2026a' =&gt; file_get_contents('/etc/sesame/gateway-2026a.pub'),
-        '2026b' =&gt; file_get_contents('/etc/sesame/gateway-2026b.pub'),
+        'drawbridge-2026-11' =&gt; file_get_contents('/etc/sesame/gateway-2026-11.pub'),
+        'drawbridge-2027-11' =&gt; file_get_contents('/etc/sesame/gateway-2027-11.pub'),
     ],
     // issuer, audience, trusted_proxies and the rest, as before.
 ],
@@ -188,7 +209,7 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/driver-cas.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">The cas driver</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/driver-oauth2-entra.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">oauth2 with Entra</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#how-it-verifies">How it verifies</a></li><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#assertion-claims">Assertion claims</a></li><li class="docs-toc__item"><a href="#rotating-the-gateway-s-signing-key">Rotating the gateway&#039;s signing key</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#how-it-verifies">How it verifies</a></li><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#assertion-claims">Assertion claims</a></li><li class="docs-toc__item"><a href="#rotating-the-gateway-s-signing-key">Rotating the gateway&#039;s signing key</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-key-set-file">The key set file</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-rotation-from-the-app-s-side">A rotation, from the app&#039;s side</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-same-keys-in-php-config">The same keys in PHP config</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.4.0</span></span>

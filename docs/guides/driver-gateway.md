@@ -57,8 +57,9 @@ Then build the Sesame facade with the driver, as in the Raw PHP section of the R
 |---|---|---|---|
 | `gateway.header` | No | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | No | `ES256` | `ES256`, `RS256` or `EdDSA`. Pinned, so a token that claims another algorithm is refused. |
-| `gateway.public_key` | Yes | none | The gateway's public key: a PEM string (or a path to one) for `ES256` and `RS256`, or a base64-encoded raw key (or a path to one) for `EdDSA`. |
-| `gateway.public_keys` | No | none | A map of `kid` to public key, for rotating the gateway's signing key. Use this or `public_key`, not both. |
+| `gateway.public_key` | Yes, unless `public_keys` or `jwks_file` is set | none | The gateway's public key: a PEM string (or a path to one) for `ES256` and `RS256`, or a base64-encoded raw key (or a path to one) for `EdDSA`. |
+| `gateway.public_keys` | No | none | A map of `kid` to public key, for rotating the gateway's signing key. |
+| `gateway.jwks_file` | No | none | A path to a JWKS file of the gateway's public keys by `kid` (Drawbridge's `keys:jwks` writes it), read at boot. Set one of `public_key`, `public_keys` and `jwks_file`. |
 | `gateway.issuer` | Yes | none | The `iss` claim the assertion must carry. |
 | `gateway.audience` | Yes | none | The `aud` claim the assertion must carry. |
 | `gateway.leeway_seconds` | No | `30` | Clock skew allowed on the `iat`, `nbf` and `exp` checks, in seconds. |
@@ -75,17 +76,40 @@ The optional `auth_time` and `amr` claims become the identity's MFA facts, for `
 
 ## Rotating the gateway's signing key
 
-The gateway may list two public keys at once, so a key rotation needs no coordinated window. The driver reads the `kid` header of each assertion and verifies it with the key listed under that `kid`; an assertion with a missing or unknown `kid` is refused, and so is one signed by the other listed key under the wrong `kid`. The algorithm stays pinned from config for every key.
+The gateway signs with one key at a time and names it in the `kid` header of every assertion. An app may list several public keys at once, so a key rotation needs no coordinated window. The driver verifies each assertion with the key listed under its `kid`; an unknown `kid` is refused, and so is one signed by another listed key under the wrong `kid`. With two or more keys listed, an assertion with no `kid` is refused; with exactly one, it is verified with that key, so a single-key setup keeps working. The algorithm stays pinned from config for every key.
 
-1. Add the new public key to `gateway.public_keys` under its `kid`, next to the old one, and deploy every app.
-2. Switch the gateway's `DRAWBRIDGE_SIGNING_KEY_ID` and its private key to the new pair. New assertions carry the new `kid`, and the old ones still verify against the old key until they expire.
-3. After the old assertions have expired (they live 60 seconds by default; `gateway.max_lifetime` is the ceiling), remove the old entry. With one key left, you can go back to `gateway.public_key`.
+### The key set file
+
+The easy way to list the keys is the key set file Drawbridge publishes (`bin/drawbridge keys:jwks`): a standard JWKS file that always holds the gateway's current key and its next one. Point `gateway.jwks_file` (or `SESAME_GATEWAY_JWKS_FILE`) at it. Public keys are not secrets, so the file may live in your repository or on a read-only mount.
+
+```dotenv
+SESAME_GATEWAY_JWKS_FILE=/var/www/app/config/drawbridge-keys.json
+```
+
+SESAME reads the file at boot and stops with an `InvalidConfig` error, before any request is served, when the file:
+
+- is missing, unreadable or larger than 64 KB;
+- is not a JWKS document (a JSON object with a non-empty `keys` list) or holds more than 8 keys;
+- has a key without a `kid`, or lists a `kid` twice;
+- holds any private key material (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth` or `k`); if this happens, treat that private key as exposed;
+- has a key of the wrong type for `gateway.algorithm` (ES256 needs EC P-256, RS256 needs RSA of 2048 bits or more, EdDSA needs OKP Ed25519), or an `alg` or `use` that does not match.
+
+### A rotation, from the app's side
+
+1. The gateway switches to its next key. Your app already trusts it, because it was in the file all along: nothing to do.
+2. Drawbridge publishes a new file (the new current key and a new next key; the retired key is gone). Deploy it, or refresh the mount, when you can. Until then the old file still works.
+
+Drawbridge's [rotation guide](https://drawbridge.apps.wayne.edu/docs/guides/rotating-the-signing-key.html) has the gateway's side and the emergency steps.
+
+### The same keys in PHP config
+
+`gateway.public_keys` takes the same keys as a map. Set one of `public_key`, `public_keys` and `jwks_file`, never two.
 
 ```php
 'gateway' => [
     'public_keys' => [
-        '2026a' => file_get_contents('/etc/sesame/gateway-2026a.pub'),
-        '2026b' => file_get_contents('/etc/sesame/gateway-2026b.pub'),
+        'drawbridge-2026-11' => file_get_contents('/etc/sesame/gateway-2026-11.pub'),
+        'drawbridge-2027-11' => file_get_contents('/etc/sesame/gateway-2027-11.pub'),
     ],
     // issuer, audience, trusted_proxies and the rest, as before.
 ],

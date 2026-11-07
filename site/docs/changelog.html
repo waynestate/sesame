@@ -53,6 +53,15 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
 <li>
+<p>Added: <code>gateway.jwks_file</code> (env <code>SESAME_GATEWAY_JWKS_FILE</code>), a path to a JWKS file of the gateway's public keys by <code>kid</code>, the file Drawbridge's <code>keys:jwks</code> publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated <code>kid</code>, more than 8 keys or a key of the wrong type for <code>gateway.algorithm</code> stops the app with <code>InvalidConfig</code>. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>.</p>
+</li>
+<li>
+<p>Changed: with exactly one key listed (<code>public_keys</code> or <code>jwks_file</code>), an assertion with no <code>kid</code> is verified with that key instead of refused; a <code>kid</code> that names another key is still refused, and with two or more keys a missing <code>kid</code> is still refused. <code>gateway.public_key</code> still ignores <code>kid</code>.</p>
+</li>
+<li>
+<p>Docs: the gateway driver guide covers the key set file and the rotation from the app's side.</p>
+</li>
+<li>
 <p>Changed: The canonical repository is git.wayne.edu (ADR-0021); docs, links and package metadata no longer point at the archived nougat copy.</p>
 </li>
 <li>
