@@ -19,6 +19,8 @@ on, work down toward the one you want, and run the checks after each hop.
 
 **Deprecated.** Nothing is deprecated in this release.
 
+**Changed.** On Laravel 13, implement `RefreshesUser` in the app's resolver: Laravel 13 stores sessions as JSON, so the stored user comes back as an array, and the method must look the user up again; see [Reading the user](guides/laravel.md#reading-the-user).
+
 **Steps.**
 
 1. Move the constraint and update:
