@@ -117,7 +117,15 @@ On Laravel 13, implement it. Laravel 13 stores sessions as JSON, so the user SES
 ```php
 public function refreshUser(mixed $user): mixed
 {
-    $username = $user instanceof User ? $user->username : $user['username'];
+    $username = match (true) {
+        $user instanceof User => $user->username,
+        is_array($user) => $user['username'] ?? null,
+        default => null,
+    };
+
+    if (! is_string($username) || $username === '') {
+        return null;
+    }
 
     return User::where('username', $username)->first();
 }
