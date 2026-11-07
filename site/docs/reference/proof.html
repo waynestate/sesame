@@ -47,6 +47,49 @@
     <main id="main">
       <article class="docs-article"><h1 id="proof">Proof<a class="docs-heading-link" aria-label="Link to this section" href="#proof">#</a></h1>
 <p>The name does double duty: this is where SESAME proves itself. There are two kinds of proof, the private proof site that exercises the library against real Wayne State applications, and the test suite anyone can run locally.</p>
+<h2 id="last-run">Last run<a class="docs-heading-link" aria-label="Link to this section" href="#last-run">#</a></h2>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Date</th>
+<th>Commit</th>
+<th>Result</th>
+<th>Duration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Test suite (PHPUnit) on PHP 8.3</td>
+<td>2026-11-07</td>
+<td>2505033</td>
+<td>pass, 631 tests, 1704 assertions</td>
+<td>36.8 s</td>
+</tr>
+<tr>
+<td>Test suite (PHPUnit) on PHP 8.4</td>
+<td>2026-11-07</td>
+<td>2505033</td>
+<td>pass, 631 tests, 1704 assertions</td>
+<td>36.3 s</td>
+</tr>
+<tr>
+<td>Test suite (PHPUnit) on PHP 8.5</td>
+<td>2026-11-07</td>
+<td>2505033</td>
+<td>pass, 631 tests, 1704 assertions</td>
+<td>35.7 s</td>
+</tr>
+<tr>
+<td>composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit)</td>
+<td>2026-11-07</td>
+<td>2505033</td>
+<td>pass, all seven steps (tests: 631, 1704 assertions)</td>
+<td>333.8 s, includes a fresh composer install</td>
+</tr>
+</tbody>
+</table></div>
+<p>To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.</p>
 <h2 id="the-proof-site">The proof site<a class="docs-heading-link" aria-label="Link to this section" href="#the-proof-site">#</a></h2>
 <p>Proof runs against real Wayne State applications on a private site, <a rel="noopener" href="https://proof.apps.wayne.edu/sesame/">proof.apps.wayne.edu/sesame</a>, behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.</p>
 <h2 id="tests">Tests<a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></h2>
@@ -70,7 +113,7 @@ docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpuni
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/reference/api.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">API</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/troubleshooting.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Troubleshooting</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-proof-site">The proof site</a></li><li class="docs-toc__item"><a href="#tests">Tests</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#last-run">Last run</a></li><li class="docs-toc__item"><a href="#the-proof-site">The proof site</a></li><li class="docs-toc__item"><a href="#tests">Tests</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
