@@ -1,0 +1,12 @@
+{
+  "signedIn": true,
+  "username": "jdoe",
+  "driver": "cas",
+  "authenticatedAt": "2026-11-03T09:15:00+00:00",
+  "authTime": null,
+  "amr": [],
+  "idleExpiresAt": "2026-11-03T11:15:00+00:00",
+  "absoluteExpiresAt": "2026-11-04T09:15:00+00:00",
+  "logoutToken": "3f7a1c9e8b2d4a6f",
+  "user": null
+}

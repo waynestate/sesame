@@ -90,7 +90,7 @@
 <li>Booleans must be booleans: <code>cas.renew</code>, <code>cas.assume_mfa</code>, <code>gateway.allow_without_replay_guard</code>, <code>oauth2.require_at_jwt</code>.</li>
 <li>Integers: <code>gateway.leeway_seconds</code> non-negative, <code>gateway.max_lifetime</code> positive, <code>oauth2.leeway_seconds</code> non-negative and at most <code>300</code>, <code>oauth2.jwks_cache_ttl_seconds</code> positive and at most <code>86400</code>, <code>session.idle_minutes</code> and <code>session.absolute_minutes</code> positive.</li>
 <li>Enumerations: <code>cas.protocol</code> only <code>3.0</code> or <code>2.0</code>; <code>gateway.algorithm</code> only <code>ES256</code>, <code>RS256</code> or <code>EdDSA</code>; <code>oauth2.identity_claim</code> only <code>preferred_username</code> or <code>accessid</code>.</li>
-<li><code>gateway.public_key</code> and <code>gateway.public_keys</code> are mutually exclusive: set one or the other, not both. An empty <code>public_keys</code> array counts as unset, and <code>public_key</code> is then required.</li>
+<li><code>gateway.public_key</code>, <code>gateway.public_keys</code> and <code>gateway.jwks_file</code> are mutually exclusive: set exactly one. An empty <code>public_keys</code> array or <code>jwks_file</code> counts as unset, and <code>public_key</code> is then required. A <code>jwks_file</code> is read at boot, and a missing or bad key set file is an <code>InvalidConfig</code> error (the rules are in the <a href="../guides/driver-gateway.html#the-key-set-file">gateway driver guide</a>).</li>
 <li><code>gateway.trusted_proxies</code> must be a non-empty array of non-empty strings (CIDR ranges or single IPs).</li>
 <li><code>fake.attributes</code>, <code>oauth2.required_scopes</code> and <code>oauth2.required_roles</code> must be arrays of non-empty strings.</li>
 <li>The <code>oidc</code> block must be an array; <code>OidcOptions::fromArray()</code> validates it and names the key in its errors.</li>
@@ -187,6 +187,12 @@
 <td>config/sesame.php</td>
 </tr>
 <tr>
+<td>SESAME_GATEWAY_JWKS_FILE</td>
+<td>A path to a JWKS file holding the gateway's public keys by <code>kid</code> (Drawbridge's <code>keys:jwks</code> writes it: the current key and the next), read at boot</td>
+<td>none (set this, <code>public_key</code> or <code>public_keys</code>, only one)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
 <td>SESAME_GATEWAY_LEEWAY_SECONDS</td>
 <td>Clock skew allowed on the assertion's time claims, in seconds</td>
 <td><code>30</code></td>
@@ -201,7 +207,7 @@
 <tr>
 <td>SESAME_GATEWAY_PUBLIC_KEY</td>
 <td>The gateway's public key: a PEM string or a path to one for ES256 and RS256, a base64-encoded raw key or a path to one for EdDSA</td>
-<td>none (set this or <code>public_keys</code>, not both)</td>
+<td>none (set this, <code>public_keys</code> or <code>jwks_file</code>, only one)</td>
 <td>config/sesame.php</td>
 </tr>
 <tr>
@@ -616,7 +622,7 @@ SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 </tr>
 <tr>
 <td><code>gateway.public_key</code></td>
-<td>Yes</td>
+<td>Yes, unless <code>public_keys</code> or <code>jwks_file</code> is set</td>
 <td>none</td>
 <td>The gateway's public key: a PEM string (or a path to one) for <code>ES256</code> and <code>RS256</code>, or a base64-encoded raw key (or a path to one) for <code>EdDSA</code>.</td>
 </tr>
@@ -624,7 +630,13 @@ SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 <td><code>gateway.public_keys</code></td>
 <td>No</td>
 <td>none</td>
-<td>A map of <code>kid</code> to public key, for rotating the gateway's signing key. Use this or <code>public_key</code>, not both.</td>
+<td>A map of <code>kid</code> to public key, for rotating the gateway's signing key.</td>
+</tr>
+<tr>
+<td><code>gateway.jwks_file</code></td>
+<td>No</td>
+<td>none</td>
+<td>A path to a JWKS file of the gateway's public keys by <code>kid</code> (Drawbridge's <code>keys:jwks</code> writes it), read at boot. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>.</td>
 </tr>
 <tr>
 <td><code>gateway.issuer</code></td>

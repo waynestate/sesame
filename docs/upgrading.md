@@ -19,6 +19,8 @@ on, work down toward the one you want, and run the checks after each hop.
 
 **Deprecated.** Nothing is deprecated in this release.
 
+**Added.** `gateway.jwks_file` (env `SESAME_GATEWAY_JWKS_FILE`) reads the gateway's public keys from the JWKS file Drawbridge publishes. Nothing changes for an app that keeps `gateway.public_key`. An app on a one-entry `gateway.public_keys` map now also accepts an assertion with no `kid`.
+
 **Changed.** On Laravel 13, implement `RefreshesUser` in the app's resolver: Laravel 13 stores sessions as JSON, so the stored user comes back as an array, and the method must look the user up again; see [Reading the user](guides/laravel.md#reading-the-user).
 
 **Steps.**

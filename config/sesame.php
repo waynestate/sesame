@@ -91,7 +91,9 @@ return [
     | public_key is the gateway's public key: a PEM string (or a path to one)
     | for ES256 and RS256, or a base64-encoded raw key (or a path to one) for
     | EdDSA. public_keys maps a kid to a key (the same forms), for a gateway
-    | rotating its signing key: set this or public_key, not both.
+    | rotating its signing key. jwks_file is a path to a JWKS file holding
+    | the same keys (Drawbridge's keys:jwks writes it: the current key and
+    | the next). Set exactly one of public_key, public_keys and jwks_file.
     | trusted_proxies is a comma-separated list of CIDR ranges (or
     | single IPs) the gateway proxy sits behind.
     |
@@ -108,9 +110,10 @@ return [
         'header' => env('SESAME_GATEWAY_HEADER', 'X-Sesame-Assertion'),
         'algorithm' => env('SESAME_GATEWAY_ALGORITHM', 'ES256'),
         'public_key' => env('SESAME_GATEWAY_PUBLIC_KEY'),
-        // kid => key, for a gateway rotating its signing key: set this or
-        // public_key, not both.
+        // kid => key, for a gateway rotating its signing key: set this,
+        // public_key or jwks_file, only one.
         'public_keys' => [],
+        'jwks_file' => env('SESAME_GATEWAY_JWKS_FILE'),
         'issuer' => Setting::get('SESAME_GATEWAY_ISSUER'),
         'audience' => env('SESAME_GATEWAY_AUDIENCE'),
         'leeway_seconds' => env('SESAME_GATEWAY_LEEWAY_SECONDS', 30),
