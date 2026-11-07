@@ -15,10 +15,10 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
-Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
-On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
+Front page: [`site/index.html`](https://github.com/waynestate/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://github.com/waynestate/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
+Documentation: the opening of this README is the [Overview](https://github.com/waynestate/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://github.com/waynestate/sesame/blob/HEAD/docs/) into [`site/docs/`](https://github.com/waynestate/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://github.com/waynestate/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://github.com/waynestate/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
 
 Every page below is Markdown. The HTML pages send the same Markdown to a client that asks for `text/markdown`. Written by Squire's agent-ready kit from the README and the pages; do not edit.
 
@@ -30,7 +30,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 - [The gateway driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.md): The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header.
 - [oauth2 with Entra | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.md): Sign in from a JWT bearer token verified against the issuer's key set, RS256 only, Microsoft Entra ID first, APIs only.
 - [The oidc driver (Entra sign-in) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.md): Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs.
-- [Strongly recommended: a git.wayne.edu instance runner | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/instance-runner.md): git.wayne.edu has no runners today, so CI runs on the test GitLab instance, and every product in the stack strongly recommends a git.wayne.edu instance runner.
+- [Strongly recommended: a git.wayne.edu instance runner | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/instance-runner.md): CI for this repo runs on git.wayne.edu, on the instance runner, and every product in the stack strongly recommends the same for apps on git.wayne.edu.
 - [Laravel | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/laravel.md): The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.
 - [Moving from wayne-cas | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.md): Apps that use wayne-cas can move to SESAME without rewriting their auth, through Booster's cas-to-sesame hop or by hand.
 - [Moving off Wayne Auth | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.md): Apps that sign people in through the old Wayne Auth SSO cookie can move to SESAME's CAS sign-in by changing one line, through a bridge that keeps the old WayneAuth class's calls.
@@ -63,7 +63,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 
 ## Source
 
-- [README](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/README.md): the project's README, with install, commands and checks
+- [README](https://github.com/waynestate/sesame/blob/HEAD/README.md): the project's README, with install, commands and checks
 - [Everything in one file](https://sesame.apps.wayne.edu/llms-full.txt): the README and every page above, as one Markdown file
 
 ## Optional

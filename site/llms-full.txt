@@ -8,7 +8,7 @@ The README and the Markdown twin of every page, joined. The index is https://ses
 
 ## README
 
-Source: https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/README.md
+Source: https://github.com/waynestate/sesame/blob/HEAD/README.md
 
 ## SESAME
 
@@ -25,16 +25,16 @@ place, the app's `findOrImportUser(Identity)`, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.
 
-Front page: [`site/index.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
-On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
+Front page: [`site/index.html`](https://github.com/waynestate/sesame/blob/HEAD/site/index.html), a static page you can open in a browser or serve from `site/`.
+On Citadel it is served by the raw-PHP deploy layer in [`deploy/`](https://github.com/waynestate/sesame/blob/HEAD/deploy/): a Squire kit whose front controller serves `site/` behind HELMET's security headers. For local development, keep serving `site/` directly.
 
-Documentation: the opening of this README is the [Overview](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/) into [`site/docs/`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
+Documentation: the opening of this README is the [Overview](https://github.com/waynestate/sesame/blob/HEAD/site/docs/index.html) page of the docs site. Squire's docs builder renders [`docs/`](https://github.com/waynestate/sesame/blob/HEAD/docs/) into [`site/docs/`](https://github.com/waynestate/sesame/blob/HEAD/site/docs/index.html); `composer docs` rebuilds it, and `composer docs:check` fails when the build or the generated environment reference has drifted. The docs pages wear the front page's key shop: to change their look, edit [`docs/_header.html`](https://github.com/waynestate/sesame/blob/HEAD/docs/_header.html) (the shop sign and main menu) and [`docs/theme/sesame.css`](https://github.com/waynestate/sesame/blob/HEAD/docs/theme/sesame.css) (palette, type, dark mode), then rebuild. Never edit the kit's `site/assets/docs.css` or `docs.js`; those are Squire's bytes.
 
 ### Where the code lives
 
-The canonical repository is on nougat: [enterprise-apps/sesame](https://nougat.snu.gs/enterprise-apps/sesame). git.wayne.edu and GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) are read-only mirrors of it.
-Open issues and merge requests on nougat, not on the mirrors.
-This moves to git.wayne.edu once it has CI runners. Open sesame: the cave is nougat.
+The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu (clone over SSH as `git@git.wayne.edu:enterprise-apps/sesame.git`, or over HTTPS). Open issues and merge requests there, and make tags there, by the maintainer, with an approver.
+GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it.
+CI runs on git.wayne.edu. Open sesame: the cave has a new address.
 
 ### Install
 
@@ -368,7 +368,7 @@ authentication event through it:
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref` or `destroyed_session_reused` (an old session ID used after its grace; see [Session timeouts](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref` or `destroyed_session_reused` (an old session ID used after its grace; see [Session timeouts](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
@@ -710,7 +710,7 @@ composer require league/oauth2-client
 Without it, building the driver fails with `The oidc driver needs
 league/oauth2-client. Install it with: composer require league/oauth2-client`.
 Why that library, and what else was weighed:
-[docs/oidc-library-choice.md](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/docs/oidc-library-choice.md).
+[docs/oidc-library-choice.md](https://github.com/waynestate/sesame/blob/HEAD/docs/oidc-library-choice.md).
 
 How a sign-in runs:
 
@@ -1369,7 +1369,7 @@ Proof runs against real Wayne State applications are on a private site, [proof.a
 
 ### Tests
 
-Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://nougat.snu.gs/enterprise-apps/sesame/blob/HEAD/MAINTAINING.md).
+Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://github.com/waynestate/sesame/blob/HEAD/MAINTAINING.md).
 
 No PHP on the machine? Fine. Docker runs the suite:
 
@@ -1401,9 +1401,9 @@ scripts/a11y.ps1     # Windows
 
 ### Strongly recommended: a git.wayne.edu instance runner
 
-git.wayne.edu has no runners today, so CI for this repo runs on the test
-GitLab instance. Every product in the stack strongly recommends a
-git.wayne.edu instance runner.
+CI for this repo runs on git.wayne.edu, on the instance runner. Every product
+in the stack strongly recommends the same for apps on git.wayne.edu: one
+shared runner, one less surprise per pipeline.
 
 ---
 
@@ -1752,6 +1752,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: The canonical repository is git.wayne.edu (ADR-0021); docs, links and package metadata no longer point at the archived nougat copy.
 - Added: the Proof page records its last run.
 - Changed: BEST_PRACTICES re-check: S18 moves to `Enforced` (the cas login binding is built), S36 moves to `Partly enforced` (the oauth2 driver enforces the JWT checks; the RFC 7662 introspection path is still open) and S40 moves to `Enforced` (the wayne-cas shim is built as a thin adapter over the core).
 - Security: the front-page deploy layer moves to Symfony 7.4.23 (symfony/http-foundation and symfony/yaml advisories, including CVE-2026-118514).
@@ -2359,7 +2360,7 @@ Source: https://sesame.apps.wayne.edu/docs/guides/instance-runner.html
 
 ## Strongly recommended: a git.wayne.edu instance runner[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#strongly-recommended-a-git-wayne-edu-instance-runner)
 
-git.wayne.edu has no runners today, so CI for this repo runs on the test GitLab instance. Every product in the stack strongly recommends a git.wayne.edu instance runner: one shared runner, one less surprise per pipeline.
+CI for this repo runs on git.wayne.edu, on the instance runner. Every product in the stack strongly recommends the same for apps on git.wayne.edu: one shared runner, one less surprise per pipeline.
 
 ### The brand board[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#the-brand-board)
 
@@ -2386,7 +2387,7 @@ WayneUI and the stack. Each one gets in its own way.
 - ![ADVISOR](https://sesame.apps.wayne.edu/docs/readme/cast/advisor.png)
 - ![WELD](https://sesame.apps.wayne.edu/docs/readme/cast/weld.png)
 
-Images are regenerated from the front page by [`scripts/readme-art`](https://nougat.snu.gs/enterprise-apps/sesame/scripts/readme-art/README.md). Open sesame.
+Images are regenerated from the front page by [`scripts/readme-art`](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/scripts/readme-art/README.md). Open sesame.
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#related)
 
@@ -3469,6 +3470,10 @@ Source: https://sesame.apps.wayne.edu/docs/
 
 SESAME is Wayne State's protocol-neutral auth library. It returns a verified identity and leaves the session to the app: every driver ends in the same place, the app's `findOrImportUser(Identity)`, and the protocol never holds the session. Switching driver is a config change with no code change. Open sesame.
 
+### Where the code lives[#](https://sesame.apps.wayne.edu/docs/#where-the-code-lives)
+
+The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.
+
 ### Install[#](https://sesame.apps.wayne.edu/docs/#install)
 
 ```
@@ -4415,7 +4420,7 @@ Proof runs against real Wayne State applications on a private site, [proof.apps.
 
 ### Tests[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#tests)
 
-Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://nougat.snu.gs/enterprise-apps/sesame/MAINTAINING.md).
+Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/MAINTAINING.md).
 
 No PHP on the machine? Fine. Docker runs the suite:
 

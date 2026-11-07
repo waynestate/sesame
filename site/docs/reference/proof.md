@@ -27,7 +27,7 @@ Proof runs against real Wayne State applications on a private site, [proof.apps.
 
 ## Tests[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#tests)
 
-Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://nougat.snu.gs/enterprise-apps/sesame/MAINTAINING.md).
+Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/MAINTAINING.md).
 
 No PHP on the machine? Fine. Docker runs the suite:
 

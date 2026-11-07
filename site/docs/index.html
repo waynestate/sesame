@@ -62,6 +62,8 @@ identity and leaves the session to the app: every driver ends in the same
 place, the app's <code>findOrImportUser(Identity)</code>, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.</p>
+<h2 id="where-the-code-lives">Where the code lives<a class="docs-heading-link" aria-label="Link to this section" href="#where-the-code-lives">#</a></h2>
+<p>The canonical repository is <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">enterprise-apps/sesame</a> on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub (<a rel="noopener" href="https://github.com/waynestate/sesame">waynestate/sesame</a>) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.</p>
 <h2 id="install">Install<a class="docs-heading-link" aria-label="Link to this section" href="#install">#</a></h2>
 <pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
@@ -127,11 +129,11 @@ $user = sesame_login();
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link docs-pager__link--next" href="../docs/install.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Install</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install">Install</a></li><li class="docs-toc__item"><a href="#first-use">First use</a></li><li class="docs-toc__item"><a href="#pick-your-path">Pick your path</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#where-the-code-lives">Where the code lives</a></li><li class="docs-toc__item"><a href="#install">Install</a></li><li class="docs-toc__item"><a href="#first-use">First use</a></li><li class="docs-toc__item"><a href="#pick-your-path">Pick your path</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
-  <span><a rel="noopener" href="https://nougat.snu.gs/enterprise-apps/sesame">Source</a> Mirrors: <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">git.wayne.edu</a> <a rel="noopener" href="https://github.com/waynestate/sesame">GitHub</a> <a href="index.md">Markdown</a></span>
+  <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="index.md">Markdown</a></span>
 </footer>
 </body>
 </html>

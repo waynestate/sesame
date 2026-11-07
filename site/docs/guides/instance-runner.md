@@ -1,6 +1,6 @@
 ---
 title: "Strongly recommended: a git.wayne.edu instance runner | SESAME docs"
-description: "git.wayne.edu has no runners today, so CI runs on the test GitLab instance, and every product in the stack strongly recommends a git.wayne.edu instance runner."
+description: "CI for this repo runs on git.wayne.edu, on the instance runner, and every product in the stack strongly recommends the same for apps on git.wayne.edu."
 url: https://sesame.apps.wayne.edu/docs/guides/instance-runner.html
 llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
@@ -8,7 +8,7 @@ generator: Squire agent-ready
 
 # Strongly recommended: a git.wayne.edu instance runner[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#strongly-recommended-a-git-wayne-edu-instance-runner)
 
-git.wayne.edu has no runners today, so CI for this repo runs on the test GitLab instance. Every product in the stack strongly recommends a git.wayne.edu instance runner: one shared runner, one less surprise per pipeline.
+CI for this repo runs on git.wayne.edu, on the instance runner. Every product in the stack strongly recommends the same for apps on git.wayne.edu: one shared runner, one less surprise per pipeline.
 
 ## The brand board[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#the-brand-board)
 
@@ -35,7 +35,7 @@ WayneUI and the stack. Each one gets in its own way.
 - ![ADVISOR](https://sesame.apps.wayne.edu/docs/readme/cast/advisor.png)
 - ![WELD](https://sesame.apps.wayne.edu/docs/readme/cast/weld.png)
 
-Images are regenerated from the front page by [`scripts/readme-art`](https://nougat.snu.gs/enterprise-apps/sesame/scripts/readme-art/README.md). Open sesame.
+Images are regenerated from the front page by [`scripts/readme-art`](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/scripts/readme-art/README.md). Open sesame.
 
 ## Related[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#related)
 

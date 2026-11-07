@@ -16,6 +16,10 @@ generator: Squire agent-ready
 
 SESAME is Wayne State's protocol-neutral auth library. It returns a verified identity and leaves the session to the app: every driver ends in the same place, the app's `findOrImportUser(Identity)`, and the protocol never holds the session. Switching driver is a config change with no code change. Open sesame.
 
+## Where the code lives[#](https://sesame.apps.wayne.edu/docs/#where-the-code-lives)
+
+The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.
+
 ## Install[#](https://sesame.apps.wayne.edu/docs/#install)
 
 ```
