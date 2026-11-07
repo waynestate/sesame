@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-11-02. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist; `saml` is design only, so its practices are tagged by what is written down, not by what runs.
+The tags describe the repo as it stands on 2026-11-06. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist; `saml` is design only, so its practices are tagged by what is written down, not by what runs.
 
 ## 1. Sessions
 
@@ -121,7 +121,7 @@ How the stack holds it: `Enforced`. When a ticket completes the login, `sesame_l
 Set a short-lived value in the browser before the redirect to CAS, and check it when the ticket returns.
 Why: without it, an attacker can obtain a ticket for their own account and make a victim's browser deliver it, which signs the victim in as the attacker. Keep the value in a `Lax` cookie, not `Strict` (S41).
 Sources: [OWASP CSRF Prevention (login CSRF and pre-sessions)](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
-How the stack holds it: `Not yet`. CAS carries no state parameter, and `CasDriver::login()` accepts any valid ticket that arrives at the service URL (`src/Drivers/CasDriver.php:69-75`).
+How the stack holds it: `Enforced`. CAS carries no state parameter, so the driver keeps its own: with `cas.require_pending_login` on (the default), `login()` stores a single-use marker in the app session before the redirect to CAS, and when the ticket returns it takes the marker before any HTTP call and refuses the ticket when no live marker is left (`src/Drivers/Cas/PendingLogin.php:23-73`, `src/Drivers/CasDriver.php:132-144`). A marker lives for 600 seconds, at most five are kept, and the constructor throws `InvalidConfig` when binding is on but no session was passed (`src/Drivers/Cas/PendingLogin.php:27,29`, `src/Drivers/CasDriver.php:109-110`). Tests: `CasDriverTest::testLoginBindingRejectsATicketWithNoPendingLogin:845`, `CasDriverTest::testLoginBindingRejectsAnExpiredMarker:866`, `CasDriverTest::testLoginBindingRejectsAReusedMarker:893`, `CasDriverTest::testLoginBindingAcceptsTheBrowserThatStarted:924`, `CasDriverTest::testTheLoginBindingKeepsAtMostFiveMarkers:946`, `CasDriverTest::testBindingCanBeTurnedOffWithoutASession:976` and `CasDriverTest::testTheDriverRefusesToStartWithoutASessionWhenBindingIsOn:989`.
 
 ### S19. Force fresh credentials for sensitive actions
 Support `renew` and read the authentication details the server returns, so a sensitive action can require a recent, direct login.
@@ -241,7 +241,7 @@ How the stack holds it: `Not yet`. Add: a SAML POST response is a cross-site POS
 Check signature, issuer, audience, expiry and scopes. That list is for JWT access tokens (RFC 9068). Read the token from the `Authorization` header, never from a query string. Reject tokens meant for another service. If the server issues opaque tokens, verify them by introspection (RFC 7662): authenticate to the endpoint over TLS, and never cache a result past its `exp`. Make the cache lifetime a config value, defaulting to 60 seconds or less.
 Why: a token valid somewhere else is not valid here.
 Sources: [RFC 9700 (OAuth 2.0 Security BCP)](https://www.rfc-editor.org/rfc/rfc9700.html) (published January 2025 as BCP 240; checked second pass: exact redirect URI matching; PKCE with S256; access tokens restricted to one resource server; sender-constrained tokens, for example DPoP or mTLS, as a SHOULD; clients that use several authorization servers must defend against mix-up attacks, with the RFC 9207 `iss` response parameter as one defense), [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068.html), [RFC 8725](https://www.rfc-editor.org/rfc/rfc8725.html), [RFC 7662 (OAuth 2.0 Token Introspection)](https://www.rfc-editor.org/rfc/rfc7662.html), [ASVS 5.0 V9](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x18-V9-Self-contained-Tokens.md).
-How the stack holds it: `Documented`. The stack's auth design lists the checks. The header-only rule is not written down, and the scopes and flows that Academica offers are still an open question. The `oauth2` driver is a resource-server check (bearer tokens in, identity out), so the client-side items (PKCE, redirect URIs, mix-up) apply only if SESAME ever starts a login itself. Decide that scope in the stack's auth design.
+How the stack holds it: `Partly enforced`. The `oauth2` driver verifies the RS256 signature against the issuer's JWKS and checks the issuer, audience, time, scope and role claims before it signs anyone in, and it reads the token only from the `Authorization` header, which the README writes down (`src/Drivers/OAuth2Driver.php:109-124, 142-163`, `README.md:633-635`). Tests: `OAuth2DriverTest::testAWrongIssuerIsRejected:238`, `OAuth2DriverTest::testAWrongAudienceIsRejected:248`, `OAuth2DriverTest::testAnExpiredTokenIsRejected:258`, `OAuth2DriverTest::testAMissingScopeIsRejected:315`, `OAuth2DriverTest::testANonBearerAuthorizationHeaderIsRejected:181` and `OAuth2DriverTest::testAnHmacTokenSignedWithThePublicKeyMaterialIsRejected:224`. Still open: the RFC 7662 introspection path for opaque tokens, with the result cache lifetime as a config value; the driver accepts JWTs only. The `oauth2` driver is a resource-server check (bearer tokens in, identity out); browser logins now exist in the `oidc` driver, which runs the code flow with PKCE (`src/Drivers/OidcDriver.php:43`).
 
 ## 6. Build and supply chain
 
@@ -267,7 +267,7 @@ How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3"
 The wayne-cas shim (`src/WayneCas/`) maps old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
 Why: the old clients have these faults, and a shim that copies behavior copies the faults.
 Sources: [ASVS 5.0 V6.8](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md).
-How the stack holds it: `Documented`. The stack's auth design says the shims are thin adapters with no rules. They are not built.
+How the stack holds it: `Enforced`. The shims are built as thin adapters with no rules of their own: `WayneAuthenticate` checks the SESAME session and sends guests to `sesame.login`, and `UserResolver` maps the verified username onto the app's model, throwing `AuthorizationException` when there is no user (`src/WayneCas/WayneAuthenticate.php:32-53`, `src/WayneCas/UserResolver.php:25-42`). The shim contains no ticket handling, no forwarded-header trust and no logout of its own, so the old weaknesses cannot come back through it: sign-in still ends in the enforced drivers, and sign-out is the CSRF-guarded `sesame_logout()`. Tests: `WayneCasShimTest::testItFindsTheUserThroughTheModel:47`, `WayneCasShimTest::testItThrowsWhenTheModelHasNoUser:55`, `WayneCasShimTest::testItAnswersAnAjaxGuestWith403:84` and `ReadOnlyAttributesTest::testWritesToReadOnlyAttributesAreRefused:20`.
 
 ## 7. Added in the second pass (2026-10-27)
 
@@ -327,7 +327,7 @@ How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing
 
 Risks in the current code:
 - Done: the immediate delete at login is gone (S43): `NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID and keeps it for a 60 second grace, so a user on a bad network does not lose the login; a use of the old ID after the grace is rejected and logged as `sesame.session_anomaly`. Proven by `NativeSessionTest` (S43).
-- `src/Drivers/CasDriver.php:97-108`: no login binding to the browser.
+- Done: the login binding to the browser is built (S18): `PendingLogin` keeps single-use markers in the app session, and `CasDriver::login()` refuses a ticket with no live marker before any HTTP call, unless `cas.require_pending_login` is false. Proven by `CasDriverTest` (S18).
 - Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
 - `README.md`: Docker commands cover 8.3 and newer.
 - Done: the destroy time stamp and grace period at login are implemented in `NativeSession` (S43); `graceSeconds: 0` restores the immediate delete.
