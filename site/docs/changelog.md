@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added)
+
+- BEST_PRACTICES S38: the written rule for Composer audit ignores (who adds one, the reason and review date it carries, and when it must go).
 - Changed: The canonical repository is git.wayne.edu (ADR-0021); docs, links and package metadata no longer point at the archived nougat copy.
 - Added: the Proof page records its last run.
 - Changed: BEST_PRACTICES re-check: S18 moves to `Enforced` (the cas login binding is built), S36 moves to `Partly enforced` (the oauth2 driver enforces the JWT checks; the RFC 7662 introspection path is still open) and S40 moves to `Enforced` (the wayne-cas shim is built as a thin adapter over the core).
@@ -89,7 +92,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Changed: the proof page moves to a private site that needs a Wayne State sign-in.
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added)
+### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-1)
 
 - The `oidc` driver: browser sign-in with OpenID Connect (authorization code flow with PKCE S256, `state` and `nonce` bound to the session, single use, ten-minute expiry), Microsoft Entra ID first. Discovery and the key set are cached through PSR-16 for `oidc.cache_ttl_seconds` (default and maximum 3600) and each endpoint can be overridden; the ID token is checked for signature (RS256 by default, never `none` or HMAC), `iss`, `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age` by default (silent SSO); `step_up=1` adds the configured step-up parameters and requires a fresh `auth_time` (never in the future, and within `max_age`, 300 seconds when none is configured). Username from `accessid` (the `preferred_username` fallback is an opt-in, off by default, because users can change that claim), `iss`, `sub`, `tid` and `oid` passed to the resolver as stable account keys, roles from `wsuRoles`, MFA from `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver as attributes. Optional logout through Entra with `post_logout_redirect_uri`. Token, discovery and key-set requests never follow a redirect: a 3xx answer is an error (`oidc.token_redirect`, `oidc.discovery_unavailable`, `oidc.jwks_unavailable`), so the code, verifier and secret cannot be resent elsewhere. See "The oidc driver (Entra sign-in)".
 - The oidc driver stands on `league/oauth2-client` (suggested, not required; a clear error names the install command when it is missing) for the OAuth mechanics, and on SESAME's own firebase/php-jwt key-set code for the ID token. Why: `docs/oidc-library-choice.md`.
@@ -109,7 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[0.1.3\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-3-2026-10-29)
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-1)
+### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-2)
 
 - The four shared WSU values (`SESAME_CAS_BASE_URL`, `SESAME_GATEWAY_ISSUER`, `SESAME_OAUTH2_ISSUER`, `SESAME_OAUTH2_JWKS_URL`) now resolve through `Waynestate\Sesame\Support\Setting::get()`: the environment wins, and when it is empty the private `waynestate/playbook` package supplies the value. `waynestate/playbook` is suggested, never required.
 - A missing routed setting now fails with `Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).` instead of naming the config key.
@@ -122,7 +125,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[0.1.1\] (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-1-2026-10-29)
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-2)
+### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-3)
 
 - Step-up by authentication context: the gateway driver reads the signed assertion's `acrs` claim (authentication context ids `c1` through `c99`, anything else dropped) and carries the contexts on the `Identity`.
 - `Identity::authContexts()` and `Identity::hasAuthContext(string $id)`: membership in the context list, never a prefix match.
