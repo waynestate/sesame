@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Security: SESAME-22: `composer.json` conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.
 - Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (`tests/fixtures/saml`), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.
 - Docs: "The saml driver (SAML 2.0 sign-in)" guide and "The saml driver's library choice"; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to `Enforced`.
+- Changed: CI caches Composer downloads per lock file (`.composer-cache`, keyed on `composer.lock` and `deploy/composer.lock`), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.
+
+## \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
+
 - Added: `gateway.jwks_file` (env `SESAME_GATEWAY_JWKS_FILE`), a path to a JWKS file of the gateway's public keys by `kid`, the file Drawbridge's `keys:jwks` publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated `kid`, more than 8 keys or a key of the wrong type for `gateway.algorithm` stops the app with `InvalidConfig`. Set one of `public_key`, `public_keys` and `jwks_file`.
 - Changed: with exactly one key listed (`public_keys` or `jwks_file`), an assertion with no `kid` is verified with that key instead of refused; a `kid` that names another key is still refused, and with two or more keys a missing `kid` is still refused. `gateway.public_key` still ignores `kid`.
 - Docs: the gateway driver guide covers the key set file and the rotation from the app's side.

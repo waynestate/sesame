@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog | SESAME docs</title>
 <meta name="description" content="All notable changes to this project.">
-<meta name="docs-version" content="0.4.0">
+<meta name="docs-version" content="0.5.0">
 <link rel="stylesheet" href="../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../assets/docs.css">
 <link rel="stylesheet" href="../docs/theme/sesame.css">
@@ -52,21 +52,15 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
-<li>
-<p>Added: the <code>saml</code> driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on <code>onelogin/php-saml</code> (suggested, not required; the choice is in <code>docs/saml-library-choice.md</code>) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the <code>ReturnTo</code> rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the <code>SameSite=Lax</code> session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends <code>ForceAuthn</code>; logout is local.</p>
-</li>
-<li>
-<p>Added: <code>config/sesame.php</code>'s <code>saml</code> block and the <code>SESAME_SAML_*</code> settings; the Laravel adapter's <code>POST /login/saml/acs</code> (<code>sesame.saml.acs</code>) and <code>GET /login/saml/metadata</code> (<code>sesame.saml.metadata</code>) routes, outside the <code>web</code> group; the raw-PHP <code>sesame_saml_acs()</code> and <code>sesame_saml_metadata()</code>; <code>sesame_login()</code> treats <code>saml_handle</code> as a ticket.</p>
-</li>
-<li>
-<p>Security: SESAME-22: <code>composer.json</code> conflicts with <code>onelogin/php-saml</code> below 4.3.2 and <code>robrichards/xmlseclibs</code> below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.</p>
-</li>
-<li>
-<p>Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (<code>tests/fixtures/saml</code>), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.</p>
-</li>
-<li>
-<p>Docs: &quot;The saml driver (SAML 2.0 sign-in)&quot; guide and &quot;The saml driver's library choice&quot;; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to <code>Enforced</code>.</p>
-</li>
+<li>Added: the <code>saml</code> driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on <code>onelogin/php-saml</code> (suggested, not required; the choice is in <code>docs/saml-library-choice.md</code>) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the <code>ReturnTo</code> rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the <code>SameSite=Lax</code> session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends <code>ForceAuthn</code>; logout is local.</li>
+<li>Added: <code>config/sesame.php</code>'s <code>saml</code> block and the <code>SESAME_SAML_*</code> settings; the Laravel adapter's <code>POST /login/saml/acs</code> (<code>sesame.saml.acs</code>) and <code>GET /login/saml/metadata</code> (<code>sesame.saml.metadata</code>) routes, outside the <code>web</code> group; the raw-PHP <code>sesame_saml_acs()</code> and <code>sesame_saml_metadata()</code>; <code>sesame_login()</code> treats <code>saml_handle</code> as a ticket.</li>
+<li>Security: SESAME-22: <code>composer.json</code> conflicts with <code>onelogin/php-saml</code> below 4.3.2 and <code>robrichards/xmlseclibs</code> below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.</li>
+<li>Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (<code>tests/fixtures/saml</code>), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.</li>
+<li>Docs: &quot;The saml driver (SAML 2.0 sign-in)&quot; guide and &quot;The saml driver's library choice&quot;; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to <code>Enforced</code>.</li>
+<li>Changed: CI caches Composer downloads per lock file (<code>.composer-cache</code>, keyed on <code>composer.lock</code> and <code>deploy/composer.lock</code>), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.</li>
+</ul>
+<h2 id="0-5-0-2026-11-07">[0.5.0] - 2026-11-07<a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></h2>
+<ul>
 <li>
 <p>Added: <code>gateway.jwks_file</code> (env <code>SESAME_GATEWAY_JWKS_FILE</code>), a path to a JWKS file of the gateway's public keys by <code>kid</code>, the file Drawbridge's <code>keys:jwks</code> publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated <code>kid</code>, more than 8 keys or a key of the wrong type for <code>gateway.algorithm</code> stops the app with <code>InvalidConfig</code>. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>.</p>
 </li>
@@ -382,10 +376,10 @@ No behaviour changed.</li>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../docs/upgrading.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Upgrading</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#unreleased">[Unreleased]</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">[0.4.0] - 2026-11-03</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">[0.3.0] - 2026-10-30</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">[0.2.2] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">[0.2.1] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">[0.2.0] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed">Changed</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">[0.1.3] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-1">Added</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">[0.1.2] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fixed">Fixed</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">[0.1.1] (2026-10-29)</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-2">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed-1">Changed</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">[0.1.0] (2026-10-27)</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#unreleased">[Unreleased]</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">[0.5.0] - 2026-11-07</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">[0.4.0] - 2026-11-03</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">[0.3.0] - 2026-10-30</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">[0.2.2] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">[0.2.1] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">[0.2.0] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed">Changed</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">[0.1.3] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-1">Added</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">[0.1.2] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fixed">Fixed</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">[0.1.1] (2026-10-29)</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-2">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed-1">Changed</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">[0.1.0] (2026-10-27)</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents SESAME <span data-docs-version>0.4.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.5.0</span></span>
   <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="changelog.md">Markdown</a></span>
 </footer>
 </body>
