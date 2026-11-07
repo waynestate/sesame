@@ -25,8 +25,9 @@ return [
     | university's CAS server, "gateway" for signed assertions from the
     | Drawbridge gateway, "oauth2" for JWT bearer tokens from an identity
     | provider (Microsoft Entra ID first), "oidc" for browser sign-in with
-    | OpenID Connect (Microsoft Entra ID first), or "fake" for local
-    | development.
+    | OpenID Connect (Microsoft Entra ID first), "saml" for browser sign-in
+    | with SAML 2.0 (a Shibboleth-style IdP; opt-in, see docs/guides/
+    | driver-saml.md), or "fake" for local development.
     |
     */
 
@@ -228,6 +229,66 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SAML
+    |--------------------------------------------------------------------------
+    |
+    | The saml driver is a SAML 2.0 service provider (onelogin/php-saml).
+    | It is opt-in: nothing here is used unless SESAME_DRIVER is "saml", and
+    | no IdP is assumed. Give the IdP's metadata as an https URL or as a
+    | file path (exactly one), and the SP certificate and key as file paths,
+    | never inline. In Laravel, sp.entity_id, sp.acs_url and service_url
+    | default to the app's own /login/saml/metadata, /login/saml/acs and
+    | /login routes.
+    |
+    | attributes maps SESAME's names to the SAML attribute names the IdP
+    | releases (comma-separated; the first one present wins); an empty
+    | value keeps the default (the eduPerson and inetOrgPerson OIDs, then
+    | their friendly names). username_attribute picks the one that becomes
+    | the username. mfa_contexts lists the AuthnContextClassRef values that
+    | count as MFA (the REFEDS MFA profile by default).
+    |
+    | cache_store names the Laravel cache store that parks the IdP's
+    | response for two minutes, keeps the fetched metadata and remembers
+    | used assertion IDs (the default store when unset). It must be shared
+    | by every web server of the app.
+    |
+    */
+
+    'saml' => [
+        'sp' => [
+            'entity_id' => env('SESAME_SAML_SP_ENTITY_ID'),
+            'acs_url' => env('SESAME_SAML_SP_ACS_URL'),
+            'cert_file' => env('SESAME_SAML_SP_CERT_FILE'),
+            'key_file' => env('SESAME_SAML_SP_KEY_FILE'),
+        ],
+        'idp' => [
+            'metadata_url' => env('SESAME_SAML_IDP_METADATA_URL'),
+            'metadata_file' => env('SESAME_SAML_IDP_METADATA_FILE'),
+            'entity_id' => env('SESAME_SAML_IDP_ENTITY_ID'),
+            'cert_file' => env('SESAME_SAML_IDP_CERT_FILE'),
+        ],
+        'service_url' => env('SESAME_SAML_SERVICE_URL'),
+        'sign_authn_requests' => env('SESAME_SAML_SIGN_AUTHN_REQUESTS', false),
+        'want_messages_signed' => env('SESAME_SAML_WANT_MESSAGES_SIGNED', false),
+        'username_attribute' => env('SESAME_SAML_USERNAME_ATTRIBUTE', 'accessid'),
+        'attributes' => [
+            'accessid' => env('SESAME_SAML_ATTRIBUTE_ACCESSID'),
+            'email' => env('SESAME_SAML_ATTRIBUTE_EMAIL'),
+            'name' => env('SESAME_SAML_ATTRIBUTE_NAME'),
+            'affiliations' => env('SESAME_SAML_ATTRIBUTE_AFFILIATIONS'),
+            'eppn' => env('SESAME_SAML_ATTRIBUTE_EPPN'),
+        ],
+        'mfa_contexts' => env('SESAME_SAML_MFA_CONTEXTS'),
+        'assume_mfa' => env('SESAME_SAML_ASSUME_MFA', false),
+        'authn_context' => env('SESAME_SAML_AUTHN_CONTEXT'),
+        'leeway_seconds' => env('SESAME_SAML_LEEWAY_SECONDS', 60),
+        'max_assertion_age_seconds' => env('SESAME_SAML_MAX_ASSERTION_AGE_SECONDS', 300),
+        'metadata_cache_ttl_seconds' => env('SESAME_SAML_METADATA_CACHE_TTL_SECONDS', 3600),
+        'cache_store' => env('SESAME_SAML_CACHE_STORE'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Session timeouts
     |--------------------------------------------------------------------------
     |
@@ -267,7 +328,10 @@ return [
     |
     | When true, the adapter registers GET /login (sesame.login) and
     | POST /logout (sesame.logout), and, for the oidc driver,
-    | GET /login/callback (sesame.callback). Set to false to keep the routes in the
+    | GET /login/callback (sesame.callback); for the saml driver,
+    | POST /login/saml/acs (sesame.saml.acs, outside the web group: it
+    | must not touch the session) and GET /login/saml/metadata
+    | (sesame.saml.metadata). Set to false to keep the routes in the
     | app's own route file; the auth.sesame middleware still points at the
     | sesame.login route name.
     |

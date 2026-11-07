@@ -108,10 +108,10 @@ final class DriverFactoryTest extends TestCase
 
     public function testNamesTheUnknownDriver(): void
     {
-        $config = Config::fromArray(['driver' => 'saml', 'environment' => 'local']);
+        $config = Config::fromArray(['driver' => 'shibboleth', 'environment' => 'local']);
 
         $this->expectException(InvalidConfig::class);
-        $this->expectExceptionMessage('Unknown driver "saml".');
+        $this->expectExceptionMessage('Unknown driver "shibboleth".');
 
         DriverFactory::make($config);
     }
