@@ -54,6 +54,10 @@ sesame_status();
 
 The route is registered with the login and logout routes (in the `web` group, so the session is available; a GET needs no CSRF token), and `SESAME_ROUTES=false` takes it away with them. The app's SPA reads `/sesame/status` directly.
 
+## With Vue[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#with-vue)
+
+This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/vue/README.md) gives you `useSesame()` (or `createSesame()` as an app-wide plugin) with reactive `signedIn`, `user` and `expired`, a `refresh()` for real user actions, and a `logout()` that posts the sign-out form. It never polls, for the reason below.
+
 ## Read it on page load, not on a timer[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#read-it-on-page-load-not-on-a-timer)
 
 A poll counts as activity: reading the status moves the session's `last_seen`, so polling on a timer would keep a session alive past the idle timeout. Read it when the app loads and after a sign-in, and let the `idleExpiresAt` and `absoluteExpiresAt` in the answer tell you how long the state can be trusted.

@@ -1,0 +1,30 @@
+{
+  "name": "@waynestate/sesame-vue",
+  "version": "0.1.0",
+  "description": "A thin Vue adapter for SESAME single-page-app login state: read the status once, react to it, and sign out with the CSRF-checked POST.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vue": "^3.5"
+  },
+  "devDependencies": {
+    "happy-dom": "21.0.4",
+    "typescript": "5.9.3",
+    "vue": "3.5.45",
+    "vue-tsc": "3.3.14",
+    "vitest": "5.1.0"
+  }
+}

@@ -65,6 +65,14 @@ so the session is available; a GET needs no CSRF token), and
 `SESAME_ROUTES=false` takes it away with them. The app's SPA reads
 `/sesame/status` directly.
 
+## With Vue
+
+This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/vue/README.md)
+gives you `useSesame()` (or `createSesame()` as an app-wide plugin) with
+reactive `signedIn`, `user` and `expired`, a `refresh()` for real user
+actions, and a `logout()` that posts the sign-out form. It never polls, for
+the reason below.
+
 ## Read it on page load, not on a timer
 
 A poll counts as activity: reading the status moves the session's
