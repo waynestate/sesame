@@ -7,6 +7,17 @@ description: Proof runs against real Wayne State applications on a private site,
 
 The name does double duty: this is where SESAME proves itself. There are two kinds of proof, the private proof site that exercises the library against real Wayne State applications, and the test suite anyone can run locally.
 
+## Last run
+
+| Check | Date | Commit | Result | Duration |
+|---|---|---|---|---|
+| Test suite (PHPUnit) on PHP 8.3 | 2026-11-07 | 2505033 | pass, 631 tests, 1704 assertions | 36.8 s |
+| Test suite (PHPUnit) on PHP 8.4 | 2026-11-07 | 2505033 | pass, 631 tests, 1704 assertions | 36.3 s |
+| Test suite (PHPUnit) on PHP 8.5 | 2026-11-07 | 2505033 | pass, 631 tests, 1704 assertions | 35.7 s |
+| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit) | 2026-11-07 | 2505033 | pass, all seven steps (tests: 631, 1704 assertions) | 333.8 s, includes a fresh composer install |
+
+To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
+
 ## The proof site
 
 Proof runs against real Wayne State applications on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.
