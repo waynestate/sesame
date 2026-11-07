@@ -17,6 +17,7 @@ One lock, any key: this page matches your situation to the right SESAME driver a
 | App on Citadel today | `cas` | None. |
 | App on Citadel once Drawbridge is live | `gateway` | None per app (Drawbridge holds it once). |
 | App off Citadel or an API with its own audience | `oidc` or `oauth2` | Its own registration. |
+| App that must sign in through a SAML IdP (Shibboleth-style), opt-in | `saml` | None; the IdP's administrators register the app's SP metadata instead. |
 | Local development | `fake` | None. |
 
 ## The recommended path on Citadel[#](https://sesame.apps.wayne.edu/docs/guides/which-driver.html#the-recommended-path-on-citadel)
@@ -27,3 +28,4 @@ The recommended path on Citadel is the `gateway` driver behind Drawbridge. Drawb
 
 - [WSU values (Playbook)](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html)
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)
+- [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html)

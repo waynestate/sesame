@@ -9,7 +9,7 @@ description: What SESAME needs, the one composer line, and how to prove it took.
 
 - PHP 8.3 or newer (`^8.3`).
 - The `simplexml` extension (`ext-simplexml`).
-- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers: Guzzle or
+- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers (and `saml` with a metadata URL): Guzzle or
   symfony/http-client. SESAME suggests one, it does not require one.
 
 ## Install
@@ -23,6 +23,11 @@ composer require waynestate/sesame
 > but does not require: `composer require league/oauth2-client`. Without it,
 > building the driver fails with: `The oidc driver needs league/oauth2-client.
 > Install it with: composer require league/oauth2-client`.
+
+> [!NOTE]
+> The `saml` driver (opt-in) needs `onelogin/php-saml` 4.3.2 or later, which
+> SESAME suggests but does not require: `composer require onelogin/php-saml`.
+> Older releases are refused, by `composer.json` and when the driver is built.
 
 ## Verify
 

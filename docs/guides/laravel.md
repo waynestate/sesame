@@ -15,7 +15,7 @@ The provider is discovered automatically. Publish the config with:
 php artisan vendor:publish --tag=sesame-config
 ```
 
-The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route.
+The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route. For the saml driver, `saml.service_url`, `saml.sp.acs_url` and `saml.sp.entity_id` fall back to the app's `/login`, `/login/saml/acs` and `/login/saml/metadata` routes.
 
 ## Config
 
@@ -23,7 +23,7 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 |---|---|---|---|
-| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc` or `fake`. The oidc keys are in [The oidc driver](driver-oidc.md). |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in [The oidc driver](driver-oidc.md), the saml keys in [The saml driver](driver-saml.md). |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
@@ -66,6 +66,8 @@ The routes, when `routes` is true:
 | `GET` | `/login` | `sesame.login` |
 | `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
 | `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
+| `POST` | `/login/saml/acs` | `sesame.saml.acs` (saml driver only; outside the `web` group, so no session and no CSRF token: the IdP's POST cannot carry either) |
+| `GET` | `/login/saml/metadata` | `sesame.saml.metadata` (saml driver only; the SP metadata) |
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout routes. The `auth.sesame` middleware still points at the `sesame.login` route name, so the app's login route must keep that name.
 

@@ -10,7 +10,7 @@ generator: Squire agent-ready
 
 # SESAME[#](https://sesame.apps.wayne.edu/docs/#sesame)
 
-![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
+![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc, saml](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
 
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no key ever gets to keep the door.
 

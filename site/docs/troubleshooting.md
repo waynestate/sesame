@@ -24,6 +24,27 @@ composer require league/oauth2-client
 
 **Check.** Build the driver again; the error is gone and the sign-in starts. The driver's behavior is covered by `tests/OidcDriverTest.php`.
 
+### The saml driver fails to build: `The saml driver needs onelogin/php-saml` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml)
+
+**Cause.** The `saml` driver stands on `onelogin/php-saml`, which SESAME suggests but does not require, and it refuses php-saml older than 4.3.2 or xmlseclibs older than 3.1.5 (both had signature or encryption advisories).
+
+**Fix.** Install or update the library:
+
+```
+composer require onelogin/php-saml
+composer update onelogin/php-saml robrichards/xmlseclibs
+```
+
+**Check.** Build the driver again; the error is gone. The floor is covered by `tests/SamlConfigTest.php`.
+
+### A SAML sign-in fails with `saml.handle` or `saml.in_response_to` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to)
+
+**Cause.** The finish could not find what the start and the ACS left behind. `saml.handle`: the parked response is gone (more than two minutes, used twice, or a cache the web servers do not share). `saml.in_response_to`: the session that started the sign-in is not the one finishing it (a different browser, a session cookie set to `SameSite=Strict`, a session started on the ACS page, or a sign-in older than ten minutes).
+
+**Fix.** Use a cache store every web server shares (`SESAME_SAML_CACHE_STORE`), keep the session cookie `SameSite=Lax`, and never start the session on the ACS page (raw PHP) or put the ACS route in the `web` group (Laravel).
+
+**Check.** A fresh sign-in from the app's login URL completes. The flow is covered by `tests/SamlDriverTest.php` and `tests/Laravel/SamlRouteTest.php`.
+
 ### A `cas` login loops back to the CAS login page[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-cas-login-loops-back-to-the-cas-login-page)
 
 **Cause.** `cas.renew` is set to `true` against Academica. Academica does not issue a ticket for `renew=true` and sends the user back to the login page, so a `renew` login loops instead of signing in.

@@ -12,7 +12,7 @@ generator: Squire agent-ready
 
 - PHP 8.3 or newer (`^8.3`).
 - The `simplexml` extension (`ext-simplexml`).
-- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers: Guzzle or symfony/http-client. SESAME suggests one, it does not require one.
+- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers (and `saml` with a metadata URL): Guzzle or symfony/http-client. SESAME suggests one, it does not require one.
 
 ## Install[#](https://sesame.apps.wayne.edu/docs/install.html#install-1)
 
@@ -23,6 +23,10 @@ composer require waynestate/sesame
 Note
 
 The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
+
+Note
+
+The `saml` driver (opt-in) needs `onelogin/php-saml` 4.3.2 or later, which SESAME suggests but does not require: `composer require onelogin/php-saml`. Older releases are refused, by `composer.json` and when the driver is built.
 
 ## Verify[#](https://sesame.apps.wayne.edu/docs/install.html#verify)
 
