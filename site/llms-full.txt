@@ -1267,9 +1267,11 @@ first. What the hop does:
   `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to
   `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.3` (SESAME is on
+- Swaps the Composer requirement to `waynestate/sesame:^0.4` (SESAME is on
   Packagist, so no extra repository is needed) and drops the `wayne-cas`
   package, any `wayne-cas` path entry and its VCS repository entries.
+  Booster 1.10.0 pins the 0.4 line, so take the 0.5.0 steps in the
+  [upgrading guide](https://github.com/waynestate/sesame/blob/HEAD/docs/upgrading.md) after the hop.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config
   keys any more; while anything still does, the file stays and a manual note
   names the readers.
@@ -1433,7 +1435,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.2
+Keys cut while you wait · `waynestate/sesame` 0.5
 
 ## SESAME
 
@@ -1754,7 +1756,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 - SESAMEsigns the user in · you are here
 - [HELMET](https://helmet.apps.wayne.edu/)headers and hardening
 - [Pinstripe](https://pinstripe.apps.wayne.edu/)code style presets
-- [Sourdough](https://sourdough.apps.wayne.edu/)starts a raw PHP app
+- [Sourdough](https://sourdough.apps.wayne.edu/)starts an app in any of the five shapes
 - [WELD](https://weld.apps.wayne.edu/)Laravel and Vue, stack installed
 - [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway, not live yet
 - [Squire](https://squire.apps.wayne.edu/)the Citadel deploy kit
@@ -1773,6 +1775,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+- Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.
+- Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's `cas-to-sesame` hop writes today, `waynestate/sesame:^0.4` (they said `^0.3`), and point at the 0.5.0 upgrade steps to take after the hop.
 
 ### \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
 
@@ -2640,7 +2645,7 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `wayne.cas` alias registered against SESAME's `WayneAuthenticate`.
 - Points the web guard at the `sesame` driver and the users provider at `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.3` (SESAME is on Packagist, so no extra repository is needed) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
+- Swaps the Composer requirement to `waynestate/sesame:^0.4` (SESAME is on Packagist, so no extra repository is needed; Booster 1.10.0 pins the 0.4 line, so take the [0.5.0 steps](https://sesame.apps.wayne.edu/docs/upgrading.html) after the hop) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 

@@ -22,7 +22,7 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `wayne.cas` alias registered against SESAME's `WayneAuthenticate`.
 - Points the web guard at the `sesame` driver and the users provider at `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.3` (SESAME is on Packagist, so no extra repository is needed) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
+- Swaps the Composer requirement to `waynestate/sesame:^0.4` (SESAME is on Packagist, so no extra repository is needed; Booster 1.10.0 pins the 0.4 line, so take the [0.5.0 steps](https://sesame.apps.wayne.edu/docs/upgrading.html) after the hop) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 

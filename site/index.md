@@ -8,7 +8,7 @@ generator: Squire agent-ready
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.2
+Keys cut while you wait · `waynestate/sesame` 0.5
 
 # SESAME
 
@@ -329,7 +329,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 - SESAMEsigns the user in · you are here
 - [HELMET](https://helmet.apps.wayne.edu/)headers and hardening
 - [Pinstripe](https://pinstripe.apps.wayne.edu/)code style presets
-- [Sourdough](https://sourdough.apps.wayne.edu/)starts a raw PHP app
+- [Sourdough](https://sourdough.apps.wayne.edu/)starts an app in any of the five shapes
 - [WELD](https://weld.apps.wayne.edu/)Laravel and Vue, stack installed
 - [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway, not live yet
 - [Squire](https://squire.apps.wayne.edu/)the Citadel deploy kit
