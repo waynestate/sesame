@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed: SESAME's routes are controller actions instead of closures, so `php artisan route:cache` and `optimize` work in an app that uses SESAME (a Citadel release runs optimize).
 - Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write `waynestate/sesame:^0.6` (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is `Checked` now that Squire's CI fails if its kit `php.ini` sets `session.sid_length` or `session.sid_bits_per_character`.
 - Changed: the deploy layer runs Squire's kit 0.7.1 (was 0.6.0): `.squire/php.ini` no longer sets the deprecated `session.sid_*` lines, web requests get a `disable_functions` list and Apache hardening (`.squire/php-web.ini`, `.squire/apache-hardening.conf`), and opcache gets production settings with `SQUIRE_OPCACHE_VALIDATE` as the one switch.
 - Changed: the front page deploy layer requires HELMET ^1.0 (lock at 1.0.1, was 0.4.0), like the rest of the stack; its shared front controller already runs on HELMET 1.0 in Squire, Sourdough and Pinstripe.
