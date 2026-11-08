@@ -30,7 +30,7 @@ The pegboard
 
 ## One blank per protocol
 
-Each key on the board is a driver. Five ship today, and SAML hangs there uncut because it isn't built yet. Pick one to see its `.env` line and what it checks. Whichever you pick, the door is the same: your app's `findOrImportUser(Identity)`.
+Each key on the board is a driver. All six are cut now. SAML is the newest, and it waits on its own hook until an app asks for it: opt-in, with no IdP picked for you. Pick one to see its `.env` line and what it checks. Whichever you pick, the door is the same: your app's `findOrImportUser(Identity)`.
 
 .env
 

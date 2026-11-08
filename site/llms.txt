@@ -30,6 +30,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 - [The gateway driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.md): The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header.
 - [oauth2 with Entra | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.md): Sign in from a JWT bearer token verified against the issuer's key set, RS256 only, Microsoft Entra ID first, APIs only.
 - [The oidc driver (Entra sign-in) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.md): Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first, for apps off Citadel and APIs.
+- [The saml driver (SAML 2.0 sign-in) | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-saml.md): Browser sign-in as a SAML 2.0 service provider against a Shibboleth-style IdP, opt-in, with signed assertions required.
 - [Strongly recommended: a git.wayne.edu instance runner | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/instance-runner.md): CI for this repo runs on git.wayne.edu, on the instance runner, and every product in the stack strongly recommends the same for apps on git.wayne.edu.
 - [Laravel | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/laravel.md): The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.
 - [Moving from wayne-cas | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.md): Apps that use wayne-cas can move to SESAME without rewriting their auth, through Booster's cas-to-sesame hop or by hand.
@@ -50,6 +51,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 - [Configuration | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/configuration.md): Every SESAME config key, its environment variable, its default and its meaning.
 - [Drivers | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/drivers.md): The full list of drivers and their status: fake, cas, gateway, saml, oauth2 and oidc.
 - [Proof | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/proof.md): Proof runs against real Wayne State applications on a private site, behind a Wayne State employee sign-in.
+- [The saml driver's library choice | SESAME docs](https://sesame.apps.wayne.edu/docs/saml-library-choice.md): Which library the saml driver stands on, what else was weighed, why, and the version floor.
 - [Troubleshooting | SESAME docs](https://sesame.apps.wayne.edu/docs/troubleshooting.md): What to try when a sign-in fails, and what the errors mean.
 - [Upgrading | SESAME docs](https://sesame.apps.wayne.edu/docs/upgrading.md): How to move between SESAME versions.
 

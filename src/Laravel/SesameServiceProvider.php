@@ -31,6 +31,8 @@ use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
+use Waynestate\Sesame\Drivers\SamlDriver;
+use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
@@ -81,11 +83,13 @@ class SesameServiceProvider extends ServiceProvider
                 match ($config->driver) {
                     'oauth2' => $this->jwksCache($app, 'sesame.oauth2.jwks_store'),
                     'oidc' => $this->jwksCache($app, 'sesame.oidc.cache_store'),
+                    'saml' => $this->jwksCache($app, 'sesame.saml.cache_store'),
                     default => null,
                 },
-                // The oidc driver keeps its sign-in state in the session, and
-                // the cas driver keeps its pending-login marker there.
-                in_array($config->driver, ['oidc', 'cas'], true) ? $app->make(LaravelSession::class) : null,
+                // The oidc and saml drivers keep their sign-in state in the
+                // session, and the cas driver keeps its pending-login marker
+                // there.
+                in_array($config->driver, ['oidc', 'cas', 'saml'], true) ? $app->make(LaravelSession::class) : null,
             );
         });
 
@@ -180,6 +184,16 @@ class SesameServiceProvider extends ServiceProvider
             $config['oidc']['redirect_uri'] = $app->make(UrlGenerator::class)->to('/login/callback');
         }
 
+        // The saml driver's URLs default to the routes this adapter
+        // registers: the login URL, the ACS and the SP metadata (whose URL
+        // is the SP's entity ID, as Shibboleth does it).
+        if (($config['driver'] ?? null) === 'saml') {
+            $urls = $app->make(UrlGenerator::class);
+            $config['saml']['service_url'] ??= $urls->to('/login');
+            $config['saml']['sp']['acs_url'] ??= $urls->to('/login/saml/acs');
+            $config['saml']['sp']['entity_id'] ??= $urls->to('/login/saml/metadata');
+        }
+
         return Config::fromArray($config);
     }
 
@@ -272,7 +286,12 @@ class SesameServiceProvider extends ServiceProvider
     {
         $router = $this->app->make(Router::class);
 
-        $oidc = $this->app->make(Repository::class)->get('sesame.driver') === 'oidc';
+        $driver = $this->app->make(Repository::class)->get('sesame.driver');
+        $oidc = $driver === 'oidc';
+
+        if ($driver === 'saml') {
+            $this->samlRoutes($router);
+        }
 
         $router->group(['middleware' => 'web'], function () use ($router, $oidc) {
             $login = function (Request $request) {
@@ -336,6 +355,50 @@ class SesameServiceProvider extends ServiceProvider
                     ->header('X-Content-Type-Options', 'nosniff');
             })->name('sesame.status');
         });
+    }
+
+    /**
+     * The saml driver's two routes, outside the web group.
+     *
+     * The ACS takes the IdP's cross-site POST, which carries no Lax session
+     * cookie and no CSRF token: with the web group's middleware it would
+     * fail the CSRF check, and starting a session there would replace the
+     * user's real one. So it runs without a session; the driver parks the
+     * response and the 303 sends the browser to /login, where the session
+     * is back and the response is checked. The metadata route needs no
+     * session either.
+     */
+    private function samlRoutes(Router $router): void
+    {
+        $router->post('/login/saml/acs', function (Request $request) {
+            $driver = $this->app->make(Driver::class);
+
+            if (! $driver instanceof SamlDriver) {
+                abort(404);
+            }
+
+            try {
+                $redirect = $driver->receive($this->toPsr7($request));
+            } catch (AuthenticationFailed) {
+                return response('The sign-in response could not be used. Start the sign-in again.', 400)
+                    ->header('Content-Type', 'text/plain; charset=UTF-8')
+                    ->header('Cache-Control', 'no-store');
+            }
+
+            return redirect($redirect->url, 303)->header('Cache-Control', 'no-store');
+        })->name('sesame.saml.acs');
+
+        $router->get('/login/saml/metadata', function () {
+            $driver = $this->app->make(Driver::class);
+
+            if (! $driver instanceof SamlDriver) {
+                abort(404);
+            }
+
+            return response($driver->metadata(), 200)
+                ->header('Content-Type', 'application/samlmetadata+xml')
+                ->header('X-Content-Type-Options', 'nosniff');
+        })->name('sesame.saml.metadata');
     }
 
     /**

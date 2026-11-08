@@ -49,6 +49,7 @@ composer require waynestate/sesame
 | App on Citadel today | `cas` | None. |
 | App on Citadel once Drawbridge is live | `gateway` | None per app (Drawbridge holds it once). |
 | App off Citadel or an API with its own audience | `oidc` or `oauth2` | Its own registration. |
+| App that must sign in through a SAML IdP (Shibboleth-style), opt-in | `saml` | None; the IdP's administrators register the app's SP metadata instead. |
 | Local development | `fake` | None. |
 
 The recommended path on Citadel is the `gateway` driver behind Drawbridge. Drawbridge is Wayne State's auth gateway: the browser signs in once at the gateway, which passes the app a signed assertion that the `gateway` driver verifies. Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration.
@@ -257,8 +258,9 @@ settings in `config/session.php`:
   missing, so the app would see no session on the return request and any login
   binding (S18) would fail for every user. `Lax` is what HELMET sets and what
   Laravel does by default. A cross-site `POST` carries no `Lax` cookie at all,
-  which is the defense you want; a future `saml` driver would need its own
-  short-lived cookie for that reason (S35).
+  which is the defense you want; that is why the `saml` driver's ACS parks
+  the IdP's POST without a session and sends the browser back to the login
+  URL with a 303, where the `Lax` cookie is sent again (S35).
 - **Leave the session ID length alone** (S45). Do not set `session.sid_length` or
   `session.sid_bits_per_character`: PHP's default ID is 32 hexadecimal characters
   (128 bits), and on PHP 8.4 and later both settings are deprecated and raise
@@ -400,7 +402,7 @@ throws never changes what the facade returns or throws.
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
-| `saml` | Later. Direct SP. |
+| `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
@@ -941,6 +943,80 @@ What the developer (or the Entra admin) sets on the app registration:
 Use the v2.0 issuer (`https://login.microsoftonline.com//v2.0`); the
 tenant id comes from the playbook or the environment, never from code.
 
+### The saml driver (SAML 2.0 sign-in)
+
+Open sesame, in a language with a schema. The saml driver signs a person in
+through the browser with SAML 2.0: the app is the service provider, and a
+Shibboleth-style IdP vouches for them. It is **opt-in**: nothing in it runs
+unless `SESAME_DRIVER=saml`, and SESAME assumes no IdP, so the app names the
+IdP's metadata itself. It stands on `onelogin/php-saml` 4.3.2 or later
+(xmlseclibs 3.1.5 or later), which SESAME suggests but does not require:
+
+```
+composer require onelogin/php-saml
+```
+
+Why that library and the floor: [docs/saml-library-choice.md](https://github.com/waynestate/sesame/blob/HEAD/docs/saml-library-choice.md).
+The full guide, with every config key and every error reason:
+[docs/guides/driver-saml.md](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/driver-saml.md).
+
+A sign-in takes three requests:
+
+1. **The start.** The login URL builds an AuthnRequest (HTTP-Redirect,
+   signed when `saml.sign_authn_requests` is on), keeps its ID in the app's
+   session (single use, ten minutes), and redirects to the IdP. A checked
+   `return_to` rides along as the RelayState.
+2. **The ACS.** The IdP posts its Response cross-site, so no `SameSite=Lax`
+   session cookie comes with it (S35, S41). The ACS never touches the
+   session: it parks the raw Response in the PSR-16 cache under a single-use
+   256-bit handle (two minutes) and answers 303 to the login URL with
+   `saml_handle`.
+3. **The finish.** The session is back on that GET. php-saml validates the
+   Response in strict mode (schema, the signature and what it covers,
+   Destination and Recipient against the configured ACS URL, Audience,
+   Issuer, InResponseTo, the time conditions), and SESAME adds a required
+   assertion signature, SHA-2 only, an IssueInstant within the leeway and
+   the maximum age, and the replay guard on the assertion ID. IdP-initiated
+   responses are refused.
+
+The username comes from `saml.username_attribute` (`accessid`, from `uid` or
+its OID, by default); `email`, `name`, `affiliations` and `eppn` map from
+the eduPerson and inetOrgPerson OIDs. `AuthnInstant` is the MFA time, and an
+`AuthnContextClassRef` in `saml.mfa_contexts` (the REFEDS MFA profile by
+default) counts as MFA. `step_up=1` sends `ForceAuthn`. Logout is local.
+
+Raw PHP: the ACS is its own page, and it must NOT call `session_start()`.
+
+```php
+// acs.php: boot the driver without a session, then park and 303.
+sesame_saml_acs($driver);
+
+// metadata.php: the SP metadata for the IdP's administrators.
+sesame_saml_metadata($driver);
+
+// login.php: session_start(), then as for every driver.
+$user = sesame_login();
+```
+
+Laravel:
+
+```
+SESAME_DRIVER=saml
+SESAME_SAML_IDP_METADATA_URL=<the IdP's metadata URL>
+# or SESAME_SAML_IDP_METADATA_FILE=/path/to/idp-metadata.xml
+# The SP entity ID, ACS URL and login URL default to the app's
+# /login/saml/metadata, /login/saml/acs and /login routes.
+SESAME_SAML_SP_CERT_FILE=/path/to/sp.crt
+SESAME_SAML_SP_KEY_FILE=/path/to/sp.key
+SESAME_SAML_CACHE_STORE=redis
+```
+
+The adapter adds `POST /login/saml/acs` and `GET /login/saml/metadata`,
+both outside the `web` group. Hand the IdP's administrators the metadata
+URL, and ask them to sign assertions (SESAME refuses an unsigned assertion
+even inside a signed Response), to release the mapped attributes, and to
+sign with SHA-256 or better.
+
 ### Session timeouts
 
 Open sesame opens the door for a live session; a stale one finds it locked.
@@ -1085,7 +1161,7 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 |---|---|---|---|
-| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc` or `fake`. The oidc keys are in "The oidc driver (Entra sign-in)". |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in "The oidc driver (Entra sign-in)", the saml keys in "The saml driver (SAML 2.0 sign-in)". |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
@@ -1125,6 +1201,8 @@ The routes, when `routes` is true:
 | `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
 | `GET` | `/sesame/status` | `sesame.status` (the single-page app's "who am I" JSON answer, in "Single-page apps: who am I") |
 | `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
+| `POST` | `/login/saml/acs` | `sesame.saml.acs` (saml driver only; outside the `web` group, so no session and no CSRF token: the IdP's POST cannot carry either) |
+| `GET` | `/login/saml/metadata` | `sesame.saml.metadata` (saml driver only; the SP metadata) |
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout
 routes. The `auth.sesame` middleware still points at the `sesame.login` route
@@ -1457,7 +1535,7 @@ The pegboard
 
 ### One blank per protocol
 
-Each key on the board is a driver. Five ship today, and SAML hangs there uncut because it isn't built yet. Pick one to see its `.env` line and what it checks. Whichever you pick, the door is the same: your app's `findOrImportUser(Identity)`.
+Each key on the board is a driver. All six are cut now. SAML is the newest, and it waits on its own hook until an app asks for it: opt-in, with no IdP picked for you. Pick one to see its `.env` line and what it checks. Whichever you pick, the door is the same: your app's `findOrImportUser(Identity)`.
 
 .env
 
@@ -1778,6 +1856,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.
 - Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's `cas-to-sesame` hop writes today, `waynestate/sesame:^0.4` (they said `^0.3`), and point at the 0.5.0 upgrade steps to take after the hop.
+- Added: the `saml` driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on `onelogin/php-saml` (suggested, not required; the choice is in `docs/saml-library-choice.md`) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the `ReturnTo` rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the `SameSite=Lax` session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends `ForceAuthn`; logout is local.
+- Added: `config/sesame.php`'s `saml` block and the `SESAME_SAML_*` settings; the Laravel adapter's `POST /login/saml/acs` (`sesame.saml.acs`) and `GET /login/saml/metadata` (`sesame.saml.metadata`) routes, outside the `web` group; the raw-PHP `sesame_saml_acs()` and `sesame_saml_metadata()`; `sesame_login()` treats `saml_handle` as a ticket.
+- Security: SESAME-22: `composer.json` conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.
+- Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (`tests/fixtures/saml`), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.
+- Docs: "The saml driver (SAML 2.0 sign-in)" guide and "The saml driver's library choice"; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to `Enforced`.
+- Changed: CI caches Composer downloads per lock file (`.composer-cache`, keyed on `composer.lock` and `deploy/composer.lock`), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.
 
 ### \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
 
@@ -2414,6 +2498,240 @@ Use the v2.0 issuer (`https://login.microsoftonline.com/<tenant>/v2.0`); the ten
 
 ---
 
+Source: https://sesame.apps.wayne.edu/docs/guides/driver-saml.html
+
+## The saml driver (SAML 2.0 sign-in)[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#the-saml-driver-saml-2-0-sign-in)
+
+The goal: sign a person into your app through the browser with SAML 2.0, with your app as the service provider (SP) and a Shibboleth-style identity provider (IdP) vouching for them. This page walks through how a sign-in runs, every config key, and what to hand the IdP's administrators; then set the driver up on the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) or [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html) page.
+
+Note
+
+The saml driver is opt-in. Nothing in it runs unless `SESAME_DRIVER=saml`, and SESAME assumes no IdP: there is no default WSU IdP entity, so you name the IdP's metadata yourself. On Citadel prefer the `gateway` driver behind Drawbridge, and for Entra prefer `oidc`. Reach for SAML when the IdP you must use speaks only SAML.
+
+### What you need[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-you-need)
+
+Open sesame, in a language with a schema. The saml driver stands on `onelogin/php-saml`, which SESAME suggests but does not require:
+
+```
+composer require onelogin/php-saml
+```
+
+Without it, building the driver fails with `The saml driver needs onelogin/php-saml. Install it with: composer require onelogin/php-saml`. With a release older than the floor (php-saml 4.3.2, xmlseclibs 3.1.5, both for published signature and encryption advisories), building the driver fails too, and SESAME's `composer.json` refuses to install those releases beside it. Why that library, and what else was weighed: [docs/saml-library-choice.md](https://sesame.apps.wayne.edu/docs/saml-library-choice.html).
+
+You also need:
+
+- The IdP's metadata: an https URL, or the XML saved as a file in the deploy. Exactly one.
+- A shared PSR-16 cache (in Laravel, a cache store every web server sees). The driver parks the IdP's answer there for two minutes, keeps the fetched metadata, and remembers the assertion IDs it has accepted.
+- The app's session (SESAME's `SessionPort`), as for `cas` and `oidc`.
+- Optionally an SP key pair, as file paths, for signed AuthnRequests and the certificate in the SP metadata.
+
+### How a sign-in runs[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#how-a-sign-in-runs)
+
+A SAML sign-in takes three requests, one more than you might expect.
+
+1. **The start.** A request to the login URL without `saml_handle` builds an AuthnRequest (the HTTP-Redirect binding, signed when `saml.sign_authn_requests` is on), keeps its ID in the app's session (bound to this browser, single use, gone after ten minutes), and redirects to the IdP. A checked `return_to` rides along as the RelayState.
+2. **The ACS.** The IdP posts its Response to the ACS URL. That POST is cross-site, so the browser sends no `SameSite=Lax` session cookie with it (S35, S41), and a session started there would replace the user's real one. So the ACS never touches the session: it parks the raw, unchecked Response in the PSR-16 cache under a random 256-bit handle (single use, two minutes) and answers `303 See Other` to the login URL with `saml_handle=<handle>`.
+3. **The finish.** That GET is a top-level navigation, so the session cookie is back. The driver takes the parked Response and the pending request it answers (both single use), and php-saml validates it in strict mode: the XML schema (no DOCTYPE), the signature and exactly what it covers, Destination and Recipient against the configured ACS URL, Audience against the SP entity ID, Issuer against the IdP, InResponseTo against the pending request, the time conditions, and the bearer subject confirmation. SESAME then adds its own checks: a signed assertion (always), SHA-2 signatures and digests only, an IssueInstant no further ahead than `saml.leeway_seconds` and no older than `saml.max_assertion_age_seconds`, and an assertion ID the replay guard has never seen. The identity goes to the app's `findOrImportUser(Identity)`, and the core regenerates the session ID, as for every driver.
+
+`sesame_login()` and the Laravel route then send the user to the checked return-to, so the handle never stays in the address bar.
+
+IdP-initiated (unsolicited) responses are refused: a sign-in must start at the app. A Response that answers another browser's request (login CSRF) is refused too, because the pending request lives in this browser's session.
+
+### Identity, attributes and MFA[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#identity-attributes-and-mfa)
+
+`saml.attributes` maps SESAME's names to the SAML attribute names the IdP releases; the first name present wins. The defaults are the eduPerson and inetOrgPerson OIDs a Shibboleth IdP releases, then their friendly names:
+
+| SESAME name | SAML attribute names (default) |
+| --- | --- |
+| `accessid` | `urn:oid:0.9.2342.19200300.100.1.1`, `uid` |
+| `email` | `urn:oid:0.9.2342.19200300.100.1.3`, `mail` |
+| `name` | `urn:oid:2.16.840.1.113730.3.1.241`, `displayName` |
+| `affiliations` | `urn:oid:1.3.6.1.4.1.5923.1.1.1.1`, `eduPersonAffiliation` |
+| `eppn` | `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`, `eduPersonPrincipalName` |
+
+The username comes from `saml.username_attribute` (default `accessid`). When the assertion has no such attribute, the sign-in fails with `saml.missing_attribute` and the error names the settings to change. The mapped attributes reach the resolver under SESAME's names (`$identity->attributes['affiliations']`), along with `issuer`, `name_id` (when the IdP sends one) and `authn_context`.
+
+The AuthnStatement gives the MFA facts. `AuthnInstant` becomes the identity's sign-in time (never invented: without one, the MFA check fails closed). An `AuthnContextClassRef` listed in `saml.mfa_contexts` (the REFEDS MFA profile, `https://refeds.org/profile/mfa`, by default) adds `mfa` to the methods, and the class reference is also the identity's authentication context, so `sesame.context:https://refeds.org/profile/mfa` works. `saml.assume_mfa` counts every sign-in as MFA, for an IdP that enforces MFA for this SP but does not say so.
+
+### Step-up and return-to[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#step-up-and-return-to)
+
+A login request with `step_up=1` sends `ForceAuthn="true"`, so the IdP asks for credentials again. The finish then requires a fresh `AuthnInstant`: not in the future beyond the leeway, not before the sign-in started, and within 300 seconds. In Laravel, `sesame.mfa` with `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
+
+A login request may carry `return_to`. It goes out as the RelayState only when it passes the ReturnTo rule (an absolute https URL with the login URL's scheme, host and port, and no user name or password), and the RelayState that comes back is checked again with the same rule, so it can never be an open redirect.
+
+### Logout[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#logout)
+
+Local only. There is no single logout: SESAME refuses `slo` at boot, so the app session is cleared and the IdP's session lives on (the next sign-in is usually silent).
+
+### Raw PHP[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#raw-php)
+
+The ACS is its own page, and it must NOT call `session_start()`.
+
+```php
+<?php
+// boot-saml.php: shared by the three pages below. No session_start() here.
+
+declare(strict_types=1);
+
+require __DIR__.'/vendor/autoload.php';
+
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\DriverFactory;
+use Waynestate\Sesame\Session\NativeSession;
+
+$config = Config::fromArray([
+    'driver' => 'saml',
+    'environment' => 'production',
+    'saml' => [
+        'sp' => [
+            'entity_id' => 'https://app.example.test/metadata.php',
+            'acs_url' => 'https://app.example.test/acs.php',
+            'cert_file' => getenv('SESAME_SAML_SP_CERT_FILE') ?: null,
+            'key_file' => getenv('SESAME_SAML_SP_KEY_FILE') ?: null,
+        ],
+        'idp' => [
+            'metadata_file' => __DIR__.'/config/idp-metadata.xml',
+        ],
+        'service_url' => 'https://app.example.test/login.php',
+    ],
+]);
+
+$session = new NativeSession(); // does not start the session
+$driver = DriverFactory::make(
+    $config,
+    new \GuzzleHttp\Client(['allow_redirects' => false, 'timeout' => 10]), // only for a metadata URL
+    new Psr17Factory(),
+    null,
+    null,
+    new Psr16Cache(new FilesystemAdapter('sesame')), // shared by every web server
+    $session,
+);
+```
+
+```php
+<?php
+// acs.php: the IdP posts here. No session_start(): the 303 goes to login.php.
+require __DIR__.'/boot-saml.php';
+sesame_saml_acs($driver);
+```
+
+```php
+<?php
+// metadata.php: the SP metadata for the IdP's administrators.
+require __DIR__.'/boot-saml.php';
+sesame_saml_metadata($driver);
+```
+
+```php
+<?php
+// login.php: starts the sign-in, finishes it with the saml_handle, then
+// sends the user to the checked return_to or back here.
+require __DIR__.'/boot-saml.php';
+
+use Waynestate\Sesame\Sesame;
+
+ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+session_start();
+
+sesame(new Sesame($driver, new MyUserResolver(), $session, $config));
+
+$user = sesame_login();
+```
+
+A protected page sends a guest to `login.php?return_to=<its own https URL>`, and a page that needs fresh credentials to `login.php?step_up=1`.
+
+### Laravel[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#laravel)
+
+```
+SESAME_DRIVER=saml
+SESAME_SAML_IDP_METADATA_URL=<the IdP's metadata URL>
+# or SESAME_SAML_IDP_METADATA_FILE=/path/to/idp-metadata.xml
+# The SP entity ID, the ACS URL and the login URL default to the app's
+# /login/saml/metadata, /login/saml/acs and /login routes.
+SESAME_SAML_SP_CERT_FILE=/path/to/sp.crt
+SESAME_SAML_SP_KEY_FILE=/path/to/sp.key
+SESAME_SAML_CACHE_STORE=redis
+```
+
+The adapter registers two more routes beside `GET /login`, both outside the `web` middleware group, because neither may start a session:
+
+| Route | Name | What it does |
+| --- | --- | --- |
+| `POST /login/saml/acs` | `sesame.saml.acs` | Parks the IdP's Response and answers 303 to `/login?saml_handle=...`; an unusable POST gets a plain 400. No session, no CSRF token (the IdP cannot send one). |
+| `GET /login/saml/metadata` | `sesame.saml.metadata` | The SP metadata as `application/samlmetadata+xml`. |
+
+It passes the Laravel session and the `sesame.saml.cache_store` cache to the driver. Laravel's default `SameSite=Lax` session cookie is right: the browser drops it on the IdP's POST, which is why the ACS parks the response, and sends it on the 303's GET. `Strict` would drop it on that GET too.
+
+### What to hand the IdP's administrators[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-to-hand-the-idp-s-administrators)
+
+Send them the SP metadata URL (`/login/saml/metadata` in Laravel). It carries the entity ID, the ACS URL with the HTTP-POST binding, `WantAssertionsSigned="true"` and, when set, the SP certificate. Ask them:
+
+- to **sign assertions** (Shibboleth's `signAssertions` for this SP). SESAME refuses an unsigned assertion even inside a signed Response;
+- to release the attributes in `saml.attributes` (by default the AccessID as `uid`, plus `mail`, `displayName` and `eduPersonAffiliation`);
+- to sign with SHA-256 or better; SHA-1 is refused;
+- not to encrypt assertions unless the app has an SP key pair to decrypt them with.
+
+### Config keys[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys)
+
+| Key | Env | Default | Meaning |
+| --- | --- | --- | --- |
+| `saml.sp.entity_id` | `SESAME_SAML_SP_ENTITY_ID` | Laravel: `/login/saml/metadata` | The SP's entity ID, as the IdP knows the app. Required in raw PHP. |
+| `saml.sp.acs_url` | `SESAME_SAML_SP_ACS_URL` | Laravel: `/login/saml/acs` | Where the IdP posts its Response. https, or `http://localhost` for development. Required in raw PHP. |
+| `saml.service_url` | `SESAME_SAML_SERVICE_URL` | Laravel: `/login` | The login URL, where a sign-in starts and finishes; every return-to must stay on its host. Required in raw PHP. |
+| `saml.sp.cert_file`, `saml.sp.key_file` | `SESAME_SAML_SP_CERT_FILE`, `SESAME_SAML_SP_KEY_FILE` | none | The SP's PEM certificate and private key, as file paths; set both or neither. The key must match the certificate. Never inline, never logged: the key is held in a `SensitiveParameterValue`. |
+| `saml.sign_authn_requests` | `SESAME_SAML_SIGN_AUTHN_REQUESTS` | `false` | Sign the AuthnRequest (RSA-SHA256). Needs the SP key pair. |
+| `saml.want_messages_signed` | `SESAME_SAML_WANT_MESSAGES_SIGNED` | `false` | Also require a signed Response. The assertion signature is required either way. |
+| `saml.idp.metadata_url` | `SESAME_SAML_IDP_METADATA_URL` | none | The IdP's metadata, https only, fetched without following redirects and cached. Set this or the file. |
+| `saml.idp.metadata_file` | `SESAME_SAML_IDP_METADATA_FILE` | none | The IdP's metadata XML as a file, read at boot (a bad file stops the app). Set this or the URL. |
+| `saml.idp.entity_id` | `SESAME_SAML_IDP_ENTITY_ID` | none | Which IdP in the metadata to trust; required when the document holds more than one. No default WSU IdP. |
+| `saml.idp.cert_file` | `SESAME_SAML_IDP_CERT_FILE` | the metadata's signing certificates | Pin the IdP's signing certificate. |
+| `saml.attributes` | `SESAME_SAML_ATTRIBUTE_ACCESSID`, `_EMAIL`, `_NAME`, `_AFFILIATIONS`, `_EPPN` | the table above | SESAME's name to SAML attribute names, comma-separated; an empty value keeps the default for that name. |
+| `saml.username_attribute` | `SESAME_SAML_USERNAME_ATTRIBUTE` | `accessid` | Which mapped attribute becomes the username. |
+| `saml.mfa_contexts` | `SESAME_SAML_MFA_CONTEXTS` | `https://refeds.org/profile/mfa` | AuthnContextClassRef values that count as MFA. |
+| `saml.assume_mfa` | `SESAME_SAML_ASSUME_MFA` | `false` | Count every sign-in as MFA, when the IdP enforces it for this SP. |
+| `saml.authn_context` | `SESAME_SAML_AUTHN_CONTEXT` | none | AuthnContextClassRef values to request (a RequestedAuthnContext); none is sent by default. |
+| `saml.leeway_seconds` | `SESAME_SAML_LEEWAY_SECONDS` | `60` | Clock skew on the IssueInstant and the step-up checks, 0 to 180 seconds. php-saml's own conditions allow a fixed 180. |
+| `saml.max_assertion_age_seconds` | `SESAME_SAML_MAX_ASSERTION_AGE_SECONDS` | `300` | The oldest an assertion may be, by its IssueInstant, 30 to 3600 seconds. |
+| `saml.metadata_cache_ttl_seconds` | `SESAME_SAML_METADATA_CACHE_TTL_SECONDS` | `3600` | How long fetched metadata is kept, 60 to 86400 seconds. |
+| `saml.request_ttl_seconds` | none | `600` | How long a started sign-in may take, 60 to 3600 seconds. |
+| `saml.cache_store` | `SESAME_SAML_CACHE_STORE` | the default store | Laravel only. Must be shared by every web server of the app. |
+
+### Errors[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#errors)
+
+Every refusal is an `AuthenticationFailed` with a short reason in parentheses, never a value from the XML:
+
+| Reason | What happened |
+| --- | --- |
+| `saml.acs` | The ACS got no usable `SAMLResponse` (not a POST, empty, too large, not base64). |
+| `saml.handle` | The `saml_handle` is unknown, used, or older than two minutes. |
+| `saml.response` | The Response is not well-formed XML, or carries a DOCTYPE. |
+| `saml.unsolicited` | The Response answers no request (IdP-initiated). |
+| `saml.in_response_to` | It answers a request this browser did not send, or one already used or expired. |
+| `saml.invalid: <code>` | php-saml refused it; the code is its `ValidationError` name, for example `no_signed_assertion`, `invalid_signature`, `wrong_audience`, `wrong_issuer`, `wrong_destination`, `assertion_expired` or `wrong_number_of_assertions`. |
+| `saml.algorithm` | A signature or digest outside SHA-2. |
+| `saml.issue_instant`, `saml.too_old` | The IssueInstant is in the future beyond the leeway, or older than the maximum age. |
+| `saml.replay` | The assertion ID was accepted before. |
+| `saml.step_up` | A step-up sign-in was not fresh. |
+| `saml.missing_attribute` | The username attribute is missing. |
+| `saml.metadata` | The IdP metadata could not be fetched or used. |
+
+### Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#related)
+
+- [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
+- [The saml driver's library choice](https://sesame.apps.wayne.edu/docs/saml-library-choice.html)
+- [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html)
+- [The gateway driver](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html)
+- [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)
+- [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)
+- [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html)
+- [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html)
+- [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html)
+
+---
+
 Source: https://sesame.apps.wayne.edu/docs/guides/instance-runner.html
 
 ## Strongly recommended: a git.wayne.edu instance runner[#](https://sesame.apps.wayne.edu/docs/guides/instance-runner.html#strongly-recommended-a-git-wayne-edu-instance-runner)
@@ -2468,7 +2786,7 @@ The provider is discovered automatically. Publish the config with:
 php artisan vendor:publish --tag=sesame-config
 ```
 
-The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route.
+The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route. For the saml driver, `saml.service_url`, `saml.sp.acs_url` and `saml.sp.entity_id` fall back to the app's `/login`, `/login/saml/acs` and `/login/saml/metadata` routes.
 
 ### Config[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#config)
 
@@ -2476,7 +2794,7 @@ Config keys (in `config/sesame.php`):
 
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
-| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc` or `fake`. The oidc keys are in [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html). |
+| `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html), the saml keys in [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html). |
 | `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
 | `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
@@ -2519,6 +2837,8 @@ The routes, when `routes` is true:
 | `GET` | `/login` | `sesame.login` |
 | `POST` | `/logout` | `sesame.logout` (in the `web` group, so Laravel's CSRF check applies; a form needs `@csrf`) |
 | `GET` | `/login/callback` | `sesame.callback` (oidc driver only) |
+| `POST` | `/login/saml/acs` | `sesame.saml.acs` (saml driver only; outside the `web` group, so no session and no CSRF token: the IdP's POST cannot carry either) |
+| `GET` | `/login/saml/metadata` | `sesame.saml.metadata` (saml driver only; the SP metadata) |
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout routes. The `auth.sesame` middleware still points at the `sesame.login` route name, so the app's login route must keep that name.
 
@@ -3030,7 +3350,7 @@ Warning
 SESAME never sets a cookie, so two choices belong to the session setup. In raw PHP HELMET makes both for you (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel they are settings in `config/session.php`:
 
 - **Name it with the `__Host-` prefix** (S4). The browser then accepts the cookie only if it is `Secure`, has `Path=/` and has no `Domain`, so a sibling subdomain under `*.apps.wayne.edu` cannot overwrite it. HELMET names the cookie `__Host-WSUSESSID` on HTTPS (it keeps a name your app chose). In Laravel, set `SESSION_COOKIE=__Host-wsu-session`, `SESSION_SECURE_COOKIE=true`, `SESSION_PATH=/` and leave `SESSION_DOMAIN` empty in `config/session.php`.
-- **Keep it `SameSite=Lax`, never `Strict`** (S41). The identity provider sends the browser back to your app with a cross-site top-level `GET`, and a `Strict` cookie is not sent on that request: it would be missing, so the app would see no session on the return request and any login binding (S18) would fail for every user. `Lax` is what HELMET sets and what Laravel does by default. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want; a future `saml` driver would need its own short-lived cookie for that reason (S35).
+- **Keep it `SameSite=Lax`, never `Strict`** (S41). The identity provider sends the browser back to your app with a cross-site top-level `GET`, and a `Strict` cookie is not sent on that request: it would be missing, so the app would see no session on the return request and any login binding (S18) would fail for every user. `Lax` is what HELMET sets and what Laravel does by default. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want; that is why the `saml` driver's ACS page parks the IdP's POST without a session and sends the browser back to the login URL with a 303, where the `Lax` cookie is sent again (S35; see [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html)).
 - **Leave the session ID length alone** (S45). Do not set `session.sid_length` or `session.sid_bits_per_character`: PHP's default ID is 32 hexadecimal characters (128 bits), and on PHP 8.4 and later both settings are deprecated and raise notices. A low value weakens the ID. Neither SESAME nor HELMET sets or checks them.
 
 On logout, both paths send `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser cannot show a signed-in page; `"cookies"` is left out on purpose, because it would clear every cookie on the host and sign the user out of every other app on wayne.edu, not just this one. Single logout is not supported, the identity provider cannot sign the user out of the app's other sessions, so SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
@@ -3419,6 +3739,7 @@ One lock, any key: this page matches your situation to the right SESAME driver a
 | App on Citadel today | `cas` | None. |
 | App on Citadel once Drawbridge is live | `gateway` | None per app (Drawbridge holds it once). |
 | App off Citadel or an API with its own audience | `oidc` or `oauth2` | Its own registration. |
+| App that must sign in through a SAML IdP (Shibboleth-style), opt-in | `saml` | None; the IdP's administrators register the app's SP metadata instead. |
 | Local development | `fake` | None. |
 
 ### The recommended path on Citadel[#](https://sesame.apps.wayne.edu/docs/guides/which-driver.html#the-recommended-path-on-citadel)
@@ -3429,6 +3750,7 @@ The recommended path on Citadel is the `gateway` driver behind Drawbridge. Drawb
 
 - [WSU values (Playbook)](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html)
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)
+- [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html)
 
 ---
 
@@ -3526,7 +3848,7 @@ Source: https://sesame.apps.wayne.edu/docs/
 
 ## SESAME[#](https://sesame.apps.wayne.edu/docs/#sesame)
 
-![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
+![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc, saml](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
 
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no key ever gets to keep the door.
 
@@ -3615,7 +3937,7 @@ Source: https://sesame.apps.wayne.edu/docs/install.html
 
 - PHP 8.3 or newer (`^8.3`).
 - The `simplexml` extension (`ext-simplexml`).
-- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers: Guzzle or symfony/http-client. SESAME suggests one, it does not require one.
+- A PSR-18 HTTP client for the `cas`, `oauth2` and `oidc` drivers (and `saml` with a metadata URL): Guzzle or symfony/http-client. SESAME suggests one, it does not require one.
 
 ### Install[#](https://sesame.apps.wayne.edu/docs/install.html#install-1)
 
@@ -3626,6 +3948,10 @@ composer require waynestate/sesame
 Note
 
 The `oidc` driver also needs `league/oauth2-client`, which SESAME suggests but does not require: `composer require league/oauth2-client`. Without it, building the driver fails with: `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`.
+
+Note
+
+The `saml` driver (opt-in) needs `onelogin/php-saml` 4.3.2 or later, which SESAME suggests but does not require: `composer require onelogin/php-saml`. Older releases are refused, by `composer.json` and when the driver is built.
 
 ### Verify[#](https://sesame.apps.wayne.edu/docs/install.html#verify)
 
@@ -3716,7 +4042,7 @@ The library's config, read from a plain array. `final readonly class Config`.
 public static function fromArray(#[\SensitiveParameter] array $config): self
 ```
 
-Every constructor parameter is a public readonly property, in this order: `driver`, `environment`, `fakeUsername`, `fakeAttributes`, `casBaseUrl`, `casServiceUrl`, `casProtocol`, `casRenew`, `casAssumeMfa`, `sessionIdleMinutes`, `sessionAbsoluteMinutes`, `gatewayHeader`, `gatewayAlgorithm`, `gatewayPublicKey`, `gatewayIssuer`, `gatewayAudience`, `gatewayLeewaySeconds`, `gatewayTrustedProxies`, `gatewayMaxLifetimeSeconds`, `gatewayAllowWithoutReplayGuard`, `oauth2Issuer`, `oauth2JwksUrl`, `oauth2Audience`, `oauth2LeewaySeconds`, `oauth2RequiredScopes`, `oauth2RequiredRoles`, `oauth2IdentityClaim`, `oauth2JwksCacheTtlSeconds`, `oauth2RequireAtJwt`, `oidc` (an `?OidcOptions`) and `gatewayPublicKeys`. Keys, defaults and bounds: see [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html).
+Every constructor parameter is a public readonly property, in this order: `driver`, `environment`, `fakeUsername`, `fakeAttributes`, `casBaseUrl`, `casServiceUrl`, `casProtocol`, `casRenew`, `casAssumeMfa`, `sessionIdleMinutes`, `sessionAbsoluteMinutes`, `gatewayHeader`, `gatewayAlgorithm`, `gatewayPublicKey`, `gatewayIssuer`, `gatewayAudience`, `gatewayLeewaySeconds`, `gatewayTrustedProxies`, `gatewayMaxLifetimeSeconds`, `gatewayAllowWithoutReplayGuard`, `oauth2Issuer`, `oauth2JwksUrl`, `oauth2Audience`, `oauth2LeewaySeconds`, `oauth2RequiredScopes`, `oauth2RequiredRoles`, `oauth2IdentityClaim`, `oauth2JwksCacheTtlSeconds`, `oauth2RequireAtJwt`, `oidc` (an `?OidcOptions`), `gatewayPublicKeys`, `gatewayJwksFile` and `saml` (a `?SamlOptions`). Keys, defaults and bounds: see [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html).
 
 #### DriverFactory[#](https://sesame.apps.wayne.edu/docs/reference/api.html#driverfactory)
 
@@ -3740,9 +4066,9 @@ What each argument is for:
 - `$clock` (PSR-20): optional, for the cas, gateway and oauth2 drivers' sign-in time; without one they use the system clock.
 - `$replayGuard`: the gateway driver needs one (for example a `Psr16ReplayGuard` over a PSR-16 cache), so a captured assertion cannot be replayed. Without one, the gateway driver refuses to start, unless the config says `gateway.allow_without_replay_guard` (local development only).
 - `$jwksCache` (PSR-16): the oauth2 driver keeps the fetched key set in it; without one, the oauth2 driver refuses to start. The oidc driver uses it too when passed (discovery document and key set), otherwise it keeps both in process memory.
-- `$session`: the oidc driver signs the user in through the browser, so it keeps its state, nonce and PKCE verifier in the app's session.
+- `$session`: the oidc driver signs the user in through the browser, so it keeps its state, nonce and PKCE verifier in the app's session. The saml driver keeps its AuthnRequest ID there, and needs `$jwksCache` too: it parks the IdP's posted response in it until the browser comes back with its session cookie.
 
-A missing dependency is an `InvalidConfig` error that names what to pass, and an unknown `driver` value is one too. The oidc driver also needs league/oauth2-client, which SESAME suggests but does not require. The driver classes themselves live in `Waynestate\Sesame\Drivers`; see [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html).
+A missing dependency is an `InvalidConfig` error that names what to pass, and an unknown `driver` value is one too. The oidc driver also needs league/oauth2-client, and the saml driver onelogin/php-saml (4.3.2 or later), which SESAME suggests but does not require. The driver classes themselves live in `Waynestate\Sesame\Drivers`; see [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html).
 
 #### Sesame[#](https://sesame.apps.wayne.edu/docs/reference/api.html#sesame)
 
@@ -3776,7 +4102,7 @@ public function safeReturnTo(string $returnTo): string
 ```
 
 - `login()`: returns the `Redirect` unchanged when the user must go to the identity provider. Otherwise it resolves the user: when the resolver returns a user it regenerates the session ID before it stores anything, and returns the user. What it stores is the user, a trimmed identity (username, driver, time, the MFA facts and the authentication contexts, but not the raw IdP attributes, so the session stays small and plain), and the timestamps that start the session's clocks. When the resolver returns null the app has refused the identity: the session is left untouched, nothing is stored, and null is returned, so a refused identity never ends up signed in. An `AuthenticationFailed` from the driver is rethrown unchanged.
-- `returnTo()`: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement `RemembersReturnTo` (the oidc driver) answer, and the value has already passed the `ReturnTo` rule.
+- `returnTo()`: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement `RemembersReturnTo` (the oidc and saml drivers) answer, and the value has already passed the `ReturnTo` rule.
 - `serviceUrl()`: the driver's configured service URL, or null when the driver has none.
 - `user()`: the app's user for the current session, or null when there is none. The session is checked against the timeouts before it is trusted, and a stale session is signed out on the spot, so a stale session can never pass one check and fail another. When the resolver implements `RefreshesUser`, the stored user is looked up again before the answer, and a null result signs the session out, so a deleted account stops reading as signed in from the next request on.
 - `requireMfa()`: decides whether the signed-in user's MFA is still good. The session is checked first, through `user()`, so a stale session is signed out before the MFA question is even asked; with no user, or no identity to read, the answer is `NO_AUTH_TIME`: the check fails closed.
@@ -3951,6 +4277,31 @@ public function clientSecret(): string
 
 The keys, their environment variables and their defaults are in the oidc table on the [Configuration page](https://sesame.apps.wayne.edu/docs/reference/configuration.html).
 
+#### SamlOptions and SamlDriver[#](https://sesame.apps.wayne.edu/docs/reference/api.html#samloptions-and-samldriver)
+
+`Waynestate\Sesame\Drivers\Saml\SamlOptions`: the `saml` config block, validated at boot (certificates, the key and a metadata file are read from their paths then). `final readonly class SamlOptions`.
+
+```php
+public const DEFAULT_ATTRIBUTES = [/* accessid, email, name, affiliations, eppn */];
+public const DEFAULT_MFA_CONTEXTS = ['https://refeds.org/profile/mfa'];
+public static function fromArray(#[\SensitiveParameter] array $saml): self
+public function spKey(): ?string
+```
+
+`Waynestate\Sesame\Drivers\SamlDriver` implements `Driver` and `RemembersReturnTo`, and adds the two endpoints the other drivers do not have:
+
+```php
+public const LIBRARY_FLOOR = '4.3.2';
+public const XMLSECLIBS_FLOOR = '3.1.5';
+public const HANDLE_PARAM = 'saml_handle';
+public function receive(ServerRequestInterface $request): Redirect // the ACS; send as 303
+public function metadata(): string                                  // the SP metadata XML
+public function acsUrl(): string
+public static function assertLibraryInstalled(string $class = self::LIBRARY_CLASS): void
+```
+
+The keys are in [the saml driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys).
+
 #### Setting[#](https://sesame.apps.wayne.edu/docs/reference/api.html#setting)
 
 `Waynestate\Sesame\Support\Setting`: the one lookup for the library's shared settings. The real environment wins (getenv, then $\_ENV, then $\_SERVER); when it has nothing, the private waynestate/playbook package supplies Wayne State's shared values when it is installed. An empty value counts as missing, so a blank variable never shadows the playbook.
@@ -3976,11 +4327,13 @@ function sesame_require_mfa(int $maxAgeSeconds = 28800): mixed
 function sesame_require_context(string $id): mixed
 function sesame_logout_token(): string
 function sesame_logout(string $returnTo): void
+function sesame_saml_acs(SamlDriver $driver): never
+function sesame_saml_metadata(SamlDriver $driver): never
 ```
 
 - `sesame()`: hold the one `Sesame` instance for this process. Set it once at boot, read it after: `sesame($sesame);` then `sesame();`. Reading it with none set throws `LogicException`.
 - `sesame_request()`: build the PSR-7 request for the current request from the globals. The PSR-17 factories come from nyholm/psr7, which the library already requires, so the raw-PHP path needs nothing but the autoloader.
-- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with `state` and a `code` or an `error`) counts as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
+- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with `state` and a `code` or an `error`) and the saml driver's return from the ACS (a request with `saml_handle`) count as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
 - `sesame_user()`: the app's user for the current session, or null when there is none.
 - `sesame_require_mfa()`: require that the signed-in user's MFA is still good. When it is satisfied, the app's user is returned, so a protected page can read the user and the MFA proof in one call; when it is not, `MfaNotSatisfied` is thrown, carrying the result with the stable reason and the human message.
 - `sesame_require_context()`: require that the signed-in identity has the given authentication context. When it does, the app's user is returned; when it does not, `AuthContextNotSatisfied` is thrown, carrying the context id.
@@ -3994,6 +4347,8 @@ function sesame_logout(string $returnTo): void
 ```
 
 - `sesame_logout()`: log the user out, then send them on. Invalidates the app session, redirects to the identity provider's logout URL when the driver has one, otherwise to the safe return-to, and stops the script, so no protected code runs after the redirect. CSRF guard: the logout runs only for a POST whose body carries the session's token in the `sesame_logout_token` field. A GET answers 405 with `Allow: POST`, and a POST without the right token answers 403; both leave the session alone and stop the script, so another site cannot sign the user out with an image, a link or a forged form. The response carries `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"`; `cookies` is deliberately left out, so the user is not signed out of every other app on the host.
+- `sesame_saml_acs()`: the saml driver's ACS page. Parks the IdP's POST and answers 303 to the login URL, or a plain 400 for a POST it cannot use, then stops the script. Call it on a page that does NOT call `session_start()`: the IdP's cross-site POST carries no `SameSite=Lax` session cookie, and a session started there would replace the user's real one.
+- `sesame_saml_metadata()`: sends the SP metadata as `application/samlmetadata+xml` and stops the script. It needs no session.
 
 ### Exceptions[#](https://sesame.apps.wayne.edu/docs/reference/api.html#exceptions)
 
@@ -4007,7 +4362,7 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 
 ### Where the rest lives[#](https://sesame.apps.wayne.edu/docs/reference/api.html#where-the-rest-lives)
 
-- The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html) page.
+- The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `SamlDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html) page.
 - The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`), documented in the [Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html).
 - The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
 - The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
@@ -4037,7 +4392,7 @@ $config = Config::fromArray($configArray);
 ```
 
 - `driver` and `environment` are always required.
-- Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2` or `oidc`. The `oidc` block is read into `OidcOptions`; see the oidc keys below.
+- Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2`, `oidc` or `saml`. The `oidc` block is read into `OidcOptions`; see the oidc keys below. The `saml` block is read into `SamlOptions`; its keys are in [the saml driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys).
 - A truthy `slo` or `single_logout` key is rejected at boot: the identity provider does not support single logout, so asking for it is a mistake to fail on at boot, not at the first logout.
 - A missing or empty required value throws `InvalidConfig`. Four keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
 
@@ -4061,6 +4416,7 @@ A present key with the wrong type is also an `InvalidConfig` error at boot, befo
 - `gateway.trusted_proxies` must be a non-empty array of non-empty strings (CIDR ranges or single IPs).
 - `fake.attributes`, `oauth2.required_scopes` and `oauth2.required_roles` must be arrays of non-empty strings.
 - The `oidc` block must be an array; `OidcOptions::fromArray()` validates it and names the key in its errors.
+- The `saml` block must be an array; `SamlOptions::fromArray()` validates it at boot (URLs, exactly one IdP metadata source, the certificate and key files, which must match) and names the key in its errors.
 
 ### Environment variables[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#environment-variables)
 
@@ -4074,7 +4430,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_CAS_RENEW | Send `renew=true`; leave off against Academica, which issues no ticket for it | `false` | config/sesame.php |
 | SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
 | SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them | none (the app's `/login` route) | config/sesame.php |
-| SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc` or `fake` | `cas` | config/sesame.php |
+| SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc`, `saml` (opt-in) or `fake` | `cas` | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |
 | SESAME_GATEWAY_ALGORITHM | The assertion's signature algorithm (`ES256`, `RS256` or `EdDSA`) | `ES256` | config/sesame.php |
 | SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD | Skip the replay guard entirely; local development only, never in production | `false` | config/sesame.php |
@@ -4121,7 +4477,31 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_OIDC_TOKEN_ENDPOINT | Override the token endpoint from the discovery document | none (from discovery) | config/sesame.php |
 | SESAME_OIDC_USERNAME_CLAIM | The ID token claim the username comes from | `accessid` | config/sesame.php |
 | SESAME_OIDC_USERNAME_FALLBACK | Use the `preferred_username` prefix when the username claim is missing; off because preferred_username is user-changeable | `false` | config/sesame.php |
-| SESAME_ROUTES | Register GET `/login`, POST `/logout` and (for oidc) GET `/login/callback`; false keeps the routes in the app's own route file | `true` | config/sesame.php |
+| SESAME_ROUTES | Register GET `/login`, POST `/logout`, (for oidc) GET `/login/callback` and (for saml) POST `/login/saml/acs` and GET `/login/saml/metadata`; false keeps the routes in the app's own route file | `true` | config/sesame.php |
+| SESAME_SAML_ASSUME_MFA | Count every SAML sign-in as MFA; on only when the IdP enforces MFA for this SP | `false` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_ACCESSID | The SAML attribute names for the AccessID, comma-separated; the first present wins | `urn:oid:0.9.2342.19200300.100.1.1,uid` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_AFFILIATIONS | The SAML attribute names for the affiliations, comma-separated | `urn:oid:1.3.6.1.4.1.5923.1.1.1.1,eduPersonAffiliation` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_EMAIL | The SAML attribute names for the email address, comma-separated | `urn:oid:0.9.2342.19200300.100.1.3,mail` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_EPPN | The SAML attribute names for the eduPersonPrincipalName, comma-separated | `urn:oid:1.3.6.1.4.1.5923.1.1.1.6,eduPersonPrincipalName` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_NAME | The SAML attribute names for the display name, comma-separated | `urn:oid:2.16.840.1.113730.3.1.241,displayName` | config/sesame.php |
+| SESAME_SAML_AUTHN_CONTEXT | The AuthnContextClassRef values to request, comma-separated | none (no RequestedAuthnContext) | config/sesame.php |
+| SESAME_SAML_CACHE_STORE | The cache store that parks the IdP's response, keeps the metadata and remembers used assertion IDs; shared by every web server | none (the app's default cache store) | config/sesame.php |
+| SESAME_SAML_IDP_CERT_FILE | A path to the IdP's signing certificate, pinned instead of the metadata's | none (the metadata's signing certificates) | config/sesame.php |
+| SESAME_SAML_IDP_ENTITY_ID | Which IdP in the metadata to trust; required when the metadata holds more than one | none | config/sesame.php |
+| SESAME_SAML_IDP_METADATA_FILE | A path to the IdP's metadata XML, read at boot; set this or the metadata URL | none (no default IdP) | config/sesame.php |
+| SESAME_SAML_IDP_METADATA_URL | The IdP's metadata URL (https), fetched and cached; set this or the metadata file | none (no default IdP) | config/sesame.php |
+| SESAME_SAML_LEEWAY_SECONDS | Clock skew allowed on the assertion's IssueInstant, in seconds | `60` (maximum 180) | config/sesame.php |
+| SESAME_SAML_MAX_ASSERTION_AGE_SECONDS | The oldest an assertion may be, by its IssueInstant, in seconds | `300` | config/sesame.php |
+| SESAME_SAML_METADATA_CACHE_TTL_SECONDS | How long fetched IdP metadata is kept, in seconds | `3600` | config/sesame.php |
+| SESAME_SAML_MFA_CONTEXTS | The AuthnContextClassRef values that count as MFA, comma-separated | `https://refeds.org/profile/mfa` | config/sesame.php |
+| SESAME_SAML_SERVICE_URL | The login URL, where a SAML sign-in starts and finishes; every return-to must stay on its host | none (Laravel: the app's `/login` route) | config/sesame.php |
+| SESAME_SAML_SIGN_AUTHN_REQUESTS | Sign the AuthnRequest (needs the SP key pair) | `false` | config/sesame.php |
+| SESAME_SAML_SP_ACS_URL | The assertion consumer service URL the IdP posts its response to | none (Laravel: the app's `/login/saml/acs` route) | config/sesame.php |
+| SESAME_SAML_SP_CERT_FILE | A path to the SP's PEM certificate (published in the SP metadata); set with the key file | none | config/sesame.php |
+| SESAME_SAML_SP_ENTITY_ID | The SP's entity ID, as the IdP knows this app (a URI) | none (Laravel: the app's `/login/saml/metadata` URL) | config/sesame.php |
+| SESAME_SAML_SP_KEY_FILE | A path to the SP's PEM private key, for signed AuthnRequests; never inline, never logged | none | config/sesame.php |
+| SESAME_SAML_USERNAME_ATTRIBUTE | Which mapped attribute becomes the username | `accessid` | config/sesame.php |
+| SESAME_SAML_WANT_MESSAGES_SIGNED | Also require the whole Response to be signed (the assertion signature is always required) | `false` | config/sesame.php |
 | SESAME_SESSION_ABSOLUTE_MINUTES | The absolute lifetime in minutes: the longest a session may live, no matter how active it is | `720` | config/sesame.php |
 | SESAME_SESSION_IDLE_MINUTES | The idle timeout in minutes: the quiet time after which the session is dropped | `120` | config/sesame.php |
 | SESAME_USER_RESOLVER | The class that turns a verified identity into the app's user; it must implement `Waynestate\Sesame\UserResolver` | none | config/sesame.php |
@@ -4292,7 +4672,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
-| `saml` | Later. Direct SP. |
+| `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
@@ -4314,12 +4694,12 @@ public static function make(
 
 | Argument | Driven by | What it does |
 | --- | --- | --- |
-| `$http` (PSR-18 client) | `cas`, `oauth2`, `oidc` | Talks to the identity provider over HTTP. The factory cannot build an HTTP client itself, so the app passes one. |
-| `$requests` (PSR-17 request factory) | `cas`, `oauth2`, `oidc` | Builds the HTTP requests the drivers send. |
+| `$http` (PSR-18 client) | `cas`, `oauth2`, `oidc`, `saml` (metadata URL only) | Talks to the identity provider over HTTP. The factory cannot build an HTTP client itself, so the app passes one. |
+| `$requests` (PSR-17 request factory) | `cas`, `oauth2`, `oidc`, `saml` (metadata URL only) | Builds the HTTP requests the drivers send. |
 | `$clock` (PSR-20 clock) | `cas`, `gateway`, `oauth2` | Supplies the sign-in time. Without one, those drivers use the system clock. |
-| `$replayGuard` (a `ReplayGuard`, for example a `Psr16ReplayGuard` over a PSR-16 cache) | `gateway` | Remembers used assertion `jti` values so a captured assertion cannot be replayed. Fifth argument. |
-| `$jwksCache` (PSR-16 cache) | `oauth2`, `oidc` | Holds the fetched key set. Sixth argument. Required for `oauth2`; optional for `oidc`, which keeps the discovery document and the key set in process memory without one. |
-| `$session` (the app's `SessionPort`) | `oidc` | Holds the driver's state, nonce and PKCE verifier, bound to the browser. Seventh argument. |
+| `$replayGuard` (a `ReplayGuard`, for example a `Psr16ReplayGuard` over a PSR-16 cache) | `gateway`, `saml` | Remembers used assertion `jti` values (for `saml`, assertion IDs) so a captured assertion cannot be replayed. Fifth argument. Optional for `saml`, which builds a `Psr16ReplayGuard` over the sixth argument's cache without one. |
+| `$jwksCache` (PSR-16 cache) | `oauth2`, `oidc`, `saml` | Holds the fetched key set. Sixth argument. Required for `oauth2`; optional for `oidc`, which keeps the discovery document and the key set in process memory without one. Required for `saml`, which parks the IdP's response there, keeps fetched metadata and remembers used assertion IDs. |
+| `$session` (the app's `SessionPort`) | `cas`, `oidc`, `saml` | Holds the driver's pending sign-in (for `oidc` the state, nonce and PKCE verifier; for `saml` the AuthnRequest ID), bound to the browser. Seventh argument. |
 
 When a required argument or config value is missing, the factory throws `InvalidConfig`:
 
@@ -4332,6 +4712,9 @@ When a required argument or config value is missing, the factory throws `Invalid
 | `oidc` config block | `The oidc driver needs the "oidc" config block.` |
 | PSR-18 client for `oidc` | `The oidc driver needs a PSR-18 client for discovery, the key set and the token request. Pass $http to DriverFactory::make().` |
 | App session for `oidc` | `The oidc driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().` |
+| `saml` config block | `The saml driver needs the "saml" config block.` |
+| App session for `saml` | `The saml driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().` |
+| PSR-16 cache for `saml` | `The saml driver needs a PSR-16 cache to park the IdP response and remember used assertions. Pass $jwksCache to DriverFactory::make().` |
 | Non-empty `gateway.public_key`, `gateway.issuer` or `gateway.audience` (and `oauth2.issuer`, `oauth2.jwks_url`, `oauth2.audience`) | `The config key "%s" must be a non-empty string.` |
 | Unknown driver | `Unknown driver "%s".` |
 
@@ -4443,7 +4826,21 @@ Browser sign-in with OpenID Connect, Microsoft Entra ID first. "Open Sesame" sai
 
 ### saml[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#saml)
 
-Later. Direct SP.
+Browser sign-in as a SAML 2.0 service provider, opt-in, for a Shibboleth-style IdP. The same magic words, now with a schema. The driver stands on `onelogin/php-saml` (strict mode) and runs in three requests:
+
+1. A request to the login URL without `saml_handle` is the start. The driver builds an AuthnRequest (HTTP-Redirect, signed when configured), keeps its ID in the app's session (single use, expiring), and answers with a `Redirect` to the IdP; a checked `return_to` rides along as the RelayState.
+2. The IdP's POST to the ACS URL goes to `receive()`, not `login()`. It carries no Lax session cookie, so the driver parks the raw Response in the PSR-16 cache under a single-use 256-bit handle, without touching the session, and answers with a `Redirect` (sent as 303) to the login URL with `saml_handle`.
+3. That GET is the finish. The parked Response and its pending request are taken (both single use), and php-saml checks the schema, the signature and what it covers, Destination and Recipient (against the configured ACS URL), Audience, Issuer, InResponseTo, the time conditions and the bearer subject confirmation. SESAME adds a required assertion signature, SHA-2 only, an IssueInstant within the leeway and the maximum age, and the replay guard on the assertion ID.
+
+- IdP-initiated responses are refused; a sign-in must start at the app.
+- The username comes from one mapped attribute (`accessid`, from `uid`, by default). `email`, `name`, `affiliations` and `eppn` are mapped from the eduPerson and inetOrgPerson OIDs or their friendly names, and `issuer`, `name_id` and `authn_context` are passed too.
+- `AuthnInstant` is the identity's sign-in time, never invented; an `AuthnContextClassRef` in `saml.mfa_contexts` (the REFEDS MFA profile by default) adds `mfa` and is the identity's authentication context.
+- `step_up=1` sends `ForceAuthn` and requires a fresh `AuthnInstant`.
+- No single logout: `logoutUrl()` returns `null`, so logout is local.
+- `metadata()` returns the SP metadata, with `WantAssertionsSigned="true"`.
+- The driver needs `onelogin/php-saml` 4.3.2 or later (and xmlseclibs 3.1.5 or later), which SESAME suggests but does not require. Older releases are refused at boot and by `composer.json`'s `conflict`.
+
+Setup and every key: [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html).
 
 ### What every driver returns[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#what-every-driver-returns)
 
@@ -4462,6 +4859,7 @@ The front page's counter, pegboard and duplicator.
 - [The gateway driver](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html)
 - [oauth2 with Entra](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html)
 - [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html)
+- [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html)
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html)
 
 ---
@@ -4514,6 +4912,72 @@ docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
 
 ---
 
+Source: https://sesame.apps.wayne.edu/docs/saml-library-choice.html
+
+## The saml driver's library choice[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-saml-driver-s-library-choice)
+
+Ali Baba did not forge his own cave door, and SESAME does not write its own XML signature checks. This note records which library the `saml` driver stands on, what else was weighed, and why. Data checked on 2026-11-07 against Packagist (`repo.packagist.org/p2/<package>.json`) and the Packagist security advisory API.
+
+### What the driver needs[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#what-the-driver-needs)
+
+- A service provider for the Web Browser SSO profile: an AuthnRequest over the HTTP-Redirect binding (optionally signed), the Response over HTTP-POST.
+- Response validation in one place: the XML schema, XML signature verification that also checks what the signature covers (the classic wrapping attacks), Destination, Recipient, Audience, Issuer, InResponseTo, the time conditions and the bearer subject confirmation.
+- IdP metadata parsing and SP metadata generation.
+- A small dependency tree, a permissive license (SESAME is MIT), PHP 8.3 to 8.5, and an active maintainer with a record of fixing advisories.
+
+### The candidates[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-candidates)
+
+| Package | Latest release | License | PHP | Dependencies | Advisories (all time) |
+| --- | --- | --- | --- | --- | --- |
+| onelogin/php-saml | 4.4.1, 2026-11-04 (4.3.2, 2026-05-07, on the 4.3 line) | MIT | >=8.0 (4.4), >=7.3 (4.3) | robrichards/xmlseclibs only (4.4 pulls xmlseclibs 4, which brings phpseclib 3; 4.3 uses xmlseclibs 3.1, with no further packages) | 3, the newest (CVE-2025-66475, through xmlseclibs) fixed in 4.3.1 |
+| simplesamlphp/saml2 | v6.3.1, 2026-11-05; v7 in release candidates | LGPL-2.1-or-later | ^8.2 to ^8.5 by release; v7 needs ^8.5 | nyholm/psr7, psr/clock, psr/log, simplesamlphp/assert, xml-common, xml-security and xml-soap | 9, two of them in July 2026 (CVE-2026-49283, CVE-2026-49289); simplesamlphp/xml-security has 2 more |
+
+### The choice: onelogin/php-saml[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-choice-onelogin-php-saml)
+
+- **One library, one reading.** php-saml's `Response::isValid()` does every check in the list above in strict mode, against the one parsed document it verified, and reads the assertion through the reference its signature points at. SESAME reads its extra values (IssueInstant, AuthnInstant, the class reference) through the same document and the same query (S47).
+- **The smaller surface.** One dependency (xmlseclibs), against seven packages for simplesamlphp/saml2, most of them its own XML stack.
+- **The license.** MIT, like SESAME. simplesamlphp/saml2 is LGPL, which is usable but is one more thing every app has to think about.
+- **The record.** Three advisories in its life, each fixed promptly; the last, through xmlseclibs, was fixed in 4.3.1 the day it was published. simplesamlphp/saml2's newer releases also move their PHP floor around (v6.3.0 and v6.2.2 to v6.2.4 required PHP 8.5; v6.3.1 dropped it again), which would make SESAME's own PHP support follow theirs.
+
+simplesamlphp/saml2 is the strongest alternative if SESAME ever needs the whole SAML protocol (artifact binding, SOAP, attribute queries); the driver needs only Web Browser SSO.
+
+### The floor (SESAME-22)[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-floor-sesame-22)
+
+SESAME refuses php-saml below **4.3.2** and xmlseclibs below **3.1.5**:
+
+- php-saml 4.3.1 fixed CVE-2025-66475 (signature verification through xmlseclibs), and 4.3.2 requires xmlseclibs 3.1.5 or later.
+- xmlseclibs 3.1.4 fixed CVE-2025-66578 (a canonicalization error) and 3.1.5 fixed CVE-2026-32313 (a missing AES-GCM tag check on encrypted data).
+
+The floor is held three ways, so it cannot drift:
+
+1. `composer.json` lists both under `conflict`, so Composer refuses to install an older release beside SESAME.
+2. `SamlDriver::assertLibraryInstalled()` checks the installed versions through Composer's runtime API when the driver is built, and refuses a dev branch, because nothing says it holds the fixes.
+3. `tests/SamlConfigTest.php` fails when the installed versions are below the floor, or when `composer.json` and the driver's constants disagree.
+
+`^4.3.2` takes either line. On 4.3 the tree is php-saml and xmlseclibs 3.1; on 4.4 (what the lock file has today) xmlseclibs 4 adds phpseclib 3 and two small paragonie packages. The driver's tests pass on both. `composer audit` in CI covers phpseclib's own advisories.
+
+### How the dependency is kept optional[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#how-the-dependency-is-kept-optional)
+
+onelogin/php-saml is in `suggest` and `require-dev`, not `require`, the same way SESAME treats league/oauth2-client. Only the `saml` driver needs it. When it is missing, building the driver fails with:
+
+```
+The saml driver needs onelogin/php-saml. Install it with: composer require onelogin/php-saml
+```
+
+### What SESAME adds on top[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#what-sesame-adds-on-top)
+
+php-saml is configured strictly (`strict`, `wantAssertionsSigned`, `wantXMLValidation`, `requireDestination`, `destinationStrictlyMatches`, `rejectUnsolicitedResponsesWithInResponseTo`, and no RequestedAuthnContext unless the app asks for one). SESAME then adds what php-saml leaves to the app:
+
+- **The two-hop ACS.** The IdP's cross-site POST carries no Lax session cookie, so the ACS parks the Response under a single-use handle and the check runs on the following GET, where the session is back (S35).
+- **The pending request in the session**, so a Response is accepted only for a sign-in this browser started (login CSRF), and only once.
+- **The replay guard**, keyed on the issuer and the assertion ID.
+- **SHA-2 only.** php-saml still verifies SHA-1 signatures; SESAME refuses them.
+- **Its own clock.** php-saml checks the conditions against the system clock with a fixed 180-second drift. SESAME also checks the IssueInstant against the injected PSR-20 clock, with its own leeway and maximum age.
+- **The ACS URL, not the request.** php-saml compares Destination and Recipient with "the current URL" from `$_SERVER`. SESAME runs the check as if the request were at the configured ACS URL (`AcsUrl::during()`), which is also right behind a TLS-terminating proxy.
+- **RelayState through ReturnTo**, checked on the way out and again on the way back.
+
+---
+
 Source: https://sesame.apps.wayne.edu/docs/troubleshooting.html
 
 ## Troubleshooting[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#troubleshooting)
@@ -4533,6 +4997,27 @@ composer require league/oauth2-client
 ```
 
 **Check.** Build the driver again; the error is gone and the sign-in starts. The driver's behavior is covered by `tests/OidcDriverTest.php`.
+
+#### The saml driver fails to build: `The saml driver needs onelogin/php-saml` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml)
+
+**Cause.** The `saml` driver stands on `onelogin/php-saml`, which SESAME suggests but does not require, and it refuses php-saml older than 4.3.2 or xmlseclibs older than 3.1.5 (both had signature or encryption advisories).
+
+**Fix.** Install or update the library:
+
+```
+composer require onelogin/php-saml
+composer update onelogin/php-saml robrichards/xmlseclibs
+```
+
+**Check.** Build the driver again; the error is gone. The floor is covered by `tests/SamlConfigTest.php`.
+
+#### A SAML sign-in fails with `saml.handle` or `saml.in_response_to` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to)
+
+**Cause.** The finish could not find what the start and the ACS left behind. `saml.handle`: the parked response is gone (more than two minutes, used twice, or a cache the web servers do not share). `saml.in_response_to`: the session that started the sign-in is not the one finishing it (a different browser, a session cookie set to `SameSite=Strict`, a session started on the ACS page, or a sign-in older than ten minutes).
+
+**Fix.** Use a cache store every web server shares (`SESAME_SAML_CACHE_STORE`), keep the session cookie `SameSite=Lax`, and never start the session on the ACS page (raw PHP) or put the ACS route in the `web` group (Laravel).
+
+**Check.** A fresh sign-in from the app's login URL completes. The flow is covered by `tests/SamlDriverTest.php` and `tests/Laravel/SamlRouteTest.php`.
 
 #### A `cas` login loops back to the CAS login page[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-cas-login-loops-back-to-the-cas-login-page)
 

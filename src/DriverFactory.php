@@ -14,6 +14,7 @@ use Waynestate\Sesame\Drivers\GatewayDriver;
 use Waynestate\Sesame\Drivers\OAuth2Driver;
 use Waynestate\Sesame\Drivers\OidcDriver;
 use Waynestate\Sesame\Drivers\ReplayGuard;
+use Waynestate\Sesame\Drivers\SamlDriver;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
 /**
@@ -45,6 +46,15 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * and keeps both in the PSR-16 cache when one is passed (sixth argument),
  * otherwise in process memory. It also needs league/oauth2-client, which
  * SESAME suggests but does not require.
+ *
+ * The saml driver keeps each AuthnRequest's ID in the app's session (the
+ * seventh argument) and parks the IdP's POSTed response in a PSR-16 cache
+ * (the sixth argument) until the browser comes back with its session
+ * cookie: it needs both. The cache also holds fetched IdP metadata and,
+ * without a ReplayGuard (fifth argument), the assertion IDs already seen.
+ * Fetching metadata from a URL needs the PSR-18 client and PSR-17 factory.
+ * It also needs onelogin/php-saml, which SESAME suggests but does not
+ * require.
  */
 final class DriverFactory
 {
@@ -109,6 +119,15 @@ final class DriverFactory
                 self::requiredRequests($requests),
                 $session ?? throw new InvalidConfig('The oidc driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().'),
                 $jwksCache,
+                $clock,
+            ),
+            'saml' => new SamlDriver(
+                $config->saml ?? throw new InvalidConfig('The saml driver needs the "saml" config block.'),
+                $session ?? throw new InvalidConfig('The saml driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().'),
+                $jwksCache ?? throw new InvalidConfig('The saml driver needs a PSR-16 cache to park the IdP response and remember used assertions. Pass $jwksCache to DriverFactory::make().'),
+                $replayGuard,
+                $http,
+                $requests,
                 $clock,
             ),
             default => throw new InvalidConfig(sprintf('Unknown driver "%s".', $config->driver)),

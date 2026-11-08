@@ -7,6 +7,7 @@
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-saml.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/instance-runner.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/laravel.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html</loc></url>
@@ -27,6 +28,7 @@
   <url><loc>https://sesame.apps.wayne.edu/docs/reference/configuration.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/reference/drivers.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/reference/proof.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/saml-library-choice.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/troubleshooting.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/upgrading.html</loc></url>
 </urlset>

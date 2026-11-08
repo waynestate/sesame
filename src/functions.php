@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Http\Message\ServerRequestInterface;
+use Waynestate\Sesame\Drivers\SamlDriver;
 use Waynestate\Sesame\Exception\AuthContextNotSatisfied;
+use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
@@ -95,7 +97,8 @@ if (! function_exists('sesame_login')) {
      * completed sign-in is sent on to the checked return-to the sign-in
      * began with, or to the service URL. A request with step_up=1 always
      * goes to the driver too, so a signed-in user can be asked for a fresh
-     * sign-in.
+     * sign-in. The saml driver's return from the ACS (a request with
+     * saml_handle) counts as a ticket too.
      *
      * @return mixed The app's user, or null when the resolver refused the
      *               identity.
@@ -108,6 +111,10 @@ if (! function_exists('sesame_login')) {
 
         if ($ticket === null && isset($query['state']) && (isset($query['code']) || isset($query['error']))) {
             $ticket = $query['state'];
+        }
+
+        if ($ticket === null && isset($query[SamlDriver::HANDLE_PARAM])) {
+            $ticket = $query[SamlDriver::HANDLE_PARAM];
         }
 
         if ($ticket === null && ! isset($query['step_up'])) {
@@ -135,6 +142,55 @@ if (! function_exists('sesame_login')) {
         }
 
         return $result;
+    }
+}
+
+if (! function_exists('sesame_saml_acs')) {
+
+    /**
+     * The saml driver's ACS: take the IdP's POST, park it, and send the
+     * browser back to the login URL with a 303.
+     *
+     * Call it from the page at SESAME_SAML_SP_ACS_URL, and do NOT call
+     * session_start() on that page: the IdP's POST is cross-site, so the
+     * browser sends no SameSite=Lax session cookie with it, and a session
+     * started here would replace the user's real one. The response is
+     * checked on the login URL (sesame_login()), where the session is back.
+     * A POST the driver cannot use gets a plain 400. Either way the script
+     * stops.
+     */
+    function sesame_saml_acs(SamlDriver $driver): never
+    {
+        header('Cache-Control: no-store');
+
+        try {
+            $redirect = $driver->receive(sesame_request());
+        } catch (AuthenticationFailed) {
+            http_response_code(400);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'The sign-in response could not be used. Start the sign-in again.';
+            exit;
+        }
+
+        header('Location: ' . $redirect->url, true, 303);
+        exit;
+    }
+}
+
+if (! function_exists('sesame_saml_metadata')) {
+
+    /**
+     * Send the SP metadata XML (for the IdP's administrators) and stop.
+     * Serve it at the SP entity ID's URL; it needs no session.
+     */
+    function sesame_saml_metadata(SamlDriver $driver): never
+    {
+        $xml = $driver->metadata();
+
+        header('Content-Type: application/samlmetadata+xml');
+        header('X-Content-Type-Options: nosniff');
+        echo $xml;
+        exit;
     }
 }
 

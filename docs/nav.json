@@ -55,6 +55,14 @@
                     "path": "oidc-library-choice"
                 },
                 {
+                    "title": "The saml driver (SAML 2.0 sign-in)",
+                    "path": "guides/driver-saml"
+                },
+                {
+                    "title": "The saml driver's library choice",
+                    "path": "saml-library-choice"
+                },
+                {
                     "title": "Session timeouts",
                     "path": "guides/session-timeouts"
                 },

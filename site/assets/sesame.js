@@ -60,8 +60,8 @@
 
   /* ------------------------------------------------------------ 4. the lock */
   // Driver notes follow README.md ("Drivers", "The cas driver", "The gateway
-  // driver", "oauth2 with Entra", "The oidc driver (Entra sign-in)"). Drivers
-  // that are not built yet show no config line.
+  // driver", "oauth2 with Entra", "The oidc driver (Entra sign-in)", "The saml
+  // driver"). A driver that is not built yet gets line: null and opens: false.
   var DRIVERS = {
     fake: { line: "SESAME_DRIVER=fake", opens: true,
       note: "<strong>fake:</strong> local development and tests only. It refuses to boot in production, so this door only opens on your own machine." },
@@ -69,8 +69,8 @@
       note: "<strong>cas:</strong> CAS 2.0 by default. The CAS server sends the user back with a ticket; SESAME validates it once, then drops it from the address bar. The door opens." },
     gateway: { line: "SESAME_DRIVER=gateway", opens: true,
       note: "<strong>gateway:</strong> a signed JWT assertion from DRAWBRIDGE, in one header, from a trusted proxy. Never a bare header, and each assertion works once. The door opens." },
-    saml: { line: null, opens: false,
-      note: "<strong>saml:</strong> later, as a direct SAML service provider. The blank hangs on the board, but it isn't cut yet, so it won't turn." },
+    saml: { line: "SESAME_DRIVER=saml", opens: true,
+      note: "<strong>saml:</strong> opt-in browser sign-in as a SAML 2.0 service provider, for a Shibboleth-style IdP you name. The assertion must be signed, each one works once, and the IdP's cross-site POST waits on a one-time handle until your session cookie comes back. The door opens." },
     oauth2: { line: "SESAME_DRIVER=oauth2", opens: true,
       note: "<strong>oauth2:</strong> a JWT bearer token, checked against the issuer's key set (Entra first). For APIs. The door opens." },
     oidc: { line: "SESAME_DRIVER=oidc", opens: true,

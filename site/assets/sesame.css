@@ -41,6 +41,8 @@
   --nickel-dark: #66736e;
   --copper: #c98a5e;         /* the oidc key */
   --copper-dark: #7a4524;
+  --steel: #9fb4bf;          /* the saml key, blued steel */
+  --steel-dark: #3f5865;
   --tag: #fffaf0;
   --shadow: 0 1px 0 rgba(29, 43, 39, .06), 0 10px 24px -12px rgba(29, 43, 39, .35);
   --sign: "Bungee", "Lato", "Arial Black", sans-serif;
@@ -291,7 +293,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 }
 .hang--a { left: 6%; --k: var(--brass); --kd: var(--brass-dark); }
 .hang--b { right: 4%; top: 16px; --k: var(--nickel); --kd: var(--nickel-dark); }
-.hang--c { left: 50%; translate: -50% 0; --k: #eef1ef; --kd: #8d9894; }
+.hang--c { left: 50%; translate: -50% 0; --k: var(--steel); --kd: var(--steel-dark); }
 
 /* Key art: the sprite reads these. */
 .k-body { fill: var(--k, var(--brass)); stroke: var(--kd, var(--brass-dark)); stroke-width: 2.5; stroke-linejoin: round; }
@@ -341,6 +343,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .peg[data-driver="gateway"] { --k: var(--nickel); --kd: var(--nickel-dark); }
 .peg[data-driver="oidc"] { --k: var(--copper); --kd: var(--copper-dark); }
 .peg[data-driver="fake"] { --k: #5b7a72; --kd: #23352f; --hole: var(--peg); }
+.peg[data-driver="saml"] { --k: var(--steel); --kd: var(--steel-dark); }
 .peg--blank { --k: #eef1ef; --kd: #8d9894; }
 .peg__hook {
   position: absolute; top: 0; left: 50%; width: 6px; height: 34px; translate: -50% 0;
@@ -363,7 +366,8 @@ h3 { font-size: 1.2rem; font-weight: 900; }
   background: var(--green); color: #fff; border-radius: 999px; padding: 1px 8px;
 }
 .peg__status--later { background: var(--slate); color: #fff; }
-.peg__status--local { background: #fff; color: var(--slate); box-shadow: inset 0 0 0 1.5px var(--slate); }
+.peg__status--local,
+.peg__status--optin { background: #fff; color: var(--slate); box-shadow: inset 0 0 0 1.5px var(--slate); }
 .peg:hover .peg__key { transform: rotate(6deg); }
 .peg[aria-pressed="true"] .peg__tag { background: var(--gold); border-color: var(--green-deep); }
 .peg[aria-pressed="true"] .peg__key { transform: translateY(-6px); }
@@ -424,7 +428,7 @@ h3 { font-size: 1.2rem; font-weight: 900; }
 .lock[data-driver="gateway"] .door__key { --k: var(--nickel); --kd: var(--nickel-dark); }
 .lock[data-driver="oidc"] .door__key { --k: var(--copper); --kd: var(--copper-dark); }
 .lock[data-driver="fake"] .door__key { --k: #5b7a72; --kd: #23352f; }
-.lock[data-driver="saml"] .door__key { --k: #eef1ef; --kd: #8d9894; }
+.lock[data-driver="saml"] .door__key { --k: var(--steel); --kd: var(--steel-dark); }
 
 .lock:not(.is-in) .door__key { transform: translateX(-46px); opacity: 0; }
 .lock.is-turned .door__key svg use { transform: scaleY(.32); }

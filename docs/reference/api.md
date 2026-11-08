@@ -19,7 +19,7 @@ The library's config, read from a plain array. `final readonly class Config`.
 public static function fromArray(#[\SensitiveParameter] array $config): self
 ```
 
-Every constructor parameter is a public readonly property, in this order: `driver`, `environment`, `fakeUsername`, `fakeAttributes`, `casBaseUrl`, `casServiceUrl`, `casProtocol`, `casRenew`, `casAssumeMfa`, `sessionIdleMinutes`, `sessionAbsoluteMinutes`, `gatewayHeader`, `gatewayAlgorithm`, `gatewayPublicKey`, `gatewayIssuer`, `gatewayAudience`, `gatewayLeewaySeconds`, `gatewayTrustedProxies`, `gatewayMaxLifetimeSeconds`, `gatewayAllowWithoutReplayGuard`, `oauth2Issuer`, `oauth2JwksUrl`, `oauth2Audience`, `oauth2LeewaySeconds`, `oauth2RequiredScopes`, `oauth2RequiredRoles`, `oauth2IdentityClaim`, `oauth2JwksCacheTtlSeconds`, `oauth2RequireAtJwt`, `oidc` (an `?OidcOptions`) and `gatewayPublicKeys`. Keys, defaults and bounds: see [Configuration](configuration.md).
+Every constructor parameter is a public readonly property, in this order: `driver`, `environment`, `fakeUsername`, `fakeAttributes`, `casBaseUrl`, `casServiceUrl`, `casProtocol`, `casRenew`, `casAssumeMfa`, `sessionIdleMinutes`, `sessionAbsoluteMinutes`, `gatewayHeader`, `gatewayAlgorithm`, `gatewayPublicKey`, `gatewayIssuer`, `gatewayAudience`, `gatewayLeewaySeconds`, `gatewayTrustedProxies`, `gatewayMaxLifetimeSeconds`, `gatewayAllowWithoutReplayGuard`, `oauth2Issuer`, `oauth2JwksUrl`, `oauth2Audience`, `oauth2LeewaySeconds`, `oauth2RequiredScopes`, `oauth2RequiredRoles`, `oauth2IdentityClaim`, `oauth2JwksCacheTtlSeconds`, `oauth2RequireAtJwt`, `oidc` (an `?OidcOptions`), `gatewayPublicKeys`, `gatewayJwksFile` and `saml` (a `?SamlOptions`). Keys, defaults and bounds: see [Configuration](configuration.md).
 
 ### DriverFactory
 
@@ -43,9 +43,9 @@ What each argument is for:
 - `$clock` (PSR-20): optional, for the cas, gateway and oauth2 drivers' sign-in time; without one they use the system clock.
 - `$replayGuard`: the gateway driver needs one (for example a `Psr16ReplayGuard` over a PSR-16 cache), so a captured assertion cannot be replayed. Without one, the gateway driver refuses to start, unless the config says `gateway.allow_without_replay_guard` (local development only).
 - `$jwksCache` (PSR-16): the oauth2 driver keeps the fetched key set in it; without one, the oauth2 driver refuses to start. The oidc driver uses it too when passed (discovery document and key set), otherwise it keeps both in process memory.
-- `$session`: the oidc driver signs the user in through the browser, so it keeps its state, nonce and PKCE verifier in the app's session.
+- `$session`: the oidc driver signs the user in through the browser, so it keeps its state, nonce and PKCE verifier in the app's session. The saml driver keeps its AuthnRequest ID there, and needs `$jwksCache` too: it parks the IdP's posted response in it until the browser comes back with its session cookie.
 
-A missing dependency is an `InvalidConfig` error that names what to pass, and an unknown `driver` value is one too. The oidc driver also needs league/oauth2-client, which SESAME suggests but does not require. The driver classes themselves live in `Waynestate\Sesame\Drivers`; see [Drivers](drivers.md).
+A missing dependency is an `InvalidConfig` error that names what to pass, and an unknown `driver` value is one too. The oidc driver also needs league/oauth2-client, and the saml driver onelogin/php-saml (4.3.2 or later), which SESAME suggests but does not require. The driver classes themselves live in `Waynestate\Sesame\Drivers`; see [Drivers](drivers.md).
 
 ### Sesame
 
@@ -79,7 +79,7 @@ public function safeReturnTo(string $returnTo): string
 ```
 
 - `login()`: returns the `Redirect` unchanged when the user must go to the identity provider. Otherwise it resolves the user: when the resolver returns a user it regenerates the session ID before it stores anything, and returns the user. What it stores is the user, a trimmed identity (username, driver, time, the MFA facts and the authentication contexts, but not the raw IdP attributes, so the session stays small and plain), and the timestamps that start the session's clocks. When the resolver returns null the app has refused the identity: the session is left untouched, nothing is stored, and null is returned, so a refused identity never ends up signed in. An `AuthenticationFailed` from the driver is rethrown unchanged.
-- `returnTo()`: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement `RemembersReturnTo` (the oidc driver) answer, and the value has already passed the `ReturnTo` rule.
+- `returnTo()`: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement `RemembersReturnTo` (the oidc and saml drivers) answer, and the value has already passed the `ReturnTo` rule.
 - `serviceUrl()`: the driver's configured service URL, or null when the driver has none.
 - `user()`: the app's user for the current session, or null when there is none. The session is checked against the timeouts before it is trusted, and a stale session is signed out on the spot, so a stale session can never pass one check and fail another. When the resolver implements `RefreshesUser`, the stored user is looked up again before the answer, and a null result signs the session out, so a deleted account stops reading as signed in from the next request on.
 - `requireMfa()`: decides whether the signed-in user's MFA is still good. The session is checked first, through `user()`, so a stale session is signed out before the MFA question is even asked; with no user, or no identity to read, the answer is `NO_AUTH_TIME`: the check fails closed.
@@ -254,6 +254,31 @@ public function clientSecret(): string
 
 The keys, their environment variables and their defaults are in the oidc table on the [Configuration page](configuration.md).
 
+### SamlOptions and SamlDriver
+
+`Waynestate\Sesame\Drivers\Saml\SamlOptions`: the `saml` config block, validated at boot (certificates, the key and a metadata file are read from their paths then). `final readonly class SamlOptions`.
+
+```php
+public const DEFAULT_ATTRIBUTES = [/* accessid, email, name, affiliations, eppn */];
+public const DEFAULT_MFA_CONTEXTS = ['https://refeds.org/profile/mfa'];
+public static function fromArray(#[\SensitiveParameter] array $saml): self
+public function spKey(): ?string
+```
+
+`Waynestate\Sesame\Drivers\SamlDriver` implements `Driver` and `RemembersReturnTo`, and adds the two endpoints the other drivers do not have:
+
+```php
+public const LIBRARY_FLOOR = '4.3.2';
+public const XMLSECLIBS_FLOOR = '3.1.5';
+public const HANDLE_PARAM = 'saml_handle';
+public function receive(ServerRequestInterface $request): Redirect // the ACS; send as 303
+public function metadata(): string                                  // the SP metadata XML
+public function acsUrl(): string
+public static function assertLibraryInstalled(string $class = self::LIBRARY_CLASS): void
+```
+
+The keys are in [the saml driver guide](../guides/driver-saml.md#config-keys).
+
 ### Setting
 
 `Waynestate\Sesame\Support\Setting`: the one lookup for the library's shared settings. The real environment wins (getenv, then $_ENV, then $_SERVER); when it has nothing, the private waynestate/playbook package supplies Wayne State's shared values when it is installed. An empty value counts as missing, so a blank variable never shadows the playbook.
@@ -279,11 +304,13 @@ function sesame_require_mfa(int $maxAgeSeconds = 28800): mixed
 function sesame_require_context(string $id): mixed
 function sesame_logout_token(): string
 function sesame_logout(string $returnTo): void
+function sesame_saml_acs(SamlDriver $driver): never
+function sesame_saml_metadata(SamlDriver $driver): never
 ```
 
 - `sesame()`: hold the one `Sesame` instance for this process. Set it once at boot, read it after: `sesame($sesame);` then `sesame();`. Reading it with none set throws `LogicException`.
 - `sesame_request()`: build the PSR-7 request for the current request from the globals. The PSR-17 factories come from nyholm/psr7, which the library already requires, so the raw-PHP path needs nothing but the autoloader.
-- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with `state` and a `code` or an `error`) counts as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
+- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with `state` and a `code` or an `error`) and the saml driver's return from the ACS (a request with `saml_handle`) count as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
 - `sesame_user()`: the app's user for the current session, or null when there is none.
 - `sesame_require_mfa()`: require that the signed-in user's MFA is still good. When it is satisfied, the app's user is returned, so a protected page can read the user and the MFA proof in one call; when it is not, `MfaNotSatisfied` is thrown, carrying the result with the stable reason and the human message.
 - `sesame_require_context()`: require that the signed-in identity has the given authentication context. When it does, the app's user is returned; when it does not, `AuthContextNotSatisfied` is thrown, carrying the context id.
@@ -298,6 +325,9 @@ function sesame_logout(string $returnTo): void
 
 - `sesame_logout()`: log the user out, then send them on. Invalidates the app session, redirects to the identity provider's logout URL when the driver has one, otherwise to the safe return-to, and stops the script, so no protected code runs after the redirect. CSRF guard: the logout runs only for a POST whose body carries the session's token in the `sesame_logout_token` field. A GET answers 405 with `Allow: POST`, and a POST without the right token answers 403; both leave the session alone and stop the script, so another site cannot sign the user out with an image, a link or a forged form. The response carries `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"`; `cookies` is deliberately left out, so the user is not signed out of every other app on the host.
 
+- `sesame_saml_acs()`: the saml driver's ACS page. Parks the IdP's POST and answers 303 to the login URL, or a plain 400 for a POST it cannot use, then stops the script. Call it on a page that does NOT call `session_start()`: the IdP's cross-site POST carries no `SameSite=Lax` session cookie, and a session started there would replace the user's real one.
+- `sesame_saml_metadata()`: sends the SP metadata as `application/samlmetadata+xml` and stops the script. It needs no session.
+
 ## Exceptions
 
 The exceptions an app meets, in `Waynestate\Sesame\Exception`:
@@ -310,7 +340,7 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 
 ## Where the rest lives
 
-- The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](drivers.md) page.
+- The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `SamlDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](drivers.md) page.
 - The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`), documented in the [Laravel guide](../guides/laravel.md).
 - The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](../guides/moving-from-wayne-cas.md).
 - The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](../guides/moving-off-wayne-auth.md).

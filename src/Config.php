@@ -6,6 +6,7 @@ namespace Waynestate\Sesame;
 
 use Waynestate\Sesame\Drivers\GatewayKeySet;
 use Waynestate\Sesame\Drivers\Oidc\OidcOptions;
+use Waynestate\Sesame\Drivers\Saml\SamlOptions;
 use Waynestate\Sesame\Exception\InvalidConfig;
 
 /**
@@ -46,7 +47,10 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * reads the `oidc` block into an OidcOptions (see that class for the keys;
  * `oidc.issuer`, `oidc.client_id`, `oidc.client_secret` and
  * `oidc.redirect_uri` are required, and the secret falls back to the
- * environment only). The session timeouts are
+ * environment only). The `saml` driver reads the `saml` block into a
+ * SamlOptions (see that class for the keys; `saml.sp.entity_id`,
+ * `saml.sp.acs_url`, `saml.service_url` and one of `saml.idp.metadata_url`
+ * or `saml.idp.metadata_file` are required). The session timeouts are
  * `session.idle_minutes` (default `120`) and `session.absolute_minutes`
  * (default `720`), both optional positive integers. A truthy `slo` (or
  * `single_logout`) key is rejected: the identity provider does not support
@@ -109,6 +113,7 @@ final readonly class Config
         public ?OidcOptions $oidc = null,
         public ?array $gatewayPublicKeys = null,
         public ?string $gatewayJwksFile = null,
+        public ?SamlOptions $saml = null,
     ) {}
 
     /**
@@ -305,6 +310,18 @@ final readonly class Config
             $oidc = OidcOptions::fromArray($oidcConfig);
         }
 
+        $saml = null;
+
+        if ($driver === 'saml') {
+            $samlConfig = $config['saml'] ?? [];
+
+            if (! is_array($samlConfig)) {
+                throw new InvalidConfig('The config key "saml" must be an array.');
+            }
+
+            $saml = SamlOptions::fromArray($samlConfig);
+        }
+
         $sessionIdleMinutes = self::optionalPositiveInt($config, 'session.idle_minutes', 120);
         $sessionAbsoluteMinutes = self::optionalPositiveInt($config, 'session.absolute_minutes', 720);
 
@@ -349,6 +366,7 @@ final readonly class Config
             $oidc,
             $gatewayPublicKeys,
             $gatewayJwksFile,
+            $saml,
         );
     }
 

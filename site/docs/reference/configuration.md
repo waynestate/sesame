@@ -19,7 +19,7 @@ $config = Config::fromArray($configArray);
 ```
 
 - `driver` and `environment` are always required.
-- Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2` or `oidc`. The `oidc` block is read into `OidcOptions`; see the oidc keys below.
+- Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2`, `oidc` or `saml`. The `oidc` block is read into `OidcOptions`; see the oidc keys below. The `saml` block is read into `SamlOptions`; its keys are in [the saml driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys).
 - A truthy `slo` or `single_logout` key is rejected at boot: the identity provider does not support single logout, so asking for it is a mistake to fail on at boot, not at the first logout.
 - A missing or empty required value throws `InvalidConfig`. Four keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
 
@@ -43,6 +43,7 @@ A present key with the wrong type is also an `InvalidConfig` error at boot, befo
 - `gateway.trusted_proxies` must be a non-empty array of non-empty strings (CIDR ranges or single IPs).
 - `fake.attributes`, `oauth2.required_scopes` and `oauth2.required_roles` must be arrays of non-empty strings.
 - The `oidc` block must be an array; `OidcOptions::fromArray()` validates it and names the key in its errors.
+- The `saml` block must be an array; `SamlOptions::fromArray()` validates it at boot (URLs, exactly one IdP metadata source, the certificate and key files, which must match) and names the key in its errors.
 
 ## Environment variables[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#environment-variables)
 
@@ -56,7 +57,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_CAS_RENEW | Send `renew=true`; leave off against Academica, which issues no ticket for it | `false` | config/sesame.php |
 | SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
 | SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them | none (the app's `/login` route) | config/sesame.php |
-| SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc` or `fake` | `cas` | config/sesame.php |
+| SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc`, `saml` (opt-in) or `fake` | `cas` | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |
 | SESAME_GATEWAY_ALGORITHM | The assertion's signature algorithm (`ES256`, `RS256` or `EdDSA`) | `ES256` | config/sesame.php |
 | SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD | Skip the replay guard entirely; local development only, never in production | `false` | config/sesame.php |
@@ -103,7 +104,31 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_OIDC_TOKEN_ENDPOINT | Override the token endpoint from the discovery document | none (from discovery) | config/sesame.php |
 | SESAME_OIDC_USERNAME_CLAIM | The ID token claim the username comes from | `accessid` | config/sesame.php |
 | SESAME_OIDC_USERNAME_FALLBACK | Use the `preferred_username` prefix when the username claim is missing; off because preferred_username is user-changeable | `false` | config/sesame.php |
-| SESAME_ROUTES | Register GET `/login`, POST `/logout` and (for oidc) GET `/login/callback`; false keeps the routes in the app's own route file | `true` | config/sesame.php |
+| SESAME_ROUTES | Register GET `/login`, POST `/logout`, (for oidc) GET `/login/callback` and (for saml) POST `/login/saml/acs` and GET `/login/saml/metadata`; false keeps the routes in the app's own route file | `true` | config/sesame.php |
+| SESAME_SAML_ASSUME_MFA | Count every SAML sign-in as MFA; on only when the IdP enforces MFA for this SP | `false` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_ACCESSID | The SAML attribute names for the AccessID, comma-separated; the first present wins | `urn:oid:0.9.2342.19200300.100.1.1,uid` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_AFFILIATIONS | The SAML attribute names for the affiliations, comma-separated | `urn:oid:1.3.6.1.4.1.5923.1.1.1.1,eduPersonAffiliation` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_EMAIL | The SAML attribute names for the email address, comma-separated | `urn:oid:0.9.2342.19200300.100.1.3,mail` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_EPPN | The SAML attribute names for the eduPersonPrincipalName, comma-separated | `urn:oid:1.3.6.1.4.1.5923.1.1.1.6,eduPersonPrincipalName` | config/sesame.php |
+| SESAME_SAML_ATTRIBUTE_NAME | The SAML attribute names for the display name, comma-separated | `urn:oid:2.16.840.1.113730.3.1.241,displayName` | config/sesame.php |
+| SESAME_SAML_AUTHN_CONTEXT | The AuthnContextClassRef values to request, comma-separated | none (no RequestedAuthnContext) | config/sesame.php |
+| SESAME_SAML_CACHE_STORE | The cache store that parks the IdP's response, keeps the metadata and remembers used assertion IDs; shared by every web server | none (the app's default cache store) | config/sesame.php |
+| SESAME_SAML_IDP_CERT_FILE | A path to the IdP's signing certificate, pinned instead of the metadata's | none (the metadata's signing certificates) | config/sesame.php |
+| SESAME_SAML_IDP_ENTITY_ID | Which IdP in the metadata to trust; required when the metadata holds more than one | none | config/sesame.php |
+| SESAME_SAML_IDP_METADATA_FILE | A path to the IdP's metadata XML, read at boot; set this or the metadata URL | none (no default IdP) | config/sesame.php |
+| SESAME_SAML_IDP_METADATA_URL | The IdP's metadata URL (https), fetched and cached; set this or the metadata file | none (no default IdP) | config/sesame.php |
+| SESAME_SAML_LEEWAY_SECONDS | Clock skew allowed on the assertion's IssueInstant, in seconds | `60` (maximum 180) | config/sesame.php |
+| SESAME_SAML_MAX_ASSERTION_AGE_SECONDS | The oldest an assertion may be, by its IssueInstant, in seconds | `300` | config/sesame.php |
+| SESAME_SAML_METADATA_CACHE_TTL_SECONDS | How long fetched IdP metadata is kept, in seconds | `3600` | config/sesame.php |
+| SESAME_SAML_MFA_CONTEXTS | The AuthnContextClassRef values that count as MFA, comma-separated | `https://refeds.org/profile/mfa` | config/sesame.php |
+| SESAME_SAML_SERVICE_URL | The login URL, where a SAML sign-in starts and finishes; every return-to must stay on its host | none (Laravel: the app's `/login` route) | config/sesame.php |
+| SESAME_SAML_SIGN_AUTHN_REQUESTS | Sign the AuthnRequest (needs the SP key pair) | `false` | config/sesame.php |
+| SESAME_SAML_SP_ACS_URL | The assertion consumer service URL the IdP posts its response to | none (Laravel: the app's `/login/saml/acs` route) | config/sesame.php |
+| SESAME_SAML_SP_CERT_FILE | A path to the SP's PEM certificate (published in the SP metadata); set with the key file | none | config/sesame.php |
+| SESAME_SAML_SP_ENTITY_ID | The SP's entity ID, as the IdP knows this app (a URI) | none (Laravel: the app's `/login/saml/metadata` URL) | config/sesame.php |
+| SESAME_SAML_SP_KEY_FILE | A path to the SP's PEM private key, for signed AuthnRequests; never inline, never logged | none | config/sesame.php |
+| SESAME_SAML_USERNAME_ATTRIBUTE | Which mapped attribute becomes the username | `accessid` | config/sesame.php |
+| SESAME_SAML_WANT_MESSAGES_SIGNED | Also require the whole Response to be signed (the assertion signature is always required) | `false` | config/sesame.php |
 | SESAME_SESSION_ABSOLUTE_MINUTES | The absolute lifetime in minutes: the longest a session may live, no matter how active it is | `720` | config/sesame.php |
 | SESAME_SESSION_IDLE_MINUTES | The idle timeout in minutes: the quiet time after which the session is dropped | `120` | config/sesame.php |
 | SESAME_USER_RESOLVER | The class that turns a verified identity into the app's user; it must implement `Waynestate\Sesame\UserResolver` | none | config/sesame.php |

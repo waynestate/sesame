@@ -14,7 +14,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
-| `saml` | Later. Direct SP. |
+| `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
@@ -36,12 +36,12 @@ public static function make(
 
 | Argument | Driven by | What it does |
 |---|---|---|
-| `$http` (PSR-18 client) | `cas`, `oauth2`, `oidc` | Talks to the identity provider over HTTP. The factory cannot build an HTTP client itself, so the app passes one. |
-| `$requests` (PSR-17 request factory) | `cas`, `oauth2`, `oidc` | Builds the HTTP requests the drivers send. |
+| `$http` (PSR-18 client) | `cas`, `oauth2`, `oidc`, `saml` (metadata URL only) | Talks to the identity provider over HTTP. The factory cannot build an HTTP client itself, so the app passes one. |
+| `$requests` (PSR-17 request factory) | `cas`, `oauth2`, `oidc`, `saml` (metadata URL only) | Builds the HTTP requests the drivers send. |
 | `$clock` (PSR-20 clock) | `cas`, `gateway`, `oauth2` | Supplies the sign-in time. Without one, those drivers use the system clock. |
-| `$replayGuard` (a `ReplayGuard`, for example a `Psr16ReplayGuard` over a PSR-16 cache) | `gateway` | Remembers used assertion `jti` values so a captured assertion cannot be replayed. Fifth argument. |
-| `$jwksCache` (PSR-16 cache) | `oauth2`, `oidc` | Holds the fetched key set. Sixth argument. Required for `oauth2`; optional for `oidc`, which keeps the discovery document and the key set in process memory without one. |
-| `$session` (the app's `SessionPort`) | `oidc` | Holds the driver's state, nonce and PKCE verifier, bound to the browser. Seventh argument. |
+| `$replayGuard` (a `ReplayGuard`, for example a `Psr16ReplayGuard` over a PSR-16 cache) | `gateway`, `saml` | Remembers used assertion `jti` values (for `saml`, assertion IDs) so a captured assertion cannot be replayed. Fifth argument. Optional for `saml`, which builds a `Psr16ReplayGuard` over the sixth argument's cache without one. |
+| `$jwksCache` (PSR-16 cache) | `oauth2`, `oidc`, `saml` | Holds the fetched key set. Sixth argument. Required for `oauth2`; optional for `oidc`, which keeps the discovery document and the key set in process memory without one. Required for `saml`, which parks the IdP's response there, keeps fetched metadata and remembers used assertion IDs. |
+| `$session` (the app's `SessionPort`) | `cas`, `oidc`, `saml` | Holds the driver's pending sign-in (for `oidc` the state, nonce and PKCE verifier; for `saml` the AuthnRequest ID), bound to the browser. Seventh argument. |
 
 When a required argument or config value is missing, the factory throws `InvalidConfig`:
 
@@ -54,6 +54,9 @@ When a required argument or config value is missing, the factory throws `Invalid
 | `oidc` config block | `The oidc driver needs the "oidc" config block.` |
 | PSR-18 client for `oidc` | `The oidc driver needs a PSR-18 client for discovery, the key set and the token request. Pass $http to DriverFactory::make().` |
 | App session for `oidc` | `The oidc driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().` |
+| `saml` config block | `The saml driver needs the "saml" config block.` |
+| App session for `saml` | `The saml driver needs the app session to bind each sign-in to the browser. Pass $session to DriverFactory::make().` |
+| PSR-16 cache for `saml` | `The saml driver needs a PSR-16 cache to park the IdP response and remember used assertions. Pass $jwksCache to DriverFactory::make().` |
 | Non-empty `gateway.public_key`, `gateway.issuer` or `gateway.audience` (and `oauth2.issuer`, `oauth2.jwks_url`, `oauth2.audience`) | `The config key "%s" must be a non-empty string.` |
 | Unknown driver | `Unknown driver "%s".` |
 
@@ -165,7 +168,21 @@ Browser sign-in with OpenID Connect, Microsoft Entra ID first. "Open Sesame" sai
 
 ## saml
 
-Later. Direct SP.
+Browser sign-in as a SAML 2.0 service provider, opt-in, for a Shibboleth-style IdP. The same magic words, now with a schema. The driver stands on `onelogin/php-saml` (strict mode) and runs in three requests:
+
+1. A request to the login URL without `saml_handle` is the start. The driver builds an AuthnRequest (HTTP-Redirect, signed when configured), keeps its ID in the app's session (single use, expiring), and answers with a `Redirect` to the IdP; a checked `return_to` rides along as the RelayState.
+2. The IdP's POST to the ACS URL goes to `receive()`, not `login()`. It carries no Lax session cookie, so the driver parks the raw Response in the PSR-16 cache under a single-use 256-bit handle, without touching the session, and answers with a `Redirect` (sent as 303) to the login URL with `saml_handle`.
+3. That GET is the finish. The parked Response and its pending request are taken (both single use), and php-saml checks the schema, the signature and what it covers, Destination and Recipient (against the configured ACS URL), Audience, Issuer, InResponseTo, the time conditions and the bearer subject confirmation. SESAME adds a required assertion signature, SHA-2 only, an IssueInstant within the leeway and the maximum age, and the replay guard on the assertion ID.
+
+- IdP-initiated responses are refused; a sign-in must start at the app.
+- The username comes from one mapped attribute (`accessid`, from `uid`, by default). `email`, `name`, `affiliations` and `eppn` are mapped from the eduPerson and inetOrgPerson OIDs or their friendly names, and `issuer`, `name_id` and `authn_context` are passed too.
+- `AuthnInstant` is the identity's sign-in time, never invented; an `AuthnContextClassRef` in `saml.mfa_contexts` (the REFEDS MFA profile by default) adds `mfa` and is the identity's authentication context.
+- `step_up=1` sends `ForceAuthn` and requires a fresh `AuthnInstant`.
+- No single logout: `logoutUrl()` returns `null`, so logout is local.
+- `metadata()` returns the SP metadata, with `WantAssertionsSigned="true"`.
+- The driver needs `onelogin/php-saml` 4.3.2 or later (and xmlseclibs 3.1.5 or later), which SESAME suggests but does not require. Older releases are refused at boot and by `composer.json`'s `conflict`.
+
+Setup and every key: [The saml driver](../guides/driver-saml.md).
 
 ## What every driver returns
 
@@ -184,4 +201,5 @@ The front page's counter, pegboard and duplicator.
 - [The gateway driver](../guides/driver-gateway.md)
 - [oauth2 with Entra](../guides/driver-oauth2-entra.md)
 - [The oidc driver](../guides/driver-oidc.md)
+- [The saml driver](../guides/driver-saml.md)
 - [Configuration](configuration.md)
