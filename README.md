@@ -1488,7 +1488,7 @@ Maintainers: how to build, test and release this project, and where its data com
 No PHP on the machine? Fine. Docker runs the suite:
 
 ```
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer install --no-interaction
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
@@ -1501,7 +1501,7 @@ a deprecated method fails the build. `composer ci` runs the whole gate,
 validate through tests, Pint and PHPStan:
 
 ```
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
 The committed site gets checked in a real browser too: axe-core with the WCAG 2.2 AA

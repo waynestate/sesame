@@ -29,7 +29,7 @@ Maintainers: how to build, test and release this project, and where its data com
 No PHP on the machine? Fine. Docker runs the suite:
 
 ```
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer install --no-interaction
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
@@ -38,7 +38,7 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
 Static analysis is PHPStan at level 8 from Pinstripe's strict preset (`vendor/waynestate/pinstripe/phpstan/strict.neon`, included through the `waynestate/pinstripe` dev dependency): strict rules stay on, and a call to a deprecated method fails the build. `composer ci` runs the whole gate, validate through tests, Pint and PHPStan:
 
 ```
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
 ## Related

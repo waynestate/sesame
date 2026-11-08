@@ -348,7 +348,7 @@ build.
 **Check.** Rerun the gate locally:
 
 ```bash tab="docker"
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer ci
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
 ```bash tab="local"
@@ -377,7 +377,7 @@ start.
 **Fix.** Docker runs the suite:
 
 ```
-docker run --rm -v "${PWD}:/app" -w /app composer:2 composer install --no-interaction
+docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer install --no-interaction
 docker run --rm -v "${PWD}:/app" -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
