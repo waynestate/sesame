@@ -21,23 +21,20 @@ include:
       image: "php:8.4-cli-trixie@sha256:9cf851bc2c1b37c3e59dfd677a3c3e56d485af5a47c93f629424bb039eafcb69"
 
 # Dependency caching: images already come through the Dependency Proxy, and
-# every job that installs packages extends a cache keyed on its lock files,
-# so a pipeline downloads only what changed instead of everything, every run.
+# every job that installs packages extends a cache under a fixed key, not a
+# lock-file hash (D-072): Composer's and npm's caches are additive, so a lock
+# change downloads only what changed instead of everything.
 variables:
   COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.cache/composer"
 
 .composer-cache:
   cache:
-    key:
-      files: [composer.lock, deploy/composer.lock]
-      prefix: composer
+    key: composer
     paths: [.cache/composer/]
 
 .npm-cache:
   cache:
-    key:
-      files: [vue/package-lock.json]
-      prefix: npm
+    key: npm
     paths: [.cache/npm/]
 
 wayneui-copies:
