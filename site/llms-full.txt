@@ -1373,11 +1373,12 @@ first. What the hop does:
   `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to
   `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.4` (SESAME is on
+- Swaps the Composer requirement to `waynestate/sesame:^0.6` (SESAME is on
   Packagist, so no extra repository is needed) and drops the `wayne-cas`
   package, any `wayne-cas` path entry and its VCS repository entries.
-  Booster 1.10.0 pins the 0.4 line, so take the 0.5.0 steps in the
-  [upgrading guide](https://github.com/waynestate/sesame/blob/HEAD/docs/upgrading.md) after the hop.
+  Booster 1.12.0 and later write `^0.6`; an app hopped by an earlier Booster
+  got `^0.4`, so take the 0.5.0 and 0.6.0 steps in the
+  [upgrading guide](https://github.com/waynestate/sesame/blob/HEAD/docs/upgrading.md).
 - Removes `config/wayne-cas.php` when nothing in the app reads its config
   keys any more; while anything still does, the file stays and a manual note
   names the readers.
@@ -1883,6 +1884,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write `waynestate/sesame:^0.6` (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is `Checked` now that Squire's CI fails if its kit `php.ini` sets `session.sid_length` or `session.sid_bits_per_character`.
 - Changed: the deploy layer runs Squire's kit 0.7.1 (was 0.6.0): `.squire/php.ini` no longer sets the deprecated `session.sid_*` lines, web requests get a `disable_functions` list and Apache hardening (`.squire/php-web.ini`, `.squire/apache-hardening.conf`), and opcache gets production settings with `SQUIRE_OPCACHE_VALIDATE` as the one switch.
 - Changed: the front page deploy layer requires HELMET ^1.0 (lock at 1.0.1, was 0.4.0), like the rest of the stack; its shared front controller already runs on HELMET 1.0 in Squire, Sourdough and Pinstripe.
 - Docs: BEST_PRACTICES S44 now asks for `Clear-Site-Data: "cache", "storage"` and says why `"cookies"` stays out on a shared host, so the row is `Enforced`; S48 describes the Preflight pins as they are (four components at the `@0.3.1` release tag) and is `Checked`, since PROCTOR's `preflight-pinned` check warns on an unpinned include.
@@ -3039,7 +3041,7 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `wayne.cas` alias registered against SESAME's `WayneAuthenticate`.
 - Points the web guard at the `sesame` driver and the users provider at `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.4` (SESAME is on Packagist, so no extra repository is needed; Booster 1.10.0 pins the 0.4 line, so take the [0.5.0 steps](https://sesame.apps.wayne.edu/docs/upgrading.html) after the hop) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
+- Swaps the Composer requirement to `waynestate/sesame:^0.6` (SESAME is on Packagist, so no extra repository is needed; Booster 1.12.0 and later write `^0.6`, and an app hopped by an earlier Booster got `^0.4`, so take the [0.5.0 and 0.6.0 steps](https://sesame.apps.wayne.edu/docs/upgrading.html)) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 
