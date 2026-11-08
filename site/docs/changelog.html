@@ -53,7 +53,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
 <li>
-<p>Added: RFC 7662 token introspection for opaque bearer tokens in the <code>oauth2</code> driver, behind <code>oauth2.introspection_url</code> (env <code>SESAME_OAUTH2_INTROSPECTION_URL</code>). When set, the driver posts a non-JWT bearer token to the endpoint with <code>oauth2.introspection_client_id</code> and <code>oauth2.introspection_client_secret</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</code> and <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</code>) as HTTP Basic auth, accepts only a <code>200</code> JSON answer whose <code>active</code> field is <code>true</code>, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be <code>https://</code> (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests), and the client id and secret are required when it is set.</p>
+<p>Added: RFC 7662 token introspection for opaque bearer tokens in the <code>oauth2</code> driver, behind <code>oauth2.introspection_url</code> (env <code>SESAME_OAUTH2_INTROSPECTION_URL</code>). When set, the driver posts a non-JWT bearer token to the endpoint with <code>oauth2.introspection_client_id</code> and <code>oauth2.introspection_client_secret</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</code> and <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</code>) as HTTP Basic auth (client id and secret form-encoded first, as RFC 6749 2.3.1 requires), accepts only a <code>200</code> JSON answer whose <code>active</code> field is <code>true</code>, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be <code>https://</code> (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests), and the client id and secret are required when it is set.</p>
 </li>
 <li>
 <p>Added: <code>oauth2.introspection_cache_ttl_seconds</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS</code>, default <code>60</code>, maximum <code>300</code>; zero disables the cache), which caps how long an accepted introspection answer is kept under a SHA-256 hash of the token; the raw token is never cached, and a numeric <code>exp</code> claim shortens the lifetime further.</p>
@@ -68,10 +68,16 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <p>Fixed: the docs menu closes with Escape and hands focus back to its button (docs kit synced from Squire).</p>
 </li>
 <li>
+<p>Fixed: the docs kit's copy button no longer covers the first line of code when it says Copied or Failed: over the code it keeps its resting width and shows a check or a cross when the word does not fit (docs kit synced from Squire).</p>
+</li>
+<li>
 <p>Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.</p>
 </li>
 <li>
 <p>Changed: the deploy layer requires PROCTOR ^0.8 (locked 0.8.0).</p>
+</li>
+<li>
+<p>Added: the native session leaves a &quot;logged out at&quot; marker in the session store when <code>invalidate()</code> retires a session (the <code>logoutReuseTtlSeconds</code> option of <code>new NativeSession()</code> sets the window, 60 seconds by default, <code>0</code> destroys the session outright instead); a request that presents that ID gets a fresh empty session, and while the marker is inside the window it logs <code>sesame.session_anomaly</code> with <code>reason</code> <code>logged_out_session_reused</code> once per reuse (BEST_PRACTICES S27).</p>
 </li>
 <li>
 <p>Docs: the README art shows <code>saml</code> as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in <code>site/screenshots/</code> itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of &quot;later&quot; from a photo taken before the driver shipped. The gallery alt text and <code>site/README.md</code> say the same.</p>
