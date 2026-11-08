@@ -1520,9 +1520,10 @@ validate through tests, Pint and PHPStan:
 docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
-The committed site gets checked in a real browser too: axe-core with the WCAG 2.2 AA
-tag set, run in Docker through Playwright, so no host browser is needed. It looks at
-the front page and every docs page, in light and dark at two widths:
+The committed site gets checked in a real browser too: Preflight's own a11y
+checker, vendored at the CI tag (0.3.1) and pinned by a test, run in Docker
+through Playwright, so no host browser is needed. It looks at every page under
+site/, in light and dark at 320 and 1280 px, with the WCAG 1.4.10 reflow check:
 
 ```
 scripts/a11y.sh      # Linux and macOS
@@ -1881,6 +1882,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+- Changed: the local a11y scripts run Preflight's own checker (vendored from 0.3.1 and pinned by a test), so they check what CI checks: axe-core 4.14.0, 320 and 1280 px, and the reflow check.
 
 ### \[0.6.0\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-0-2026-11-08)
 

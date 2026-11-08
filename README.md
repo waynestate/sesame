@@ -1532,9 +1532,10 @@ validate through tests, Pint and PHPStan:
 docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
-The committed site gets checked in a real browser too: axe-core with the WCAG 2.2 AA
-tag set, run in Docker through Playwright, so no host browser is needed. It looks at
-the front page and every docs page, in light and dark at two widths:
+The committed site gets checked in a real browser too: Preflight's own a11y
+checker, vendored at the CI tag (0.3.1) and pinned by a test, run in Docker
+through Playwright, so no host browser is needed. It looks at every page under
+site/, in light and dark at 320 and 1280 px, with the WCAG 1.4.10 reflow check:
 
 ```
 scripts/a11y.sh      # Linux and macOS

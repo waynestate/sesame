@@ -30,7 +30,7 @@ copied automatically, Packagist reads from it, and nobody pushes to it.
 | All checks (what CI runs) | `composer ci` |
 | Only the tests | `composer test` |
 | Fix code style | `composer fix` |
-| Site accessibility gate (axe-core, WCAG 2.2 AA, in Docker) | `scripts/a11y.sh` (Linux, macOS) or `scripts/a11y.ps1` (Windows) |
+| Site accessibility gate (Preflight's checker at the CI tag, 320 and 1280 px with the reflow check, in Docker) | `scripts/a11y.sh` (Linux, macOS) or `scripts/a11y.ps1` (Windows) |
 
 With only Docker (the same lines work in PowerShell and sh):
 
