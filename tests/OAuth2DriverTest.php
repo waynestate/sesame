@@ -700,7 +700,7 @@ final class OAuth2DriverTest extends TestCase
     {
         $this->http->queue($this->introspectionResponse(['active' => false]));
 
-        $this->assertRejected('oauth2.inactive', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.inactive', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
@@ -710,7 +710,7 @@ final class OAuth2DriverTest extends TestCase
         $claims['exp'] = $this->clock->now()->getTimestamp() - 3600;
         $this->http->queue($this->introspectionResponse($claims));
 
-        $this->assertRejected('oauth2.expired', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.expired', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
 
         self::assertSame([], $this->cache->keys());
@@ -722,7 +722,7 @@ final class OAuth2DriverTest extends TestCase
             'iss' => 'https://other.example.com/v2.0',
         ])));
 
-        $this->assertRejected('oauth2.issuer', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.issuer', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
@@ -732,7 +732,7 @@ final class OAuth2DriverTest extends TestCase
             'aud' => 'wrong-audience',
         ])));
 
-        $this->assertRejected('oauth2.audience', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.audience', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
@@ -742,13 +742,13 @@ final class OAuth2DriverTest extends TestCase
         unset($claims['preferred_username'], $claims['sub']);
         $this->http->queue($this->introspectionResponse($claims));
 
-        $this->assertRejected('oauth2.missing_claim', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.missing_claim', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
     public function testATransportFailureDuringIntrospectionFailsClosed(): void
     {
-        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.introspection_unavailable', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
 
         self::assertCount(1, $this->http->requests);
@@ -758,7 +758,7 @@ final class OAuth2DriverTest extends TestCase
     {
         $this->http->queue(new Response(503, ['Content-Type' => 'application/json'], '{}'));
 
-        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.introspection_unavailable', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
@@ -767,7 +767,7 @@ final class OAuth2DriverTest extends TestCase
     {
         $this->http->queue(new Response(200, ['Content-Type' => 'application/json'], $body));
 
-        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.introspection_unavailable', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
     }
 
@@ -787,7 +787,7 @@ final class OAuth2DriverTest extends TestCase
 
     public function testAnOpaqueTokenIsRejectedWhenIntrospectionIsDisabled(): void
     {
-        $this->assertRejected('oauth2.invalid_jwt', fn (): mixed => $this->driver()
+        $this->assertRejected('oauth2.invalid_jwt', fn(): mixed => $this->driver()
             ->login($this->requestWith('Bearer opaque-token-1')));
 
         self::assertCount(0, $this->http->requests);
@@ -886,7 +886,7 @@ final class OAuth2DriverTest extends TestCase
     {
         $this->http->queue($this->introspectionResponse(['active' => false]));
 
-        $this->assertRejected('oauth2.inactive', fn (): mixed => $this->driver($this->introspectionConfig())
+        $this->assertRejected('oauth2.inactive', fn(): mixed => $this->driver($this->introspectionConfig())
             ->login($this->requestWith('Bearer opaque-token-1')));
 
         self::assertSame([], $this->cache->keys());

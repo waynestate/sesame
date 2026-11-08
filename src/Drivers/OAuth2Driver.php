@@ -139,7 +139,8 @@ final class OAuth2Driver implements Driver
         bool $requireAtJwt = false,
         ?string $introspectionUrl = null,
         ?string $introspectionClientId = null,
-        #[\SensitiveParameter] ?string $introspectionClientSecret = null,
+        #[\SensitiveParameter]
+        ?string $introspectionClientSecret = null,
         int $introspectionCacheTtlSeconds = 60,
         ?CacheInterface $introspectionCache = null,
     ) {

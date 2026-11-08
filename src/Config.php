@@ -124,7 +124,8 @@ final readonly class Config
         public ?SamlOptions $saml = null,
         public ?string $oauth2IntrospectionUrl = null,
         public ?string $oauth2IntrospectionClientId = null,
-        #[\SensitiveParameter] public ?string $oauth2IntrospectionClientSecret = null,
+        #[\SensitiveParameter]
+        public ?string $oauth2IntrospectionClientSecret = null,
         public int $oauth2IntrospectionCacheTtlSeconds = 60,
     ) {}
 
