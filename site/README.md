@@ -13,12 +13,14 @@ anywhere (Citadel, any web server, or `python -m http.server` inside `site/` for
 - base: WayneUI 2.0.8, copied from its static path into `assets/wayne-ui/` (tokens, Lato, buttons, table, skip link,
   sr-only), then re-dressed in `assets/sesame.css`.
 - the keys: every key on the page is drawn in inline SVG. They all carry one bitting, the lock's profile (your app's
-  `findOrImportUser(Identity)`); only the heads differ, one per driver. `saml` hangs as an uncut blank.
+  `findOrImportUser(Identity)`); only the heads differ, one per driver. All six are cut. `saml`, the newest, hangs
+  on its own hook and is tagged Opt-in: it ships, and an app turns it on and names its own IdP.
 - magic: **the duplicator.** Scroll, and a gateway blank is clamped beside the cas key, the tracer follows the cas
   cut while the cutter copies it, and the cut types `SESAME_DRIVER=gateway` into the slot as it goes. The new key
   travels to the same door, turns, and the door opens: ab1234 is in. Open sesame.
-- the lock: pick a key on the pegboard and it walks to the door. Cut keys turn and the door opens; uncut blanks
-  jiggle and stay out, and show no config line, because those drivers are not built yet.
+- the lock: pick a key on the pegboard and it walks to the door, shows its `.env` line, turns, and the door opens.
+  Every driver is cut today. The script still knows an uncut blank (`line: null`, `opens: false`): it jiggles, stays
+  out and shows no config line, for the next protocol on the board.
 - marks: `brand/` is SESAME's (generated with ChatGPT, never redrawn). `assets/marks/` holds the other stack parts'
   marks, copied from the sibling sites; WayneUI uses its own reversed mark on green.
 - reduced motion: the page is the finished shop, every word present at first paint: every key cut, the duplicator
@@ -26,7 +28,8 @@ anywhere (Citadel, any web server, or `python -m http.server` inside `site/` for
 - shh: ring the bell, or type the magic words.
 
 Screenshots are in `screenshots/` (desktop 1440, mobile 390, reduced motion, a motion GIF, and per-section mobile
-crops in `screenshots/sections/`).
+crops in `screenshots/sections/`). The README art kit re-takes the PNGs from the page itself
+(`node scripts/readme-art/build.mjs`), the motion GIF included, so they never fall behind it.
 
 Keys cut while you wait. Sessions kept by the app.
 

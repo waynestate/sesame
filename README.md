@@ -408,7 +408,7 @@ throws never changes what the facade returns or throws.
 <details>
 <summary><b>Walk around the shop</b>: the front page's counter, pegboard and duplicator</summary>
 <br>
-<div align="center"><img src="docs/readme/gallery.jpg" width="100%" alt="Three cuts of the front page: the hero with SESAME's mark on the pegboard; the pegboard 'One blank per protocol', with fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked later; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234."></div>
+<div align="center"><img src="docs/readme/gallery.jpg" width="100%" alt="Three cuts of the front page: the hero with SESAME's mark under the shop light; the pegboard 'One blank per protocol', with all six keys cut, fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked opt-in; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234."></div>
 </details>
 
 ## The cas driver

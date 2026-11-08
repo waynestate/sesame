@@ -32,7 +32,15 @@ same outputs.
   `src/UserResolver.php`; each caption is a phrase quoted from the source, the
   README or the page, and the build fails if a phrase is no longer there.
   Under `prefers-reduced-motion` it is the finished key, standing still.
-- `docs/readme/gallery.jpg`: three phone crops from `site/screenshots/sections/`.
+- `site/screenshots/`: the page's reference photos, re-taken on every run: one 390-wide phone crop per section
+  in `sections/` (the finished shop, as reduced motion paints it; a section taller than 1600 px carries on in
+  `-2`, `-3` and further files), and three full-page shots: desktop 1440 and phone 390 with the motion played through, and the
+  reduced-motion desktop. Plus `frontpage-motion.gif`, one visit filmed at 1280 x 800 and written at 640 x 400:
+  the counter, the cas key opening the door, a press on the saml peg (it opens the same door), and the duplicator
+  cut from start to finish. The PNGs come out the same on every run; the GIF is filmed live, so its frames can
+  shift a little between runs.
+- `docs/readme/gallery.jpg`: three of those phone crops (hero, pegboard, duplicator), taken fresh on the same run,
+  so the pegboard in the README always tags each driver the way the page does.
 - `docs/readme/board.jpg`: the brand board, re-encoded.
 - `docs/readme/cast/*.png`: one 96×96 mark per stack part, WayneUI on its
   green tile first.

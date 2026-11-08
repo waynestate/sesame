@@ -8,7 +8,10 @@
    the cast is the marks resized (WayneUI composed on its green tile), the
    badges read their facts from composer.json and the driver factory, and the
    key duplicator is the site's own cas key, cut along its own bitting, with
-   every cut labelled by a sign-in step read out of src/.
+   every cut labeled by a sign-in step read out of src/. It also re-takes the
+   reference photos in site/screenshots/ (the phone crops the gallery is cut
+   from, the full-page shots and the motion GIF), so no photo is older than
+   the page.
 
    Run from any folder (every path resolves from this file's own location):
 
@@ -170,7 +173,7 @@ function buildBadges() {
   if (drivers.length === 0) fail("no drivers found in src/DriverFactory.php");
   const defs = [
     { key: "php", label: "php", message: composer.require?.php },
-    { key: "license", label: "licence", message: composer.license },
+    { key: "license", label: "license", message: composer.license },
     { key: "drivers", label: "drivers", message: drivers.join(" · ") },
   ];
   for (const d of defs) {
@@ -540,7 +543,178 @@ async function buildDuplicator(page) {
   record("duplicator.svg", Buffer.from(svg, "utf8"));
 }
 
-/* -------------------------------------------------------------- 6. gallery */
+/* ------------------------------------------------------ 6. the shop photos */
+
+// The reference photos in site/screenshots/: the phone crops the gallery is
+// cut from, one per section, and three full-page shots. They used to be taken
+// by hand, once, and they went stale: the pegboard in them still tagged saml
+// "later" long after the driver shipped. Now the kit takes them from the page
+// as it is today, before the gallery reads them, so a photo can never be older
+// than the shop. Same names as before, so nothing that links them moves.
+const SECTION_CROPS = [
+  ["mobile-01-header", ".shop-head"],
+  ["mobile-02-hero", ".hero"],
+  ["mobile-03-keys", "#keys"],
+  ["mobile-04-duplicator", "#duplicator"],
+  ["mobile-05-doorways", "#start"],
+  ["mobile-05-work-orders", "#agents"],
+  ["mobile-06-rules", "#rules"],
+  ["mobile-07-wayne-cas", "#wayne-cas"],
+  ["mobile-08-key-ring", "#ring"],
+  ["mobile-09-footer", ".shop-foot"],
+];
+const CROP_MAX = 1600; // a taller section carries on in <name>-2.png, <name>-3.png and on
+const CROP_SLACK = 200; // a tail shorter than this stays on the last part instead of becoming a sliver
+const shotsDir = path.join(siteDir, "screenshots");
+
+async function writeShot(rel, png) {
+  // Lossless: the photos are the page's own pixels, re-packed, never resampled.
+  const buf = await sharp(png).png({ compressionLevel: 9 }).toBuffer();
+  const abs = path.join(shotsDir, rel);
+  mkdirSync(path.dirname(abs), { recursive: true });
+  writeFileSync(abs, buf);
+  console.log(`  site/screenshots/${rel}  ${buf.length} bytes`);
+}
+
+async function shopPage(browser, { width, height, reduced }) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    deviceScaleFactor: 1,
+    reducedMotion: reduced ? "reduce" : "no-preference",
+  });
+  await context.route(/^(https?|wss?):/, (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(pathToFileURL(path.join(siteDir, "index.html")).href, { waitUntil: "load" });
+  await page.evaluate(() => document.fonts.ready);
+  return { context, page };
+}
+
+// With motion on, the reveals wait to be scrolled to. Walk the page once, a
+// screen at a time, so every section has risen before the photo.
+async function walkThePage(page, step) {
+  const total = await page.evaluate(() => document.documentElement.scrollHeight);
+  for (let y = 0; y < total; y += step) {
+    await page.evaluate((top) => window.scrollTo(0, top), y);
+    await page.waitForTimeout(120);
+  }
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+}
+
+async function buildScreenshots(browser) {
+  console.log("screenshots:");
+
+  // The phone crops: 390 wide, the finished shop (reduced motion), one file
+  // per section, the shop sign shot on its own and kept out of the others.
+  {
+    const { context, page } = await shopPage(browser, { width: 390, height: 844, reduced: true });
+    await page.addStyleTag({ content: ".toast { display: none !important; }" });
+    for (const [name, selector] of SECTION_CROPS) {
+      const el = page.locator(selector).first();
+      if ((await el.count()) === 0) fail(`site/index.html has no ${selector} for ${name}.png`);
+      if (name === "mobile-01-header") {
+        await writeShot(`sections/${name}.png`, await el.screenshot());
+        await page.addStyleTag({ content: ".shop-head { visibility: hidden !important; }" });
+        continue;
+      }
+      const png = await el.screenshot();
+      const { width, height } = await sharp(png).metadata();
+      // name.png, then name-2.png, name-3.png and on, CROP_MAX px each; the
+      // last part also keeps a short tail rather than leaving it a sliver.
+      const parts = Math.max(1, Math.ceil((height - CROP_SLACK) / CROP_MAX));
+      for (let i = 0; i < parts; i++) {
+        const top = i * CROP_MAX;
+        const tall = i === parts - 1 ? height - top : CROP_MAX;
+        const part = parts === 1 ? png : await sharp(png).extract({ left: 0, top, width, height: tall }).toBuffer();
+        await writeShot(`sections/${name}${i === 0 ? "" : `-${i + 1}`}.png`, part);
+      }
+      // A section that got shorter leaves no stale tail behind.
+      for (let i = parts + 1; existsSync(path.join(shotsDir, "sections", `${name}-${i}.png`)); i++) {
+        rmSync(path.join(shotsDir, "sections", `${name}-${i}.png`));
+      }
+    }
+    await context.close();
+  }
+
+  // The full-page shots: desktop and phone with the motion played through,
+  // and the desktop shop as reduced motion paints it.
+  const pages = [
+    { rel: "frontpage-desktop.png", width: 1440, height: 900, reduced: false },
+    { rel: "frontpage-mobile.png", width: 390, height: 844, reduced: false },
+    { rel: "frontpage-reduced-motion.png", width: 1440, height: 900, reduced: true },
+  ];
+  for (const p of pages) {
+    const { context, page } = await shopPage(browser, p);
+    await page.addStyleTag({ content: ".toast { display: none !important; }" });
+    if (!p.reduced) await walkThePage(page, Math.round(p.height * 0.6));
+    await writeShot(p.rel, await page.screenshot({ fullPage: true }));
+    await context.close();
+  }
+
+  await buildMotionGif(browser);
+}
+
+// The motion GIF: one visit to the shop at 1280 x 800, played at about nine
+// frames a second and written at half size, 640 x 400. The counter, then the
+// pegboard (the cas key opens the door on its own as the board comes into
+// view), then a press on the saml peg, then the duplicator cut from start to
+// finish as the page scrolls. sharp joins the frames; no encoder of our own.
+const GIF_DELAY = 110; // ms per frame, the old hand capture's pace
+
+async function buildMotionGif(browser) {
+  const { context, page } = await shopPage(browser, { width: 1280, height: 800, reduced: false });
+  await page.addStyleTag({ content: ".toast { display: none !important; } html.motion { scroll-behavior: auto !important; }" });
+  const frames = [];
+  const grab = async () => frames.push(await page.screenshot());
+  const live = async (count) => {
+    for (let i = 0; i < count; i++) {
+      const t0 = Date.now();
+      await grab();
+      const left = GIF_DELAY - (Date.now() - t0);
+      if (left > 0) await page.waitForTimeout(left);
+    }
+  };
+  const scrollTo = (top) => page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), top);
+  const topOf = (selector) => page.evaluate((s) => document.querySelector(s).getBoundingClientRect().top + window.scrollY, selector);
+
+  // 1. the counter
+  await page.waitForTimeout(600);
+  await live(14);
+
+  // 2. the pegboard: scroll it in and let the cas key walk to the door
+  const board = await page.locator("#keys .shop").boundingBox();
+  if (!board) fail("site/index.html has no #keys .shop to film");
+  await scrollTo(Math.max(0, (await topOf("#keys .shop")) - (800 - board.height) / 2));
+  await live(22);
+
+  // 3. press the saml peg: it walks to the same door, turns, and the door opens
+  const saml = page.locator('.peg[data-driver="saml"]');
+  if ((await saml.count()) === 0) fail("site/index.html has no saml peg to press");
+  await saml.click();
+  await live(22);
+
+  // 4. the duplicator, driven by the scroll, start to finish
+  const dupTop = await topOf("[data-dup]");
+  const runway = await page.evaluate(() => document.querySelector("[data-dup]").offsetHeight - window.innerHeight);
+  const steps = 44;
+  for (let i = 0; i <= steps; i++) {
+    await scrollTo(dupTop + (runway * i) / steps);
+    await page.waitForTimeout(60);
+    await grab();
+  }
+  await live(8);
+  await context.close();
+
+  const half = await Promise.all(frames.map((f) => sharp(f).resize({ width: 640 }).png().toBuffer()));
+  const delay = half.map((_, i) => (i === half.length - 1 ? 1800 : GIF_DELAY));
+  const gif = await sharp(half, { join: { animated: true } }).gif({ delay, loop: 0, effort: 8 }).toBuffer();
+  const abs = path.join(shotsDir, "frontpage-motion.gif");
+  writeFileSync(abs, gif);
+  console.log(`  site/screenshots/frontpage-motion.gif  ${gif.length} bytes, ${half.length} frames`);
+}
+
+/* -------------------------------------------------------------- 7. gallery */
 
 // A contact sheet of three existing phone crops: the counter, the pegboard,
 // the duplicator. (The key-ring crop is left out on purpose: it names an
@@ -583,7 +757,7 @@ ${crops.map((c) => `  <img src="${pathToFileURL(path.join(siteDir, "screenshots"
   record("gallery.jpg", jpg);
 }
 
-/* ---------------------------------------------------------------- 7. board */
+/* ---------------------------------------------------------------- 8. board */
 
 async function buildBoard() {
   console.log("board:");
@@ -610,6 +784,7 @@ async function main() {
     const { context, page } = await openPage(browser);
     await buildDuplicator(page); // before the hero hides anything
     await buildHero(page);
+    await buildScreenshots(browser); // the gallery is cut from these
     await buildGallery(page);
     await context.close();
   } finally {
