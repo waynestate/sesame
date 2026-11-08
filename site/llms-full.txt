@@ -1884,6 +1884,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### \[0.6.1\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-1-2026-11-08)
+
 - Fixed: SESAME's routes are controller actions instead of closures, so `php artisan route:cache` and `optimize` work in an app that uses SESAME (a Citadel release runs optimize).
 - Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write `waynestate/sesame:^0.6` (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is `Checked` now that Squire's CI fails if its kit `php.ini` sets `session.sid_length` or `session.sid_bits_per_character`.
 - Changed: the deploy layer runs Squire's kit 0.7.1 (was 0.6.0): `.squire/php.ini` no longer sets the deprecated `session.sid_*` lines, web requests get a `disable_functions` list and Apache hardening (`.squire/php-web.ini`, `.squire/apache-hardening.conf`), and opcache gets production settings with `SQUIRE_OPCACHE_VALIDATE` as the one switch.
@@ -4005,7 +4007,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.6.0, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.6.1, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5396,6 +5398,14 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.6.1 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
+
+No breaks. SESAME's routes now point at `SesameController` methods instead of closures, with the same names, URIs and middleware, so `php artisan route:cache` and `php artisan optimize` work in an app that uses SESAME. A Citadel release runs `optimize`, so an app that turned it off for SESAME (Squire's `SQUIRE_ARTISAN_OPTIMIZE=0`) can turn it back on.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already allows 0.6.1).
+
+**How to verify.** `php artisan route:cache` exits 0, `php artisan route:list --name=sesame` lists the routes as `SesameController` actions, and sign-in and sign-out work as before. Then `php artisan route:clear` if you cache routes only at release time.
 
 ### 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
 

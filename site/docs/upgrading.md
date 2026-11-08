@@ -10,6 +10,14 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.6.1 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
+
+No breaks. SESAME's routes now point at `SesameController` methods instead of closures, with the same names, URIs and middleware, so `php artisan route:cache` and `php artisan optimize` work in an app that uses SESAME. A Citadel release runs `optimize`, so an app that turned it off for SESAME (Squire's `SQUIRE_ARTISAN_OPTIMIZE=0`) can turn it back on.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already allows 0.6.1).
+
+**How to verify.** `php artisan route:cache` exits 0, `php artisan route:list --name=sesame` lists the routes as `SesameController` actions, and sign-in and sign-out work as before. Then `php artisan route:clear` if you cache routes only at release time.
+
 ## 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
 
 **Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (SESAME-22), so an app that already has an older copy of either cannot take 0.6 until it updates them.

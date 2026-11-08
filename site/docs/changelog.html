@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog | SESAME docs</title>
 <meta name="description" content="All notable changes to this project.">
-<meta name="docs-version" content="0.6.0">
+<meta name="docs-version" content="0.6.1">
 <link rel="stylesheet" href="../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../assets/docs.css">
 <link rel="stylesheet" href="../docs/theme/sesame.css">
@@ -51,6 +51,7 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
+<h2 id="0-6-1-2026-11-08">[0.6.1] - 2026-11-08<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></h2>
 <ul>
 <li>Fixed: SESAME's routes are controller actions instead of closures, so <code>php artisan route:cache</code> and <code>optimize</code> work in an app that uses SESAME (a Citadel release runs optimize).</li>
 <li>Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write <code>waynestate/sesame:^0.6</code> (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is <code>Checked</code> now that Squire's CI fails if its kit <code>php.ini</code> sets <code>session.sid_length</code> or <code>session.sid_bits_per_character</code>.</li>
@@ -469,10 +470,10 @@ No behaviour changed.</li>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../docs/upgrading.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Upgrading</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#unreleased">[Unreleased]</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">[0.6.0] - 2026-11-08</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">[0.5.0] - 2026-11-07</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">[0.4.0] - 2026-11-03</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">[0.3.0] - 2026-10-30</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">[0.2.2] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">[0.2.1] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">[0.2.0] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed">Changed</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">[0.1.3] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-1">Added</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">[0.1.2] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fixed">Fixed</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">[0.1.1] (2026-10-29)</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-2">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed-1">Changed</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">[0.1.0] (2026-10-27)</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#unreleased">[Unreleased]</a></li><li class="docs-toc__item"><a href="#0-6-1-2026-11-08">[0.6.1] - 2026-11-08</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">[0.6.0] - 2026-11-08</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">[0.5.0] - 2026-11-07</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">[0.4.0] - 2026-11-03</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">[0.3.0] - 2026-10-30</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">[0.2.2] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">[0.2.1] - 2026-10-29</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">[0.2.0] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed">Changed</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">[0.1.3] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-1">Added</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">[0.1.2] - 2026-10-29</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fixed">Fixed</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">[0.1.1] (2026-10-29)</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#added-2">Added</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#changed-1">Changed</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">[0.1.0] (2026-10-27)</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents SESAME <span data-docs-version>0.6.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.6.1</span></span>
   <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="changelog.md">Markdown</a></span>
 </footer>
 </body>
