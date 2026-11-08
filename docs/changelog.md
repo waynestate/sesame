@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: BEST_PRACTICES S20 (CAS single logout) is tagged `Documented`, not `Not yet`: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).
+
 ## [0.6.1] - 2026-11-08
 
 - Fixed: SESAME's routes are controller actions instead of closures, so `php artisan route:cache` and `optimize` work in an app that uses SESAME (a Citadel release runs optimize).

@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: BEST_PRACTICES S20 (CAS single logout) is tagged `Documented`, not `Not yet`: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).
+
 ## \[0.6.1\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-1-2026-11-08)
 
 - Fixed: SESAME's routes are controller actions instead of closures, so `php artisan route:cache` and `optimize` work in an app that uses SESAME (a Citadel release runs optimize).
