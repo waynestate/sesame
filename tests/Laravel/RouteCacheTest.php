@@ -45,7 +45,8 @@ final class RouteCacheTest extends LaravelTestCase
             );
         }
 
-        $this->artisan('route:cache')->assertExitCode(0);
-        $this->artisan('route:clear')->assertExitCode(0);
+        $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+        self::assertSame(0, $kernel->call('route:cache'));
+        self::assertSame(0, $kernel->call('route:clear'));
     }
 }
