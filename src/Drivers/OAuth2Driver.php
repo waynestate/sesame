@@ -12,10 +12,12 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
 use InvalidArgumentException;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use UnexpectedValueException;
 use Waynestate\Sesame\Authenticated;
@@ -92,6 +94,8 @@ final class OAuth2Driver implements Driver
 
     private readonly RequestFactoryInterface $requests;
 
+    private readonly StreamFactoryInterface $streams;
+
     private readonly ?string $introspectionUrl;
 
     private readonly ?string $introspectionClientId;
@@ -149,6 +153,7 @@ final class OAuth2Driver implements Driver
         $this->jwks = new JwksProvider($http, $requests, $jwksCache, $this->clock, $jwksUrl, $jwksCacheTtlSeconds);
         $this->http = $http;
         $this->requests = $requests;
+        $this->streams = $requests instanceof StreamFactoryInterface ? $requests : new Psr17Factory();
         $this->introspectionUrl = $introspectionUrl;
         $this->introspectionClientId = $introspectionClientId;
         $this->introspectionClientSecret = $introspectionClientSecret;
@@ -249,7 +254,7 @@ final class OAuth2Driver implements Driver
                 ->withHeader('Accept', 'application/json')
                 ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
                 ->withHeader('Authorization', 'Basic ' . base64_encode($this->introspectionClientId . ':' . $this->introspectionClientSecret))
-                ->withBody($this->requests->createStream(http_build_query([
+                ->withBody($this->streams->createStream(http_build_query([
                     'token' => $token,
                     'token_type_hint' => 'access_token',
                 ])));
