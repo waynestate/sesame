@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: the front page's deploy layer (`deploy/`) runs Squire's kit 0.6.0 (was 0.5.0): `scripts/release.sh` asks PROCTOR's deploy gate for a go or no-go on each release (a report, not a stop, unless `SQUIRE_PROCTOR=enforce`), and `.env.squire.example` lists the new setting. The layer's pins move to HELMET `^0.4` (locked 0.4.0) and PROCTOR `^0.7` (locked 0.7.0).
 - Docs: the Docker commands in the README and docs mount the shared `stack-composer-cache` volume, so Composer downloads are cached between runs.
 - Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.
 - Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's `cas-to-sesame` hop writes today, `waynestate/sesame:^0.4` (they said `^0.3`), and point at the 0.5.0 upgrade steps to take after the hop.
