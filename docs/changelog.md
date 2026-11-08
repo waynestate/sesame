@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the front page deploy layer requires HELMET ^1.0 (lock at 1.0.1, was 0.4.0), like the rest of the stack; its shared front controller already runs on HELMET 1.0 in Squire, Sourdough and Pinstripe.
 - Docs: BEST_PRACTICES S44 now asks for `Clear-Site-Data: "cache", "storage"` and says why `"cookies"` stays out on a shared host, so the row is `Enforced`; S48 describes the Preflight pins as they are (four components at the `@0.3.1` release tag) and is `Checked`, since PROCTOR's `preflight-pinned` check warns on an unpinned include.
 - Changed: the local a11y scripts run Preflight's own checker (vendored from 0.3.1 and pinned by a test), so they check what CI checks: axe-core 4.14.0, 320 and 1280 px, and the reflow check.
 
