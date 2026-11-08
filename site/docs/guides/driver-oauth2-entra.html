@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>oauth2 with Entra | SESAME docs</title>
-<meta name="description" content="Sign in from a JWT bearer token verified against the issuer&#039;s key set, RS256 only, Microsoft Entra ID first, APIs only.">
+<meta name="description" content="Sign in from a JWT bearer token verified against the issuer&#039;s key set, or from an opaque token through RFC 7662 introspection, Microsoft Entra ID first, APIs only.">
 <meta name="docs-version" content="0.5.0">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
@@ -56,6 +56,13 @@ and the key used to verify is the one the issuer published under the token's
 key id, never anything the token itself carries. After the signature, the
 driver checks the issuer, audience, expiry and not-before claims (with a
 leeway), then any required scopes and roles.</p>
+<p>A token that is not a three-part JWT is opaque while introspection is off, and
+it is refused. When <code>oauth2.introspection_url</code> is set, the driver posts the
+token to that RFC 7662 endpoint with the configured client credentials as HTTP
+Basic auth, accepts only a <code>200</code> JSON answer whose <code>active</code> field is <code>true</code>,
+and applies the same issuer, audience, expiry and not-before checks to the
+claims the endpoint returns. Accepted answers are cached briefly under a hash
+of the token; the token itself is never cached or logged.</p>
 <p>Microsoft Entra ID is the first supported issuer. Point <code>issuer</code> and <code>jwks_url</code>
 at the tenant's v2.0 endpoints (the <code>issuer</code> and <code>jwks_uri</code> values in the
 tenant's discovery document) and <code>audience</code> at the app's client id. Any other
@@ -162,14 +169,43 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, ne
 <td><code>false</code></td>
 <td>When <code>true</code>, the token's <code>typ</code> header must be <code>at+jwt</code> or <code>application/at+jwt</code> (RFC 9068), and any other token is refused. <strong>Off by default on purpose:</strong> Microsoft Entra v2 access tokens are typed <code>JWT</code>, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.</td>
 </tr>
+<tr>
+<td><code>oauth2.introspection_url</code></td>
+<td>No</td>
+<td>none</td>
+<td>The RFC 7662 endpoint for opaque bearer tokens: <code>https://</code> only (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests). Leave it unset to keep the driver JWT-only.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_id</code></td>
+<td>No</td>
+<td>none</td>
+<td>The client id sent as HTTP Basic auth to the introspection endpoint. Required when <code>oauth2.introspection_url</code> is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_secret</code></td>
+<td>No</td>
+<td>none</td>
+<td>The client secret sent as HTTP Basic auth to the introspection endpoint. Required when <code>oauth2.introspection_url</code> is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_cache_ttl_seconds</code></td>
+<td>No</td>
+<td><code>60</code></td>
+<td>How long an accepted introspection answer is kept, in seconds, capped by the token's <code>exp</code>. Zero disables the cache.</td>
+</tr>
 </tbody>
 </table></div>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>Leave <code>oauth2.require_at_jwt</code> off for Entra. Microsoft Entra v2 access tokens are typed <code>JWT</code>, so requiring <code>at+jwt</code> refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.</p></aside>
+<aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>Leave <code>oauth2.introspection_url</code> unset for ordinary Entra apps: Entra v2 issues JWTs that the driver verifies locally against the JWKS. Set the introspection keys only when your issuer hands out opaque bearer tokens that need an RFC 7662 check.</p></aside>
 <h2 id="what-the-token-must-carry">What the token must carry<a class="docs-heading-link" aria-label="Link to this section" href="#what-the-token-must-carry">#</a></h2>
-<p>The token must carry an <code>exp</code> claim; a token without one is refused. The
+<p>A JWT must carry an <code>exp</code> claim; a JWT without one is refused. The
 <code>email</code> and <code>name</code> claims become read-only identity attributes, and the
 optional <code>auth_time</code> and <code>amr</code> claims become the identity's MFA facts, for
 <code>requireMfa()</code>, exactly as in the gateway driver.</p>
+<p>An accepted introspection answer must carry a usable username: the configured
+<code>oauth2.identity_claim</code> (<code>preferred_username</code> by default) or <code>sub</code>. Its
+<code>iss</code>, <code>aud</code>, <code>exp</code> and <code>nbf</code> claims are checked when present, with the same
+leeway as the JWT path.</p>
 <h2 id="key-set-caching-and-fail-closed-fetches">Key set caching and fail-closed fetches<a class="docs-heading-link" aria-label="Link to this section" href="#key-set-caching-and-fail-closed-fetches">#</a></h2>
 <p>The key set is fetched once and kept for <code>oauth2.jwks_cache_ttl_seconds</code>. When
 a token carries a key id the cached set does not know, the provider refetches

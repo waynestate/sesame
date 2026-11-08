@@ -209,6 +209,30 @@
 <td>Refuse a token whose <code>typ</code> header is not <code>at+jwt</code> (RFC 9068). Leave it off for Entra.</td>
 </tr>
 <tr>
+<td><code>oauth2.introspection_url</code></td>
+<td><code>SESAME_OAUTH2_INTROSPECTION_URL</code></td>
+<td>none</td>
+<td>The RFC 7662 endpoint for opaque bearer tokens. Leave it unset to keep the driver JWT-only.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_id</code></td>
+<td><code>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</code></td>
+<td>none</td>
+<td>The client id sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_secret</code></td>
+<td><code>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</code></td>
+<td>none</td>
+<td>The client secret sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_cache_ttl_seconds</code></td>
+<td><code>SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS</code></td>
+<td><code>60</code></td>
+<td>How long an accepted introspection answer is kept, in seconds, capped by the token's <code>exp</code>. Zero disables the cache.</td>
+</tr>
+<tr>
 <td><code>session.idle_minutes</code></td>
 <td><code>SESAME_SESSION_IDLE_MINUTES</code></td>
 <td><code>120</code></td>

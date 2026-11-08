@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Added: RFC 7662 token introspection for opaque bearer tokens in the `oauth2` driver, behind `oauth2.introspection_url` (env `SESAME_OAUTH2_INTROSPECTION_URL`). When set, the driver posts a non-JWT bearer token to the endpoint with `oauth2.introspection_client_id` and `oauth2.introspection_client_secret` (env `SESAME_OAUTH2_INTROSPECTION_CLIENT_ID` and `SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET`) as HTTP Basic auth, accepts only a `200` JSON answer whose `active` field is `true`, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be `https://` (`http://localhost` and `http://127.0.0.1` are allowed for tests), and the client id and secret are required when it is set.
+- Added: `oauth2.introspection_cache_ttl_seconds` (env `SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS`, default `60`, maximum `300`; zero disables the cache), which caps how long an accepted introspection answer is kept under a SHA-256 hash of the token; the raw token is never cached, and a numeric `exp` claim shortens the lifetime further.
+- Changed: BEST_PRACTICES S36 moves to `Enforced`: the oauth2 driver's JWT checks and its new RFC 7662 introspection path are both covered by tests.
+- Docs: the README, configuration reference, Laravel guide and oauth2 with Entra guide cover the four new introspection settings.
 - Fixed: the docs menu closes with Escape and hands focus back to its button (docs kit synced from Squire).
 - Fixed: the docs kit's copy button no longer covers the first line of code when it says Copied or Failed: over the code it keeps its resting width and shows a check or a cross when the word does not fit (docs kit synced from Squire).
 - Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.

@@ -88,7 +88,8 @@
 <p>A present key with the wrong type is also an <code>InvalidConfig</code> error at boot, before any request is served:</p>
 <ul>
 <li>Booleans must be booleans: <code>cas.renew</code>, <code>cas.assume_mfa</code>, <code>gateway.allow_without_replay_guard</code>, <code>oauth2.require_at_jwt</code>.</li>
-<li>Integers: <code>gateway.leeway_seconds</code> non-negative, <code>gateway.max_lifetime</code> positive, <code>oauth2.leeway_seconds</code> non-negative and at most <code>300</code>, <code>oauth2.jwks_cache_ttl_seconds</code> positive and at most <code>86400</code>, <code>session.idle_minutes</code> and <code>session.absolute_minutes</code> positive.</li>
+<li>Integers: <code>gateway.leeway_seconds</code> non-negative, <code>gateway.max_lifetime</code> positive, <code>oauth2.leeway_seconds</code> non-negative and at most <code>300</code>, <code>oauth2.jwks_cache_ttl_seconds</code> positive and at most <code>86400</code>, <code>oauth2.introspection_cache_ttl_seconds</code> non-negative and at most <code>300</code>, <code>session.idle_minutes</code> and <code>session.absolute_minutes</code> positive.</li>
+<li><code>oauth2.introspection_url</code>, when present, must be an <code>https://</code> URL (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests), and the client id and client secret are then required.</li>
 <li>Enumerations: <code>cas.protocol</code> only <code>3.0</code> or <code>2.0</code>; <code>gateway.algorithm</code> only <code>ES256</code>, <code>RS256</code> or <code>EdDSA</code>; <code>oauth2.identity_claim</code> only <code>preferred_username</code> or <code>accessid</code>.</li>
 <li><code>gateway.public_key</code>, <code>gateway.public_keys</code> and <code>gateway.jwks_file</code> are mutually exclusive: set exactly one. An empty <code>public_keys</code> array or <code>jwks_file</code> counts as unset, and <code>public_key</code> is then required. A <code>jwks_file</code> is read at boot, and a missing or bad key set file is an <code>InvalidConfig</code> error (the rules are in the <a href="../guides/driver-gateway.html#the-key-set-file">gateway driver guide</a>).</li>
 <li><code>gateway.trusted_proxies</code> must be a non-empty array of non-empty strings (CIDR ranges or single IPs).</li>
@@ -251,6 +252,30 @@
 <td>SESAME_OAUTH2_IDENTITY_CLAIM</td>
 <td>The claim the username comes from: <code>preferred_username</code> or <code>accessid</code></td>
 <td><code>preferred_username</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS</td>
+<td>How long an accepted introspection answer is kept, in seconds, capped by the token's <code>exp</code>; zero disables the cache</td>
+<td><code>60</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</td>
+<td>The client id sent as HTTP Basic auth to the introspection endpoint; required when the introspection URL is set</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</td>
+<td>The client secret sent as HTTP Basic auth to the introspection endpoint; read from the environment only, never logged; required when the introspection URL is set</td>
+<td>none</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_OAUTH2_INTROSPECTION_URL</td>
+<td>The RFC 7662 token introspection endpoint for opaque bearer tokens; leave unset to keep the oauth2 driver JWT-only</td>
+<td>none</td>
 <td>config/sesame.php</td>
 </tr>
 <tr>
@@ -899,9 +924,33 @@ SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 <td><code>false</code></td>
 <td>When <code>true</code>, the token's <code>typ</code> header must be <code>at+jwt</code> or <code>application/at+jwt</code> (RFC 9068), and any other token is refused. <strong>Off by default on purpose:</strong> Microsoft Entra v2 access tokens are typed <code>JWT</code>, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.</td>
 </tr>
+<tr>
+<td><code>oauth2.introspection_url</code></td>
+<td>No</td>
+<td>none</td>
+<td>The RFC 7662 endpoint for opaque bearer tokens: <code>https://</code> only (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests). Leave it unset to keep the driver JWT-only.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_id</code></td>
+<td>No</td>
+<td>none</td>
+<td>The client id sent as HTTP Basic auth to the introspection endpoint. Required when <code>oauth2.introspection_url</code> is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_client_secret</code></td>
+<td>No</td>
+<td>none</td>
+<td>The client secret sent as HTTP Basic auth to the introspection endpoint. Required when <code>oauth2.introspection_url</code> is set.</td>
+</tr>
+<tr>
+<td><code>oauth2.introspection_cache_ttl_seconds</code></td>
+<td>No</td>
+<td><code>60</code></td>
+<td>How long an accepted introspection answer is kept, in seconds, capped by the token's <code>exp</code>. Zero disables the cache.</td>
+</tr>
 </tbody>
 </table></div>
-<p>The token must carry an <code>exp</code> claim; a token without one is refused. The Entra registration and the key set fetch are covered by the <a href="../guides/driver-oauth2-entra.html">oauth2 with Entra guide</a>.</p>
+<p>A JWT must carry an <code>exp</code> claim; a JWT without one is refused. Opaque tokens are refused while introspection is off, and an accepted introspection answer is checked for <code>active === true</code> before its issuer, audience, expiry and not-before claims are applied. The Entra registration and the key set fetch are covered by the <a href="../guides/driver-oauth2-entra.html">oauth2 with Entra guide</a>.</p>
 <h3 id="oidc">oidc<a class="docs-heading-link" aria-label="Link to this section" href="#oidc">#</a></h3>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>

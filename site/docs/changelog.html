@@ -52,28 +52,78 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
-<li>Fixed: the docs menu closes with Escape and hands focus back to its button (docs kit synced from Squire).</li>
-<li>Fixed: the docs kit's copy button no longer covers the first line of code when it says Copied or Failed: over the code it keeps its resting width and shows a check or a cross when the word does not fit (docs kit synced from Squire).</li>
-<li>Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.</li>
-<li>Changed: the deploy layer requires PROCTOR ^0.8 (locked 0.8.0).</li>
-<li>Added: the native session leaves a &quot;logged out at&quot; marker in the session store when <code>invalidate()</code> retires a session (the <code>logoutReuseTtlSeconds</code> option of <code>new NativeSession()</code> sets the window, 60 seconds by default, <code>0</code> destroys the session outright instead); a request that presents that ID gets a fresh empty session, and while the marker is inside the window it logs <code>sesame.session_anomaly</code> with <code>reason</code> <code>logged_out_session_reused</code> once per reuse (BEST_PRACTICES S27).</li>
-<li>Docs: the README art shows <code>saml</code> as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in <code>site/screenshots/</code> itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of &quot;later&quot; from a photo taken before the driver shipped. The gallery alt text and <code>site/README.md</code> say the same.</li>
-<li>Changed: the pipeline pins every Preflight CI component to 0.3.0 (<a rel="noopener" href="mailto:preflight@0.3.0">preflight@0.3.0</a>); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.</li>
-<li>Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).</li>
-<li>Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.</li>
-<li>Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with <code>graceSeconds: 0</code>, what is logged after it).</li>
-<li>Fixed: the pipeline's PROCTOR jobs no longer pass <code>--policy</code>, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.</li>
-<li>Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).</li>
-<li>Changed: the front page's deploy layer (<code>deploy/</code>) runs Squire's kit 0.6.0 (was 0.5.0): <code>scripts/release.sh</code> asks PROCTOR's deploy gate for a go or no-go on each release (a report, not a stop, unless <code>SQUIRE_PROCTOR=enforce</code>), and <code>.env.squire.example</code> lists the new setting. The layer's pins move to HELMET <code>^0.4</code> (locked 0.4.0) and PROCTOR <code>^0.7</code> (locked 0.7.0).</li>
-<li>Docs: the Docker commands in the README and docs mount the shared <code>stack-composer-cache</code> volume, so Composer downloads are cached between runs.</li>
-<li>Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.</li>
-<li>Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's <code>cas-to-sesame</code> hop writes today, <code>waynestate/sesame:^0.4</code> (they said <code>^0.3</code>), and point at the 0.5.0 upgrade steps to take after the hop.</li>
-<li>Added: the <code>saml</code> driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on <code>onelogin/php-saml</code> (suggested, not required; the choice is in <code>docs/saml-library-choice.md</code>) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the <code>ReturnTo</code> rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the <code>SameSite=Lax</code> session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends <code>ForceAuthn</code>; logout is local.</li>
-<li>Added: <code>config/sesame.php</code>'s <code>saml</code> block and the <code>SESAME_SAML_*</code> settings; the Laravel adapter's <code>POST /login/saml/acs</code> (<code>sesame.saml.acs</code>) and <code>GET /login/saml/metadata</code> (<code>sesame.saml.metadata</code>) routes, outside the <code>web</code> group; the raw-PHP <code>sesame_saml_acs()</code> and <code>sesame_saml_metadata()</code>; <code>sesame_login()</code> treats <code>saml_handle</code> as a ticket.</li>
-<li>Security: SESAME-22: <code>composer.json</code> conflicts with <code>onelogin/php-saml</code> below 4.3.2 and <code>robrichards/xmlseclibs</code> below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.</li>
-<li>Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (<code>tests/fixtures/saml</code>), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.</li>
-<li>Docs: &quot;The saml driver (SAML 2.0 sign-in)&quot; guide and &quot;The saml driver's library choice&quot;; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to <code>Enforced</code>.</li>
-<li>Changed: CI caches Composer downloads per lock file (<code>.composer-cache</code>, keyed on <code>composer.lock</code> and <code>deploy/composer.lock</code>), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.</li>
+<li>
+<p>Added: RFC 7662 token introspection for opaque bearer tokens in the <code>oauth2</code> driver, behind <code>oauth2.introspection_url</code> (env <code>SESAME_OAUTH2_INTROSPECTION_URL</code>). When set, the driver posts a non-JWT bearer token to the endpoint with <code>oauth2.introspection_client_id</code> and <code>oauth2.introspection_client_secret</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</code> and <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</code>) as HTTP Basic auth, accepts only a <code>200</code> JSON answer whose <code>active</code> field is <code>true</code>, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be <code>https://</code> (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests), and the client id and secret are required when it is set.</p>
+</li>
+<li>
+<p>Added: <code>oauth2.introspection_cache_ttl_seconds</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS</code>, default <code>60</code>, maximum <code>300</code>; zero disables the cache), which caps how long an accepted introspection answer is kept under a SHA-256 hash of the token; the raw token is never cached, and a numeric <code>exp</code> claim shortens the lifetime further.</p>
+</li>
+<li>
+<p>Changed: BEST_PRACTICES S36 moves to <code>Enforced</code>: the oauth2 driver's JWT checks and its new RFC 7662 introspection path are both covered by tests.</p>
+</li>
+<li>
+<p>Docs: the README, configuration reference, Laravel guide and oauth2 with Entra guide cover the four new introspection settings.</p>
+</li>
+<li>
+<p>Fixed: the docs menu closes with Escape and hands focus back to its button (docs kit synced from Squire).</p>
+</li>
+<li>
+<p>Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.</p>
+</li>
+<li>
+<p>Changed: the deploy layer requires PROCTOR ^0.8 (locked 0.8.0).</p>
+</li>
+<li>
+<p>Docs: the README art shows <code>saml</code> as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in <code>site/screenshots/</code> itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of &quot;later&quot; from a photo taken before the driver shipped. The gallery alt text and <code>site/README.md</code> say the same.</p>
+</li>
+<li>
+<p>Changed: the pipeline pins every Preflight CI component to 0.3.0 (<a rel="noopener" href="mailto:preflight@0.3.0">preflight@0.3.0</a>); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.</p>
+</li>
+<li>
+<p>Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).</p>
+</li>
+<li>
+<p>Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.</p>
+</li>
+<li>
+<p>Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with <code>graceSeconds: 0</code>, what is logged after it).</p>
+</li>
+<li>
+<p>Fixed: the pipeline's PROCTOR jobs no longer pass <code>--policy</code>, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.</p>
+</li>
+<li>
+<p>Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).</p>
+</li>
+<li>
+<p>Changed: the front page's deploy layer (<code>deploy/</code>) runs Squire's kit 0.6.0 (was 0.5.0): <code>scripts/release.sh</code> asks PROCTOR's deploy gate for a go or no-go on each release (a report, not a stop, unless <code>SQUIRE_PROCTOR=enforce</code>), and <code>.env.squire.example</code> lists the new setting. The layer's pins move to HELMET <code>^0.4</code> (locked 0.4.0) and PROCTOR <code>^0.7</code> (locked 0.7.0).</p>
+</li>
+<li>
+<p>Docs: the Docker commands in the README and docs mount the shared <code>stack-composer-cache</code> volume, so Composer downloads are cached between runs.</p>
+</li>
+<li>
+<p>Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.</p>
+</li>
+<li>
+<p>Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's <code>cas-to-sesame</code> hop writes today, <code>waynestate/sesame:^0.4</code> (they said <code>^0.3</code>), and point at the 0.5.0 upgrade steps to take after the hop.</p>
+</li>
+<li>
+<p>Added: the <code>saml</code> driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on <code>onelogin/php-saml</code> (suggested, not required; the choice is in <code>docs/saml-library-choice.md</code>) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the <code>ReturnTo</code> rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the <code>SameSite=Lax</code> session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends <code>ForceAuthn</code>; logout is local.</p>
+</li>
+<li>
+<p>Added: <code>config/sesame.php</code>'s <code>saml</code> block and the <code>SESAME_SAML_*</code> settings; the Laravel adapter's <code>POST /login/saml/acs</code> (<code>sesame.saml.acs</code>) and <code>GET /login/saml/metadata</code> (<code>sesame.saml.metadata</code>) routes, outside the <code>web</code> group; the raw-PHP <code>sesame_saml_acs()</code> and <code>sesame_saml_metadata()</code>; <code>sesame_login()</code> treats <code>saml_handle</code> as a ticket.</p>
+</li>
+<li>
+<p>Security: SESAME-22: <code>composer.json</code> conflicts with <code>onelogin/php-saml</code> below 4.3.2 and <code>robrichards/xmlseclibs</code> below 3.1.5, the saml driver refuses them at boot, and a test fails when the installed versions are below that floor.</p>
+</li>
+<li>
+<p>Tests: a fixture IdP signs responses at runtime with a committed TEST-ONLY key pair (<code>tests/fixtures/saml</code>), with negative tests for unsigned, wrongly signed, tampered, wrong audience, issuer, destination and recipient, expired, replayed, unsolicited, SHA-1, DOCTYPE, wrapping and second-signature responses.</p>
+</li>
+<li>
+<p>Docs: &quot;The saml driver (SAML 2.0 sign-in)&quot; guide and &quot;The saml driver's library choice&quot;; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to <code>Enforced</code>.</p>
+</li>
+<li>
+<p>Changed: CI caches Composer downloads per lock file (<code>.composer-cache</code>, keyed on <code>composer.lock</code> and <code>deploy/composer.lock</code>), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.</p>
+</li>
 </ul>
 <h2 id="0-5-0-2026-11-07">[0.5.0] - 2026-11-07<a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></h2>
 <ul>

@@ -74,6 +74,10 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_MFA_ON_FAILURE | What the `sesame.mfa` middleware does when the check fails: `deny` answers 403, `reauth` sends the user back to the login route | `deny` | config/sesame.php |
 | SESAME_OAUTH2_AUDIENCE | The audience claim the token must carry (for Entra, the app's client id) | none | config/sesame.php |
 | SESAME_OAUTH2_IDENTITY_CLAIM | The claim the username comes from: `preferred_username` or `accessid` | `preferred_username` | config/sesame.php |
+| SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS | How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`; zero disables the cache | `60` | config/sesame.php |
+| SESAME_OAUTH2_INTROSPECTION_CLIENT_ID | The client id sent as HTTP Basic auth to the introspection endpoint; required when the introspection URL is set | none | config/sesame.php |
+| SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET | The client secret sent as HTTP Basic auth to the introspection endpoint; read from the environment only, never logged; required when the introspection URL is set | none | config/sesame.php |
+| SESAME_OAUTH2_INTROSPECTION_URL | The RFC 7662 token introspection endpoint for opaque bearer tokens; leave unset to keep the oauth2 driver JWT-only | none | config/sesame.php |
 | SESAME_OAUTH2_ISSUER | The issuer of the JWT bearer tokens (Microsoft Entra ID first: the tenant's v2.0 endpoints) | none (Playbook supplies the WSU value) | config/sesame.php |
 | SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS | How long the fetched key set is kept, in seconds; refetched at most once a minute for an unknown key id | `3600` | config/sesame.php |
 | SESAME_OAUTH2_JWKS_STORE | The cache store the key set is kept in | none (the app's default cache store) | config/sesame.php |
