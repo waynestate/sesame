@@ -10,6 +10,22 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
+
+**Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (SESAME-22), so an app that already has an older copy of either cannot take 0.6 until it updates them.
+
+**Deprecated.** Nothing is deprecated in this release.
+
+**Steps.**
+
+1. Update the package (and, if Composer reports the conflict above, the SAML libraries with it):
+   ```
+   composer require waynestate/sesame:^0.6
+   ```
+2. Optional: turn on what is new. The `saml` driver is in the README driver table; introspection for opaque OAuth2 tokens is `oauth2.introspection_url` (env `SESAME_OAUTH2_INTROSPECTION_URL`).
+
+**How to verify.** Sign in and out once with the driver the app uses; both work as before.
+
 ## 0.5.0 (2026-11-07)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-5-0-2026-11-07)
 
 **Breaking.** The `cas` driver now binds each sign-in to the browser that started it: before the redirect to CAS it stores a pending-login marker in the app's session, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF. Two consequences for apps on the `cas` driver:

@@ -85,6 +85,6 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.5.0, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.6.0, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.

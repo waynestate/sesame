@@ -1882,6 +1882,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### \[0.6.0\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-0-2026-11-08)
+
 - Added: CI runs Preflight's a11y component (0.3.1) on site/, every page in light and dark at 320 and 1280 px with the WCAG 1.4.10 reflow check, blocking.
 - Changed: CI pins the Preflight components to 0.3.1 (fixed cache keys, and caches saved even when a job fails; D-072).
 - Changed: CI saves its Composer and npm caches even when a job fails, so a retry after a dropped download fetches only what is missing (D-072).
@@ -3994,7 +3996,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.5.0, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.6.0, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5385,6 +5387,22 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
+
+**Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (SESAME-22), so an app that already has an older copy of either cannot take 0.6 until it updates them.
+
+**Deprecated.** Nothing is deprecated in this release.
+
+**Steps.**
+
+1. Update the package (and, if Composer reports the conflict above, the SAML libraries with it):
+   ```
+   composer require waynestate/sesame:^0.6
+   ```
+2. Optional: turn on what is new. The `saml` driver is in the README driver table; introspection for opaque OAuth2 tokens is `oauth2.introspection_url` (env `SESAME_OAUTH2_INTROSPECTION_URL`).
+
+**How to verify.** Sign in and out once with the driver the app uses; both work as before.
 
 ### 0.5.0 (2026-11-07)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-5-0-2026-11-07)
 
