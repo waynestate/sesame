@@ -33,8 +33,7 @@ final class SesameController
 {
     public function __construct(
         private readonly Application $app,
-    ) {
-    }
+    ) {}
 
     /**
      * GET /login and, for the oidc driver, GET /login/callback.
