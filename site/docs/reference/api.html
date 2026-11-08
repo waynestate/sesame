@@ -191,7 +191,7 @@ interface RemembersReturnTo
     public function invalidate(): void;
 }
 </code></pre>
-<p><code>Waynestate\Sesame\Session\NativeSession</code> is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (<code>session_start()</code>), and hardening the session cookie is HELMET's job. It reads and writes <code>$_SESSION</code> on a session that is already active, and throws <code>LogicException</code> when it is not. <code>invalidate()</code> is the one operation that retires the session: it clears the data, expires the cookie on the client, and destroys the session, so a stolen ID is dead after logout.</p>
+<p><code>Waynestate\Sesame\Session\NativeSession</code> is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (<code>session_start()</code>), and hardening the session cookie is HELMET's job. It reads and writes <code>$_SESSION</code> on a session that is already active, and throws <code>LogicException</code> when it is not. <code>invalidate()</code> is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.</p>
 <h3 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h3>
 <p>The one rule that decides whether an identity's MFA is still good. <code>final class Mfa</code>:</p>
 <pre tabindex="0"><code class="language-php">public const MFA_METHODS = ['mfa', 'otp', 'hwk', 'swk', 'fido', 'sms', 'pop'];

@@ -56,7 +56,7 @@
 <h2 id="after-the-grace">After the grace<a class="docs-heading-link" aria-label="Link to this section" href="#after-the-grace">#</a></h2>
 <p>A use of the old ID after the grace is treated as a possible hijack: the session is retired, a clean one starts, and <code>sesame.session_anomaly</code> is logged as a warning with <code>reason</code> <code>destroyed_session_reused</code> when a logger is set. The log carries no session ID or session data.</p>
 <h2 id="not-covered">Not covered<a class="docs-heading-link" aria-label="Link to this section" href="#not-covered">#</a></h2>
-<p>The Laravel adapter uses the framework's own regenerate and is unchanged. Logout still deletes the session at once (S7).</p>
+<p>The Laravel adapter uses the framework's own regenerate and is unchanged. Logout is a separate path: <code>invalidate()</code> retires the session, leaving a short-lived logout marker in the store by default (S7).</p>
 <h2 id="tests">Tests<a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></h2>
 <p><code>NativeSessionTest</code> covers the behavior:</p>
 <ul>

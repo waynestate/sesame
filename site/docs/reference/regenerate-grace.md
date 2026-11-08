@@ -28,7 +28,7 @@ A use of the old ID after the grace is treated as a possible hijack: the session
 
 ## Not covered[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#not-covered)
 
-The Laravel adapter uses the framework's own regenerate and is unchanged. Logout still deletes the session at once (S7).
+The Laravel adapter uses the framework's own regenerate and is unchanged. Logout is a separate path: `invalidate()` retires the session, leaving a short-lived logout marker in the store by default (S7).
 
 ## Tests[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#tests)
 

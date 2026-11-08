@@ -18,7 +18,7 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 | --- | --- | --- |
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
-| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
+| `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
 
 ## How the clocks are checked[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#how-the-clocks-are-checked)
 
@@ -30,9 +30,7 @@ On login the session ID is regenerated. For the native PHP session the old ID is
 
 ## Logout reuse window[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#logout-reuse-window)
 
-When `invalidate()` destroys a session, the ID is remembered for the reuse window, 60 seconds by default (the `logoutReuseTtlSeconds` option of `new NativeSession()`, `0` turns the check off). A request that presents that ID inside the window is not revived: the session is retired, a fresh empty one starts, and `sesame.session_anomaly` is logged once per reuse with `reason` `logged_out_session_reused`. Past the window the ID is forgotten, and a request carrying it gets an ordinary fresh session.
-
-By default the remembering lives in process memory, so each worker remembers its own logouts. Pass a shared guard, such as a PSR-16-backed `ReplayGuard`, to the constructor to share it between workers.
+When `invalidate()` retires a session it leaves a "logged out at" marker in the session store itself, under the same ID. The marker lives in the store, not in process memory, so no extra cache is needed and every worker sees the same marker. A later request that presents that ID is not revived: the marked session is retired, a fresh empty one starts, and while the reuse window lasts (60 seconds by default, the `logoutReuseTtlSeconds` option of `new NativeSession()`) the reuse is logged once with `reason` `logged_out_session_reused`. Past the window the marked session is still retired, just not logged. Pass `logoutReuseTtlSeconds: 0` to turn the check off: the session is destroyed outright on logout, the old behavior.
 
 ## In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#in-laravel)
 

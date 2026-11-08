@@ -370,7 +370,7 @@ authentication event through it:
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a destroyed session ID presented again inside the reuse window; see [Session timeouts](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a logged-out session ID presented again inside the reuse window; see [Session timeouts](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
@@ -1030,22 +1030,23 @@ spot the first time anything asks who is signed in.
 |---|---|---|
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
-| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
+| `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
 
 On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live
 session. A session made before the timeouts existed (a user, no timestamps)
 counts as expired.
 
-The native session adds a third clock for logouts. When `invalidate()`
-destroys a session, the ID is remembered for the reuse window, 60 seconds by
-default (the `logoutReuseTtlSeconds` option of `new NativeSession()`, `0`
-turns the check off). A request that presents that ID inside the window is
-not revived: the session is retired, a fresh empty one starts, and
-`sesame.session_anomaly` is logged once per reuse with `reason`
-`logged_out_session_reused`. Past the window the ID is forgotten. By default
-the remembering lives in process memory, so pass a shared guard, such as a
-PSR-16-backed `ReplayGuard`, to the constructor to share it between workers.
+The native session adds a third clock for logouts. When `invalidate()` retires
+a session it leaves a "logged out at" marker in the session store itself, under
+the same ID, so no extra cache is needed and every worker sees the same
+marker. A later request that presents that ID is not revived: the marked
+session is retired, a fresh empty one starts, and while the reuse window lasts
+(60 seconds by default, the `logoutReuseTtlSeconds` option of
+`new NativeSession()`) the reuse is logged once with `reason`
+`logged_out_session_reused`. Past the window the marked session is still
+retired, just not logged. Pass `logoutReuseTtlSeconds: 0` to turn the check
+off: the session is destroyed outright on logout, the old behavior.
 
 In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and
 `SESAME_SESSION_ABSOLUTE_MINUTES`.
@@ -1865,7 +1866,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
-- Added: the native session remembers the ID `invalidate()` destroys for a short window (the `logoutReuseTtlSeconds` option of `new NativeSession()`, 60 seconds by default, `0` turns it off); a request that presents that ID inside the window logs `sesame.session_anomaly` with `reason` `logged_out_session_reused` once per reuse and gets a fresh empty session (BEST_PRACTICES S27).
+- Added: the native session leaves a "logged out at" marker in the session store when `invalidate()` retires a session (the `logoutReuseTtlSeconds` option of `new NativeSession()` sets the window, 60 seconds by default, `0` destroys the session outright instead); a request that presents that ID gets a fresh empty session, and while the marker is inside the window it logs `sesame.session_anomaly` with `reason` `logged_out_session_reused` once per reuse (BEST_PRACTICES S27).
 - Docs: the README art shows `saml` as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in `site/screenshots/` itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of "later" from a photo taken before the driver shipped. The gallery alt text and `site/README.md` say the same.
 - Changed: the pipeline pins every Preflight CI component to 0.3.0 ([preflight@0.3.0](mailto:preflight@0.3.0)); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.
 - Fixed: the Vue adapter's logout() sends Laravel's CSRF token as \_token (from , or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
@@ -3575,7 +3576,7 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 | --- | --- | --- |
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
-| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
+| `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
 
 ### How the clocks are checked[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#how-the-clocks-are-checked)
 
@@ -3587,9 +3588,7 @@ On login the session ID is regenerated. For the native PHP session the old ID is
 
 ### Logout reuse window[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#logout-reuse-window)
 
-When `invalidate()` destroys a session, the ID is remembered for the reuse window, 60 seconds by default (the `logoutReuseTtlSeconds` option of `new NativeSession()`, `0` turns the check off). A request that presents that ID inside the window is not revived: the session is retired, a fresh empty one starts, and `sesame.session_anomaly` is logged once per reuse with `reason` `logged_out_session_reused`. Past the window the ID is forgotten, and a request carrying it gets an ordinary fresh session.
-
-By default the remembering lives in process memory, so each worker remembers its own logouts. Pass a shared guard, such as a PSR-16-backed `ReplayGuard`, to the constructor to share it between workers.
+When `invalidate()` retires a session it leaves a "logged out at" marker in the session store itself, under the same ID. The marker lives in the store, not in process memory, so no extra cache is needed and every worker sees the same marker. A later request that presents that ID is not revived: the marked session is retired, a fresh empty one starts, and while the reuse window lasts (60 seconds by default, the `logoutReuseTtlSeconds` option of `new NativeSession()`) the reuse is logged once with `reason` `logged_out_session_reused`. Past the window the marked session is still retired, just not logged. Pass `logoutReuseTtlSeconds: 0` to turn the check off: the session is destroyed outright on logout, the old behavior.
 
 ### In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#in-laravel)
 
@@ -4242,7 +4241,7 @@ interface SessionPort
 }
 ```
 
-`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. `invalidate()` is the one operation that retires the session: it clears the data, expires the cookie on the client, and destroys the session, so a stolen ID is dead after logout.
+`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.
 
 #### MFA[#](https://sesame.apps.wayne.edu/docs/reference/api.html#mfa)
 
@@ -4964,7 +4963,7 @@ A use of the old ID after the grace is treated as a possible hijack: the session
 
 ### Not covered[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#not-covered)
 
-The Laravel adapter uses the framework's own regenerate and is unchanged. Logout still deletes the session at once (S7).
+The Laravel adapter uses the framework's own regenerate and is unchanged. Logout is a separate path: `invalidate()` retires the session, leaving a short-lived logout marker in the store by default (S7).
 
 ### Tests[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#tests)
 

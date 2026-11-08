@@ -191,7 +191,7 @@ interface SessionPort
 }
 ```
 
-`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. `invalidate()` is the one operation that retires the session: it clears the data, expires the cookie on the client, and destroys the session, so a stolen ID is dead after logout.
+`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.
 
 ### MFA
 

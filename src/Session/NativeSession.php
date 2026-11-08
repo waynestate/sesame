@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Session;
 
-use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -13,8 +12,6 @@ use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Waynestate\Sesame\Clock\SystemClock;
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
-use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\SessionPort;
 
 /**
@@ -23,8 +20,8 @@ use Waynestate\Sesame\SessionPort;
  * This class never starts a session and never sets cookie flags. Starting the
  * session is the app's job (`session_start()`), and hardening the session
  * cookie is HELMET's job. It reads and writes `$_SESSION` on a session that
- * is already active. `invalidate()` is the one operation that retires the
- * session: it clears the data, expires the cookie on the client, and destroys
+ * is already active. `invalidate()` is the one operation that ends the
+ * session: it clears the data, expires the cookie on the client, and retires
  * the session, so a stolen ID is dead after logout.
  *
  * `regenerate()` does not delete the old session at once. It marks the old
@@ -37,30 +34,28 @@ use Waynestate\Sesame\SessionPort;
  * is set. Pass `graceSeconds: 0` to restore the old behavior, where the old
  * session is deleted at once.
  *
- * `invalidate()` also remembers the ID it destroyed for a short window (60
- * seconds by default, the logout-reuse TTL). A request that presents that ID
- * within the window is talking to a session that no longer exists: the
- * anomaly is logged with the reason `logged_out_session_reused`, the session
- * is retired, and a clean one is started, so the caller sees an empty
- * session and the old ID stays dead. Past the window the ID is forgotten,
- * and a request carrying it gets an ordinary fresh session. The remembering
- * uses the same replay-guard pattern as the gateway driver: an in-memory
- * guard by default, or any other guard passed in, such as a PSR-16-backed
- * one, which is what makes the memory shared between workers in production.
- * Pass `logoutReuseTtlSeconds: 0` to turn the check off.
+ * `invalidate()` also leaves a short-lived trace of the logout in the
+ * session store itself. With the default window (60 seconds, the
+ * logout-reuse TTL) the store keeps only a "logged out at" marker under the
+ * same ID, so no extra cache is needed and every worker sees the same
+ * marker. A later request that presents that ID reads the marker back:
+ * within the window the reuse is logged with the reason
+ * `logged_out_session_reused`; past the window (or with a marker that is
+ * not an int) it is not. Either way the marked session is over: it is
+ * cleared, destroyed, and a clean one is started, so the caller sees an
+ * empty session and the old ID stays dead. Pass
+ * `logoutReuseTtlSeconds: 0` to turn the check off: the session is
+ * destroyed outright, the old behavior.
  */
 final class NativeSession implements SessionPort
 {
     private bool $checked = false;
-
-    private readonly ReplayGuard $reuseGuard;
 
     public function __construct(
         private readonly int $graceSeconds = 60,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?ClockInterface $clock = null,
         private readonly int $logoutReuseTtlSeconds = 60,
-        ?ReplayGuard $reuseGuard = null,
     ) {
         if ($this->graceSeconds < 0) {
             throw new InvalidArgumentException('The grace period cannot be negative.');
@@ -69,10 +64,6 @@ final class NativeSession implements SessionPort
         if ($this->logoutReuseTtlSeconds < 0) {
             throw new InvalidArgumentException('The logout reuse window cannot be negative.');
         }
-
-        // Leeway is zero on purpose: the record must live exactly as long as
-        // the configured window, no more.
-        $this->reuseGuard = $reuseGuard ?? new InMemoryReplayGuard(0, $this->clock ?? new SystemClock());
     }
 
     public function regenerate(): void
@@ -123,21 +114,18 @@ final class NativeSession implements SessionPort
     }
 
     /**
-     * Clear the data, expire the cookie, and destroy the session.
+     * Clear the data, expire the cookie, and retire the session.
      *
-     * The data is cleared, the session cookie is expired on the client, and
-     * the session is destroyed, so a stolen ID is dead after logout and the
-     * client stops sending the cookie. The destroyed ID is also remembered
-     * for the logout-reuse window, so a request that presents it soon after
-     * is logged as an anomaly (see the class documentation).
+     * The data is cleared and the session cookie is expired on the client,
+     * so a stolen ID is dead after logout and the client stops sending the
+     * cookie. With the default window the store keeps only a "logged out
+     * at" marker under the same ID, so a later request that presents it
+     * can be logged as an anomaly (see the class documentation). With a
+     * zero window the session is destroyed outright, the old behavior.
      */
     public function invalidate(): void
     {
         $this->requireActive();
-
-        // Captured before the destroy: once the session is gone, PHP no
-        // longer vouches for the ID.
-        $retiredId = session_id();
 
         $_SESSION = [];
 
@@ -161,36 +149,18 @@ final class NativeSession implements SessionPort
             ],
         );
 
-        session_destroy();
+        if ($this->logoutReuseTtlSeconds === 0) {
+            session_destroy();
 
-        if ($retiredId !== false) {
-            $this->rememberRetiredId($retiredId);
-        }
-    }
-
-    /**
-     * Remember the ID that invalidate() just destroyed, for the reuse window.
-     *
-     * The record is best effort, like Sesame's logging: a broken guard must
-     * not change what the caller sees after logout, so an error is dropped.
-     * With a zero window there is nothing to remember, and seen() reports
-     * whether the ID was already remembered (it should not be), which the
-     * call ignores on purpose.
-     */
-    private function rememberRetiredId(string $id): void
-    {
-        if ($this->logoutReuseTtlSeconds === 0 || $id === '') {
             return;
         }
 
-        try {
-            $this->reuseGuard->seen(
-                $id,
-                $this->now()->add(new DateInterval('PT' . $this->logoutReuseTtlSeconds . 'S')),
-            );
-        } catch (\Throwable) {
-            // Best effort: a broken guard must not break logout.
-        }
+        // The tombstone goes into the store itself, under the same ID: the
+        // next request presenting this ID reads it back, no shared cache
+        // needed. Writing closes the session, which is what makes the
+        // marker durable.
+        $_SESSION = ['sesame.logged_out_at' => (int) $this->now()->format('U')];
+        session_write_close();
     }
 
     private function requireActive(): void
@@ -206,7 +176,7 @@ final class NativeSession implements SessionPort
         $this->checked = true;
 
         $this->rejectExpiredOldSession();
-        $this->rejectLoggedOutSessionReuse();
+        $this->rejectLoggedOutSession();
     }
 
     /**
@@ -244,49 +214,35 @@ final class NativeSession implements SessionPort
     }
 
     /**
-     * Retire a request that presents a recently invalidated session ID.
+     * Retire a session that still carries the logout tombstone.
      *
-     * invalidate() remembers the ID it destroyed for the logout-reuse
-     * window. While the window lasts, a request carrying that ID is talking
-     * to a session that no longer exists: the anomaly is logged, the
-     * session is retired, and a clean one is started, so the caller sees an
-     * empty session and the old ID stays dead. Past the window the ID is
-     * forgotten, and the request gets an ordinary fresh session.
+     * invalidate() leaves a "logged out at" marker in the store, under the
+     * same ID, for the logout-reuse window. A request presenting that ID
+     * reads the marker back: within the window the reuse is logged as an
+     * anomaly, past it (or with a marker that is not an int) it is not.
+     * Either way the marker means the session is over: it is cleared,
+     * destroyed, and a clean one is started, so the caller sees an empty
+     * session and the old ID is dead.
      */
-    private function rejectLoggedOutSessionReuse(): void
+    private function rejectLoggedOutSession(): void
     {
-        if ($this->logoutReuseTtlSeconds === 0) {
+        $loggedOutAt = $_SESSION['sesame.logged_out_at'] ?? null;
+
+        if ($loggedOutAt === null) {
             return;
         }
 
-        $id = session_id();
+        $withinWindow = is_int($loggedOutAt)
+            && ((int) $this->now()->format('U') - $loggedOutAt) <= $this->logoutReuseTtlSeconds;
 
-        if ($id === false || $id === '' || ! $this->isRetiredId($id)) {
-            return;
+        if ($withinWindow) {
+            $this->logAnomaly('logged_out_session_reused');
         }
-
-        $this->logAnomaly('logged_out_session_reused');
 
         $_SESSION = [];
         session_destroy();
         session_id($this->createId());
         session_start();
-    }
-
-    /**
-     * Whether the guard still remembers the given ID as recently invalidated.
-     *
-     * The lookup is best effort, like Sesame's logging: a broken cache must
-     * not change what the caller sees, so an error reads as "not
-     * remembered".
-     */
-    private function isRetiredId(string $id): bool
-    {
-        try {
-            return $this->reuseGuard->has($id);
-        } catch (\Throwable) {
-            return false;
-        }
     }
 
     /**

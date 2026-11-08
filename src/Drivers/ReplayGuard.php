@@ -30,14 +30,4 @@ interface ReplayGuard
      * jti that is already recorded is left as it is, and true is returned.
      */
     public function seen(string $jti, DateTimeImmutable $expiresAt): bool;
-
-    /**
-     * Whether the given jti is still inside its recorded lifetime.
-     *
-     * Unlike seen(), this is a plain lookup: nothing is recorded, and an
-     * unknown or expired jti simply reads as false. Callers that only want
-     * to ask "is this one remembered?" use has() so that asking does not
-     * turn an ordinary first sight into a record.
-     */
-    public function has(string $jti): bool;
 }

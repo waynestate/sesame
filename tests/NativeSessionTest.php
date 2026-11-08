@@ -10,7 +10,7 @@ use Waynestate\Sesame\Session\NativeSession;
 
 final class NativeSessionTest extends TestCase
 {
-    public function testInvalidateDestroysTheSession(): void
+    public function testInvalidateLeavesOnlyAMarkerInTheStore(): void
     {
         $body = <<<'PHP'
 use Waynestate\Sesame\Session\NativeSession;
@@ -30,6 +30,45 @@ $session->invalidate();
 
 $result = [
     'status' => session_status(),
+    'keys' => array_keys($_SESSION),
+    'markerIsInt' => is_int($_SESSION['sesame.logged_out_at'] ?? null),
+    'keptTheId' => session_id() === $oldId,
+    'oldFileExists' => file_exists($savePath.'/sess_'.$oldId),
+];
+echo json_encode($result);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame(1, $result['status'], 'The session should be closed (PHP_SESSION_NONE).');
+        self::assertSame(['sesame.logged_out_at'], $result['keys'], 'The store should hold only the logout marker.');
+        self::assertTrue($result['markerIsInt'], 'The marker should be an int unix time.');
+        self::assertTrue($result['keptTheId'], 'The session ID should be kept so the marker is findable under it.');
+        self::assertTrue($result['oldFileExists'], 'The session file should still exist, holding the marker.');
+    }
+
+    public function testInvalidateWithAZeroTtlDestroysTheSessionAtOnce(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-native-zero-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_TEST_ZERO');
+session_start();
+$_SESSION['test'] = 'value';
+$oldId = session_id();
+
+$session = new NativeSession(60, null, null, 0);
+$session->invalidate();
+
+$result = [
+    'status' => session_status(),
     'sessionCount' => count($_SESSION),
     'oldFileExists' => file_exists($savePath.'/sess_'.$oldId),
 ];
@@ -42,7 +81,7 @@ PHP;
         self::assertIsArray($result, 'Child output was not JSON: ' . $output);
         self::assertSame(1, $result['status'], 'The session should be destroyed (PHP_SESSION_NONE).');
         self::assertSame(0, $result['sessionCount'], 'The session data should be cleared.');
-        self::assertFalse($result['oldFileExists'], 'The old session file should be gone.');
+        self::assertFalse($result['oldFileExists'], 'With a zero window the old session file should be gone.');
     }
 
     public function testRegenerateKeepsTheOldSessionDuringTheGrace(): void
@@ -305,7 +344,6 @@ PHP;
     public function testAReusedLoggedOutSessionIsLoggedOnceAndRetired(): void
     {
         $body = <<<'PHP'
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Tests\Support\ArrayLogger;
 use Waynestate\Sesame\Tests\Support\FakeClock;
@@ -320,19 +358,16 @@ session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
 
-// One guard shared by both requests, the way a PSR-16 cache would be in
-// production: the in-memory one lives only as long as this process does.
 $clock = new FakeClock();
 $logger = new ArrayLogger();
-$guard = new InMemoryReplayGuard(0, $clock);
-$session = new NativeSession(60, $logger, $clock, 60, $guard);
+$session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
 
 // A later request arrives with the dead ID, 30 seconds into the window.
 $clock->advance(30);
 session_id($oldId);
 session_start();
-$later = new NativeSession(60, $logger, $clock, 60, $guard);
+$later = new NativeSession(60, $logger, $clock);
 $user = $later->get('user');
 
 $record = $logger->records[0] ?? null;
@@ -369,7 +404,6 @@ PHP;
     public function testAReusedLoggedOutSessionPastTheWindowIsNotLogged(): void
     {
         $body = <<<'PHP'
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Tests\Support\ArrayLogger;
 use Waynestate\Sesame\Tests\Support\FakeClock;
@@ -386,23 +420,21 @@ $oldId = session_id();
 
 $clock = new FakeClock();
 $logger = new ArrayLogger();
-$guard = new InMemoryReplayGuard(0, $clock);
-$session = new NativeSession(60, $logger, $clock, 60, $guard);
+$session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
 
 // A later request arrives with the dead ID, 90 seconds on: past the window.
 $clock->advance(90);
 session_id($oldId);
 session_start();
-$later = new NativeSession(60, $logger, $clock, 60, $guard);
+$later = new NativeSession(60, $logger, $clock);
 $user = $later->get('user');
 
 $result = [
     'user' => $user,
     'status' => session_status(),
-    'keptTheOldId' => session_id() === $oldId,
+    'retiredToANewId' => session_id() !== $oldId,
     'recordCount' => count($logger->records),
-    'guardForgetsIt' => ! $guard->has($oldId),
 ];
 echo json_encode($result);
 PHP;
@@ -413,15 +445,13 @@ PHP;
         self::assertIsArray($result, 'Child output was not JSON: ' . $output);
         self::assertNull($result['user'], 'The old session data is gone either way.');
         self::assertSame(2, $result['status'], 'A fresh session should be active (PHP_SESSION_ACTIVE).');
-        self::assertTrue($result['keptTheOldId'], 'Past the window the ID is forgotten, and the request gets an ordinary session under it.');
+        self::assertTrue($result['retiredToANewId'], 'A marked session is always retired, even past the window.');
         self::assertSame(0, $result['recordCount'], 'No anomaly should be logged past the window.');
-        self::assertTrue($result['guardForgetsIt'], 'The guard should have expired the record.');
     }
 
     public function testAThrowingLoggerDoesNotChangeWhatTheCallerSees(): void
     {
         $body = <<<'PHP'
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\ThrowingLogger;
@@ -438,15 +468,14 @@ $oldId = session_id();
 
 $clock = new FakeClock();
 $logger = new ThrowingLogger();
-$guard = new InMemoryReplayGuard(0, $clock);
-$session = new NativeSession(60, $logger, $clock, 60, $guard);
+$session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
 
 // A later request arrives with the dead ID, inside the window.
 $clock->advance(30);
 session_id($oldId);
 session_start();
-$later = new NativeSession(60, $logger, $clock, 60, $guard);
+$later = new NativeSession(60, $logger, $clock);
 $user = $later->get('user');
 
 $result = [
@@ -471,7 +500,6 @@ PHP;
     public function testAFreshSessionIdIsUnaffectedByTheReuseCheck(): void
     {
         $body = <<<'PHP'
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Tests\Support\ArrayLogger;
 use Waynestate\Sesame\Tests\Support\FakeClock;
@@ -488,8 +516,7 @@ $id = session_id();
 
 $clock = new FakeClock();
 $logger = new ArrayLogger();
-$guard = new InMemoryReplayGuard(0, $clock);
-$session = new NativeSession(60, $logger, $clock, 60, $guard);
+$session = new NativeSession(60, $logger, $clock);
 $session->put('count', 1);
 session_write_close();
 
@@ -497,7 +524,7 @@ session_write_close();
 $clock->advance(30);
 session_id($id);
 session_start();
-$later = new NativeSession(60, $logger, $clock, 60, $guard);
+$later = new NativeSession(60, $logger, $clock);
 $user = $later->get('user');
 
 $result = [
@@ -524,7 +551,6 @@ PHP;
     public function testZeroTtlDisablesTheReuseCheck(): void
     {
         $body = <<<'PHP'
-use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Tests\Support\ArrayLogger;
 use Waynestate\Sesame\Tests\Support\FakeClock;
@@ -541,8 +567,7 @@ $oldId = session_id();
 
 $clock = new FakeClock();
 $logger = new ArrayLogger();
-$guard = new InMemoryReplayGuard(0, $clock);
-$session = new NativeSession(60, $logger, $clock, 0, $guard);
+$session = new NativeSession(60, $logger, $clock, 0);
 $session->invalidate();
 
 // A later request arrives with the dead ID, where the window would have
@@ -550,7 +575,7 @@ $session->invalidate();
 $clock->advance(30);
 session_id($oldId);
 session_start();
-$later = new NativeSession(60, $logger, $clock, 0, $guard);
+$later = new NativeSession(60, $logger, $clock, 0);
 $user = $later->get('user');
 
 $result = [
@@ -558,7 +583,6 @@ $result = [
     'status' => session_status(),
     'keptTheOldId' => session_id() === $oldId,
     'recordCount' => count($logger->records),
-    'guardRemembersIt' => $guard->has($oldId),
 ];
 echo json_encode($result);
 PHP;
@@ -571,7 +595,6 @@ PHP;
         self::assertSame(2, $result['status'], 'A fresh session should be active (PHP_SESSION_ACTIVE).');
         self::assertTrue($result['keptTheOldId'], 'With the check off the request gets an ordinary session under the ID.');
         self::assertSame(0, $result['recordCount'], 'No anomaly should be logged with the check off.');
-        self::assertFalse($result['guardRemembersIt'], 'Nothing should be remembered with a zero window.');
     }
 
     /**
