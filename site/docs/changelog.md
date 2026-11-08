@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed: the docs menu closes with Escape and hands focus back to its button (docs kit synced from Squire).
+- Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.
+- Changed: the deploy layer requires PROCTOR ^0.8 (locked 0.8.0).
 - Added: the native session leaves a "logged out at" marker in the session store when `invalidate()` retires a session (the `logoutReuseTtlSeconds` option of `new NativeSession()` sets the window, 60 seconds by default, `0` destroys the session outright instead); a request that presents that ID gets a fresh empty session, and while the marker is inside the window it logs `sesame.session_anomaly` with `reason` `logged_out_session_reused` once per reuse (BEST_PRACTICES S27).
 - Docs: the README art shows `saml` as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in `site/screenshots/` itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of "later" from a photo taken before the driver shipped. The gallery alt text and `site/README.md` say the same.
 - Changed: the pipeline pins every Preflight CI component to 0.3.0 ([preflight@0.3.0](mailto:preflight@0.3.0)); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.
