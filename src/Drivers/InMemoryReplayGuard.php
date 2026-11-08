@@ -63,4 +63,17 @@ final class InMemoryReplayGuard implements ReplayGuard
 
         return false;
     }
+
+    public function has(string $jti): bool
+    {
+        $now = $this->clock->now()->getTimestamp();
+
+        foreach ($this->records as $key => $recordedUntil) {
+            if ($recordedUntil <= $now) {
+                unset($this->records[$key]);
+            }
+        }
+
+        return isset($this->records[hash('sha256', $jti)]);
+    }
 }

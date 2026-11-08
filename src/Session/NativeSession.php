@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Session;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -12,6 +13,8 @@ use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Waynestate\Sesame\Clock\SystemClock;
+use Waynestate\Sesame\Drivers\InMemoryReplayGuard;
+use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\SessionPort;
 
 /**
@@ -33,19 +36,43 @@ use Waynestate\Sesame\SessionPort;
  * started, and `sesame.session_anomaly` is logged as a warning when a logger
  * is set. Pass `graceSeconds: 0` to restore the old behavior, where the old
  * session is deleted at once.
+ *
+ * `invalidate()` also remembers the ID it destroyed for a short window (60
+ * seconds by default, the logout-reuse TTL). A request that presents that ID
+ * within the window is talking to a session that no longer exists: the
+ * anomaly is logged with the reason `logged_out_session_reused`, the session
+ * is retired, and a clean one is started, so the caller sees an empty
+ * session and the old ID stays dead. Past the window the ID is forgotten,
+ * and a request carrying it gets an ordinary fresh session. The remembering
+ * uses the same replay-guard pattern as the gateway driver: an in-memory
+ * guard by default, or any other guard passed in, such as a PSR-16-backed
+ * one, which is what makes the memory shared between workers in production.
+ * Pass `logoutReuseTtlSeconds: 0` to turn the check off.
  */
 final class NativeSession implements SessionPort
 {
     private bool $checked = false;
 
+    private readonly ReplayGuard $reuseGuard;
+
     public function __construct(
         private readonly int $graceSeconds = 60,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?ClockInterface $clock = null,
+        private readonly int $logoutReuseTtlSeconds = 60,
+        ?ReplayGuard $reuseGuard = null,
     ) {
         if ($this->graceSeconds < 0) {
             throw new InvalidArgumentException('The grace period cannot be negative.');
         }
+
+        if ($this->logoutReuseTtlSeconds < 0) {
+            throw new InvalidArgumentException('The logout reuse window cannot be negative.');
+        }
+
+        // Leeway is zero on purpose: the record must live exactly as long as
+        // the configured window, no more.
+        $this->reuseGuard = $reuseGuard ?? new InMemoryReplayGuard(0, $this->clock ?? new SystemClock());
     }
 
     public function regenerate(): void
@@ -100,11 +127,17 @@ final class NativeSession implements SessionPort
      *
      * The data is cleared, the session cookie is expired on the client, and
      * the session is destroyed, so a stolen ID is dead after logout and the
-     * client stops sending the cookie.
+     * client stops sending the cookie. The destroyed ID is also remembered
+     * for the logout-reuse window, so a request that presents it soon after
+     * is logged as an anomaly (see the class documentation).
      */
     public function invalidate(): void
     {
         $this->requireActive();
+
+        // Captured before the destroy: once the session is gone, PHP no
+        // longer vouches for the ID.
+        $retiredId = session_id();
 
         $_SESSION = [];
 
@@ -129,6 +162,33 @@ final class NativeSession implements SessionPort
         );
 
         session_destroy();
+
+        $this->rememberRetiredId($retiredId);
+    }
+
+    /**
+     * Remember the ID that invalidate() just destroyed, for the reuse window.
+     *
+     * The record is best effort, like Sesame's logging: a broken guard must
+     * not change what the caller sees after logout, so an error is dropped.
+     * With a zero window there is nothing to remember, and seen() reports
+     * whether the ID was already remembered (it should not be), which the
+     * call ignores on purpose.
+     */
+    private function rememberRetiredId(string $id): void
+    {
+        if ($this->logoutReuseTtlSeconds === 0 || $id === '') {
+            return;
+        }
+
+        try {
+            $this->reuseGuard->seen(
+                $id,
+                $this->now()->add(new DateInterval('PT' . $this->logoutReuseTtlSeconds . 'S')),
+            );
+        } catch (\Throwable) {
+            // Best effort: a broken guard must not break logout.
+        }
     }
 
     private function requireActive(): void
@@ -144,6 +204,7 @@ final class NativeSession implements SessionPort
         $this->checked = true;
 
         $this->rejectExpiredOldSession();
+        $this->rejectLoggedOutSessionReuse();
     }
 
     /**
@@ -172,12 +233,58 @@ final class NativeSession implements SessionPort
             return;
         }
 
-        $this->logAnomaly();
+        $this->logAnomaly('destroyed_session_reused');
 
         $_SESSION = [];
         session_destroy();
         session_id($this->createId());
         session_start();
+    }
+
+    /**
+     * Retire a request that presents a recently invalidated session ID.
+     *
+     * invalidate() remembers the ID it destroyed for the logout-reuse
+     * window. While the window lasts, a request carrying that ID is talking
+     * to a session that no longer exists: the anomaly is logged, the
+     * session is retired, and a clean one is started, so the caller sees an
+     * empty session and the old ID stays dead. Past the window the ID is
+     * forgotten, and the request gets an ordinary fresh session.
+     */
+    private function rejectLoggedOutSessionReuse(): void
+    {
+        if ($this->logoutReuseTtlSeconds === 0) {
+            return;
+        }
+
+        $id = session_id();
+
+        if ($id === '' || ! $this->isRetiredId($id)) {
+            return;
+        }
+
+        $this->logAnomaly('logged_out_session_reused');
+
+        $_SESSION = [];
+        session_destroy();
+        session_id($this->createId());
+        session_start();
+    }
+
+    /**
+     * Whether the guard still remembers the given ID as recently invalidated.
+     *
+     * The lookup is best effort, like Sesame's logging: a broken cache must
+     * not change what the caller sees, so an error reads as "not
+     * remembered".
+     */
+    private function isRetiredId(string $id): bool
+    {
+        try {
+            return $this->reuseGuard->has($id);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -189,7 +296,7 @@ final class NativeSession implements SessionPort
      * like Sesame's logging: a broken logger must not change what the
      * caller sees.
      */
-    private function logAnomaly(): void
+    private function logAnomaly(string $reason): void
     {
         if ($this->logger === null) {
             return;
@@ -201,7 +308,7 @@ final class NativeSession implements SessionPort
                 'sesame.session_anomaly',
                 [
                     'event' => 'session_anomaly',
-                    'reason' => 'destroyed_session_reused',
+                    'reason' => $reason,
                     'at' => $this->now()->setTimezone(new DateTimeZone('UTC'))->format(DateTimeInterface::ATOM),
                 ],
             );

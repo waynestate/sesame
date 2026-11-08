@@ -69,4 +69,11 @@ final class Psr16ReplayGuard implements ReplayGuard
 
         return false;
     }
+
+    public function has(string $jti): bool
+    {
+        // The leeway was already folded into the entry's lifetime when seen()
+        // wrote it, so a plain lookup is the whole check.
+        return $this->cache->has(self::KEY_PREFIX . hash('sha256', $jti));
+    }
 }
