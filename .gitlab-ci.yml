@@ -33,6 +33,13 @@ variables:
       prefix: composer
     paths: [.cache/composer/]
 
+.npm-cache:
+  cache:
+    key:
+      files: [vue/package-lock.json]
+      prefix: npm
+    paths: [.cache/npm/]
+
 wayneui-copies:
   extends: .composer-cache
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/composer:2.10.3
@@ -46,3 +53,16 @@ composer-ci:
   script:
     - composer install --no-interaction --no-progress --prefer-dist
     - composer ci
+
+# The Vue adapter's own tests and type check. Multi-arch image, pinned by its
+# list digest (the runner is arm64).
+vue:
+  extends: .npm-cache
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:22.21.1-alpine3.22@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+  script:
+    - cd vue
+    - npm ci --no-audit --no-fund
+    - npm test
+    - npm run typecheck

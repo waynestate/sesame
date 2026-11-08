@@ -42,6 +42,8 @@ export interface UseSesameOptions {
   statusUrl?: string;
   /** Where the sign-out form posts. Default: /logout. */
   logoutUrl?: string;
+  /** Laravel's CSRF token for the sign-out form. Default: the content of <meta name="csrf-token">, if the page has one. */
+  csrfToken?: string | null;
   /** Fetch implementation. Default: globalThis.fetch. Injected in tests. */
   fetch?: typeof globalThis.fetch;
   /** Current time in milliseconds. Default: () => Date.now(). Injected in tests. */
@@ -166,6 +168,22 @@ export function useSesame(options: UseSesameOptions = {}): UseSesame {
     token.name = 'sesame_logout_token';
     token.value = answer.logoutToken;
     form.append(token);
+    // Read at click time, not when useSesame() ran: the meta tag may have
+    // appeared since, and Laravel's CSRF check wants the session's current
+    // token. The option wins over the meta tag; null means "no _token".
+    const csrfToken =
+      typeof options.csrfToken === 'string'
+        ? options.csrfToken
+        : options.csrfToken === null
+          ? null
+          : document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? null;
+    if (csrfToken !== null && csrfToken !== '') {
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = '_token';
+      csrfInput.value = csrfToken;
+      form.append(csrfInput);
+    }
     document.body.append(form);
     form.submit();
   }

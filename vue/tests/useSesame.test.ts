@@ -134,6 +134,68 @@ describe('useSesame', () => {
     submitSpy.mockRestore();
   });
 
+  it('logout adds _token from the csrf-token meta tag', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'csrf-token';
+    meta.content = 'meta-abc';
+    document.head.append(meta);
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+    const fetchMock = vi.fn(async () => jsonResponse(signedInFixture, 200));
+    const sesame = useSesame({ fetch: fetchMock, now: () => INSIDE_WINDOW });
+
+    await vi.waitFor(() => expect(sesame.loading.value).toBe(false));
+    sesame.logout();
+
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+    const form = document.querySelector('form');
+    expect(form).not.toBeNull();
+    const csrf = form?.querySelector<HTMLInputElement>('input[name="_token"]');
+    expect(csrf).not.toBeNull();
+    expect(csrf?.value).toBe('meta-abc');
+    const token = form?.querySelector<HTMLInputElement>('input[name="sesame_logout_token"]');
+    expect(token).not.toBeNull();
+    expect(token?.value).toBe('3f7a1c9e8b2d4a6f');
+    meta.remove();
+    submitSpy.mockRestore();
+  });
+
+  it('logout uses the csrfToken option over the meta tag', async () => {
+    const meta = document.createElement('meta');
+    meta.name = 'csrf-token';
+    meta.content = 'meta-abc';
+    document.head.append(meta);
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+    const fetchMock = vi.fn(async () => jsonResponse(signedInFixture, 200));
+    const sesame = useSesame({ fetch: fetchMock, now: () => INSIDE_WINDOW, csrfToken: 'opt-xyz' });
+
+    await vi.waitFor(() => expect(sesame.loading.value).toBe(false));
+    sesame.logout();
+
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+    const form = document.querySelector('form');
+    expect(form).not.toBeNull();
+    const csrf = form?.querySelector<HTMLInputElement>('input[name="_token"]');
+    expect(csrf).not.toBeNull();
+    expect(csrf?.value).toBe('opt-xyz');
+    meta.remove();
+    submitSpy.mockRestore();
+  });
+
+  it('logout sends no _token without a meta tag or option', async () => {
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+    const fetchMock = vi.fn(async () => jsonResponse(signedInFixture, 200));
+    const sesame = useSesame({ fetch: fetchMock, now: () => INSIDE_WINDOW });
+
+    await vi.waitFor(() => expect(sesame.loading.value).toBe(false));
+    sesame.logout();
+
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+    const form = document.querySelector('form');
+    expect(form).not.toBeNull();
+    expect(form?.querySelector('input[name="_token"]')).toBeNull();
+    submitSpy.mockRestore();
+  });
+
   it('does nothing when no one is signed in', async () => {
     const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
     const fetchMock = vi.fn(async () => jsonResponse(signedOutFixture, 401));

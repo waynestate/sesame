@@ -45,8 +45,10 @@ status; call it when the user performs a real action, never on a timer.
 `logout()` posts the sign-out form and leaves the page.
 
 Prefer not to use the plugin? Call `useSesame(options?)` directly in any
-`setup()`. Options: `statusUrl` (default `/sesame/status`) and `logoutUrl`
-(default `/logout`), plus `fetch` and `now` overrides for tests.
+`setup()`. Options: `statusUrl` (default `/sesame/status`), `logoutUrl`
+(default `/logout`), `csrfToken` (default: the content of
+`<meta name="csrf-token">`, if the page has one), plus `fetch` and `now`
+overrides for tests. In Laravel, put `<meta name="csrf-token" content="{{ csrf_token() }}">` in the layout (for Inertia, `resources/views/app.blade.php`) so the sign-out form passes Laravel's CSRF check.
 
 ## Why there is no polling
 
