@@ -163,7 +163,9 @@ final class NativeSession implements SessionPort
 
         session_destroy();
 
-        $this->rememberRetiredId($retiredId);
+        if ($retiredId !== false) {
+            $this->rememberRetiredId($retiredId);
+        }
     }
 
     /**
@@ -259,7 +261,7 @@ final class NativeSession implements SessionPort
 
         $id = session_id();
 
-        if ($id === '' || ! $this->isRetiredId($id)) {
+        if ($id === false || $id === '' || ! $this->isRetiredId($id)) {
             return;
         }
 
