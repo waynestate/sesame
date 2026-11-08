@@ -270,25 +270,17 @@ final class OAuth2Driver implements Driver
             throw new AuthenticationFailed('The token introspection answer is too large (oauth2.introspection_unavailable).');
         }
 
-        $decoded = json_decode($body, true);
+        $decoded = json_decode($body);
 
-        if (! is_array($decoded)) {
+        if (! $decoded instanceof \stdClass) {
             throw new AuthenticationFailed('The token introspection answer is not usable JSON (oauth2.introspection_unavailable).');
         }
 
-        if (($decoded['active'] ?? false) !== true) {
+        if (($decoded->active ?? false) !== true) {
             throw new AuthenticationFailed('The token is not active (oauth2.inactive).');
         }
 
-        $claims = new \stdClass();
-
-        foreach ($decoded as $name => $value) {
-            if (is_string($name) && $name !== '') {
-                $claims->{$name} = $value;
-            }
-        }
-
-        return $claims;
+        return $decoded;
     }
 
     /**
