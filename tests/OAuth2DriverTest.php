@@ -8,6 +8,7 @@ use Closure;
 use Firebase\JWT\JWT;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Waynestate\Sesame\Authenticated;
@@ -647,7 +648,7 @@ final class OAuth2DriverTest extends TestCase
         );
 
         $body = [];
-        self::assertTrue(parse_str((string) $request->getBody(), $body));
+        parse_str((string) $request->getBody(), $body);
         self::assertSame(['token' => 'opaque-token-1', 'token_type_hint' => 'access_token'], $body);
     }
 
@@ -819,7 +820,7 @@ final class OAuth2DriverTest extends TestCase
         self::assertInstanceOf(Authenticated::class, $second);
 
         self::assertCount(1, $this->http->requests);
-        self::assertSame($first->identity->authenticatedAt, $second->identity->authenticatedAt);
+        self::assertSame($first->identity->authenticatedAt->getTimestamp(), $second->identity->authenticatedAt->getTimestamp());
     }
 
     public function testAnIntrospectionAnswerIsRefetchedAfterItsTtlExpires(): void
