@@ -150,6 +150,13 @@ return [
     | unknown key id. jwks_store names the cache store the key set is kept
     | in (null uses the app's default store).
     |
+    | introspection_url enables RFC 7662 token introspection for opaque
+    | bearer tokens; JWTs still verify locally. When it is set, the
+    | introspection client id and client secret are required. Accepted
+    | answers are kept for introspection_cache_ttl_seconds (default 60,
+    | maximum 300; zero disables the cache). The URL must be https, except
+    | http://localhost and http://127.0.0.1 for tests.
+    |
     */
 
     'oauth2' => [
@@ -165,6 +172,12 @@ return [
         // Off by default: Microsoft Entra v2 tokens are typed JWT, so an
         // RFC 9068 typ check would refuse them.
         'require_at_jwt' => env('SESAME_OAUTH2_REQUIRE_AT_JWT', false),
+        // Token introspection for opaque bearer tokens (RFC 7662). Leave
+        // unset for JWT-only sign-in, such as Microsoft Entra ID.
+        'introspection_url' => env('SESAME_OAUTH2_INTROSPECTION_URL'),
+        'introspection_client_id' => env('SESAME_OAUTH2_INTROSPECTION_CLIENT_ID'),
+        'introspection_client_secret' => Setting::env('SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET'),
+        'introspection_cache_ttl_seconds' => env('SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS', 60),
     ],
 
     /*

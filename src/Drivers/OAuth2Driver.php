@@ -47,6 +47,15 @@ use Waynestate\Sesame\LoginStep;
  * There is no redirect step and no logout on the provider side: the token
  * arrives with the request, and signing out is the app's own session being
  * dropped.
+ *
+ * Opaque bearer tokens (tokens that are not three-part JWTs) can be checked
+ * against an RFC 7662 introspection endpoint when one is configured. The
+ * request carries the token as a form field and authenticates with the
+ * configured client id and secret. Only a 200 answer whose JSON says
+ * active === true is accepted, and the same issuer, audience, expiry and
+ * not-before rules apply to the claims the endpoint returns. Accepted
+ * answers are cached briefly under a hash of the token; the token itself is
+ * never cached or logged.
  */
 final class OAuth2Driver implements Driver
 {
@@ -67,11 +76,39 @@ final class OAuth2Driver implements Driver
      */
     private const ATTRIBUTE_CLAIMS = ['email', 'name'];
 
+    /**
+     * The largest introspection body accepted, in bytes; real answers are a
+     * few hundred bytes.
+     */
+    private const MAX_INTROSPECTION_BODY_BYTES = 65536;
+
     private readonly JwksProvider $jwks;
 
     private readonly ClockInterface $clock;
 
     private readonly bool $requireAtJwt;
+
+    private readonly ClientInterface $http;
+
+    private readonly RequestFactoryInterface $requests;
+
+    private readonly ?string $introspectionUrl;
+
+    private readonly ?string $introspectionClientId;
+
+    private readonly ?string $introspectionClientSecret;
+
+    private readonly int $introspectionCacheTtlSeconds;
+
+    private readonly ?CacheInterface $introspectionCache;
+
+    /**
+     * The in-process fallback for accepted introspection answers, used only
+     * when no PSR-16 cache is passed.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $introspectionMemory = [];
 
     /**
      * @param  non-empty-string  $issuer  The expected issuer (iss claim).
@@ -80,6 +117,11 @@ final class OAuth2Driver implements Driver
      * @param  list<string>  $requiredRoles  The roles the token's roles claim must include.
      * @param  int  $jwksCacheTtlSeconds  How long the fetched key set stays usable, in seconds.
      * @param  bool  $requireAtJwt  When true, the token's typ header must be an RFC 9068 access token type (at+jwt or application/at+jwt). Off by default because Microsoft Entra v2 tokens are typed JWT.
+     * @param  string|null  $introspectionUrl  The RFC 7662 token introspection endpoint for opaque bearer tokens, or null to keep the driver JWT-only.
+     * @param  string|null  $introspectionClientId  The client id for the introspection request, sent as HTTP Basic auth.
+     * @param  string|null  $introspectionClientSecret  The client secret for the introspection request, sent as HTTP Basic auth.
+     * @param  int  $introspectionCacheTtlSeconds  How long an accepted introspection answer stays usable, in seconds, capped by the token's exp. Zero disables the cache.
+     * @param  CacheInterface|null  $introspectionCache  The PSR-16 cache for accepted introspection answers; without one, an in-process array is used.
      */
     public function __construct(
         private readonly string $issuer,
@@ -95,10 +137,22 @@ final class OAuth2Driver implements Driver
         int $jwksCacheTtlSeconds,
         ?ClockInterface $clock = null,
         bool $requireAtJwt = false,
+        ?string $introspectionUrl = null,
+        ?string $introspectionClientId = null,
+        #[\SensitiveParameter] ?string $introspectionClientSecret = null,
+        int $introspectionCacheTtlSeconds = 60,
+        ?CacheInterface $introspectionCache = null,
     ) {
         $this->requireAtJwt = $requireAtJwt;
         $this->clock = $clock ?? new SystemClock();
         $this->jwks = new JwksProvider($http, $requests, $jwksCache, $this->clock, $jwksUrl, $jwksCacheTtlSeconds);
+        $this->http = $http;
+        $this->requests = $requests;
+        $this->introspectionUrl = $introspectionUrl;
+        $this->introspectionClientId = $introspectionClientId;
+        $this->introspectionClientSecret = $introspectionClientSecret;
+        $this->introspectionCacheTtlSeconds = $introspectionCacheTtlSeconds;
+        $this->introspectionCache = $introspectionCache;
     }
 
     public function name(): string
@@ -109,6 +163,11 @@ final class OAuth2Driver implements Driver
     public function login(ServerRequestInterface $request): LoginStep
     {
         $token = $this->readToken($request);
+
+        if (! $this->isJwt($token)) {
+            return $this->introspect($token);
+        }
+
         $kid = $this->assertHeader($token);
 
         $key = $this->jwks->keyFor($kid);
@@ -133,6 +192,332 @@ final class OAuth2Driver implements Driver
     public function serviceUrl(): ?string
     {
         return null;
+    }
+
+    /**
+     * Whether the token has the three dot-separated parts of a JWT.
+     *
+     * This is the routing test, not a validation: a three-part token goes to
+     * the local JWT path, where its header and signature are checked, and a
+     * shorter token is treated as opaque and sent to introspection (or
+     * refused when no endpoint is configured).
+     */
+    private function isJwt(string $token): bool
+    {
+        return count(explode('.', $token)) === 3;
+    }
+
+    /**
+     * An opaque bearer token, checked against the configured introspection
+     * endpoint (RFC 7662), with the accepted answer cached briefly under a
+     * hash of the token.
+     */
+    private function introspect(string $token): Authenticated
+    {
+        $key = $this->introspectionKey($token);
+        $cached = $this->introspectionCacheGet($key);
+
+        if ($cached !== null) {
+            return new Authenticated($this->identityFromPayload($cached));
+        }
+
+        $claims = $this->fetchIntrospection($token);
+        $this->assertIntrospectionClaims($claims);
+        $identity = $this->introspectionIdentity($claims);
+
+        $this->storeIntrospection($key, $identity, $claims->exp ?? null);
+
+        return new Authenticated($identity);
+    }
+
+    /**
+     * The introspection answer's claims, as an object.
+     *
+     * Only a 200 answer whose JSON body is an object with active === true is
+     * usable. Anything else fails closed: the token is refused, and the raw
+     * token never appears in the message.
+     */
+    private function fetchIntrospection(string $token): object
+    {
+        if ($this->introspectionUrl === null || $this->introspectionClientId === null || $this->introspectionClientSecret === null) {
+            throw new AuthenticationFailed('The access token is not a valid JWT (oauth2.invalid_jwt).');
+        }
+
+        try {
+            $request = $this->requests->createRequest('POST', $this->introspectionUrl)
+                ->withHeader('Accept', 'application/json')
+                ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+                ->withHeader('Authorization', 'Basic ' . base64_encode($this->introspectionClientId . ':' . $this->introspectionClientSecret))
+                ->withBody($this->requests->createStream(http_build_query([
+                    'token' => $token,
+                    'token_type_hint' => 'access_token',
+                ])));
+
+            $response = $this->http->sendRequest($request);
+        } catch (\Throwable) {
+            throw new AuthenticationFailed('The token introspection endpoint could not be reached (oauth2.introspection_unavailable).');
+        }
+
+        $status = $response->getStatusCode();
+
+        if ($status !== 200) {
+            throw new AuthenticationFailed(sprintf('The token introspection endpoint answered %d, not 200 (oauth2.introspection_unavailable).', $status));
+        }
+
+        $body = (string) $response->getBody();
+
+        if (strlen($body) > self::MAX_INTROSPECTION_BODY_BYTES) {
+            throw new AuthenticationFailed('The token introspection answer is too large (oauth2.introspection_unavailable).');
+        }
+
+        $decoded = json_decode($body, true);
+
+        if (! is_array($decoded)) {
+            throw new AuthenticationFailed('The token introspection answer is not usable JSON (oauth2.introspection_unavailable).');
+        }
+
+        if (($decoded['active'] ?? false) !== true) {
+            throw new AuthenticationFailed('The token is not active (oauth2.inactive).');
+        }
+
+        $claims = new \stdClass();
+
+        foreach ($decoded as $name => $value) {
+            if (is_string($name) && $name !== '') {
+                $claims->{$name} = $value;
+            }
+        }
+
+        return $claims;
+    }
+
+    /**
+     * The claim checks for an introspection answer: expiry, not-before,
+     * issuer and audience, each applied when the claim is present.
+     */
+    private function assertIntrospectionClaims(object $claims): void
+    {
+        $now = $this->clock->now()->getTimestamp();
+        $leeway = $this->leewaySeconds;
+
+        $exp = $claims->exp ?? null;
+
+        if (is_numeric($exp) && ((int) $exp + $leeway) < $now) {
+            throw new AuthenticationFailed('The access token has expired (oauth2.expired).');
+        }
+
+        $nbf = $claims->nbf ?? null;
+
+        if (is_numeric($nbf) && ((int) $nbf - $leeway) > $now) {
+            throw new AuthenticationFailed('The access token is not valid yet (oauth2.not_yet_valid).');
+        }
+
+        $iss = $claims->iss ?? null;
+
+        if ($iss !== null && (! is_string($iss) || $iss !== $this->issuer)) {
+            throw new AuthenticationFailed('The access token issuer does not match (oauth2.issuer).');
+        }
+
+        $aud = $claims->aud ?? null;
+
+        if ($aud !== null && ! self::audienceMatches($aud, $this->audience)) {
+            throw new AuthenticationFailed('The access token audience does not match (oauth2.audience).');
+        }
+    }
+
+    /**
+     * The identity from an accepted introspection answer, with the username
+     * from the configured claim or from sub when that claim is absent.
+     */
+    private function introspectionIdentity(object $claims): Identity
+    {
+        $values = (array) $claims;
+        $username = $values[$this->identityClaim] ?? null;
+
+        if ((! is_string($username) || $username === '') && isset($values['sub'])) {
+            $username = $values['sub'];
+        }
+
+        if (! is_string($username) || $username === '') {
+            throw new AuthenticationFailed('The introspection answer has no usable username or "sub" claim (oauth2.missing_claim).');
+        }
+
+        return new Identity(
+            $username,
+            $this->attributes($claims),
+            $this->name(),
+            $this->clock->now(),
+            $this->authTime($claims),
+            $this->amr($claims),
+        );
+    }
+
+    /**
+     * The cached introspection payload for this token, or null when there is
+     * none, it is expired, or the cache cannot be read.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function introspectionCacheGet(string $key): ?array
+    {
+        if ($this->introspectionCache !== null) {
+            try {
+                $value = $this->introspectionCache->get($key);
+            } catch (\Throwable) {
+                return null;
+            }
+
+            return is_array($value) ? $value : null;
+        }
+
+        $value = $this->introspectionMemory[$key] ?? null;
+
+        if (! is_array($value)) {
+            return null;
+        }
+
+        if (isset($value['expires_at']) && is_int($value['expires_at']) && $value['expires_at'] <= $this->clock->now()->getTimestamp()) {
+            unset($this->introspectionMemory[$key]);
+
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Keep an accepted introspection answer in the cache, for the shorter of
+     * the configured TTL and the token's remaining life. Rejections are
+     * never cached.
+     *
+     * @param mixed $exp
+     */
+    private function storeIntrospection(string $key, Identity $identity, mixed $exp): void
+    {
+        $now = $this->clock->now()->getTimestamp();
+        $ttl = $this->introspectionCacheTtlSeconds;
+
+        if ($ttl <= 0) {
+            return;
+        }
+
+        if (is_numeric($exp)) {
+            $ttl = min($ttl, (int) $exp - $now);
+        }
+
+        if ($ttl <= 0) {
+            return;
+        }
+
+        $payload = [
+            'username' => $identity->username,
+            'attributes' => $identity->attributes,
+            'driver' => $identity->driver,
+            'authenticated_at' => $identity->authenticatedAt->getTimestamp(),
+            'auth_time' => $identity->authTime?->getTimestamp(),
+            'amr' => $identity->amr,
+            'expires_at' => $now + $ttl,
+        ];
+
+        if ($this->introspectionCache !== null) {
+            try {
+                $this->introspectionCache->set($key, $payload, $ttl);
+            } catch (\Throwable) {
+                // A broken cache is not a reason to fail the sign-in.
+            }
+
+            return;
+        }
+
+        $this->introspectionMemory[$key] = $payload;
+    }
+
+    /**
+     * The identity rebuilt from a cached introspection payload.
+     *
+     * The original authenticatedAt is kept, so a cached answer still says
+     * when the person actually signed in.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function identityFromPayload(array $payload): Identity
+    {
+        $username = $payload['username'] ?? null;
+        $rawAttributes = $payload['attributes'] ?? [];
+        $driver = $payload['driver'] ?? null;
+        $authenticatedAt = $payload['authenticated_at'] ?? null;
+        $authTime = $payload['auth_time'] ?? null;
+        $rawAmr = $payload['amr'] ?? [];
+
+        if (! is_string($username) || $username === '') {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        if (! is_array($rawAttributes)) {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        $attributes = [];
+
+        foreach ($rawAttributes as $name => $values) {
+            if (! is_string($name) || $name === '' || ! is_array($values)) {
+                throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+            }
+
+            $list = [];
+
+            foreach ($values as $value) {
+                if (! is_string($value) || $value === '') {
+                    throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+                }
+
+                $list[] = $value;
+            }
+
+            $attributes[$name] = $list;
+        }
+
+        if (! is_string($driver) || $driver !== $this->name()) {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        if (! is_int($authenticatedAt)) {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        if ($authTime !== null && ! is_int($authTime)) {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        if (! is_array($rawAmr)) {
+            throw new AuthenticationFailed('The cached introspection answer is unusable (oauth2.introspection_unavailable).');
+        }
+
+        $amr = [];
+
+        foreach ($rawAmr as $method) {
+            if (is_string($method) && $method !== '') {
+                $amr[] = $method;
+            }
+        }
+
+        return new Identity(
+            $username,
+            $attributes,
+            $driver,
+            new DateTimeImmutable('@' . $authenticatedAt),
+            $authTime === null ? null : new DateTimeImmutable('@' . $authTime),
+            $amr,
+        );
+    }
+
+    /**
+     * The cache key for an introspection answer: a hash of the token, never
+     * the token itself.
+     */
+    private function introspectionKey(string $token): string
+    {
+        return 'sesame.oauth2.introspection.' . hash('sha256', $token);
     }
 
     /**

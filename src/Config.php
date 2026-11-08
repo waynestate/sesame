@@ -40,10 +40,18 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * token's roles claim must include), `oauth2.identity_claim` (default
  * `preferred_username`, only `preferred_username` or `accessid`),
  * `oauth2.jwks_cache_ttl_seconds` (default `3600`, a positive integer, at most
- * `86400`: how long the fetched key set stays usable) and
- * `oauth2.require_at_jwt` (default `false`, a boolean: require the token's
- * typ header to be an RFC 9068 access token type; off by default because
- * Microsoft Entra v2 tokens are typed JWT). The `oidc` driver
+ * `86400`: how long the fetched key set stays usable),
+ * `oauth2.introspection_url` (default `null`, an https URL to an RFC 7662
+ * token introspection endpoint; when set, opaque bearer tokens are checked
+ * there and JWTs still verify locally), `oauth2.introspection_client_id`
+ * (required when `oauth2.introspection_url` is set),
+ * `oauth2.introspection_client_secret` (required when
+ * `oauth2.introspection_url` is set) and
+ * `oauth2.introspection_cache_ttl_seconds` (default `60`, a non-negative
+ * integer, at most `300`). The `oauth2.require_at_jwt` key (default `false`,
+ * a boolean) requires the token's typ header to be an RFC 9068 access token
+ * type; it is off by default because Microsoft Entra v2 tokens are typed
+ * JWT. The `oidc` driver
  * reads the `oidc` block into an OidcOptions (see that class for the keys;
  * `oidc.issuer`, `oidc.client_id`, `oidc.client_secret` and
  * `oidc.redirect_uri` are required, and the secret falls back to the
@@ -114,6 +122,10 @@ final readonly class Config
         public ?array $gatewayPublicKeys = null,
         public ?string $gatewayJwksFile = null,
         public ?SamlOptions $saml = null,
+        public ?string $oauth2IntrospectionUrl = null,
+        public ?string $oauth2IntrospectionClientId = null,
+        #[\SensitiveParameter] public ?string $oauth2IntrospectionClientSecret = null,
+        public int $oauth2IntrospectionCacheTtlSeconds = 60,
     ) {}
 
     /**
@@ -162,6 +174,10 @@ final readonly class Config
         $oauth2IdentityClaim = 'preferred_username';
         $oauth2JwksCacheTtlSeconds = 3600;
         $oauth2RequireAtJwt = false;
+        $oauth2IntrospectionUrl = null;
+        $oauth2IntrospectionClientId = null;
+        $oauth2IntrospectionClientSecret = null;
+        $oauth2IntrospectionCacheTtlSeconds = 60;
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
@@ -296,6 +312,34 @@ final readonly class Config
             if ($oauth2JwksCacheTtlSeconds > 86400) {
                 throw new InvalidConfig('The config key "oauth2.jwks_cache_ttl_seconds" must be at most 86400.');
             }
+
+            // Token introspection for opaque bearer tokens (RFC 7662). JWTs
+            // still verify locally; the endpoint is only consulted for
+            // tokens that are not three-part JWTs.
+            $oauth2IntrospectionUrlRaw = $config['oauth2']['introspection_url'] ?? null;
+
+            if ($oauth2IntrospectionUrlRaw !== null) {
+                if (! is_string($oauth2IntrospectionUrlRaw) || trim($oauth2IntrospectionUrlRaw) === '') {
+                    throw new InvalidConfig('The config key "oauth2.introspection_url" must be a non-empty string.');
+                }
+
+                $oauth2IntrospectionUrl = trim($oauth2IntrospectionUrlRaw);
+
+                if (! self::isAllowedIntrospectionUrl($oauth2IntrospectionUrl)) {
+                    throw new InvalidConfig(
+                        'The config key "oauth2.introspection_url" must be an https:// URL (http://localhost and http://127.0.0.1 are allowed for tests).',
+                    );
+                }
+
+                $oauth2IntrospectionClientId = self::requiredString($config, 'oauth2.introspection_client_id');
+                $oauth2IntrospectionClientSecret = self::requiredString($config, 'oauth2.introspection_client_secret');
+            }
+
+            $oauth2IntrospectionCacheTtlSeconds = self::optionalNonNegativeInt($config, 'oauth2.introspection_cache_ttl_seconds', 60);
+
+            if ($oauth2IntrospectionCacheTtlSeconds > 300) {
+                throw new InvalidConfig('The config key "oauth2.introspection_cache_ttl_seconds" must be at most 300.');
+            }
         }
 
         $oidc = null;
@@ -367,6 +411,10 @@ final readonly class Config
             $gatewayPublicKeys,
             $gatewayJwksFile,
             $saml,
+            $oauth2IntrospectionUrl,
+            $oauth2IntrospectionClientId,
+            $oauth2IntrospectionClientSecret,
+            $oauth2IntrospectionCacheTtlSeconds,
         );
     }
 
@@ -536,5 +584,27 @@ final readonly class Config
         }
 
         return $value;
+    }
+
+    /**
+     * Whether an introspection URL is allowed: https everywhere, plus
+     * http://localhost and http://127.0.0.1 for tests.
+     */
+    private static function isAllowedIntrospectionUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            return false;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        $host = strtolower($parts['host']);
+
+        if ($scheme === 'https') {
+            return true;
+        }
+
+        return $scheme === 'http' && in_array($host, ['localhost', '127.0.0.1'], true);
     }
 }

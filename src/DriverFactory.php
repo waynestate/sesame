@@ -112,6 +112,11 @@ final class DriverFactory
                 $config->oauth2JwksCacheTtlSeconds,
                 $clock,
                 $config->oauth2RequireAtJwt,
+                $config->oauth2IntrospectionUrl,
+                $config->oauth2IntrospectionClientId,
+                $config->oauth2IntrospectionClientSecret,
+                $config->oauth2IntrospectionCacheTtlSeconds,
+                self::requiredJwksCache($jwksCache),
             ),
             'oidc' => new OidcDriver(
                 $config->oidc ?? throw new InvalidConfig('The oidc driver needs the "oidc" config block.'),

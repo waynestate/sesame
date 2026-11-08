@@ -36,6 +36,12 @@ final class OAuth2DriverTest extends TestCase
 
     private const KID_B = 'test-key-b';
 
+    private const INTROSPECTION_URL = 'https://login.example.com/introspect';
+
+    private const INTROSPECTION_CLIENT_ID = 'test-client';
+
+    private const INTROSPECTION_CLIENT_SECRET = 'test-secret';
+
     /**
      * The locally generated key pairs, memoized by name.
      *
@@ -609,6 +615,282 @@ final class OAuth2DriverTest extends TestCase
         }
     }
 
+    public function testAnActiveOpaqueTokenSignsTheUserIn(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $step = $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('jdoe', $step->identity->username);
+        self::assertSame('oauth2', $step->identity->driver);
+        self::assertSame($this->clock->now(), $step->identity->authenticatedAt);
+    }
+
+    public function testIntrospectionPostsTheTokenToTheConfiguredEndpoint(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertCount(1, $this->http->requests);
+        $request = $this->http->requests[0];
+        self::assertSame('POST', $request->getMethod());
+        self::assertSame(self::INTROSPECTION_URL, (string) $request->getUri());
+        self::assertSame('application/json', $request->getHeaderLine('Accept'));
+        self::assertSame('application/x-www-form-urlencoded', $request->getHeaderLine('Content-Type'));
+        self::assertSame(
+            'Basic ' . base64_encode(self::INTROSPECTION_CLIENT_ID . ':' . self::INTROSPECTION_CLIENT_SECRET),
+            $request->getHeaderLine('Authorization'),
+        );
+
+        $body = [];
+        self::assertTrue(parse_str((string) $request->getBody(), $body));
+        self::assertSame(['token' => 'opaque-token-1', 'token_type_hint' => 'access_token'], $body);
+    }
+
+    public function testAnOpaqueTokenFallsBackToSubForTheUsername(): void
+    {
+        $claims = $this->introspectionClaims();
+        unset($claims['preferred_username']);
+        $this->http->queue($this->introspectionResponse($claims));
+
+        $step = $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame('jdoe-sub', $step->identity->username);
+    }
+
+    public function testIntrospectionMapsEmailAndNameClaimsToAttributes(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims([
+            'email' => 'jdoe@example.com',
+            'name' => 'Jane Doe',
+        ])));
+
+        $step = $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame(['jdoe@example.com'], $step->identity->attributes['email']);
+        self::assertSame(['Jane Doe'], $step->identity->attributes['name']);
+    }
+
+    public function testIntrospectionReadsAuthTimeAndAmrClaims(): void
+    {
+        $authTime = $this->clock->now()->getTimestamp() - 300;
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims([
+            'auth_time' => $authTime,
+            'amr' => ['password', 'mfa'],
+        ])));
+
+        $step = $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertSame($authTime, $step->identity->authTime?->getTimestamp());
+        self::assertSame(['password', 'mfa'], $step->identity->amr);
+    }
+
+    public function testAnInactiveOpaqueTokenIsRejected(): void
+    {
+        $this->http->queue($this->introspectionResponse(['active' => false]));
+
+        $this->assertRejected('oauth2.inactive', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    public function testAnExpiredIntrospectionAnswerIsRejectedAndNotCached(): void
+    {
+        $claims = $this->introspectionClaims();
+        $claims['exp'] = $this->clock->now()->getTimestamp() - 3600;
+        $this->http->queue($this->introspectionResponse($claims));
+
+        $this->assertRejected('oauth2.expired', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+
+        self::assertSame([], $this->cache->keys());
+    }
+
+    public function testAWrongIssuerInAnIntrospectionAnswerIsRejected(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims([
+            'iss' => 'https://other.example.com/v2.0',
+        ])));
+
+        $this->assertRejected('oauth2.issuer', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    public function testAWrongAudienceInAnIntrospectionAnswerIsRejected(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims([
+            'aud' => 'wrong-audience',
+        ])));
+
+        $this->assertRejected('oauth2.audience', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    public function testAnIntrospectionAnswerWithoutAUsableUsernameIsRejected(): void
+    {
+        $claims = $this->introspectionClaims();
+        unset($claims['preferred_username'], $claims['sub']);
+        $this->http->queue($this->introspectionResponse($claims));
+
+        $this->assertRejected('oauth2.missing_claim', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    public function testATransportFailureDuringIntrospectionFailsClosed(): void
+    {
+        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+
+        self::assertCount(1, $this->http->requests);
+    }
+
+    public function testANonTwoHundredIntrospectionAnswerFailsClosed(): void
+    {
+        $this->http->queue(new Response(503, ['Content-Type' => 'application/json'], '{}'));
+
+        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    #[DataProvider('badIntrospectionBodies')]
+    public function testAnUnusableIntrospectionBodyFailsClosed(string $body): void
+    {
+        $this->http->queue(new Response(200, ['Content-Type' => 'application/json'], $body));
+
+        $this->assertRejected('oauth2.introspection_unavailable', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+    }
+
+    /**
+     * Introspection bodies that must be refused.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function badIntrospectionBodies(): array
+    {
+        return [
+            'a body that is not JSON' => ['not-json'],
+            'a body that is a JSON list' => ['[]'],
+            'an oversized body' => [str_repeat('a', 65537)],
+        ];
+    }
+
+    public function testAnOpaqueTokenIsRejectedWhenIntrospectionIsDisabled(): void
+    {
+        $this->assertRejected('oauth2.invalid_jwt', fn (): mixed => $this->driver()
+            ->login($this->requestWith('Bearer opaque-token-1')));
+
+        self::assertCount(0, $this->http->requests);
+    }
+
+    public function testAJwtStillVerifiesLocallyWhenIntrospectionIsConfigured(): void
+    {
+        [$privateKey, $jwk] = self::keyPair('a');
+        $this->http->queue($this->jwksResponse([self::withKid($jwk, self::KID_A)]));
+
+        $step = $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer ' . $this->token($privateKey)));
+
+        self::assertInstanceOf(Authenticated::class, $step);
+        self::assertCount(1, $this->http->requests);
+        self::assertSame(self::JWKS_URL, (string) $this->http->requests[0]->getUri());
+    }
+
+    public function testAnAcceptedIntrospectionAnswerIsCachedUntilItsTtlExpires(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+        $driver = $this->driver($this->introspectionConfig());
+
+        $first = $driver->login($this->requestWith('Bearer opaque-token-1'));
+        self::assertInstanceOf(Authenticated::class, $first);
+
+        $this->clock->advance(59);
+
+        $second = $driver->login($this->requestWith('Bearer opaque-token-1'));
+        self::assertInstanceOf(Authenticated::class, $second);
+
+        self::assertCount(1, $this->http->requests);
+        self::assertSame($first->identity->authenticatedAt, $second->identity->authenticatedAt);
+    }
+
+    public function testAnIntrospectionAnswerIsRefetchedAfterItsTtlExpires(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+        $driver = $this->driver($this->introspectionConfig());
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        $this->clock->advance(61);
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertCount(2, $this->http->requests);
+    }
+
+    public function testAnIntrospectionAnswerIsRefetchedWhenItsExpiryPassesFirst(): void
+    {
+        $claims = $this->introspectionClaims();
+        $claims['exp'] = $this->clock->now()->getTimestamp() + 30;
+        $this->http->queue($this->introspectionResponse($claims));
+        $driver = $this->driver($this->introspectionConfig());
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        $this->clock->advance(31);
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertCount(2, $this->http->requests);
+    }
+
+    public function testAZeroIntrospectionTtlNeverCaches(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+        $driver = $this->driver($this->introspectionConfig(['introspection_cache_ttl_seconds' => 0]));
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $driver->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertCount(2, $this->http->requests);
+    }
+
+    public function testAnIntrospectionCacheKeyDoesNotContainTheToken(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        $keys = $this->cache->keys();
+        self::assertCount(1, $keys);
+        self::assertStringStartsWith('sesame.oauth2.introspection.', $keys[0]);
+        self::assertStringNotContainsString('opaque-token-1', $keys[0]);
+    }
+
+    public function testARedjectedIntrospectionAnswerIsNotCached(): void
+    {
+        $this->http->queue($this->introspectionResponse(['active' => false]));
+
+        $this->assertRejected('oauth2.inactive', fn (): mixed => $this->driver($this->introspectionConfig())
+            ->login($this->requestWith('Bearer opaque-token-1')));
+
+        self::assertSame([], $this->cache->keys());
+    }
+
     /**
      * Run the attempt and assert it failed with an authentication error
      * carrying the given reason code.
@@ -657,6 +939,10 @@ final class OAuth2DriverTest extends TestCase
             'identity_claim' => 'preferred_username',
             'jwks_cache_ttl_seconds' => 3600,
             'require_at_jwt' => false,
+            'introspection_url' => null,
+            'introspection_client_id' => null,
+            'introspection_client_secret' => null,
+            'introspection_cache_ttl_seconds' => 60,
         ], $overrides);
 
         return new OAuth2Driver(
@@ -673,6 +959,11 @@ final class OAuth2DriverTest extends TestCase
             $config['jwks_cache_ttl_seconds'],
             $this->clock,
             $config['require_at_jwt'],
+            $config['introspection_url'],
+            $config['introspection_client_id'],
+            $config['introspection_client_secret'],
+            $config['introspection_cache_ttl_seconds'],
+            $this->cache,
         );
     }
 
@@ -745,6 +1036,52 @@ final class OAuth2DriverTest extends TestCase
     private function jwksResponse(array $keys): Response
     {
         return new Response(200, ['Content-Type' => 'application/json'], (string) json_encode(['keys' => $keys]));
+    }
+
+    /**
+     * Config overrides that switch the driver to an RFC 7662 endpoint.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function introspectionConfig(array $overrides = []): array
+    {
+        return array_merge([
+            'introspection_url' => self::INTROSPECTION_URL,
+            'introspection_client_id' => self::INTROSPECTION_CLIENT_ID,
+            'introspection_client_secret' => self::INTROSPECTION_CLIENT_SECRET,
+            'introspection_cache_ttl_seconds' => 60,
+        ], $overrides);
+    }
+
+    /**
+     * An accepted introspection answer, with any overrides merged in.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function introspectionClaims(array $overrides = []): array
+    {
+        $now = $this->clock->now()->getTimestamp();
+
+        return $overrides + [
+            'active' => true,
+            'iss' => self::ISSUER,
+            'aud' => self::AUDIENCE,
+            'exp' => $now + 3600,
+            'sub' => 'jdoe-sub',
+            'preferred_username' => 'jdoe',
+        ];
+    }
+
+    /**
+     * An introspection answer, as a JSON response.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function introspectionResponse(array $body, int $status = 200): Response
+    {
+        return new Response($status, ['Content-Type' => 'application/json'], (string) json_encode($body));
     }
 
     /**

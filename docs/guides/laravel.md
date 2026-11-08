@@ -47,6 +47,10 @@ Config keys (in `config/sesame.php`):
 | `oauth2.jwks_cache_ttl_seconds` | `SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS` | `3600` | How long the fetched key set is kept, in seconds. |
 | `oauth2.jwks_store` | `SESAME_OAUTH2_JWKS_STORE` | the app's default cache store | The cache store the key set is kept in (Laravel only). |
 | `oauth2.require_at_jwt` | `SESAME_OAUTH2_REQUIRE_AT_JWT` | `false` | Refuse a token whose `typ` header is not `at+jwt` (RFC 9068). Leave it off for Entra. |
+| `oauth2.introspection_url` | `SESAME_OAUTH2_INTROSPECTION_URL` | none | The RFC 7662 endpoint for opaque bearer tokens. Leave it unset to keep the driver JWT-only. |
+| `oauth2.introspection_client_id` | `SESAME_OAUTH2_INTROSPECTION_CLIENT_ID` | none | The client id sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set. |
+| `oauth2.introspection_client_secret` | `SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET` | none | The client secret sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set. |
+| `oauth2.introspection_cache_ttl_seconds` | `SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS` | `60` | How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`. Zero disables the cache. |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |

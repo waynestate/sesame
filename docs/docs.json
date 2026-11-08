@@ -120,6 +120,22 @@
                     "Check the access token's `typ` header is `at+jwt` or `application/at+jwt`; off because Microsoft Entra v2 tokens are typed `JWT`",
                     "`false`"
                 ],
+                "SESAME_OAUTH2_INTROSPECTION_URL": [
+                    "The RFC 7662 token introspection endpoint for opaque bearer tokens; leave unset to keep the oauth2 driver JWT-only",
+                    "none"
+                ],
+                "SESAME_OAUTH2_INTROSPECTION_CLIENT_ID": [
+                    "The client id sent as HTTP Basic auth to the introspection endpoint; required when the introspection URL is set",
+                    "none"
+                ],
+                "SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET": [
+                    "The client secret sent as HTTP Basic auth to the introspection endpoint; read from the environment only, never logged; required when the introspection URL is set",
+                    "none"
+                ],
+                "SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS": [
+                    "How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`; zero disables the cache",
+                    "`60`"
+                ],
                 "SESAME_OIDC_ISSUER": [
                     "The OpenID Connect issuer for browser sign-in (Microsoft Entra ID first)",
                     "none (falls back to `SESAME_OAUTH2_ISSUER`; Playbook supplies the WSU value)"

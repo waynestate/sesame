@@ -663,6 +663,14 @@ key id, never anything the token itself carries. After the signature, the
 driver checks the issuer, audience, expiry and not-before claims (with a
 leeway), then any required scopes and roles.
 
+A token that is not a three-part JWT is opaque while introspection is off, and
+it is refused. When `oauth2.introspection_url` is set, the driver posts the
+token to that RFC 7662 endpoint with the configured client credentials as HTTP
+Basic auth, accepts only a `200` JSON answer whose `active` field is `true`,
+and applies the same issuer, audience, expiry and not-before checks to the
+claims the endpoint returns. Accepted answers are cached briefly under a hash
+of the token; the token itself is never cached or logged.
+
 Microsoft Entra ID is the first supported issuer. Point `issuer` and `jwks_url`
 at the tenant's v2.0 endpoints (the `issuer` and `jwks_uri` values in the
 tenant's discovery document) and `audience` at the app's client id. Any other
@@ -715,8 +723,12 @@ Config keys:
 | `oauth2.jwks_cache_ttl_seconds` | No | `3600` | How long the fetched key set is kept before it is refetched, in seconds. |
 | `oauth2.jwks_store` | No | the app's default cache store | The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache). |
 | `oauth2.require_at_jwt` | No | `false` | When `true`, the token's `typ` header must be `at+jwt` or `application/at+jwt` (RFC 9068), and any other token is refused. **Off by default on purpose:** Microsoft Entra v2 access tokens are typed `JWT`, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens. |
+| `oauth2.introspection_url` | No | none | The RFC 7662 endpoint for opaque bearer tokens: `https://` only (`http://localhost` and `http://127.0.0.1` are allowed for tests). Leave it unset to keep the driver JWT-only. |
+| `oauth2.introspection_client_id` | No | none | The client id sent as HTTP Basic auth to the introspection endpoint. Required when `oauth2.introspection_url` is set. |
+| `oauth2.introspection_client_secret` | No | none | The client secret sent as HTTP Basic auth to the introspection endpoint. Required when `oauth2.introspection_url` is set. |
+| `oauth2.introspection_cache_ttl_seconds` | No | `60` | How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`. Zero disables the cache. |
 
-The token must carry an `exp` claim; a token without one is refused. The
+A JWT must carry an `exp` claim; a JWT without one is refused. The
 `email` and `name` claims become read-only identity attributes, and the
 optional `auth_time` and `amr` claims become the identity's MFA facts, for
 `requireMfa()`, exactly as in the gateway driver.
@@ -1209,6 +1221,10 @@ Config keys (in `config/sesame.php`):
 | `oauth2.jwks_cache_ttl_seconds` | `SESAME_OAUTH2_JWKS_CACHE_TTL_SECONDS` | `3600` | How long the fetched key set is kept, in seconds. |
 | `oauth2.jwks_store` | `SESAME_OAUTH2_JWKS_STORE` | the app's default cache store | The cache store the key set is kept in (Laravel only). |
 | `oauth2.require_at_jwt` | `SESAME_OAUTH2_REQUIRE_AT_JWT` | `false` | Refuse a token whose `typ` header is not `at+jwt` (RFC 9068). Leave it off for Entra. |
+| `oauth2.introspection_url` | `SESAME_OAUTH2_INTROSPECTION_URL` | none | The RFC 7662 endpoint for opaque bearer tokens. Leave it unset to keep the driver JWT-only. |
+| `oauth2.introspection_client_id` | `SESAME_OAUTH2_INTROSPECTION_CLIENT_ID` | none | The client id sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set. |
+| `oauth2.introspection_client_secret` | `SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET` | none | The client secret sent as HTTP Basic auth to the introspection endpoint. Required when the URL is set. |
+| `oauth2.introspection_cache_ttl_seconds` | `SESAME_OAUTH2_INTROSPECTION_CACHE_TTL_SECONDS` | `60` | How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`. Zero disables the cache. |
 | `session.idle_minutes` | `SESAME_SESSION_IDLE_MINUTES` | `120` | Drop the session after this much quiet time, in minutes. |
 | `session.absolute_minutes` | `SESAME_SESSION_ABSOLUTE_MINUTES` | `720` | End the session this long after sign-in, in minutes. |
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |

@@ -34,7 +34,8 @@ The message reads: `Missing required setting <SETTING>. Set it in the environmen
 A present key with the wrong type is also an `InvalidConfig` error at boot, before any request is served:
 
 - Booleans must be booleans: `cas.renew`, `cas.assume_mfa`, `gateway.allow_without_replay_guard`, `oauth2.require_at_jwt`.
-- Integers: `gateway.leeway_seconds` non-negative, `gateway.max_lifetime` positive, `oauth2.leeway_seconds` non-negative and at most `300`, `oauth2.jwks_cache_ttl_seconds` positive and at most `86400`, `session.idle_minutes` and `session.absolute_minutes` positive.
+- Integers: `gateway.leeway_seconds` non-negative, `gateway.max_lifetime` positive, `oauth2.leeway_seconds` non-negative and at most `300`, `oauth2.jwks_cache_ttl_seconds` positive and at most `86400`, `oauth2.introspection_cache_ttl_seconds` non-negative and at most `300`, `session.idle_minutes` and `session.absolute_minutes` positive.
+- `oauth2.introspection_url`, when present, must be an `https://` URL (`http://localhost` and `http://127.0.0.1` are allowed for tests), and the client id and client secret are then required.
 - Enumerations: `cas.protocol` only `3.0` or `2.0`; `gateway.algorithm` only `ES256`, `RS256` or `EdDSA`; `oauth2.identity_claim` only `preferred_username` or `accessid`.
 - `gateway.public_key`, `gateway.public_keys` and `gateway.jwks_file` are mutually exclusive: set exactly one. An empty `public_keys` array or `jwks_file` counts as unset, and `public_key` is then required. A `jwks_file` is read at boot, and a missing or bad key set file is an `InvalidConfig` error (the rules are in the [gateway driver guide](../guides/driver-gateway.md#the-key-set-file)).
 - `gateway.trusted_proxies` must be a non-empty array of non-empty strings (CIDR ranges or single IPs).
@@ -230,8 +231,12 @@ The assertion must carry `sub`, `iat`, `exp` and `jti`; the `sub` claim becomes 
 | `oauth2.jwks_cache_ttl_seconds` | No | `3600` | How long the fetched key set is kept before it is refetched, in seconds. |
 | `oauth2.jwks_store` | No | the app's default cache store | The cache store the key set is kept in (Laravel only; raw PHP passes its own PSR-16 cache). |
 | `oauth2.require_at_jwt` | No | `false` | When `true`, the token's `typ` header must be `at+jwt` or `application/at+jwt` (RFC 9068), and any other token is refused. **Off by default on purpose:** Microsoft Entra v2 access tokens are typed `JWT`, so turning it on refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens. |
+| `oauth2.introspection_url` | No | none | The RFC 7662 endpoint for opaque bearer tokens: `https://` only (`http://localhost` and `http://127.0.0.1` are allowed for tests). Leave it unset to keep the driver JWT-only. |
+| `oauth2.introspection_client_id` | No | none | The client id sent as HTTP Basic auth to the introspection endpoint. Required when `oauth2.introspection_url` is set. |
+| `oauth2.introspection_client_secret` | No | none | The client secret sent as HTTP Basic auth to the introspection endpoint. Required when `oauth2.introspection_url` is set. |
+| `oauth2.introspection_cache_ttl_seconds` | No | `60` | How long an accepted introspection answer is kept, in seconds, capped by the token's `exp`. Zero disables the cache. |
 
-The token must carry an `exp` claim; a token without one is refused. The Entra registration and the key set fetch are covered by the [oauth2 with Entra guide](../guides/driver-oauth2-entra.md).
+A JWT must carry an `exp` claim; a JWT without one is refused. Opaque tokens are refused while introspection is off, and an accepted introspection answer is checked for `active === true` before its issuer, audience, expiry and not-before claims are applied. The Entra registration and the key set fetch are covered by the [oauth2 with Entra guide](../guides/driver-oauth2-entra.md).
 
 ### oidc
 

@@ -601,6 +601,123 @@ final class ConfigTest extends TestCase
         Config::fromArray($this->oauth2Config(['require_at_jwt' => 'yes']));
     }
 
+    public function testOauth2IntrospectionDefaultsToDisabled(): void
+    {
+        $config = Config::fromArray($this->oauth2Config());
+
+        self::assertNull($config->oauth2IntrospectionUrl);
+        self::assertNull($config->oauth2IntrospectionClientId);
+        self::assertNull($config->oauth2IntrospectionClientSecret);
+        self::assertSame(60, $config->oauth2IntrospectionCacheTtlSeconds);
+    }
+
+    public function testReadsOauth2IntrospectionSettings(): void
+    {
+        $config = Config::fromArray($this->oauth2Config([
+            'introspection_url' => 'https://login.example.com/introspect',
+            'introspection_client_id' => 'client-id',
+            'introspection_client_secret' => 'client-secret',
+            'introspection_cache_ttl_seconds' => 30,
+        ]));
+
+        self::assertSame('https://login.example.com/introspect', $config->oauth2IntrospectionUrl);
+        self::assertSame('client-id', $config->oauth2IntrospectionClientId);
+        self::assertSame('client-secret', $config->oauth2IntrospectionClientSecret);
+        self::assertSame(30, $config->oauth2IntrospectionCacheTtlSeconds);
+    }
+
+    public function testRejectsAnEmptyOauth2IntrospectionUrl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.introspection_url" must be a non-empty string.');
+
+        Config::fromArray($this->oauth2Config(['introspection_url' => '']));
+    }
+
+    public function testRejectsAPlainHttpOauth2IntrospectionUrl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.introspection_url" must be an https:// URL (http://localhost and http://127.0.0.1 are allowed for tests).');
+
+        Config::fromArray($this->oauth2Config([
+            'introspection_url' => 'http://login.example.com/introspect',
+            'introspection_client_id' => 'client-id',
+            'introspection_client_secret' => 'client-secret',
+        ]));
+    }
+
+    public function testAcceptsALocalHttpOauth2IntrospectionUrl(): void
+    {
+        foreach (['http://localhost/introspect', 'http://127.0.0.1/introspect'] as $url) {
+            $config = Config::fromArray($this->oauth2Config([
+                'introspection_url' => $url,
+                'introspection_client_id' => 'client-id',
+                'introspection_client_secret' => 'client-secret',
+            ]));
+
+            self::assertSame($url, $config->oauth2IntrospectionUrl);
+        }
+    }
+
+    public function testRejectsAMissingOauth2IntrospectionClientId(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Missing required config key "oauth2.introspection_client_id".');
+
+        Config::fromArray($this->oauth2Config([
+            'introspection_url' => 'https://login.example.com/introspect',
+            'introspection_client_secret' => 'client-secret',
+        ]));
+    }
+
+    public function testRejectsAMissingOauth2IntrospectionClientSecret(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('Missing required config key "oauth2.introspection_client_secret".');
+
+        Config::fromArray($this->oauth2Config([
+            'introspection_url' => 'https://login.example.com/introspect',
+            'introspection_client_id' => 'client-id',
+        ]));
+    }
+
+    #[DataProvider('badOauth2IntrospectionCacheTtls')]
+    public function testRejectsAnInvalidOauth2IntrospectionCacheTtl(int|string $value): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.introspection_cache_ttl_seconds" must be a non-negative integer.');
+
+        Config::fromArray($this->oauth2Config(['introspection_cache_ttl_seconds' => $value]));
+    }
+
+    /**
+     * Oauth2 introspection cache TTLs that must be rejected.
+     *
+     * @return array<string, array{int|string}>
+     */
+    public static function badOauth2IntrospectionCacheTtls(): array
+    {
+        return [
+            'a negative ttl' => [-5],
+            'a string ttl' => ['abc'],
+        ];
+    }
+
+    public function testRejectsAnExcessiveOauth2IntrospectionCacheTtl(): void
+    {
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "oauth2.introspection_cache_ttl_seconds" must be at most 300.');
+
+        Config::fromArray($this->oauth2Config(['introspection_cache_ttl_seconds' => 301]));
+    }
+
+    public function testAcceptsAZeroOauth2IntrospectionCacheTtl(): void
+    {
+        $config = Config::fromArray($this->oauth2Config(['introspection_cache_ttl_seconds' => 0]));
+
+        self::assertSame(0, $config->oauth2IntrospectionCacheTtlSeconds);
+    }
+
     public function testReadsTheSessionTimeouts(): void
     {
         $config = Config::fromArray([
