@@ -116,6 +116,10 @@
                     "path": "reference/api"
                 },
                 {
+                    "title": "Regenerate grace (decision)",
+                    "path": "reference/regenerate-grace"
+                },
+                {
                     "title": "Proof",
                     "path": "reference/proof"
                 }
