@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: CI pins the Preflight components to 0.3.1 (fixed cache keys, and caches saved even when a job fails; D-072).
 - Changed: CI saves its Composer and npm caches even when a job fails, so a retry after a dropped download fetches only what is missing (D-072).
 - Changed: CI caches Composer and npm downloads under a fixed key, so a lock change downloads only what changed (D-072).
 - Added: RFC 7662 token introspection for opaque bearer tokens in the `oauth2` driver, behind `oauth2.introspection_url` (env `SESAME_OAUTH2_INTROSPECTION_URL`). When set, the driver posts a non-JWT bearer token to the endpoint with `oauth2.introspection_client_id` and `oauth2.introspection_client_secret` (env `SESAME_OAUTH2_INTROSPECTION_CLIENT_ID` and `SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET`) as HTTP Basic auth (client id and secret form-encoded first, as RFC 6749 2.3.1 requires), accepts only a `200` JSON answer whose `active` field is `true`, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be `https://` (`http://localhost` and `http://127.0.0.1` are allowed for tests), and the client id and secret are required when it is set.
