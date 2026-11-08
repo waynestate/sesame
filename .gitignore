@@ -2,3 +2,4 @@
 /.phpunit.cache/
 /vue/node_modules/
 /.cache/
+/build/
