@@ -51,6 +51,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 - [Configuration | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/configuration.md): Every SESAME config key, its environment variable, its default and its meaning.
 - [Drivers | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/drivers.md): The full list of drivers and their status: fake, cas, gateway, saml, oauth2 and oidc.
 - [Proof | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/proof.md): Proof runs against real Wayne State applications on a private site, behind a Wayne State employee sign-in.
+- [Decision: the 60 second regenerate grace | SESAME docs](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.md): Why SESAME keeps the old session for 60 seconds after it regenerates the session ID, and how to turn that off.
 - [The saml driver's library choice | SESAME docs](https://sesame.apps.wayne.edu/docs/saml-library-choice.md): Which library the saml driver stands on, what else was weighed, why, and the version floor.
 - [Troubleshooting | SESAME docs](https://sesame.apps.wayne.edu/docs/troubleshooting.md): What to try when a sign-in fails, and what the errors mean.
 - [Upgrading | SESAME docs](https://sesame.apps.wayne.edu/docs/upgrading.md): How to move between SESAME versions.

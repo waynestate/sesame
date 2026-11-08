@@ -1854,6 +1854,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with `graceSeconds: 0`, what is logged after it).
 - Fixed: the pipeline's PROCTOR jobs no longer pass `--policy`, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.
 - Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).
 - Changed: the front page's deploy layer (`deploy/`) runs Squire's kit 0.6.0 (was 0.5.0): `scripts/release.sh` asks PROCTOR's deploy gate for a go or no-go on each release (a report, not a stop, unless `SQUIRE_PROCTOR=enforce`), and `.env.squire.example` lists the new setting. The layer's pins move to HELMET `^0.4` (locked 0.4.0) and PROCTOR `^0.7` (locked 0.7.0).
@@ -4913,6 +4914,45 @@ docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app comp
 - [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html)
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html)
 - [API](https://sesame.apps.wayne.edu/docs/reference/api.html)
+
+---
+
+Source: https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html
+
+## Decision: the 60 second regenerate grace[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#decision-the-60-second-regenerate-grace)
+
+When SESAME regenerates the session ID at login, it does not delete the old session at once. It keeps the old session for a short grace, so a user on a slow network does not lose the login, and a reuse after the grace is treated as a possible hijack.
+
+### Decision[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#decision)
+
+`NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID, keeps it for a 60 second grace, and copies the data to the new session. The constructor takes `graceSeconds`, and 60 is the default.
+
+### Why[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#why)
+
+The [PHP manual](https://www.php.net/manual/en/function.session-regenerate-id.php) says `session_regenerate_id()` does not handle an unstable network well. When the old ID is deleted at once, a user whose browser is still sending the old ID can lose the session when the response with the new ID never arrives. Deleting at once also removes the chance to see a stolen ID being replayed. The manual's example keeps the old session for 300 seconds; that is the example's choice, not a rule. The full reasoning is in `BEST_PRACTICES.md`, section S43.
+
+### Turning it off[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#turning-it-off)
+
+Pass `graceSeconds: 0` to the `NativeSession` constructor to restore the immediate delete. A negative value is refused with an `InvalidArgumentException`.
+
+### After the grace[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#after-the-grace)
+
+A use of the old ID after the grace is treated as a possible hijack: the session is retired, a clean one starts, and `sesame.session_anomaly` is logged as a warning with `reason` `destroyed_session_reused` when a logger is set. The log carries no session ID or session data.
+
+### Not covered[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#not-covered)
+
+The Laravel adapter uses the framework's own regenerate and is unchanged. Logout still deletes the session at once (S7).
+
+### Tests[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#tests)
+
+`NativeSessionTest` covers the behavior:
+
+- `testRegenerateKeepsTheOldSessionDuringTheGrace`
+- `testTheOldSessionIsStillUsableWithinTheGrace`
+- `testTheOldSessionIsRejectedAfterTheGraceAndLogged`
+- `testZeroGraceDeletesTheOldSessionAtOnce`
+- `testANegativeGraceIsRefused`
+- `testTheAnomalyLogCarriesNoSessionIdOrData`
 
 ---
 
