@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Waynestate\Sesame\Laravel;
 
-use Closure;
 use GuzzleHttp\Client;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Cache\CacheManager;
@@ -14,16 +13,13 @@ use Illuminate\Contracts\Cookie\QueueingFactory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Session\Session;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\ServiceProvider;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Waynestate\Sesame\Config;
@@ -31,10 +27,8 @@ use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
-use Waynestate\Sesame\Drivers\SamlDriver;
-use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
-use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\Laravel\Http\SesameController;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\UserResolver;
 
@@ -281,6 +275,12 @@ class SesameServiceProvider extends ServiceProvider
 
     /**
      * The login and logout routes, when the app has not taken them over.
+     *
+     * Every action is a method on SesameController, not a closure: a
+     * closure route is serialized with everything it captures when the
+     * app caches its routes, and the old closures captured the container,
+     * which is what made `php artisan route:cache` run out of memory in an
+     * app that runs `optimize` (which every Citadel release does).
      */
     private function routes(): void
     {
@@ -294,42 +294,13 @@ class SesameServiceProvider extends ServiceProvider
         }
 
         $router->group(['middleware' => 'web'], function () use ($router, $oidc) {
-            $login = function (Request $request) {
-                $sesame = $this->app->make(Sesame::class);
-                $result = $sesame->login($this->toPsr7($request));
-
-                if ($result instanceof Redirect) {
-                    return redirect($result->url);
-                }
-
-                // The oidc driver remembers a checked return-to (same host
-                // as the redirect URI); every other driver uses the page
-                // auth.sesame saved before it sent the guest to sign in.
-                $returnTo = $sesame->returnTo();
-
-                return $returnTo !== null ? redirect($returnTo) : redirect()->intended('/');
-            };
-
-            $router->get('/login', $login)->name('sesame.login');
+            $router->get('/login', [SesameController::class, 'login'])->name('sesame.login');
 
             if ($oidc) {
-                $router->get('/login/callback', $login)->name('sesame.callback');
+                $router->get('/login/callback', [SesameController::class, 'login'])->name('sesame.callback');
             }
 
-            $router->post('/logout', function () {
-                $url = $this->app->make(Sesame::class)->logout(url('/'));
-
-                // Keep the logout response out of any cache and clear the
-                // site's cache and storage. "cookies" is deliberately left
-                // out of Clear-Site-Data: it would clear every cookie on the
-                // host, signing the user out of every other app on
-                // wayne.edu, not just this one.
-                $response = $url !== null ? redirect($url) : redirect('/');
-
-                return $response
-                    ->header('Cache-Control', 'no-store')
-                    ->header('Clear-Site-Data', '"cache", "storage"');
-            })->name('sesame.logout');
+            $router->post('/logout', [SesameController::class, 'logout'])->name('sesame.logout');
 
             // The single-page app's "who am I": the session facts as JSON,
             // 200 when someone is signed in, 401 when no one is, never
@@ -337,23 +308,7 @@ class SesameServiceProvider extends ServiceProvider
             // bound as sesame.describe_user; without one the answer's user
             // field is null. A binding of anything other than a closure
             // reads as no extra fields, not an error.
-            $router->get('/sesame/status', function () {
-                $describe = null;
-
-                if ($this->app->bound('sesame.describe_user')) {
-                    $bound = $this->app->make('sesame.describe_user');
-
-                    if ($bound instanceof Closure) {
-                        $describe = $bound;
-                    }
-                }
-
-                $status = $this->app->make(Sesame::class)->sessionStatus($describe);
-
-                return response()->json($status, $status['signedIn'] ? 200 : 401)
-                    ->header('Cache-Control', 'no-store')
-                    ->header('X-Content-Type-Options', 'nosniff');
-            })->name('sesame.status');
+            $router->get('/sesame/status', [SesameController::class, 'status'])->name('sesame.status');
         });
     }
 
@@ -370,51 +325,8 @@ class SesameServiceProvider extends ServiceProvider
      */
     private function samlRoutes(Router $router): void
     {
-        $router->post('/login/saml/acs', function (Request $request) {
-            $driver = $this->app->make(Driver::class);
+        $router->post('/login/saml/acs', [SesameController::class, 'samlAcs'])->name('sesame.saml.acs');
 
-            if (! $driver instanceof SamlDriver) {
-                abort(404);
-            }
-
-            try {
-                $redirect = $driver->receive($this->toPsr7($request));
-            } catch (AuthenticationFailed) {
-                return response('The sign-in response could not be used. Start the sign-in again.', 400)
-                    ->header('Content-Type', 'text/plain; charset=UTF-8')
-                    ->header('Cache-Control', 'no-store');
-            }
-
-            return redirect($redirect->url, 303)->header('Cache-Control', 'no-store');
-        })->name('sesame.saml.acs');
-
-        $router->get('/login/saml/metadata', function () {
-            $driver = $this->app->make(Driver::class);
-
-            if (! $driver instanceof SamlDriver) {
-                abort(404);
-            }
-
-            return response($driver->metadata(), 200)
-                ->header('Content-Type', 'application/samlmetadata+xml')
-                ->header('X-Content-Type-Options', 'nosniff');
-        })->name('sesame.saml.metadata');
-    }
-
-    /**
-     * The PSR-7 view of the incoming request, for the core.
-     */
-    private function toPsr7(Request $request): ServerRequestInterface
-    {
-        $factory = new Psr17Factory();
-
-        return (new ServerRequestCreator($factory, $factory, $factory, $factory))->fromArrays(
-            $request->server->all(),
-            $request->headers->all(),
-            $request->cookies->all(),
-            $request->query->all(),
-            $request->request->all(),
-            $request->files->all(),
-        );
+        $router->get('/login/saml/metadata', [SesameController::class, 'samlMetadata'])->name('sesame.saml.metadata');
     }
 }
