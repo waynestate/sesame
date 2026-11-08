@@ -52,6 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
+<li>Fixed: SESAME's routes are controller actions instead of closures, so <code>php artisan route:cache</code> and <code>optimize</code> work in an app that uses SESAME (a Citadel release runs optimize).</li>
 <li>Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write <code>waynestate/sesame:^0.6</code> (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is <code>Checked</code> now that Squire's CI fails if its kit <code>php.ini</code> sets <code>session.sid_length</code> or <code>session.sid_bits_per_character</code>.</li>
 <li>Changed: the deploy layer runs Squire's kit 0.7.1 (was 0.6.0): <code>.squire/php.ini</code> no longer sets the deprecated <code>session.sid_*</code> lines, web requests get a <code>disable_functions</code> list and Apache hardening (<code>.squire/php-web.ini</code>, <code>.squire/apache-hardening.conf</code>), and opcache gets production settings with <code>SQUIRE_OPCACHE_VALIDATE</code> as the one switch.</li>
 <li>Changed: the front page deploy layer requires HELMET ^1.0 (lock at 1.0.1, was 0.4.0), like the rest of the stack; its shared front controller already runs on HELMET 1.0 in Squire, Sourdough and Pinstripe.</li>
