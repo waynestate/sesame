@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-11-06. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
+The tags describe the repo as it stands on 2026-11-08. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
 
 ## 1. Sessions
 
@@ -330,7 +330,7 @@ How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing
 Risks in the current code:
 - Done: the immediate delete at login is gone (S43): `NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID and keeps it for a 60 second grace, so a user on a bad network does not lose the login; a use of the old ID after the grace is rejected and logged as `sesame.session_anomaly`. Proven by `NativeSessionTest` (S43).
 - Done: the login binding to the browser is built (S18): `PendingLogin` keeps single-use markers in the app session, and `CasDriver::login()` refuses a ticket with no live marker before any HTTP call, unless `cas.require_pending_login` is false. Proven by `CasDriverTest` (S18).
-- Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5. Still open: read what the `composer-audit` component fails on.
+- Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5.
 - `README.md`: Docker commands cover 8.3 and newer.
 - Done: the destroy time stamp and grace period at login are implemented in `NativeSession` (S43); `graceSeconds: 0` restores the immediate delete.
 - README client example: add no-redirect and TLS-verify settings (S42).
