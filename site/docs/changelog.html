@@ -53,6 +53,9 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
 <li>
+<p>Changed: CI caches Composer and npm downloads under a fixed key, so a lock change downloads only what changed (D-072).</p>
+</li>
+<li>
 <p>Added: RFC 7662 token introspection for opaque bearer tokens in the <code>oauth2</code> driver, behind <code>oauth2.introspection_url</code> (env <code>SESAME_OAUTH2_INTROSPECTION_URL</code>). When set, the driver posts a non-JWT bearer token to the endpoint with <code>oauth2.introspection_client_id</code> and <code>oauth2.introspection_client_secret</code> (env <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_ID</code> and <code>SESAME_OAUTH2_INTROSPECTION_CLIENT_SECRET</code>) as HTTP Basic auth (client id and secret form-encoded first, as RFC 6749 2.3.1 requires), accepts only a <code>200</code> JSON answer whose <code>active</code> field is <code>true</code>, and applies the configured issuer, audience, expiry and not-before checks to the claims it returns. The URL must be <code>https://</code> (<code>http://localhost</code> and <code>http://127.0.0.1</code> are allowed for tests), and the client id and secret are required when it is set.</p>
 </li>
 <li>
