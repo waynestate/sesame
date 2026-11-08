@@ -18,6 +18,7 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 | --- | --- | --- |
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
 
 ## How the clocks are checked[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#how-the-clocks-are-checked)
 
@@ -26,6 +27,12 @@ On login the session stores the sign-in time and the last activity time, and `us
 ## Regeneration grace[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#regeneration-grace)
 
 On login the session ID is regenerated. For the native PHP session the old ID is not deleted at once: it is marked with a "destroyed at" time and the new ID and kept for a 60 second grace, so a user whose browser is still sending the old ID after a slow network does not lose the login. After the grace, any use of the old ID is treated as a possible hijack: the session is retired, a clean one is started, and `sesame.session_anomaly` is logged as a warning with `reason` `destroyed_session_reused`. Pass `graceSeconds: 0` to `new NativeSession()` to restore the old behavior, where the old session is deleted at once. Laravel uses the framework's own regenerate.
+
+## Logout reuse window[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#logout-reuse-window)
+
+When `invalidate()` destroys a session, the ID is remembered for the reuse window, 60 seconds by default (the `logoutReuseTtlSeconds` option of `new NativeSession()`, `0` turns the check off). A request that presents that ID inside the window is not revived: the session is retired, a fresh empty one starts, and `sesame.session_anomaly` is logged once per reuse with `reason` `logged_out_session_reused`. Past the window the ID is forgotten, and a request carrying it gets an ordinary fresh session.
+
+By default the remembering lives in process memory, so each worker remembers its own logouts. Pass a shared guard, such as a PSR-16-backed `ReplayGuard`, to the constructor to share it between workers.
 
 ## In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#in-laravel)
 

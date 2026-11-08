@@ -369,7 +369,7 @@ authentication event through it:
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref` or `destroyed_session_reused` (an old session ID used after its grace; see [Session timeouts](docs/guides/session-timeouts.md)). |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a destroyed session ID presented again inside the reuse window; see [Session timeouts](docs/guides/session-timeouts.md)). |
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
@@ -1042,11 +1042,22 @@ spot the first time anything asks who is signed in.
 |---|---|---|
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
 
 On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live
 session. A session made before the timeouts existed (a user, no timestamps)
 counts as expired.
+
+The native session adds a third clock for logouts. When `invalidate()`
+destroys a session, the ID is remembered for the reuse window, 60 seconds by
+default (the `logoutReuseTtlSeconds` option of `new NativeSession()`, `0`
+turns the check off). A request that presents that ID inside the window is
+not revived: the session is retired, a fresh empty one starts, and
+`sesame.session_anomaly` is logged once per reuse with `reason`
+`logged_out_session_reused`. Past the window the ID is forgotten. By default
+the remembering lives in process memory, so pass a shared guard, such as a
+PSR-16-backed `ReplayGuard`, to the constructor to share it between workers.
 
 In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and
 `SESAME_SESSION_ABSOLUTE_MINUTES`.

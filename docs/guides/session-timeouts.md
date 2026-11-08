@@ -23,6 +23,7 @@ spot the first time anything asks who is signed in.
 |---|---|---|
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+| `logoutReuseTtlSeconds` | `60` | How long the native session remembers a destroyed session ID, in seconds. A `new NativeSession()` option, not a config key; `0` turns the check off. |
 
 ## How the clocks are checked
 
@@ -42,6 +43,20 @@ retired, a clean one is started, and `sesame.session_anomaly` is logged as a
 warning with `reason` `destroyed_session_reused`. Pass `graceSeconds: 0` to
 `new NativeSession()` to restore the old behavior, where the old session is
 deleted at once. Laravel uses the framework's own regenerate.
+
+## Logout reuse window
+
+When `invalidate()` destroys a session, the ID is remembered for the reuse
+window, 60 seconds by default (the `logoutReuseTtlSeconds` option of
+`new NativeSession()`, `0` turns the check off). A request that presents that
+ID inside the window is not revived: the session is retired, a fresh empty
+one starts, and `sesame.session_anomaly` is logged once per reuse with
+`reason` `logged_out_session_reused`. Past the window the ID is forgotten,
+and a request carrying it gets an ordinary fresh session.
+
+By default the remembering lives in process memory, so each worker remembers
+its own logouts. Pass a shared guard, such as a PSR-16-backed `ReplayGuard`,
+to the constructor to share it between workers.
 
 ## In Laravel
 

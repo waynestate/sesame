@@ -76,6 +76,11 @@ spot the first time anything asks who is signed in.</p>
 <td><code>720</code></td>
 <td>End the session this long after sign-in, even if it is still active.</td>
 </tr>
+<tr>
+<td><code>logoutReuseTtlSeconds</code></td>
+<td><code>60</code></td>
+<td>How long the native session remembers a destroyed session ID, in seconds. A <code>new NativeSession()</code> option, not a config key; <code>0</code> turns the check off.</td>
+</tr>
 </tbody>
 </table></div>
 <h2 id="how-the-clocks-are-checked">How the clocks are checked<a class="docs-heading-link" aria-label="Link to this section" href="#how-the-clocks-are-checked">#</a></h2>
@@ -93,6 +98,17 @@ retired, a clean one is started, and <code>sesame.session_anomaly</code> is logg
 warning with <code>reason</code> <code>destroyed_session_reused</code>. Pass <code>graceSeconds: 0</code> to
 <code>new NativeSession()</code> to restore the old behavior, where the old session is
 deleted at once. Laravel uses the framework's own regenerate.</p>
+<h2 id="logout-reuse-window">Logout reuse window<a class="docs-heading-link" aria-label="Link to this section" href="#logout-reuse-window">#</a></h2>
+<p>When <code>invalidate()</code> destroys a session, the ID is remembered for the reuse
+window, 60 seconds by default (the <code>logoutReuseTtlSeconds</code> option of
+<code>new NativeSession()</code>, <code>0</code> turns the check off). A request that presents that
+ID inside the window is not revived: the session is retired, a fresh empty
+one starts, and <code>sesame.session_anomaly</code> is logged once per reuse with
+<code>reason</code> <code>logged_out_session_reused</code>. Past the window the ID is forgotten,
+and a request carrying it gets an ordinary fresh session.</p>
+<p>By default the remembering lives in process memory, so each worker remembers
+its own logouts. Pass a shared guard, such as a PSR-16-backed <code>ReplayGuard</code>,
+to the constructor to share it between workers.</p>
 <h2 id="in-laravel">In Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#in-laravel">#</a></h2>
 <p>In Laravel the keys are <code>SESAME_SESSION_IDLE_MINUTES</code> and
 <code>SESAME_SESSION_ABSOLUTE_MINUTES</code>.</p>
@@ -107,7 +123,7 @@ deleted at once. Laravel uses the framework's own regenerate.</p>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/saml-library-choice.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">The saml driver&#039;s library choice</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/single-page-apps.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Single-page apps</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-clocks">The two clocks</a></li><li class="docs-toc__item"><a href="#how-the-clocks-are-checked">How the clocks are checked</a></li><li class="docs-toc__item"><a href="#regeneration-grace">Regeneration grace</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-clocks">The two clocks</a></li><li class="docs-toc__item"><a href="#how-the-clocks-are-checked">How the clocks are checked</a></li><li class="docs-toc__item"><a href="#regeneration-grace">Regeneration grace</a></li><li class="docs-toc__item"><a href="#logout-reuse-window">Logout reuse window</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.5.0</span></span>
