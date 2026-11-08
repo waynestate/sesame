@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Docs: the README art shows `saml` as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in `site/screenshots/` itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of "later" from a photo taken before the driver shipped. The gallery alt text and `site/README.md` say the same.
+- Changed: the pipeline pins every Preflight CI component to 0.3.0 (preflight@0.3.0); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.
 - Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
 - Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.
 - Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with `graceSeconds: 0`, what is logged after it).
