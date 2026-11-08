@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the Docker commands in the README and docs mount the shared `stack-composer-cache` volume, so Composer downloads are cached between runs.
 - Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.
 - Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's `cas-to-sesame` hop writes today, `waynestate/sesame:^0.4` (they said `^0.3`), and point at the 0.5.0 upgrade steps to take after the hop.
 - Added: the `saml` driver (SESAME-5), a SAML 2.0 service provider for a Shibboleth-style IdP, opt-in. It stands on `onelogin/php-saml` (suggested, not required; the choice is in `docs/saml-library-choice.md`) in strict mode, requires a signed assertion, refuses SHA-1, IdP-initiated responses and replayed assertion IDs, binds each Response to the AuthnRequest this browser's session holds, checks the IssueInstant against the injected clock, and sends and honors RelayState only through the `ReturnTo` rule. The IdP's cross-site POST is parked in the PSR-16 cache under a single-use handle and checked on the 303's GET, where the `SameSite=Lax` session cookie is back. IdP metadata comes from an https URL or a file, certificates and the SP key from file paths, and no default IdP is assumed. Step-up sends `ForceAuthn`; logout is local.

@@ -281,7 +281,7 @@ means the same thing on both sides.</p>
 Pinstripe's strict preset, where a call to a deprecated method fails the
 build.</p>
 <p><strong>Check.</strong> Rerun the gate locally:</p>
-<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre tabindex="0"><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer ci
+<div class="docs-tabs" data-tabs="docker|local"><div class="docs-tabs__panel" data-tab-label="docker"><p class="docs-tabs__label">docker</p><pre tabindex="0"><code class="language-bash">docker run --rm -v &quot;${PWD}:/app&quot; -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 </code></pre></div>
 <div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre tabindex="0"><code class="language-bash">composer ci
 </code></pre></div></div>
@@ -297,7 +297,7 @@ reference has drifted from the source.</p>
 <p><strong>Cause.</strong> The developer machine has no PHP, so <code>vendor/bin/phpunit</code> cannot
 start.</p>
 <p><strong>Fix.</strong> Docker runs the suite:</p>
-<pre tabindex="0"><code>docker run --rm -v &quot;${PWD}:/app&quot; -w /app composer:2 composer install --no-interaction
+<pre tabindex="0"><code>docker run --rm -v &quot;${PWD}:/app&quot; -v stack-composer-cache:/tmp/cache -w /app composer:2 composer install --no-interaction
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.3-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.4-cli vendor/bin/phpunit
 docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpunit
