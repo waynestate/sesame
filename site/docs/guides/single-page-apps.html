@@ -108,9 +108,11 @@ closure as <code>sesame.describe_user</code> in Laravel. Its array fills the ans
 <code>user</code> field (null without a closure); the session facts stay untouched, and
 the identity provider's raw attributes are never part of the answer.</p>
 <h2 id="signing-out">Signing out<a class="docs-heading-link" aria-label="Link to this section" href="#signing-out">#</a></h2>
-<p>The answer's <code>logoutToken</code> is the token the sign-out form posts: the same
-POST-only, CSRF-checked logout the rest of the app uses, nothing new to wire
-up.</p>
+<p>In raw PHP, nothing more is needed: <code>sesame_logout()</code> checks the form's
+<code>sesame_logout_token</code> against the answer's <code>logoutToken</code>. In Laravel the
+<code>POST /logout</code> route is in the <code>web</code> group, so the layout needs
+<code>&lt;meta name=&quot;csrf-token&quot; content=&quot;{{ csrf_token() }}&quot;&gt;</code> (the Vue adapter's
+<code>logout()</code> reads it and sends it as <code>_token</code>; pass <code>csrfToken</code> to override).</p>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>
 <li><a href="session-timeouts.html">Session timeouts</a></li>

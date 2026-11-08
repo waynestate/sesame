@@ -1854,6 +1854,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed: the Vue adapter's logout() sends Laravel's CSRF token as \_token (from , or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
+- Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.
 - Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with `graceSeconds: 0`, what is logged after it).
 - Fixed: the pipeline's PROCTOR jobs no longer pass `--policy`, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.
 - Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).
@@ -3645,7 +3647,7 @@ Pass a closure that returns an array of extra fields for the app's user: `sesame
 
 ### Signing out[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#signing-out)
 
-The answer's `logoutToken` is the token the sign-out form posts: the same POST-only, CSRF-checked logout the rest of the app uses, nothing new to wire up.
+In raw PHP, nothing more is needed: `sesame_logout()` checks the form's `sesame_logout_token` against the answer's `logoutToken`. In Laravel the `POST /logout` route is in the `web` group, so the layout needs `<meta name="csrf-token" content="{{ csrf_token() }}">` (the Vue adapter's `logout()` reads it and sends it as `_token`; pass `csrfToken` to override).
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#related)
 

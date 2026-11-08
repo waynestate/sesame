@@ -52,6 +52,8 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
+<li>Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).</li>
+<li>Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.</li>
 <li>Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with <code>graceSeconds: 0</code>, what is logged after it).</li>
 <li>Fixed: the pipeline's PROCTOR jobs no longer pass <code>--policy</code>, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.</li>
 <li>Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).</li>

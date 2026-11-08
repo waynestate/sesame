@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed: the Vue adapter's logout() sends Laravel's CSRF token as \_token (from , or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
+- Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.
 - Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with `graceSeconds: 0`, what is logged after it).
 - Fixed: the pipeline's PROCTOR jobs no longer pass `--policy`, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.
 - Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).

@@ -68,7 +68,7 @@ Pass a closure that returns an array of extra fields for the app's user: `sesame
 
 ## Signing out[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#signing-out)
 
-The answer's `logoutToken` is the token the sign-out form posts: the same POST-only, CSRF-checked logout the rest of the app uses, nothing new to wire up.
+In raw PHP, nothing more is needed: `sesame_logout()` checks the form's `sesame_logout_token` against the answer's `logoutToken`. In Laravel the `POST /logout` route is in the `web` group, so the layout needs `<meta name="csrf-token" content="{{ csrf_token() }}">` (the Vue adapter's `logout()` reads it and sends it as `_token`; pass `csrfToken` to override).
 
 ## Related[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#related)
 

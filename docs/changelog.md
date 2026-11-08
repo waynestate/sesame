@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
+- Added: a vue job in the GitLab pipeline runs the Vue adapter's tests and type check.
 - Docs: a decision page for the 60 second regenerate grace (why, how to turn it off with `graceSeconds: 0`, what is logged after it).
 - Fixed: the pipeline's PROCTOR jobs no longer pass `--policy`, which PROCTOR 0.7 refuses in CI; PROCTOR checks against the CREED policy it bundles.
 - Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).
