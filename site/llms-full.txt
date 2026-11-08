@@ -1883,7 +1883,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
-- Docs: BEST_PRACTICES S44 now asks for `Clear-Site-Data: "cache", "storage"` and says why `"cookies"` stays out on a shared host, so the row is `Enforced`; S48 describes the Preflight pins as they are (four components at the `@0.3.1` release tag).
+- Docs: BEST_PRACTICES S44 now asks for `Clear-Site-Data: "cache", "storage"` and says why `"cookies"` stays out on a shared host, so the row is `Enforced`; S48 describes the Preflight pins as they are (four components at the `@0.3.1` release tag) and is `Checked`, since PROCTOR's `preflight-pinned` check warns on an unpinned include.
 - Changed: the local a11y scripts run Preflight's own checker (vendored from 0.3.1 and pinned by a test), so they check what CI checks: axe-core 4.14.0, 320 and 1280 px, and the reflow check.
 
 ### \[0.6.0\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-0-2026-11-08)
