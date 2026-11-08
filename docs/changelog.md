@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Docs: MAINTAINING.md says saml ships (opt-in); BEST_PRACTICES.md is dated 2026-11-08 and drops the answered composer-audit question.
+- Changed: the deploy layer requires PROCTOR ^0.8 (locked 0.8.0).
 - Docs: the README art shows `saml` as shipped and opt-in (D-058): the README art kit now re-takes the front page's reference photos in `site/screenshots/` itself, so the gallery's pegboard tags saml Opt-in, as the page does, instead of "later" from a photo taken before the driver shipped. The gallery alt text and `site/README.md` say the same.
 - Changed: the pipeline pins every Preflight CI component to 0.3.0 (preflight@0.3.0); component image inputs are plain image names, since Preflight adds the Dependency Proxy prefix itself.
 - Fixed: the Vue adapter's logout() sends Laravel's CSRF token as _token (from <meta name="csrf-token">, or the new csrfToken option), so signing out from a Vue page works in Laravel, not only in raw PHP (SESAME-7b).
