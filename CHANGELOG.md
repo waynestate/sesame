@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the GitLab pipeline pins the Preflight components to 0.2.0 (was 0.1.4).
 - Docs: the Docker commands in the README and docs mount the shared `stack-composer-cache` volume, so Composer downloads are cached between runs.
 - Fixed: the front page stamp reads 0.5 (it said 0.2), and its stack ring says Sourdough starts all five app shapes, not raw PHP only.
 - Fixed: the README and the moving-from-wayne-cas guide name the constraint Booster's `cas-to-sesame` hop writes today, `waynestate/sesame:^0.4` (they said `^0.3`), and point at the 0.5.0 upgrade steps to take after the hop.
