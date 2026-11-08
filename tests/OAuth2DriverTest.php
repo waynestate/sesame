@@ -652,6 +652,23 @@ final class OAuth2DriverTest extends TestCase
         self::assertSame(['token' => 'opaque-token-1', 'token_type_hint' => 'access_token'], $body);
     }
 
+    public function testIntrospectionClientCredentialsAreFormEncoded(): void
+    {
+        $this->http->queue($this->introspectionResponse($this->introspectionClaims()));
+
+        $this->driver($this->introspectionConfig([
+            'introspection_client_id' => 'api:client',
+            'introspection_client_secret' => 'p@ss word%',
+        ]))
+            ->login($this->requestWith('Bearer opaque-token-1'));
+
+        self::assertCount(1, $this->http->requests);
+        self::assertSame(
+            'Basic ' . base64_encode('api%3Aclient:p%40ss+word%25'),
+            $this->http->requests[0]->getHeaderLine('Authorization'),
+        );
+    }
+
     public function testAnOpaqueTokenFallsBackToSubForTheUsername(): void
     {
         $claims = $this->introspectionClaims();
@@ -882,7 +899,7 @@ final class OAuth2DriverTest extends TestCase
         self::assertStringNotContainsString('opaque-token-1', $keys[0]);
     }
 
-    public function testARedjectedIntrospectionAnswerIsNotCached(): void
+    public function testARejectedIntrospectionAnswerIsNotCached(): void
     {
         $this->http->queue($this->introspectionResponse(['active' => false]));
 

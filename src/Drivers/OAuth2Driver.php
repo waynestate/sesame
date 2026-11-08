@@ -253,7 +253,7 @@ final class OAuth2Driver implements Driver
             $request = $this->requests->createRequest('POST', $this->introspectionUrl)
                 ->withHeader('Accept', 'application/json')
                 ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
-                ->withHeader('Authorization', 'Basic ' . base64_encode($this->introspectionClientId . ':' . $this->introspectionClientSecret))
+                ->withHeader('Authorization', 'Basic ' . base64_encode(urlencode($this->introspectionClientId) . ':' . urlencode($this->introspectionClientSecret)))
                 ->withBody($this->streams->createStream(http_build_query([
                     'token' => $token,
                     'token_type_hint' => 'access_token',
