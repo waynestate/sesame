@@ -189,18 +189,35 @@ prints <code>1</code> for the CLI; for the web, the same <code>ini_get()</code> 
 cookie started with. Without <code>HttpOnly</code> a script on the page can read the
 cookie, without <code>Secure</code> it can travel over plain http, and without a <code>Lax</code>
 or <code>Strict</code> <code>SameSite</code> other sites can make the browser send it. PHP's own
-defaults leave <code>HttpOnly</code> off and <code>SameSite</code> empty, and Squire's <code>php.ini</code>
-leaves <code>SameSite</code> empty, so an app that never set them sees this warning
-once per request. <code>Secure</code> is named only on an https request (<code>HTTPS</code> set,
-or <code>X-Forwarded-Proto: https</code>). SESAME never sets the flags itself; with
-<code>checkSessionSettings: true</code> it throws <code>LogicException</code> instead of warning.</p>
-<p><strong>Fix.</strong> Add
-<code>session_set_cookie_params(['httponly' =&gt; true, 'secure' =&gt; true, 'samesite' =&gt; 'Lax']);</code>
-before <code>session_start()</code>, or call <code>helmet_boot()</code> there (HELMET sets all
-three), or set <code>session.cookie_httponly = 1</code>, <code>session.cookie_secure = 1</code> and
-<code>session.cookie_samesite = Lax</code> in <code>php.ini</code> or the FPM pool. Keep <code>Lax</code>, not
-<code>Strict</code>: a <code>Strict</code> cookie is not sent when the identity provider sends the
-browser back, so the sign-in fails.</p>
+defaults leave <code>HttpOnly</code> off and <code>SameSite</code> empty, and Squire's kit
+<code>php.ini</code> left <code>SameSite</code> empty before Squire 0.10.2, so an app that never
+set them sees this warning once per request. <code>Secure</code> is named only on an
+https request (<code>HTTPS</code> set, or <code>X-Forwarded-Proto: https</code>). SESAME never sets
+the flags itself; with <code>checkSessionSettings: true</code> it throws <code>LogicException</code>
+instead of warning. The full text, with all three missing, is:</p>
+<pre tabindex="0"><code class="language-text">SESAME: the session cookie is sent without HttpOnly, Secure and SameSite, so it is easier to steal or misuse. Set them before session_start(): session_set_cookie_params(['httponly' =&gt; true, 'secure' =&gt; true, 'samesite' =&gt; 'Lax']); (or call helmet_boot()).
+</code></pre>
+<p><strong>Fix.</strong> Pick the case that matches the app:</p>
+<ul>
+<li><strong>Squire kit 0.10.2 or later:</strong> run <code>vendor/bin/squire update</code> and commit
+the new <code>.squire/php.ini</code>, which sets <code>session.cookie_samesite = Lax</code>.
+Nothing else to do where the kit's <code>php.ini</code> is used (local parity and the
+portable image).</li>
+<li><strong>Laravel:</strong> you should not see this. The Laravel adapter uses Laravel's
+session, not <code>NativeSession</code>, and Laravel sets its own cookie from
+<code>config/session.php</code>. If you do see it, something in the app builds a
+<code>NativeSession</code> by hand.</li>
+<li><strong>Raw PHP on a host whose <code>php.ini</code> you do not control:</strong> call
+<code>helmet_boot()</code> before <code>session_start()</code> (HELMET sets all three), or add
+<code>ini_set('session.cookie_httponly', '1');</code>,
+<code>ini_set('session.cookie_secure', '1');</code> and
+<code>ini_set('session.cookie_samesite', 'Lax');</code> before <code>session_start()</code>. The
+<code>session_set_cookie_params()</code> line in the warning does the same.</li>
+</ul>
+<p>Keep <code>Lax</code>, not <code>Strict</code>: a <code>Strict</code> cookie is not sent when the identity
+provider sends the browser back, so the sign-in fails. <code>Lax</code> keeps CAS, OIDC
+and SAML working, because the CAS ticket and the OIDC code come back on a
+top-level GET and the SAML driver finishes on a GET after parking its POST.</p>
 <p><strong>Check.</strong> The warning stops.
 <code>php -r &quot;var_export(session_get_cookie_params());&quot;</code> shows <code>httponly</code> true and
 <code>samesite</code> <code>Lax</code> for the CLI; for the web, the same call on a page.

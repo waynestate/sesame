@@ -210,19 +210,38 @@ prints `1` for the CLI; for the web, the same `ini_get()` on a page.
 cookie started with. Without `HttpOnly` a script on the page can read the
 cookie, without `Secure` it can travel over plain http, and without a `Lax`
 or `Strict` `SameSite` other sites can make the browser send it. PHP's own
-defaults leave `HttpOnly` off and `SameSite` empty, and Squire's `php.ini`
-leaves `SameSite` empty, so an app that never set them sees this warning
-once per request. `Secure` is named only on an https request (`HTTPS` set,
-or `X-Forwarded-Proto: https`). SESAME never sets the flags itself; with
-`checkSessionSettings: true` it throws `LogicException` instead of warning.
+defaults leave `HttpOnly` off and `SameSite` empty, and Squire's kit
+`php.ini` left `SameSite` empty before Squire 0.10.2, so an app that never
+set them sees this warning once per request. `Secure` is named only on an
+https request (`HTTPS` set, or `X-Forwarded-Proto: https`). SESAME never sets
+the flags itself; with `checkSessionSettings: true` it throws `LogicException`
+instead of warning. The full text, with all three missing, is:
 
-**Fix.** Add
-`session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);`
-before `session_start()`, or call `helmet_boot()` there (HELMET sets all
-three), or set `session.cookie_httponly = 1`, `session.cookie_secure = 1` and
-`session.cookie_samesite = Lax` in `php.ini` or the FPM pool. Keep `Lax`, not
-`Strict`: a `Strict` cookie is not sent when the identity provider sends the
-browser back, so the sign-in fails.
+```text
+SESAME: the session cookie is sent without HttpOnly, Secure and SameSite, so it is easier to steal or misuse. Set them before session_start(): session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']); (or call helmet_boot()).
+```
+
+**Fix.** Pick the case that matches the app:
+
+- **Squire kit 0.10.2 or later:** run `vendor/bin/squire update` and commit
+  the new `.squire/php.ini`, which sets `session.cookie_samesite = Lax`.
+  Nothing else to do where the kit's `php.ini` is used (local parity and the
+  portable image).
+- **Laravel:** you should not see this. The Laravel adapter uses Laravel's
+  session, not `NativeSession`, and Laravel sets its own cookie from
+  `config/session.php`. If you do see it, something in the app builds a
+  `NativeSession` by hand.
+- **Raw PHP on a host whose `php.ini` you do not control:** call
+  `helmet_boot()` before `session_start()` (HELMET sets all three), or add
+  `ini_set('session.cookie_httponly', '1');`,
+  `ini_set('session.cookie_secure', '1');` and
+  `ini_set('session.cookie_samesite', 'Lax');` before `session_start()`. The
+  `session_set_cookie_params()` line in the warning does the same.
+
+Keep `Lax`, not `Strict`: a `Strict` cookie is not sent when the identity
+provider sends the browser back, so the sign-in fails. `Lax` keeps CAS, OIDC
+and SAML working, because the CAS ticket and the OIDC code come back on a
+top-level GET and the SAML driver finishes on a GET after parking its POST.
 
 **Check.** The warning stops.
 `php -r "var_export(session_get_cookie_params());"` shows `httponly` true and

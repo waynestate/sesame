@@ -241,10 +241,13 @@ When the session cookie lacks `HttpOnly`, lacks `Secure` on an https request
 (`HTTPS` set, or `X-Forwarded-Proto: https`), or has a `SameSite` other than
 `Lax` or `Strict`, the first use in the request raises one `E_USER_WARNING`
 naming the missing flags and the fix, and the session keeps working. PHP's own
-defaults trip it (`HttpOnly` off and no `SameSite`), and so does Squire's
-`php.ini`, which sets `HttpOnly` and `Secure` but leaves `SameSite` empty. The
-fix is the `session_set_cookie_params()` line in the examples above, before
-`session_start()`, or HELMET's `helmet_boot()`, which sets all three.
+defaults trip it (`HttpOnly` off and no `SameSite`), and so did Squire's kit
+`php.ini` before Squire 0.10.2 (it now sets `session.cookie_samesite = Lax`;
+run `squire update`). Where the host's `php.ini` decides, the fix is the
+`session_set_cookie_params()` line in the examples above, before
+`session_start()`, or HELMET's `helmet_boot()`, which sets all three. The
+[upgrading guide](docs/upgrading.md#session-cookie-warning) has the fix per
+case.
 
 Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop (a
 `LogicException` on every call) instead of either warning, or `false` to leave

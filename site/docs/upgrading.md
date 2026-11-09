@@ -14,16 +14,29 @@ How to move between SESAME versions. Each section below is one released version 
 
 One new check that can need a step, and one that can stop an app that asked for hard stops. Laravel apps are not affected: the Laravel adapter uses Laravel's session, not `NativeSession`.
 
-- **`NativeSession` (raw PHP, and the Wayne Auth bridge) checks the session cookie's flags.** When the active session's cookie lacks `HttpOnly`, lacks `Secure` on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`), or has a `SameSite` other than `Lax` or `Strict`, the first use in a request raises one `E_USER_WARNING` that names the missing flags and the fix, and the session keeps working. SESAME still never sets a flag itself. PHP's own defaults trip it (`session.cookie_httponly` off, `session.cookie_samesite` empty), and so does Squire's kit `php.ini`, which sets `HttpOnly` and `Secure` but leaves `SameSite` empty. An app that calls HELMET's `helmet_boot()` before `session_start()` already sets all three and sees nothing.
+- **`NativeSession` (raw PHP, and the Wayne Auth bridge) checks the session cookie's flags.** When the active session's cookie lacks `HttpOnly`, lacks `Secure` on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`), or has a `SameSite` other than `Lax` or `Strict`, the first use in a request raises one `E_USER_WARNING` that names the missing flags and the fix, and the session keeps working. SESAME still never sets a flag itself. PHP's own defaults trip it (`session.cookie_httponly` off, `session.cookie_samesite` empty), and so does Squire's kit `php.ini` before Squire 0.10.2, which set `HttpOnly` and `Secure` but left `SameSite` empty. An app that calls HELMET's `helmet_boot()` before `session_start()` already sets all three and sees nothing.
 - **With `checkSessionSettings: true` it is a hard stop.** An app that passes `checkSessionSettings: true` to `new NativeSession()` and starts its session without those flags now gets a `LogicException` on every call, the same way it already did for strict mode. Set the flags before you deploy 0.7.0.
+
+### Session cookie warning[#](https://sesame.apps.wayne.edu/docs/upgrading.html#session-cookie-warning)
+
+The warning starts with `SESAME: the session cookie is sent without` and names the missing flags. Which fix you need depends on how the app runs:
+
+- **Squire kit 0.10.2 or later.** Run `vendor/bin/squire update` and commit the new `.squire/php.ini`; it sets `session.cookie_samesite = Lax` next to the `HttpOnly` and `Secure` lines it already had. Nothing else to do. The kit's `php.ini` covers local parity and the portable image; where the host supplies its own `php.ini`, read the third case.
+- **Laravel.** Unaffected. The Laravel adapter hands SESAME Laravel's session (`LaravelSession`), never `NativeSession`, and Laravel writes its own session cookie from `config/session.php` (`http_only`, `secure`, `same_site`), so the check never runs.
+- **Raw PHP on a host whose `php.ini` you do not control.** Call `helmet_boot()` before `session_start()` (HELMET sets strict mode and all three flags), or add these three lines before `session_start()`:
+  ```php
+  ini_set('session.cookie_httponly', '1');
+  ini_set('session.cookie_secure', '1');
+  ini_set('session.cookie_samesite', 'Lax');
+  ```
+  The one-line `session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);` that the warning prints does the same.
+
+`Lax` keeps CAS, OIDC and SAML working: the CAS ticket and the OIDC code come back on a top-level GET, which carries a `Lax` cookie, and the SAML driver parks its cross-site POST and finishes the sign-in on the GET that follows.
 
 **Steps.**
 
 1. `composer require waynestate/sesame:^0.7` (SESAME is below 1.0, so `^0.6` does not take 0.7.0).
-2. Set the cookie flags before `session_start()`, in one of these ways:
-   - call `helmet_boot()` (HELMET sets strict mode and all three flags);
-   - or add `session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);` before `session_start()`;
-   - or set `session.cookie_httponly = 1`, `session.cookie_secure = 1` and `session.cookie_samesite = Lax` in `php.ini` or the FPM pool. On a Squire kit, the one line to add is `session.cookie_samesite = Lax`. Keep `Lax`, not `Strict`: the identity provider sends the browser back with a cross-site navigation, and a `Strict` cookie is not sent on it, so every sign-in would fail. SESAME lets `Strict` through, so it will not warn you.
+2. Set the cookie flags before `session_start()` as the case above for your app says, or set `session.cookie_httponly = 1`, `session.cookie_secure = 1` and `session.cookie_samesite = Lax` in a `php.ini` or FPM pool you control. Keep `Lax`, not `Strict`: the identity provider sends the browser back with a cross-site navigation, and a `Strict` cookie is not sent on it, so every sign-in would fail. SESAME lets `Strict` through, so it will not warn you.
 3. To stay quiet without fixing the flags (not recommended), pass `checkSessionSettings: false`; it also turns off the strict mode settings and their warning.
 
 **How to verify.** Sign in and open a protected page: the PHP error log has no `SESAME: the session cookie is sent without` line. In the browser's developer tools the session cookie shows `HttpOnly`, `Secure` (on https) and `SameSite=Lax`. An app with `checkSessionSettings: true` signs in without a `LogicException`.
