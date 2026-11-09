@@ -11,12 +11,12 @@ The name does double duty: this is where SESAME proves itself. There are two kin
 
 | Check | Date | Commit | Result | Duration |
 |---|---|---|---|---|
-| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-09 | 0039f55 | pass, 839 tests, 2432 assertions | 2.9 s |
-| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-09 | 0039f55 | pass, 839 tests, 2432 assertions | 2.9 s |
-| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-09 | 0039f55 | pass, 839 tests, 2432 assertions | 3.0 s |
-| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-09 | 0039f55 | pass, all seven steps (tests: 839, 2432 assertions; PHPStan: no errors; audit: no advisories) | 10 s, after a composer install from a warm cache |
+| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 63 s |
+| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 41 s |
+| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 41 s |
+| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-09 | aac8ebf | pass, all seven steps (tests: 860, 2511 assertions; PHPStan: no errors; audit: no advisories) | 105 s, after a composer install from a warm cache |
 
-The run is on the main branch head after SESAME 0.7.0, which adds the commits listed under Unreleased in the changelog. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
+The run is on the 0.7.1 fixes, the commit just before the 0.7.1 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo bind-mounted, where file access is slow. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
 
 ## The proof site
 

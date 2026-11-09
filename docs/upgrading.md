@@ -10,7 +10,7 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
-## 0.7.1 (unreleased)
+## 0.7.1 (2026-11-09)
 
 No breaks for an app that follows the docs; three fixes, and two lines some
 apps can delete. Upgrade with `composer update waynestate/sesame` (the `^0.7`
