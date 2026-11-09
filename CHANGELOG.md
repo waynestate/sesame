@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the `wayneui-copies` and `composer-ci` CI jobs run Composer 2.11.1 (was 2.10.3, no longer maintained), pinned by its multi-arch list digest; 2.11 fixes GHSA-c968-33g3-wh7p and GHSA-fm2w-xgf2-f9fh.
+
 ## [0.7.0] - 2026-11-09
 
 - Docs: the upgrading guide has a 0.7.0 section: what to set so the new cookie flag warning stays quiet, and the `^0.7` constraint step.
