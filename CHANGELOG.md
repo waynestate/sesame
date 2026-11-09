@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.
+- Changed: the deploy kit is Squire 0.10.1 (was 0.10.0): the fallback base image copies Composer 2.11.1 (was 2.10.3, no longer maintained); the deploy layer requires PROCTOR ^0.11 (locked 0.11.0, was ^0.8 at 0.8.0).
 - Added: NativeSession warns once per request when the session cookie lacks HttpOnly, Secure (on https) or a Lax or Strict SameSite, and throws with checkSessionSettings: true; it still never sets cookie flags (S3).
 - Docs: truth pass for 2026-11-09. Every raw-PHP example sets the cookie flags with `session_set_cookie_params()` before `session_start()`, so following the docs gives no warning; the README, raw PHP guide, session timeouts table, API reference, troubleshooting and the Wayne Auth guide describe the cookie flag check; BEST_PRACTICES cites current line numbers throughout, S2 says which `session_start()` and cookie calls `NativeSession` does make, S11 says the CAS URL check parses the URL (it said a prefix test), S12 names the `ST-` prefix, S41 says a missing or `None` SameSite is now caught but `Strict` is not, and S45 names kit 0.10.0; MAINTAINING lists every runtime dependency and every `composer ci` step.
 
