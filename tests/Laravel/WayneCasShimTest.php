@@ -6,7 +6,10 @@ namespace Waynestate\Sesame\Tests\Laravel;
 
 use DateTimeImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Tests\Laravel\Support\NullUser;
@@ -100,5 +103,104 @@ final class WayneCasShimTest extends LaravelTestCase
         $app['router']->pushMiddlewareToGroup('web', 'wayne.cas');
 
         $this->get('/login')->assertRedirect('/');
+    }
+
+    public function testItRefreshesAnEloquentUserThroughTheQuery(): void
+    {
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+        DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
+
+        $refreshed = (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+
+        self::assertInstanceOf(EloquentCasUser::class, $refreshed);
+        self::assertSame('jdoe', $refreshed->getKey());
+        self::assertSame('Jane Doe', $refreshed->getAttribute('username'));
+    }
+
+    public function testItRefreshesAnEloquentUserToNullAfterDeletion(): void
+    {
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+        DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
+
+        $resolver = new UserResolver();
+        self::assertInstanceOf(EloquentCasUser::class, $resolver->refreshUser(new EloquentCasUser(['id' => 'jdoe'])));
+
+        DB::table('cas_users')->where('id', 'jdoe')->delete();
+
+        self::assertNull($resolver->refreshUser(new EloquentCasUser(['id' => 'jdoe'])));
+    }
+
+    public function testItRefreshesAUserThroughAStaticFindMethod(): void
+    {
+        config()->set('auth.providers.users.model', StaticFindUser::class);
+
+        $refreshed = (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+
+        self::assertSame('jdoe', $refreshed);
+    }
+
+    public function testItThrowsWhenTheModelIsNeitherEloquentNorStaticFind(): void
+    {
+        config()->set('auth.providers.users.model', NullUser::class);
+
+        try {
+            (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+            self::fail('Expected an InvalidConfig.');
+        } catch (InvalidConfig $e) {
+            self::assertSame('The wayne-cas shim needs auth.providers.users.model to be an Eloquent model or a class with a static find method.', $e->getMessage());
+        }
+    }
+
+    private function createCasUsersTable(): void
+    {
+        Schema::create('cas_users', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->string('username');
+        });
+    }
+}
+
+/**
+ * A small Eloquent user for the wayne-cas shim tests.
+ *
+ * It is keyed by the string access ID, the way wayne-cas users are. The
+ * cas_users table is created by the test on the testbench sqlite connection.
+ */
+class EloquentCasUser extends \Illuminate\Database\Eloquent\Model
+{
+    public $incrementing = false;
+
+    public $timestamps = false;
+
+    protected $guarded = [];
+
+    protected $table = 'cas_users';
+
+    public function getKeyType(): string
+    {
+        return 'string';
+    }
+}
+
+/**
+ * A stand-in for a user model with a static find() method, for the
+ * wayne-cas shim tests.
+ *
+ * It is not an Eloquent model, so the shim must take the static find() path
+ * when it refreshes.
+ */
+class StaticFindUser
+{
+    /**
+     * @param  mixed  $key
+     * @return mixed
+     */
+    public static function find($key)
+    {
+        return $key;
     }
 }

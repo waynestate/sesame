@@ -46,6 +46,12 @@ class UserResolver implements \Waynestate\Sesame\UserResolver, \Waynestate\Sesam
      * it in. A plain find, never findOrImportUser: a refresh must not import
      * a user back who was deleted after the sign-in.
      *
+     * An Eloquent model is looked up through its query builder (the shim
+     * calls query()-> find() on the model), because find() is not a method
+     * declared on the model: it reaches the builder through __callStatic, so
+     * method_exists() cannot see it. Any other model must declare a static
+     * find().
+     *
      * @param  mixed  $user  The user the session holds.
      * @return mixed The current user, or null when it no longer exists.
      */
@@ -59,10 +65,20 @@ class UserResolver implements \Waynestate\Sesame\UserResolver, \Waynestate\Sesam
 
         $model = config('auth.providers.users.model');
 
-        if (! is_string($model) || $model === '' || ! class_exists($model) || ! method_exists($model, 'find')) {
-            throw new InvalidConfig('The wayne-cas shim needs auth.providers.users.model to be a class with a static find method.');
+        $message = 'The wayne-cas shim needs auth.providers.users.model to be an Eloquent model or a class with a static find method.';
+
+        if (! is_string($model) || $model === '' || ! class_exists($model)) {
+            throw new InvalidConfig($message);
         }
 
-        return $model::find($user->getKey());
+        if (is_subclass_of($model, 'Illuminate\Database\Eloquent\Model')) {
+            return $model::query()->find($user->getKey());
+        }
+
+        if (method_exists($model, 'find')) {
+            return $model::find($user->getKey());
+        }
+
+        throw new InvalidConfig($message);
     }
 }
