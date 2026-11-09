@@ -24,6 +24,7 @@ use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 
@@ -261,7 +262,7 @@ final class OAuth2Driver implements Driver
 
             $response = $this->http->sendRequest($request);
         } catch (\Throwable) {
-            throw new AuthenticationFailed('The token introspection endpoint could not be reached (oauth2.introspection_unavailable).');
+            throw new ProviderUnavailable('The token introspection endpoint could not be reached (oauth2.introspection_unavailable).');
         }
 
         $status = $response->getStatusCode();

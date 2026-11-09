@@ -17,12 +17,15 @@ use Waynestate\Sesame\SessionPort;
 /**
  * The app's native PHP session, seen through the port.
  *
- * This class never starts a session and never sets cookie flags. Starting the
- * session is the app's job (`session_start()`), and hardening the session
- * cookie is HELMET's job. It reads and writes `$_SESSION` on a session that
- * is already active. `invalidate()` is the one operation that ends the
- * session: it clears the data, expires the cookie on the client, and retires
- * the session, so a stolen ID is dead after logout.
+ * This class never starts the request's first session and never sets cookie
+ * flags. Starting the session is the app's job (`session_start()`), and
+ * hardening the session cookie is HELMET's job. It reads and writes
+ * `$_SESSION` on a session that is already active, and it only ever starts
+ * a session of its own under a new ID it made itself, to replace one it
+ * just retired. `invalidate()` is the one operation that ends a session: it
+ * clears the data, retires the session, so a stolen ID is dead after logout,
+ * and starts a fresh empty one under a new ID, so the rest of the request
+ * (a redirect to the sign-in after a timeout) still has a session to write.
  *
  * `regenerate()` does not delete the old session at once. It marks the old
  * session with a "destroyed at" time and the new ID, keeps it for a grace
@@ -147,14 +150,17 @@ final class NativeSession implements SessionPort
     }
 
     /**
-     * Clear the data, expire the cookie, and retire the session.
+     * Clear the data, retire the session, and carry on in a fresh one.
      *
-     * The data is cleared and the session cookie is expired on the client,
-     * so a stolen ID is dead after logout and the client stops sending the
-     * cookie. With the default window the store keeps only a "logged out
-     * at" marker under the same ID, so a later request that presents it
-     * can be logged as an anomaly (see the class documentation). With a
-     * zero window the session is destroyed outright, the old behavior.
+     * The data is cleared and the old session cookie is expired, so a
+     * stolen ID is dead after logout. With the default window the store
+     * keeps only a "logged out at" marker under the old ID, so a later
+     * request that presents it can be logged as an anomaly (see the class
+     * documentation). With a zero window the old session is destroyed
+     * outright. Either way a new, empty session is then active under a new
+     * ID (from 0.7.1), so the rest of the request can keep using the port:
+     * a timed-out session followed by a redirect to the sign-in, which
+     * writes the pending sign-in, no longer throws.
      */
     public function invalidate(): void
     {
@@ -184,16 +190,42 @@ final class NativeSession implements SessionPort
 
         if ($this->logoutReuseTtlSeconds === 0) {
             session_destroy();
+        } else {
+            // The tombstone goes into the store itself, under the same ID:
+            // the next request presenting this ID reads it back, no shared
+            // cache needed. Writing closes the session, which is what makes
+            // the marker durable.
+            $_SESSION = ['sesame.logged_out_at' => (int) $this->now()->format('U')];
+            session_write_close();
+        }
 
+        $this->startFreshSession();
+    }
+
+    /**
+     * Carry the request on in a new, empty session after invalidate().
+     *
+     * A sign-out is often not the end of the request: a session that timed
+     * out is signed out by user(), and the same request then sends the
+     * visitor to the identity provider, which stores the pending sign-in in
+     * the session (the cas driver's login binding), or the app keeps writing
+     * its own keys. With the old session closed, every such write threw
+     * "No session is active", a blank 500 instead of the sign-in page. So a
+     * new session starts here, under an ID made by session_create_id(),
+     * never one from the request, with the safe settings turned on first
+     * and strict mode kept as the app set it (startUnderNewId()). The new
+     * session holds nothing, and its cookie replaces the expired one, so the
+     * dead ID is never sent again. When the response has already started
+     * (headers sent), no cookie can go out, so the session stays closed, as
+     * it did before 0.7.1.
+     */
+    private function startFreshSession(): void
+    {
+        if (headers_sent()) {
             return;
         }
 
-        // The tombstone goes into the store itself, under the same ID: the
-        // next request presenting this ID reads it back, no shared cache
-        // needed. Writing closes the session, which is what makes the
-        // marker durable.
-        $_SESSION = ['sesame.logged_out_at' => (int) $this->now()->format('U')];
-        session_write_close();
+        $this->startUnderNewId($this->createId(), []);
     }
 
     private function requireActive(): void
@@ -461,7 +493,8 @@ final class NativeSession implements SessionPort
     }
 
     /**
-     * Start the session under the ID regenerate() just made, holding $data.
+     * Start the session under the ID regenerate() or invalidate() just
+     * made, holding $data.
      *
      * Strict mode (HELMET and Squire's php.ini turn it on) refuses an ID the
      * store has never seen, and the new ID is not in the store yet: PHP

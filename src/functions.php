@@ -11,6 +11,7 @@ use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\MfaNotSatisfied;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Support\JsonGuest;
 
 /**
  * SESAME, the raw-PHP path.
@@ -82,6 +83,12 @@ if (! function_exists('sesame_login')) {
      * every request cannot bounce the signed-in user back to the identity
      * provider in a loop.
      *
+     * A request with no user, no ticket and no step_up that comes from a
+     * script (the first Accept type is JSON, or X-Requested-With:
+     * XMLHttpRequest) is not redirected: it gets a 401 with
+     * {"signedIn":false}, the body sesame_status() sends, and the script
+     * stops. A session that has just timed out counts as no user.
+     *
      * When a ticket completes the login, the user is sent to the driver's
      * service URL, which has no ticket, and the script stops, so the ticket
      * never stays in the address bar (it would otherwise end up in browser
@@ -122,6 +129,12 @@ if (! function_exists('sesame_login')) {
 
             if ($user !== null) {
                 return $user;
+            }
+
+            // A script's request gets a 401 it can read, not a redirect to
+            // a sign-in page it cannot follow (the Laravel middleware's rule).
+            if (JsonGuest::expected($request)) {
+                JsonGuest::send();
             }
         }
 

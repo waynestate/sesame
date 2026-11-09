@@ -7,6 +7,7 @@ namespace Waynestate\Sesame\Drivers;
 use DateTimeImmutable;
 use Exception;
 use Psr\Clock\ClockInterface;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,6 +18,7 @@ use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\Drivers\Cas\PendingLogin;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 use Waynestate\Sesame\Redirect;
@@ -39,6 +41,11 @@ use Waynestate\Sesame\SessionPort;
  * Ticket replay: the CAS server refuses a reused ticket with
  * INVALID_TICKET. SESAME relies on that and surfaces it as
  * AuthenticationFailed.
+ *
+ * CAS down: when the ticket check cannot reach the server (the PSR-18 client
+ * throws, for example on a timeout) or the server answers 5xx, the driver
+ * throws ProviderUnavailable, a subclass of AuthenticationFailed, so the app
+ * can answer 503 instead of a refusal. Nobody is signed in either way.
  *
  * The sign-in time comes from the CAS authenticationDate attribute when the
  * server sends one; otherwise it is the driver's clock. Time is read through
@@ -146,9 +153,25 @@ final class CasDriver implements Driver
         $path = $this->protocol === '3.0' ? '/p3/serviceValidate' : '/serviceValidate';
         $query = http_build_query($this->loginQuery() + ['ticket' => $ticket], '', '&', PHP_QUERY_RFC3986);
 
-        $response = $this->http->sendRequest(
-            $this->requests->createRequest('GET', $this->base . $path . '?' . $query),
-        );
+        // A CAS server that is down, unreachable or slower than the client's
+        // timeout is not a refused ticket: it is ProviderUnavailable (still
+        // an AuthenticationFailed), so the app can answer 503 and let the
+        // visitor try again. The client's exception is not chained, because
+        // it holds the request URL, and the URL holds the ticket.
+        try {
+            $response = $this->http->sendRequest(
+                $this->requests->createRequest('GET', $this->base . $path . '?' . $query),
+            );
+        } catch (ClientExceptionInterface) {
+            throw new ProviderUnavailable('The CAS server could not be reached to check the ticket, or did not answer in time (cas.unavailable).');
+        }
+
+        if ($response->getStatusCode() >= 500) {
+            throw new ProviderUnavailable(sprintf(
+                'The CAS server answered with HTTP %d instead of 200 (cas.unavailable).',
+                $response->getStatusCode(),
+            ));
+        }
 
         if ($response->getStatusCode() !== 200) {
             throw new AuthenticationFailed(sprintf(

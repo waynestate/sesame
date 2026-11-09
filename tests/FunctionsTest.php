@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests;
 
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
@@ -244,6 +245,58 @@ PHP;
         $output = $this->runChildPhp($this->childScript($body));
 
         self::assertStringNotContainsString('CONTINUED_AFTER_REDIRECT', $output);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function scriptRequests(): array
+    {
+        return [
+            'XHR' => ["\$_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';"],
+            'fetch asking for JSON' => ["\$_SERVER['HTTP_ACCEPT'] = 'application/json';"],
+        ];
+    }
+
+    #[DataProvider('scriptRequests')]
+    public function testSesameLoginAnswersAScriptWith401JsonInsteadOfARedirect(string $headerLine): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\EventLog;
+use Waynestate\Sesame\Tests\Support\RecordingDriver;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+use Waynestate\Sesame\Tests\Support\RecordingSession;
+
+$log = new EventLog();
+$sesame = new Sesame(
+    new RecordingDriver(new Redirect('http://idp.local/login?service=x'), null, $log),
+    new RecordingResolver(),
+    new RecordingSession($log),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+);
+sesame($sesame);
+
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_SERVER['REQUEST_URI'] = '/save';
+$_SERVER['HTTP_HOST'] = 'app.test';
+__HEADER__
+$_GET = [];
+
+register_shutdown_function(static function () use ($log): void {
+    echo '|DRIVER:' . (in_array('login', $log->events, true) ? 'called' : 'untouched');
+});
+
+sesame_login();
+
+echo 'CONTINUED_AFTER_401';
+PHP;
+
+        $output = $this->runChildPhp($this->childScript(str_replace('__HEADER__', $headerLine, $body)));
+
+        self::assertSame('{"signedIn":false}|DRIVER:untouched', $output, 'A script gets the JSON 401 body, the driver never runs, and the script stops.');
     }
 
     public function testSesameLoginRedirectsToTheServiceUrlAfterACasLogin(): void

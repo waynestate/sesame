@@ -9,9 +9,10 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\WayneAuth\WayneAuth;
 
 /**
- * The Wayne Auth bridge with its three seams swapped for tests: the request
- * is the one given, a redirect throws RedirectSent instead of sending a
- * header and exiting, and the time is a fixed clock's.
+ * The Wayne Auth bridge with its seams swapped for tests: the request
+ * is the one given, a redirect throws RedirectSent (and the 401 for a
+ * script's request throws UnauthorizedSent) instead of sending a header and
+ * exiting, and the time is a fixed clock's.
  */
 final class TestableWayneAuth extends WayneAuth
 {
@@ -34,6 +35,11 @@ final class TestableWayneAuth extends WayneAuth
     protected function redirect(string $url): never
     {
         throw new RedirectSent($url);
+    }
+
+    protected function unauthorized(): never
+    {
+        throw new UnauthorizedSent();
     }
 
     protected function now(): int

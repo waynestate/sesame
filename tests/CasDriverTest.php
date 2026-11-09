@@ -22,6 +22,7 @@ use Waynestate\Sesame\Drivers\Cas\PendingLogin;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Mfa;
 use Waynestate\Sesame\MfaResult;
@@ -32,6 +33,7 @@ use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
+use Waynestate\Sesame\Tests\Support\UnreachableHttpClient;
 
 final class CasDriverTest extends TestCase
 {
@@ -656,12 +658,14 @@ final class CasDriverTest extends TestCase
         ];
     }
 
-    public function testATransportFailureIsNotSwallowedAndSignsNobodyIn(): void
+    public function testATransportFailureIsProviderUnavailableAndSignsNobodyIn(): void
     {
-        // A PSR-18 client that fails the TLS handshake: the exception must
-        // come straight back out of login(), unchanged, and nobody is signed
-        // in.
-        $exception = new class ('SSL: certificate subject name does not match target host') extends \RuntimeException implements ClientExceptionInterface {};
+        // A PSR-18 client that fails the TLS handshake: login() throws the
+        // typed ProviderUnavailable (an AuthenticationFailed), not the
+        // client's own exception, and nobody is signed in. Until 0.7.1 the
+        // client's exception escaped, and an app that caught only
+        // AuthenticationFailed showed a blank 500.
+        $exception = new class ('SSL: certificate subject name does not match target host for ' . self::BASE . '/serviceValidate?ticket=ST-1') extends \RuntimeException implements ClientExceptionInterface {};
 
         $http = new class ($exception) implements ClientInterface {
             public function __construct(private readonly \Throwable $failure) {}
@@ -672,14 +676,65 @@ final class CasDriverTest extends TestCase
             }
         };
 
-        // Binding off: this test is about transport failure propagation.
+        // Binding off: this test is about transport failure.
         $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, new FakeClock(), null, false);
 
         try {
             $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
-            self::fail('Expected the client exception to be rethrown.');
-        } catch (ClientExceptionInterface $caught) {
-            self::assertSame($exception, $caught);
+            self::fail('Expected ProviderUnavailable.');
+        } catch (ProviderUnavailable $caught) {
+            self::assertInstanceOf(AuthenticationFailed::class, $caught);
+            self::assertStringContainsString('(cas.unavailable)', $caught->getMessage());
+            self::assertStringNotContainsString('ST-1', $caught->getMessage(), 'The ticket URL never reaches the message.');
+            self::assertNull($caught->getPrevious(), 'The client exception holds the ticket URL, so it is not chained.');
+        }
+    }
+
+    public function testACasServerThatTimesOutIsProviderUnavailable(): void
+    {
+        $http = new UnreachableHttpClient();
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, new FakeClock(), null, false);
+
+        $this->expectException(ProviderUnavailable::class);
+        $this->expectExceptionMessage('did not answer in time (cas.unavailable)');
+
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+    }
+
+    #[DataProvider('serverErrorStatuses')]
+    public function testACasServer5xxIsProviderUnavailable(int $status): void
+    {
+        $driver = $this->driver(new FakeHttpClient([self::response($status, 'Bad Gateway')]));
+
+        $this->expectException(ProviderUnavailable::class);
+        $this->expectExceptionMessage(sprintf('HTTP %d instead of 200 (cas.unavailable)', $status));
+
+        $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function serverErrorStatuses(): array
+    {
+        return [
+            '500 internal server error' => [500],
+            '502 bad gateway' => [502],
+            '503 service unavailable' => [503],
+            '504 gateway timeout' => [504],
+        ];
+    }
+
+    public function testACasServer4xxIsARefusalNotProviderUnavailable(): void
+    {
+        $driver = $this->driver(new FakeHttpClient([self::response(403, 'Forbidden')]));
+
+        try {
+            $driver->login(new ServerRequest('GET', self::SERVICE . '?ticket=ST-1'));
+            self::fail('Expected AuthenticationFailed.');
+        } catch (AuthenticationFailed $e) {
+            self::assertNotInstanceOf(ProviderUnavailable::class, $e);
+            self::assertStringContainsString('HTTP 403 instead of 200', $e->getMessage());
         }
     }
 

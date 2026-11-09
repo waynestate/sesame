@@ -16,10 +16,12 @@ use Waynestate\Sesame\Config;
 use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
+use Waynestate\Sesame\Support\JsonGuest;
 use Waynestate\Sesame\UserResolver;
 
 /**
@@ -49,7 +51,10 @@ use Waynestate\Sesame\UserResolver;
  *   session, and the browser is sent on to the service URL without the
  *   ticket. A ticket that does not validate throws AuthenticationFailed, as
  *   everywhere in SESAME, instead of answering false: answering false would
- *   send the browser back to CAS and round again, forever.
+ *   send the browser back to CAS and round again, forever. A CAS server
+ *   that cannot be reached throws ProviderUnavailable, its subclass.
+ * - A guest's script request (XHR or fetch asking for JSON) gets a 401 with
+ *   `{"signedIn":false}`, not the redirect to CAS.
  * - `_parseSSOCookie('d')`, which handed the app the user's password, has no
  *   equivalent: CAS never gives an app the password. It throws.
  * - The AccessID is the CAS username. Boot with `accessid_case` (`upper` or
@@ -252,8 +257,18 @@ class WayneAuth
      *   script; a ticket that does not validate throws AuthenticationFailed;
      * - a guest is sent to the CAS sign-in and the script stops (or, booted
      *   with `on_guest => deny`, false is returned and nothing is sent);
+     *   a guest's script request (Accept: JSON, or X-Requested-With:
+     *   XMLHttpRequest) gets a 401 with `{"signedIn":false}` instead of the
+     *   redirect, and the script stops;
      * - false when the app's resolver refused the identity.
      *
+     * A session past its idle (120 minutes) or absolute (12 hours) timeout
+     * is a guest again: it is signed out, a fresh session takes its place,
+     * and the steps above apply.
+     *
+     * @throws ProviderUnavailable When the CAS server cannot be reached to
+     *         check a ticket, or does not answer in time (a subclass of
+     *         AuthenticationFailed: catch it first to answer 503).
      * @throws AuthenticationFailed When a CAS ticket does not validate.
      */
     public function authenticateSSO(): bool
@@ -285,6 +300,13 @@ class WayneAuth
 
         if ($this->onGuest === self::ON_GUEST_DENY) {
             return false;
+        }
+
+        // A script's request (an XHR save from a page whose session timed
+        // out) gets a 401 it can read, not a redirect to the CAS page it
+        // cannot follow. The next page load goes through CAS as usual.
+        if (JsonGuest::expected($request)) {
+            $this->unauthorized();
         }
 
         $step = $sesame->login($request);
@@ -372,6 +394,15 @@ class WayneAuth
         header('Location: ' . $url, true, 302);
 
         exit;
+    }
+
+    /**
+     * Answer a script's request with 401 and `{"signedIn":false}`, and stop
+     * the script, so no protected code runs.
+     */
+    protected function unauthorized(): never
+    {
+        JsonGuest::send();
     }
 
     /**

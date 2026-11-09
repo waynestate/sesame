@@ -16,6 +16,7 @@ use Waynestate\Sesame\Drivers\Cas\PendingLogin;
 use Waynestate\Sesame\Drivers\CasDriver;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\EventLog;
 use Waynestate\Sesame\Tests\Support\FakeClock;
@@ -24,6 +25,8 @@ use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
 use Waynestate\Sesame\Tests\Support\RedirectSent;
 use Waynestate\Sesame\Tests\Support\TestableWayneAuth;
+use Waynestate\Sesame\Tests\Support\UnauthorizedSent;
+use Waynestate\Sesame\Tests\Support\UnreachableHttpClient;
 use Waynestate\Sesame\WayneAuth\WayneAuth;
 
 /**
@@ -78,10 +81,11 @@ final class WayneAuthBridgeTest extends TestCase
 
     /**
      * @param array<string, string> $query
+     * @param array<string, string> $headers
      */
-    private function bridge(array $query = [], ?string $onGuest = null, ?string $accessIdCase = null, ?Sesame $sesame = null): TestableWayneAuth
+    private function bridge(array $query = [], ?string $onGuest = null, ?string $accessIdCase = null, ?Sesame $sesame = null, array $headers = []): TestableWayneAuth
     {
-        $request = (new ServerRequest('GET', self::SERVICE . ($query === [] ? '' : '?' . http_build_query($query))))
+        $request = (new ServerRequest('GET', self::SERVICE . ($query === [] ? '' : '?' . http_build_query($query)), $headers))
             ->withQueryParams($query);
 
         return new TestableWayneAuth($request, $this->clock->now()->getTimestamp(), self::LEGACY, $sesame ?? $this->sesame, $onGuest, $accessIdCase);
@@ -212,6 +216,85 @@ final class WayneAuthBridgeTest extends TestCase
         $this->clock->advance(121 * 60);
 
         self::assertStringStartsWith(self::BASE . '/login?', $this->redirectOf($this->bridge()));
+    }
+
+    public function testAGuestsXhrGetsA401InsteadOfTheRedirectToCas(): void
+    {
+        try {
+            $this->bridge([], null, null, null, ['X-Requested-With' => 'XMLHttpRequest'])->authenticateSSO();
+            self::fail('Expected the 401 for a script request.');
+        } catch (UnauthorizedSent) {
+            self::assertArrayNotHasKey(PendingLogin::SESSION_KEY, $this->session->store, 'No sign-in is started for a script.');
+        }
+    }
+
+    public function testAFetchThatAsksForJsonGetsA401Too(): void
+    {
+        $this->expectException(UnauthorizedSent::class);
+
+        $this->bridge([], null, null, null, ['Accept' => 'application/json'])->authenticateSSO();
+    }
+
+    public function testAnXhrAfterTheIdleTimeoutGetsA401AndTheSessionIsSignedOut(): void
+    {
+        $this->signIn();
+        $this->clock->advance(121 * 60);
+
+        try {
+            $this->bridge([], null, null, null, ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => '*/*'])->authenticateSSO();
+            self::fail('Expected the 401 for a script request after the timeout.');
+        } catch (UnauthorizedSent) {
+            self::assertArrayNotHasKey('sesame.user', $this->session->store);
+        }
+    }
+
+    public function testAnXhrFromASignedInVisitorStillPasses(): void
+    {
+        $this->signIn();
+
+        self::assertTrue($this->bridge([], null, null, null, ['X-Requested-With' => 'XMLHttpRequest'])->authenticateSSO());
+    }
+
+    public function testAPjaxRequestOrAnHtmlNavigationIsStillRedirected(): void
+    {
+        self::assertStringStartsWith(self::BASE . '/login?', $this->redirectOf(
+            $this->bridge([], null, null, null, ['X-Requested-With' => 'XMLHttpRequest', 'X-PJAX' => 'true']),
+        ));
+        self::assertStringStartsWith(self::BASE . '/login?', $this->redirectOf(
+            $this->bridge([], null, null, null, ['Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9']),
+        ));
+    }
+
+    public function testADeniedGuestsXhrStillGetsFalse(): void
+    {
+        self::assertFalse($this->bridge([], WayneAuth::ON_GUEST_DENY, null, null, ['Accept' => 'application/json'])->authenticateSSO());
+    }
+
+    public function testCasUnreachableDuringTheTicketCheckThrowsProviderUnavailable(): void
+    {
+        $http = new UnreachableHttpClient();
+        $driver = new CasDriver(self::BASE, self::SERVICE, $http, new Psr17Factory(), '2.0', false, false, $this->clock, $this->session);
+        $sesame = new Sesame(
+            $driver,
+            new RecordingResolver('the-app-user'),
+            $this->session,
+            new Config(driver: 'cas', environment: 'production', casBaseUrl: self::BASE, casServiceUrl: self::SERVICE),
+            $this->clock,
+        );
+
+        $this->redirectOf($this->bridge([], null, null, $sesame));
+
+        try {
+            $this->bridge(['ticket' => 'ST-1-down'], null, null, $sesame)->authenticateSSO();
+            self::fail('Expected ProviderUnavailable.');
+        } catch (ProviderUnavailable $down) {
+            self::assertInstanceOf(AuthenticationFailed::class, $down, 'Apps that catch AuthenticationFailed still catch it.');
+            self::assertStringContainsString('cas.unavailable', $down->getMessage());
+            self::assertStringNotContainsString('ST-1-down', $down->getMessage(), 'The ticket never reaches the message.');
+            self::assertNull($down->getPrevious(), 'The client exception, which holds the ticket URL, is not chained.');
+            self::assertCount(1, $http->requests);
+            self::assertArrayNotHasKey('sesame.user', $this->session->store, 'Nobody is signed in.');
+        }
     }
 
     public function testVerifyReportsTheAccessIdAndTheTimeLeftWithoutRedirecting(): void

@@ -12,6 +12,7 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
 use Psr\Clock\ClockInterface;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +29,7 @@ use Waynestate\Sesame\Drivers\Oidc\PendingLogins;
 use Waynestate\Sesame\Drivers\Oidc\ProcessCache;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\LoginStep;
 use Waynestate\Sesame\Redirect;
@@ -390,6 +392,12 @@ final class OidcDriver implements Driver, RemembersReturnTo
                 // Raised by SESAME itself (a redirect answer), with a safe
                 // message; rebuilt so nothing is chained.
                 throw new AuthenticationFailed($e->getMessage());
+            }
+
+            if ($e instanceof ClientExceptionInterface) {
+                // The HTTP client could not reach the token endpoint (or it
+                // timed out): the provider is down, not refusing.
+                throw new ProviderUnavailable('The token endpoint could not be reached (oidc.token_exchange).');
             }
 
             throw new AuthenticationFailed('The token endpoint could not be used (oidc.token_exchange).');

@@ -8,6 +8,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 
 /**
  * The issuer's OpenID Provider metadata, from its discovery document.
@@ -126,7 +127,7 @@ final readonly class Discovery
                 $this->requests->createRequest('GET', $url)->withHeader('Accept', 'application/json'),
             );
         } catch (\Throwable) {
-            throw new AuthenticationFailed('The issuer\'s discovery document could not be reached (oidc.discovery_unavailable).');
+            throw new ProviderUnavailable('The issuer\'s discovery document could not be reached (oidc.discovery_unavailable).');
         }
 
         $status = $response->getStatusCode();

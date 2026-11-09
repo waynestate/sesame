@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Waynestate\Sesame\Session\NativeSession;
 
 final class NativeSessionTest extends TestCase
 {
-    public function testInvalidateLeavesOnlyAMarkerInTheStore(): void
+    public function testInvalidateLeavesOnlyAMarkerUnderTheOldIdAndCarriesOnInAFreshSession(): void
     {
         $body = <<<'PHP'
 use Waynestate\Sesame\Session\NativeSession;
@@ -29,12 +30,25 @@ $oldId = session_id();
 $session = new NativeSession();
 $session->invalidate();
 
+$status = session_status();
+$newId = (string) session_id();
+$keysAfter = array_keys($_SESSION);
+
+// The rest of the request can still use the session (the cas driver's
+// pending sign-in after a timeout), and the write lands under the new ID.
+$session->put('sesame.cas.pending', ['written']);
+session_write_close();
+
+$oldRaw = (string) file_get_contents($savePath.'/sess_'.$oldId);
+$newRaw = (string) @file_get_contents($savePath.'/sess_'.$newId);
+
 $result = [
-    'status' => session_status(),
-    'keys' => array_keys($_SESSION),
-    'markerIsInt' => is_int($_SESSION['sesame.logged_out_at'] ?? null),
-    'keptTheId' => session_id() === $oldId,
-    'oldFileExists' => file_exists($savePath.'/sess_'.$oldId),
+    'status' => $status,
+    'newIdDiffers' => $newId !== $oldId && $newId !== '',
+    'keysAfter' => $keysAfter,
+    'oldHoldsOnlyTheMarker' => preg_match('/^sesame\.logged_out_at\|i:\d+;$/', $oldRaw) === 1,
+    'newHoldsTheWrite' => str_contains($newRaw, 'written') && ! str_contains($newRaw, 'value'),
+    'strictModeKept' => ini_get('session.use_strict_mode'),
 ];
 echo json_encode($result);
 PHP;
@@ -43,14 +57,158 @@ PHP;
         $result = json_decode($output, true);
 
         self::assertIsArray($result, 'Child output was not JSON: ' . $output);
-        self::assertSame(1, $result['status'], 'The session should be closed (PHP_SESSION_NONE).');
-        self::assertSame(['sesame.logged_out_at'], $result['keys'], 'The store should hold only the logout marker.');
-        self::assertTrue($result['markerIsInt'], 'The marker should be an int unix time.');
-        self::assertTrue($result['keptTheId'], 'The session ID should be kept so the marker is findable under it.');
-        self::assertTrue($result['oldFileExists'], 'The session file should still exist, holding the marker.');
+        self::assertSame(2, $result['status'], 'A fresh session should be active after invalidate() (PHP_SESSION_ACTIVE).');
+        self::assertTrue($result['newIdDiffers'], 'The fresh session should run under a new ID.');
+        self::assertSame([], $result['keysAfter'], 'The fresh session should start empty.');
+        self::assertTrue($result['oldHoldsOnlyTheMarker'], 'The old ID should hold only the int logout marker.');
+        self::assertTrue($result['newHoldsTheWrite'], 'A write after invalidate() should land in the fresh session, not the old one.');
+        self::assertSame('1', $result['strictModeKept'], 'Strict mode should be back on after the fresh start.');
     }
 
-    public function testInvalidateWithAZeroTtlDestroysTheSessionAtOnce(): void
+    public function testInvalidateAfterTheResponseStartedLeavesTheSessionClosedQuietly(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-native-sent-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_TEST_SENT');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+session_start();
+$_SESSION['test'] = 'value';
+
+$session = new NativeSession();
+$session->get('test');
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+});
+
+// The page has already printed: no cookie can go out any more.
+echo "BODY\n";
+
+$session->invalidate();
+restore_error_handler();
+
+echo json_encode(['status' => session_status(), 'warnings' => $warnings]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode(substr($output, (int) strpos($output, '{')), true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame(1, $result['status'], 'With headers sent the session stays closed (PHP_SESSION_NONE), as before.');
+        self::assertSame([], array_values(array_filter(
+            $result['warnings'],
+            static fn(mixed $message): bool => is_string($message) && str_contains($message, 'session_start'),
+        )), 'No session_start() warning is raised.');
+    }
+
+    /**
+     * A visitor comes back to a session that timed out, and the same request
+     * sends them to CAS, which stores the pending sign-in. In 0.7.0 that
+     * write threw "No session is active", and the app showed a blank 500.
+     *
+     * @return array<string, array{int, int, string}>
+     */
+    public static function timedOutSessions(): array
+    {
+        return [
+            // Quiet for 3 hours, past the 2 hour idle timeout.
+            'idle timeout' => [-3 * 3600, -3 * 3600, 'idle_timeout'],
+            // Active a minute ago, but signed in 13 hours ago: past the 12 hours.
+            'absolute timeout' => [-13 * 3600, -60, 'absolute_timeout'],
+        ];
+    }
+
+    #[DataProvider('timedOutSessions')]
+    public function testATimedOutSessionIsSentToCasInAFreshSession(int $signedInAgo, int $lastSeenAgo, string $reason): void
+    {
+        $body = <<<'PHP'
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\ServerRequest;
+use Waynestate\Sesame\Config;
+use Waynestate\Sesame\Drivers\Cas\PendingLogin;
+use Waynestate\Sesame\Drivers\CasDriver;
+use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Session\NativeSession;
+use Waynestate\Sesame\Tests\Support\ArrayLogger;
+use Waynestate\Sesame\Tests\Support\FakeClock;
+use Waynestate\Sesame\Tests\Support\FakeHttpClient;
+use Waynestate\Sesame\Tests\Support\RecordingResolver;
+
+$savePath = sys_get_temp_dir().'/sesame-timed-out-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_TIMED_OUT');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+
+// An earlier request signed the visitor in, the way login() stores it.
+$clock = new FakeClock();
+$now = $clock->now()->getTimestamp();
+session_start();
+$_SESSION['sesame.user'] = 'ab1234';
+$_SESSION['sesame.identity'] = new Identity('ab1234', [], 'cas', $clock->now());
+$_SESSION['sesame.signed_in_at'] = $now + __SIGNED_IN_AGO__;
+$_SESSION['sesame.last_seen'] = $now + __LAST_SEEN_AGO__;
+$oldId = session_id();
+session_write_close();
+
+// The visitor comes back, with SESAME built the way the Wayne Auth bridge
+// builds it.
+session_id($oldId);
+session_start();
+$logger = new ArrayLogger();
+$session = new NativeSession(60, null, $clock);
+$driver = new CasDriver('https://cas.test/cas', 'https://app.test/', new FakeHttpClient(), new Psr17Factory(), '2.0', false, false, $clock, $session);
+$sesame = new Sesame(
+    $driver,
+    new RecordingResolver('ab1234'),
+    $session,
+    new Config(driver: 'cas', environment: 'production', casBaseUrl: 'https://cas.test/cas', casServiceUrl: 'https://app.test/'),
+    $clock,
+    $logger,
+);
+
+$user = $sesame->user();
+$step = $sesame->login(new ServerRequest('GET', 'https://app.test/'));
+
+$result = [
+    'user' => $user,
+    'redirect' => $step instanceof Redirect ? $step->url : null,
+    'status' => session_status(),
+    'newIdDiffers' => session_id() !== $oldId,
+    'pendingStored' => is_array($_SESSION[PendingLogin::SESSION_KEY] ?? null),
+    'reason' => $logger->records[0]['context']['reason'] ?? null,
+];
+echo json_encode($result);
+PHP;
+
+        $body = str_replace(['__SIGNED_IN_AGO__', '__LAST_SEEN_AGO__'], [(string) $signedInAgo, (string) $lastSeenAgo], $body);
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON (0.7.0 threw "No session is active" here): ' . $output);
+        self::assertNull($result['user'], 'The timed-out session is signed out.');
+        self::assertSame('https://cas.test/cas/login?service=' . rawurlencode('https://app.test/'), $result['redirect']);
+        self::assertSame(2, $result['status'], 'A fresh session is active.');
+        self::assertTrue($result['newIdDiffers'], 'The fresh session runs under a new ID.');
+        self::assertTrue($result['pendingStored'], 'The pending sign-in is stored in the fresh session.');
+        self::assertSame($reason, $result['reason'], 'The sign-out is logged with its reason.');
+    }
+
+    public function testInvalidateWithAZeroTtlDestroysTheSessionAndCarriesOnInAFreshOne(): void
     {
         $body = <<<'PHP'
 use Waynestate\Sesame\Session\NativeSession;
@@ -71,6 +229,7 @@ $session->invalidate();
 
 $result = [
     'status' => session_status(),
+    'newIdDiffers' => session_id() !== $oldId,
     'sessionCount' => count($_SESSION),
     'oldFileExists' => file_exists($savePath.'/sess_'.$oldId),
 ];
@@ -81,7 +240,8 @@ PHP;
         $result = json_decode($output, true);
 
         self::assertIsArray($result, 'Child output was not JSON: ' . $output);
-        self::assertSame(1, $result['status'], 'The session should be destroyed (PHP_SESSION_NONE).');
+        self::assertSame(2, $result['status'], 'A fresh session should be active (PHP_SESSION_ACTIVE).');
+        self::assertTrue($result['newIdDiffers'], 'The fresh session should run under a new ID.');
         self::assertSame(0, $result['sessionCount'], 'The session data should be cleared.');
         self::assertFalse($result['oldFileExists'], 'With a zero window the old session file should be gone.');
     }
@@ -431,6 +591,8 @@ $clock = new FakeClock();
 $logger = new ArrayLogger();
 $session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
+// The logout request ends; invalidate() left a fresh session open.
+session_write_close();
 
 // A later request arrives with the dead ID, 30 seconds into the window.
 $clock->advance(30);
@@ -492,6 +654,8 @@ $clock = new FakeClock();
 $logger = new ArrayLogger();
 $session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
+// The logout request ends; invalidate() left a fresh session open.
+session_write_close();
 
 // A later request arrives with the dead ID, 90 seconds on: past the window.
 $clock->advance(90);
@@ -541,6 +705,8 @@ $clock = new FakeClock();
 $logger = new ThrowingLogger();
 $session = new NativeSession(60, $logger, $clock);
 $session->invalidate();
+// The logout request ends; invalidate() left a fresh session open.
+session_write_close();
 
 // A later request arrives with the dead ID, inside the window.
 $clock->advance(30);
@@ -642,6 +808,8 @@ $clock = new FakeClock();
 $logger = new ArrayLogger();
 $session = new NativeSession(60, $logger, $clock, 0);
 $session->invalidate();
+// The logout request ends; invalidate() left a fresh session open.
+session_write_close();
 
 // A later request arrives with the dead ID, where the window would have
 // caught it.

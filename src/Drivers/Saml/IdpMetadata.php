@@ -14,6 +14,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 
 /**
  * What the driver needs to know about the IdP: its entity ID, where to send
@@ -110,7 +111,7 @@ final class IdpMetadata
                 $requests->createRequest('GET', $url)->withHeader('Accept', 'application/samlmetadata+xml, application/xml;q=0.9'),
             );
         } catch (\Throwable) {
-            throw new AuthenticationFailed('The IdP metadata could not be reached (saml.metadata).');
+            throw new ProviderUnavailable('The IdP metadata could not be reached (saml.metadata).');
         }
 
         $status = $response->getStatusCode();

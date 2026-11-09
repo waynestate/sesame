@@ -14,6 +14,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use UnexpectedValueException;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
 
 /**
  * An issuer's key set, fetched from the issuer and kept in a cache.
@@ -142,7 +143,7 @@ final readonly class JwksProvider
                 $this->requests->createRequest('GET', $this->jwksUrl)->withHeader('Accept', 'application/json'),
             );
         } catch (\Throwable) {
-            throw new AuthenticationFailed('The issuer\'s key set could not be reached (' . $this->reasonPrefix . '.jwks_unavailable).');
+            throw new ProviderUnavailable('The issuer\'s key set could not be reached (' . $this->reasonPrefix . '.jwks_unavailable).');
         }
 
         $status = $response->getStatusCode();
