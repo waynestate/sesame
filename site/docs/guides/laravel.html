@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Laravel | SESAME docs</title>
 <meta name="description" content="The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.">
-<meta name="docs-version" content="0.6.2">
+<meta name="docs-version" content="0.6.3">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
 <link rel="stylesheet" href="../../docs/theme/sesame.css">
@@ -337,7 +337,7 @@
 <p>The app's user is available through the facade:</p>
 <pre tabindex="0"><code class="language-php">$user = app(\Waynestate\Sesame\Sesame::class)-&gt;user();
 </code></pre>
-<p>SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements <code>Waynestate\Sesame\RefreshesUser</code>: its <code>refreshUser($user)</code> runs on every request, and a <code>null</code> answer signs the session out. The wayne-cas shim already implements it, looking the user up through <code>auth.providers.users.model</code> (an Eloquent model works as it is from 0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.</p>
+<p>SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements <code>Waynestate\Sesame\RefreshesUser</code>: its <code>refreshUser($user)</code> runs on every request, and a <code>null</code> answer signs the session out. The wayne-cas shim already implements it, looking the user up through <code>auth.providers.users.model</code> (an Eloquent model works as it is from 0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.</p>
 <p>On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. The wayne-cas shim looks the array up through the model itself, so a wayne-cas app needs no change. <code>refreshUser()</code> receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return <code>null</code> when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:</p>
 <pre tabindex="0"><code class="language-php">public function refreshUser(mixed $user): mixed
 {
@@ -390,7 +390,7 @@
   <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install-and-publish">Install and publish</a></li><li class="docs-toc__item"><a href="#config">Config</a></li><li class="docs-toc__item"><a href="#routes">Routes</a></li><li class="docs-toc__item"><a href="#middleware">Middleware</a></li><li class="docs-toc__item"><a href="#reading-the-user">Reading the user</a></li><li class="docs-toc__item"><a href="#http-client-and-caches">HTTP client and caches</a></li><li class="docs-toc__item"><a href="#logging">Logging</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents SESAME <span data-docs-version>0.6.2</span></span>
+  <span>Documents SESAME <span data-docs-version>0.6.3</span></span>
   <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="laravel.md">Markdown</a></span>
 </footer>
 </body>

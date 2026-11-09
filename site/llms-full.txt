@@ -1293,7 +1293,8 @@ resolver also implements `Waynestate\Sesame\RefreshesUser`: its
 `refreshUser($user)` runs on every request, and a `null` answer signs the
 session out. The wayne-cas shim already implements it, looking the user up
 through `auth.providers.users.model` (an Eloquent model works as it is from
-0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that
+0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas
+app needs no resolver of its own); a resolver that
 does not implement it keeps handing back the stored copy, as it always has.
 
 The same user is available through Laravel's own auth, because the provider
@@ -1453,9 +1454,10 @@ interface and the trait share that signature, so a model that satisfies one
 satisfies both.
 
 The shim also looks the signed-in user up again on every request (a plain
-find by primary key, never an import). Take SESAME 0.6.2 or later for this:
+find by primary key, never an import). Take SESAME 0.6.3 or later for this:
 from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
-`refreshUser()` of your own. On 0.6.1 and earlier every signed-in request
+`refreshUser()` of your own, and from 0.6.3 that holds when
+`config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier every signed-in request
 failed with `InvalidConfig`, because the refresh asked for a declared static
 `find` method; an app that wrote its own resolver to get around that can
 delete it and set `user_resolver` back to
@@ -1572,7 +1574,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.6.2
+Keys cut while you wait · `waynestate/sesame` 0.6.3
 
 ## SESAME
 
@@ -1914,6 +1916,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### \[0.6.3\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-3-2026-11-09)
+
+- Docs: the upgrading guide has a 0.6.3 section, and the README, Laravel guide and wayne-cas guide say JSON sessions work with the shim from 0.6.3.
 - Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on; the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
 - Fixed: the wayne-cas shim's refreshUser() looks the user up again when the session hands the stored user back as an array (Laravel 13's JSON session serialization). It reads the array's primary key and returns the model through query()->find(), signing the session out when the account is gone; before this it passed the array through, so the guard saw nobody while the middleware let the request in. A wayne-cas app on JSON sessions no longer needs a resolver of its own.
 
@@ -3005,7 +3010,7 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model` (an Eloquent model works as it is from 0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model` (an Eloquent model works as it is from 0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.
 
 On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. The wayne-cas shim looks the array up through the model itself, so a wayne-cas app needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
@@ -3139,7 +3144,7 @@ class User extends Model implements WayneCasable
 
 The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protected to public, keeping its `$persistedAttributes` parameter. The interface and the trait share that signature, so a model that satisfies one satisfies both.
 
-The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.2 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
+The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.3 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own, and from 0.6.3 that holds when `config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
 
@@ -4058,7 +4063,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.6.2, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.6.3, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5471,11 +5476,21 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+### 0.6.3 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-3-2026-11-09)
+
+No breaks. One fix:
+
+- **The wayne-cas shim works with JSON sessions.** When `config/session.php` sets `'serialization' => 'json'`, the session hands the stored user back as an array. The shim now reads the array's primary key and looks the user up through `query()->find()`, so a deleted account signs the session out. On 0.6.2 it passed the array through, and the guard saw nobody while the middleware let the request in. An app that kept its own `refreshUser()` for JSON sessions can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already allows 0.6.3).
+
+**How to verify.** On a wayne-cas app with JSON sessions, sign in and open a second page: `Auth::user()` is the app's model, not `null`. Delete that account's row and reload: the session is signed out.
+
 ### 0.6.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-2-2026-11-09)
 
 No breaks. Two fixes and one new warning:
 
-- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'`: on 0.6.2 the shim passes a JSON session's array user through unchanged, so that app keeps its own `refreshUser()` until the next release, whose shim looks the array user up by its primary key.
+- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'`: on 0.6.2 the shim passes a JSON session's array user through unchanged, so that app keeps its own `refreshUser()` until 0.6.3, whose shim looks the array user up by its primary key.
 - **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and `session.use_only_cookies`** whenever no session is active. An app that starts its session with either one off gets one `E_USER_WARNING` per request that names the setting and the fix; the session keeps working. Put `ini_set('session.use_strict_mode', '1')` before `session_start()`, or call HELMET's `helmet_boot()`. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop, or `false` to leave the settings alone. Laravel apps are not affected.
 - **`NativeSession::regenerate()` keeps the ID it made** under strict mode, so the old session's marker names the new session again.
 

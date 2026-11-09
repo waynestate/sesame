@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.6.3\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-3-2026-11-09)
+
+- Docs: the upgrading guide has a 0.6.3 section, and the README, Laravel guide and wayne-cas guide say JSON sessions work with the shim from 0.6.3.
 - Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on; the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
 - Fixed: the wayne-cas shim's refreshUser() looks the user up again when the session hands the stored user back as an array (Laravel 13's JSON session serialization). It reads the array's primary key and returns the model through query()->find(), signing the session out when the account is gone; before this it passed the array through, so the guard saw nobody while the middleware let the request in. A wayne-cas app on JSON sessions no longer needs a resolver of its own.
 

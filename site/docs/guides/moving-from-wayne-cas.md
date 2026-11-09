@@ -74,7 +74,7 @@ class User extends Model implements WayneCasable
 
 The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protected to public, keeping its `$persistedAttributes` parameter. The interface and the trait share that signature, so a model that satisfies one satisfies both.
 
-The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.2 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
+The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.3 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own, and from 0.6.3 that holds when `config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
 
