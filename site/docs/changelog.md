@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
 - Changed: the `wayneui-copies` and `composer-ci` CI jobs run Composer 2.11.1 (was 2.10.3, no longer maintained), pinned by its multi-arch list digest; 2.11 fixes GHSA-c968-33g3-wh7p and GHSA-fm2w-xgf2-f9fh.
+- Changed: the deploy kit is Squire 0.10.2 (was 0.10.1): the kit's `php.ini` sets `session.cookie_samesite = Lax` (the value `NativeSession`'s cookie check asks for); the fallback base names its images in full (`docker.io/library/...`) with Composer as a build argument; and the portable image drops `node_modules/` after the build. BEST_PRACTICES S45 names kit 0.10.2.
 
 ## \[0.7.0\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-0-2026-11-09)
 

@@ -53,6 +53,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
 <ul>
 <li>Changed: the <code>wayneui-copies</code> and <code>composer-ci</code> CI jobs run Composer 2.11.1 (was 2.10.3, no longer maintained), pinned by its multi-arch list digest; 2.11 fixes GHSA-c968-33g3-wh7p and GHSA-fm2w-xgf2-f9fh.</li>
+<li>Changed: the deploy kit is Squire 0.10.2 (was 0.10.1): the kit's <code>php.ini</code> sets <code>session.cookie_samesite = Lax</code> (the value <code>NativeSession</code>'s cookie check asks for); the fallback base names its images in full (<code>docker.io/library/...</code>) with Composer as a build argument; and the portable image drops <code>node_modules/</code> after the build. BEST_PRACTICES S45 names kit 0.10.2.</li>
 </ul>
 <h2 id="0-7-0-2026-11-09">[0.7.0] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></h2>
 <ul>
