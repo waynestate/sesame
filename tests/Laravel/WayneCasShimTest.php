@@ -7,11 +7,13 @@ namespace Waynestate\Sesame\Tests\Laravel;
 use DateTimeImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Laravel\Support\NullUser;
 use Waynestate\Sesame\Tests\Laravel\Support\RecordingUser;
 use Waynestate\Sesame\WayneCas\Deprecation;
@@ -153,6 +155,77 @@ final class WayneCasShimTest extends LaravelTestCase
         } catch (InvalidConfig $e) {
             self::assertSame('The wayne-cas shim needs auth.providers.users.model to be an Eloquent model or a class with a static find method.', $e->getMessage());
         }
+    }
+
+    public function testItRefreshesAnArrayUserThroughTheEloquentQuery(): void
+    {
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+        DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'John Doe']);
+
+        $refreshed = (new UserResolver())->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']);
+
+        self::assertInstanceOf(EloquentCasUser::class, $refreshed);
+        self::assertSame('jdoe', $refreshed->getKey());
+        self::assertSame('John Doe', $refreshed->getAttribute('username'));
+    }
+
+    public function testItRefreshesAnArrayUserToNullAfterDeletion(): void
+    {
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+        DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
+
+        $resolver = new UserResolver();
+        self::assertInstanceOf(EloquentCasUser::class, $resolver->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']));
+
+        DB::table('cas_users')->where('id', 'jdoe')->delete();
+
+        self::assertNull($resolver->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']));
+    }
+
+    public function testItRefreshesAnArrayWithNoKeyToNull(): void
+    {
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+
+        self::assertNull((new UserResolver())->refreshUser(['username' => 'x']));
+        self::assertSame([], RecordingUser::$calls);
+    }
+
+    public function testItPassesAnArrayThroughForANonEloquentModel(): void
+    {
+        config()->set('auth.providers.users.model', StaticFindUser::class);
+
+        $array = ['id' => 'jdoe', 'username' => 'Jane Doe'];
+
+        self::assertSame($array, (new UserResolver())->refreshUser($array));
+    }
+
+    public function testAJsonSessionArrayUserSignsInThroughTheShim(): void
+    {
+        $app = $this->app;
+        self::assertNotNull($app);
+
+        $this->createCasUsersTable();
+
+        config()->set('auth.providers.users.model', EloquentCasUser::class);
+        config()->set('auth.guards.web.driver', 'sesame');
+        config()->set('sesame.user_resolver', UserResolver::class);
+
+        DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
+
+        /** @var \Illuminate\Contracts\Session\Session $store */
+        $store = $app['session.store'];
+        $store->put('sesame.user', ['id' => 'jdoe', 'username' => 'Jane Doe']);
+        $store->put('sesame.signed_in_at', time());
+        $store->put('sesame.last_seen', time());
+
+        self::assertInstanceOf(EloquentCasUser::class, app(Sesame::class)->user());
+        self::assertNotNull(Auth::guard('web')->user());
     }
 
     private function createCasUsersTable(): void

@@ -1471,12 +1471,7 @@ from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
 failed with `InvalidConfig`, because the refresh asked for a declared static
 `find` method; an app that wrote its own resolver to get around that can
 delete it and set `user_resolver` back to
-`Waynestate\Sesame\WayneCas\UserResolver`. One exception: an app whose
-`config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app
-does) gets the stored user back as an array, which the shim passes through as
-it is, so it still needs its own `refreshUser()` (the Laravel guide's
-[Reading the user](docs/guides/laravel.md#reading-the-user) has the one
-Sourdough ships).
+`Waynestate\Sesame\WayneCas\UserResolver`.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 `Waynestate\Sesame\WayneCas` namespace.

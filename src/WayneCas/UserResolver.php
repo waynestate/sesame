@@ -46,6 +46,13 @@ class UserResolver implements \Waynestate\Sesame\UserResolver, \Waynestate\Sesam
      * it in. A plain find, never findOrImportUser: a refresh must not import
      * a user back who was deleted after the sign-in.
      *
+     * When the session hands the user back as an array (Laravel 13's JSON
+     * session serialization), the array is looked up by its primary key
+     * through the Eloquent model named in auth.providers.users.model, and
+     * null comes back when the account is gone or the array carries no key.
+     * An array whose model is not an Eloquent model is passed through
+     * unchanged, as is any other non-object input.
+     *
      * An Eloquent model is looked up through its query builder (the shim
      * calls query()-> find() on the model), because find() is not a method
      * declared on the model: it reaches the builder through __callStatic, so
@@ -59,11 +66,26 @@ class UserResolver implements \Waynestate\Sesame\UserResolver, \Waynestate\Sesam
     {
         Deprecation::logOnce();
 
-        if (! is_object($user) || ! method_exists($user, 'getKey')) {
+        $model = config('auth.providers.users.model');
+
+        if (is_array($user)) {
+            if (is_string($model) && $model !== '' && class_exists($model) && is_subclass_of($model, 'Illuminate\Database\Eloquent\Model')) {
+                $keyName = (new $model())->getKeyName();
+                $key = $user[$keyName] ?? null;
+
+                if ((is_string($key) && $key !== '') || is_int($key)) {
+                    return $model::query()->find($key);
+                }
+
+                return null;
+            }
+
             return $user;
         }
 
-        $model = config('auth.providers.users.model');
+        if (! is_object($user) || ! method_exists($user, 'getKey')) {
+            return $user;
+        }
 
         $message = 'The wayne-cas shim needs auth.providers.users.model to be an Eloquent model or a class with a static find method.';
 
