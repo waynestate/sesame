@@ -10,6 +10,26 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.6.3 (2026-11-09)
+
+No breaks. One fix:
+
+- **The wayne-cas shim works with JSON sessions.** When `config/session.php`
+  sets `'serialization' => 'json'`, the session hands the stored user back as
+  an array. The shim now reads the array's primary key and looks the user up
+  through `query()->find()`, so a deleted account signs the session out. On
+  0.6.2 it passed the array through, and the guard saw nobody while the
+  middleware let the request in. An app that kept its own `refreshUser()` for
+  JSON sessions can delete it and set `user_resolver` back to
+  `Waynestate\Sesame\WayneCas\UserResolver`.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already
+allows 0.6.3).
+
+**How to verify.** On a wayne-cas app with JSON sessions, sign in and open a
+second page: `Auth::user()` is the app's model, not `null`. Delete that
+account's row and reload: the session is signed out.
+
 ## 0.6.2 (2026-11-09)
 
 No breaks. Two fixes and one new warning:
@@ -23,8 +43,8 @@ No breaks. Two fixes and one new warning:
   `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`,
   unless its `config/session.php` sets `'serialization' => 'json'`: on 0.6.2
   the shim passes a JSON session's array user through unchanged, so that app
-  keeps its own `refreshUser()` until the next release, whose shim looks the
-  array user up by its primary key.
+  keeps its own `refreshUser()` until 0.6.3, whose shim looks the array user
+  up by its primary key.
 - **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and
   `session.use_only_cookies`** whenever no session is active. An app that
   starts its session with either one off gets one `E_USER_WARNING` per request

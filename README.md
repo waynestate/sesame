@@ -1305,7 +1305,8 @@ resolver also implements `Waynestate\Sesame\RefreshesUser`: its
 `refreshUser($user)` runs on every request, and a `null` answer signs the
 session out. The wayne-cas shim already implements it, looking the user up
 through `auth.providers.users.model` (an Eloquent model works as it is from
-0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that
+0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas
+app needs no resolver of its own); a resolver that
 does not implement it keeps handing back the stored copy, as it always has.
 
 The same user is available through Laravel's own auth, because the provider
@@ -1465,9 +1466,10 @@ interface and the trait share that signature, so a model that satisfies one
 satisfies both.
 
 The shim also looks the signed-in user up again on every request (a plain
-find by primary key, never an import). Take SESAME 0.6.2 or later for this:
+find by primary key, never an import). Take SESAME 0.6.3 or later for this:
 from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
-`refreshUser()` of your own. On 0.6.1 and earlier every signed-in request
+`refreshUser()` of your own, and from 0.6.3 that holds when
+`config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier every signed-in request
 failed with `InvalidConfig`, because the refresh asked for a declared static
 `find` method; an app that wrote its own resolver to get around that can
 delete it and set `user_resolver` back to
