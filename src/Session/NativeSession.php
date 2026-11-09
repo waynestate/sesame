@@ -77,8 +77,11 @@ final class NativeSession implements SessionPort
     /**
      * @param bool|null $checkSessionSettings null (the default) turns the
      *        safe settings on when it can and warns once when the app's
-     *        session was started without them; true also turns them on and
-     *        throws instead of warning; false does neither.
+     *        session was started without them, or when its cookie lacks
+     *        HttpOnly, Secure (on https) or a Lax or Strict SameSite (the
+     *        cookie flags are only checked, never set); true also turns the
+     *        safe settings on and throws instead of warning; false does
+     *        neither.
      */
     public function __construct(
         private readonly int $graceSeconds = 60,
