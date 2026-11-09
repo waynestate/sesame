@@ -6,6 +6,7 @@ namespace Waynestate\Sesame\Tests\Laravel;
 
 use DateTimeImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -240,11 +241,15 @@ final class WayneCasShimTest extends LaravelTestCase
 /**
  * A small Eloquent user for the wayne-cas shim tests.
  *
- * It is keyed by the string access ID, the way wayne-cas users are. The
- * cas_users table is created by the test on the testbench sqlite connection.
+ * It is keyed by the string access ID, the way wayne-cas users are, and it
+ * implements Authenticatable like the app's user model, so the sesame guard
+ * can hand it back. The cas_users table is created by the test on the
+ * testbench sqlite connection.
  */
-class EloquentCasUser extends \Illuminate\Database\Eloquent\Model
+class EloquentCasUser extends \Illuminate\Database\Eloquent\Model implements \Illuminate\Contracts\Auth\Authenticatable
 {
+    use Authenticatable;
+
     public $incrementing = false;
 
     public $timestamps = false;
