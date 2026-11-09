@@ -204,6 +204,31 @@ is active.
 prints `1` for the CLI; for the web, the same `ini_get()` on a page.
 `NativeSessionTest` covers the settings, the warning and the hard stop.
 
+### The log has `SESAME: the session cookie is sent without HttpOnly` (or Secure, or SameSite)
+
+**Cause.** From 0.7.0 `NativeSession` checks the flags the app's session
+cookie started with. Without `HttpOnly` a script on the page can read the
+cookie, without `Secure` it can travel over plain http, and without a `Lax`
+or `Strict` `SameSite` other sites can make the browser send it. PHP's own
+defaults leave `HttpOnly` off and `SameSite` empty, and Squire's `php.ini`
+leaves `SameSite` empty, so an app that never set them sees this warning
+once per request. `Secure` is named only on an https request (`HTTPS` set,
+or `X-Forwarded-Proto: https`). SESAME never sets the flags itself; with
+`checkSessionSettings: true` it throws `LogicException` instead of warning.
+
+**Fix.** Add
+`session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);`
+before `session_start()`, or call `helmet_boot()` there (HELMET sets all
+three), or set `session.cookie_httponly = 1`, `session.cookie_secure = 1` and
+`session.cookie_samesite = Lax` in `php.ini` or the FPM pool. Keep `Lax`, not
+`Strict`: a `Strict` cookie is not sent when the identity provider sends the
+browser back, so the sign-in fails.
+
+**Check.** The warning stops.
+`php -r "var_export(session_get_cookie_params());"` shows `httponly` true and
+`samesite` `Lax` for the CLI; for the web, the same call on a page.
+`NativeSessionTest` covers the flags, the warning and the hard stop.
+
 ## The session ends too soon, or looks wrong
 
 ### A raw-PHP app signs people out after 24 quiet minutes

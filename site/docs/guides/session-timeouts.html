@@ -84,7 +84,7 @@ spot the first time anything asks who is signed in.</p>
 <tr>
 <td><code>checkSessionSettings</code></td>
 <td><code>null</code></td>
-<td>How a native session treats <code>session.use_strict_mode</code> and <code>session.use_only_cookies</code>. A <code>new NativeSession()</code> option, not a config key. <code>null</code> turns both on whenever no session is active and warns once per request (<code>E_USER_WARNING</code>) when the app started its session with either one off; <code>true</code> also turns them on but throws <code>LogicException</code> on every call instead of warning; <code>false</code> leaves the settings alone and stays quiet.</td>
+<td>How a native session treats <code>session.use_strict_mode</code>, <code>session.use_only_cookies</code> and the session cookie's flags. A <code>new NativeSession()</code> option, not a config key. <code>null</code> turns both settings on whenever no session is active and warns once per request (<code>E_USER_WARNING</code>) when the app started its session with either one off, or with a cookie that lacks <code>HttpOnly</code>, <code>Secure</code> (on https) or a <code>Lax</code> or <code>Strict</code> <code>SameSite</code>; <code>true</code> also turns the settings on but throws <code>LogicException</code> on every call instead of warning; <code>false</code> leaves the settings alone and stays quiet. SESAME never sets a cookie flag.</td>
 </tr>
 </tbody>
 </table></div>

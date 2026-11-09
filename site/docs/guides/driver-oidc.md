@@ -75,7 +75,9 @@ use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Support\Setting;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
-ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
+// Or call helmet_boot(), which sets all of this. NativeSession warns without it.
+ini_set('session.use_strict_mode', '1');
+session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);
 session_start();
 
 $config = Config::fromArray([

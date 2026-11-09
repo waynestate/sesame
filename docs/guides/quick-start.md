@@ -26,7 +26,9 @@ driver, which needs no server and no registration. Every snippet below is the
 
    require __DIR__.'/vendor/autoload.php';
 
-   ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
+   // Or call helmet_boot(), which sets all of this. NativeSession warns without it.
+   ini_set('session.use_strict_mode', '1');
+   session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);
    session_start();
    ```
 
@@ -39,7 +41,12 @@ driver, which needs no server and no registration. Every snippet below is the
    > times 60) in `php.ini` or the FPM pool, or call
    > `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`.
 
-   Expected: the session is started, and the autoload file sees the package.
+   A `Secure` cookie travels only over https; browsers make an exception for
+   `http://localhost`, so the fake driver still works there.
+
+   Expected: the session is started, the autoload file sees the package, and
+   the PHP error log has no `SESAME:` warning about the session settings or the
+   cookie flags.
 
 3. **Configure the `fake` driver for local development.**
 

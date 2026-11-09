@@ -191,7 +191,7 @@ interface SessionPort
 }
 ```
 
-`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.
+`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. Its constructor takes `graceSeconds` (60, the regenerate grace), `logger`, `clock`, `logoutReuseTtlSeconds` (60, the logged-out reuse window) and `checkSessionSettings` (`null`). With `checkSessionSettings` left at `null` it turns `session.use_strict_mode` and `session.use_only_cookies` on while no session is active, and on the first use in a request it raises one `E_USER_WARNING` when the active session runs with either one off, or when its cookie lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` throws `LogicException` on every call instead, and `false` does neither. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.
 
 ### MFA
 
