@@ -8,7 +8,8 @@ tests for every refusal. Open sesame, but only for the right people.
 
 - `waynestate/sesame` on Packagist. Framework-free core, with a Laravel adapter (service provider and
   `config/sesame.php`).
-- Drivers: `fake` (local dev and tests), `cas` (CAS protocol 2.0 against Wayne State's CAS at `login.wayne.edu`), and
+- Drivers: `fake` (local dev and tests), `cas` (CAS protocol 2.0 against Wayne State's CAS at `https://academica.aws.wayne.edu/cas`,
+  which shows people the `login.wayne.edu` sign-in screen), and
   `gateway` (accepts only a short signed JWT from a trusted proxy, such as Drawbridge). `oauth2` (bearer-token APIs) and `oidc` (browser sign-in, Entra first) ship now; `saml` ships too, opt-in (see the README driver table).
 - Runtime dependencies: `lcobucci/jwt` (the gateway driver's signatures, never hand-rolled), `firebase/php-jwt` (key sets
   and the oauth2 and oidc token checks), `nyholm/psr7` and `nyholm/psr7-server`, `symfony/http-foundation`, PSR

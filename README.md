@@ -467,7 +467,10 @@ throws never changes what the facade returns or throws.
 The cas driver logs in against a CAS server, CAS 2.0 by default. The base
 URL is required config with no default, and it must include the path the
 CAS server lives under. For Academica, which serves CAS under `/cas`, it is
-`https://login.wayne.edu/cas`.
+`https://academica.aws.wayne.edu/cas`. People still see the familiar
+`login.wayne.edu` screen: Academica's `/cas/login` sends the browser there to
+sign in and back with a ticket, and SESAME checks the ticket against
+Academica.
 
 ```php
 <?php
@@ -482,7 +485,7 @@ $config = Config::fromArray([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://login.wayne.edu/cas',
+        'base_url' => 'https://academica.aws.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/login',
     ],
 ]);

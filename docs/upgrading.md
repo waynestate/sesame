@@ -10,6 +10,23 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## Unreleased
+
+No breaks, and no code changes: this release fixes the docs' CAS address.
+Check the one setting below, then upgrade with `composer update
+waynestate/sesame`.
+
+- **Point `cas.base_url` at `https://academica.aws.wayne.edu/cas`.** Earlier
+  docs gave a `login.wayne.edu` address, which answers 404 on `/cas/login`.
+  An app that copied it (into `SESAME_CAS_BASE_URL`, `config/sesame.php`, or
+  the array it passes to `Config::fromArray()` or `WayneAuth::boot()`) never
+  reached the sign-in; change the value. People still see the
+  `login.wayne.edu` screen. An app that takes the address from Playbook gets
+  whatever Playbook supplies, so check that value too.
+- **The Wayne Auth bridge needs `base_url` in its array.** `WayneAuth::boot()`
+  does not read `SESAME_CAS_BASE_URL` or Playbook on its own. To use them,
+  pass `'base_url' => \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')`.
+
 ## 0.7.1 (2026-11-09)
 
 No breaks for an app that follows the docs; three fixes, and two lines some

@@ -65,7 +65,7 @@ How the stack holds it: `Enforced`. `sesame_logout()` runs only for a POST whose
 Record the idle timeout, the maximum lifetime, and how app, SESAME and IdP sessions relate.
 Why: with a federated login there are several sessions, and nobody can reason about logout or re-authentication if their lifetimes are not written down.
 Sources: [ASVS 5.0 V7.1.1 and V7.1.3](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md), [ASVS 5.0 V7.6.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md).
-How the stack holds it: `Documented`. The README's "Session timeouts" section writes down the two clocks, their defaults (idle 120 minutes, absolute 720 minutes) and what starts each, and how the sessions relate: `auth()->logout()` ends the app side and leaves the identity provider's single sign-on session alone, and there is no single logout, so the IdP session survives until the provider ends it (`README.md:1098-1139, 308-310, 1376-1378`). An app's own written table of its lifetimes is still on the app, so this stays documentation.
+How the stack holds it: `Documented`. The README's "Session timeouts" section writes down the two clocks, their defaults (idle 120 minutes, absolute 720 minutes) and what starts each, and how the sessions relate: `auth()->logout()` ends the app side and leaves the identity provider's single sign-on session alone, and there is no single logout, so the IdP session survives until the provider ends it (`README.md:1101-1142, 308-310, 1376-1378`). An app's own written table of its lifetimes is still on the app, so this stays documentation.
 
 ## 2. The `cas` driver
 
@@ -151,7 +151,7 @@ How the stack holds it: `Enforced`. `sesame_login()` and `sesame_logout()` call 
 Set connect and total timeouts on the PSR-18 client that calls CAS. Never disable certificate checks.
 Why: a hung CAS server should fail one login, not hold every PHP worker.
 Sources: [OWASP Authentication (TLS)](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [Guzzle request options](https://docs.guzzlephp.org/en/stable/request-options.html) (checked second pass: `timeout` and `connect_timeout` both default to `0`, which waits forever; `verify` defaults to `true`).
-How the stack holds it: `Documented`. The app owns the PSR-18 client, so the README gives it the timeout: the cas quick start builds the Guzzle client with `timeout` and `connect_timeout` set, noting that Guzzle has no total timeout by default (`README.md:490-504`). When the timeout runs out, or the CAS server answers 5xx, the cas driver throws `ProviderUnavailable`, a subclass of `AuthenticationFailed`, so the app can answer 503 (`src/Drivers/CasDriver.php:161-174`; tests `CasDriverTest::testACasServerThatTimesOutIsProviderUnavailable`, `WayneAuthBridgeTest::testCasUnreachableDuringTheTicketCheckThrowsProviderUnavailable`). Certificate checks stay on by default: Guzzle's `verify` option is `true` unless the app turns it off, and nothing in SESAME does.
+How the stack holds it: `Documented`. The app owns the PSR-18 client, so the README gives it the timeout: the cas quick start builds the Guzzle client with `timeout` and `connect_timeout` set, noting that Guzzle has no total timeout by default (`README.md:493-507`). When the timeout runs out, or the CAS server answers 5xx, the cas driver throws `ProviderUnavailable`, a subclass of `AuthenticationFailed`, so the app can answer 503 (`src/Drivers/CasDriver.php:161-174`; tests `CasDriverTest::testACasServerThatTimesOutIsProviderUnavailable`, `WayneAuthBridgeTest::testCasUnreachableDuringTheTicketCheckThrowsProviderUnavailable`). Certificate checks stay on by default: Guzzle's `verify` option is `true` unless the app turns it off, and nothing in SESAME does.
 
 ## 3. Identity and the app's user
 
@@ -171,7 +171,7 @@ How the stack holds it: `Enforced`. When the resolver returns `null`, `Sesame::l
 The login error page must not say why a ticket failed. Record the reason for operators.
 Why: detail helps an attacker probe, and it is no use to the user.
 Sources: [OWASP Authentication (generic messages)](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [ASVS 5.0 V16.5.1](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) (generic message for security-sensitive errors; no stack traces, queries, keys or tokens). Corrected in the second pass: the first pass cited V6.3.8, but that requirement is about not revealing whether an account exists, not about error detail.
-How the stack holds it: `Documented`. `AuthenticationFailed` messages carry the CAS failure code (`src/Drivers/CasDriver.php:275-281`), so the README tells apps to log the message and show the user one generic line instead (`README.md:561-564`).
+How the stack holds it: `Documented`. `AuthenticationFailed` messages carry the CAS failure code (`src/Drivers/CasDriver.php:275-281`), so the README tells apps to log the message and show the user one generic line instead (`README.md:564-567`).
 
 ### S27. Log authentication events, never secrets
 Log logins, failures, logouts and session anomalies with user, driver and time. Never log tickets, session IDs, assertions or tokens.
@@ -315,7 +315,7 @@ How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from 
 Include pipeline components by commit SHA, never `~latest`.
 Why: a moving component can change what your pipeline runs, or what it skips, with no change in your repo. GitLab says components are used at your own risk.
 Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (commit SHA is the preferred pin; "Avoid using `latest`").
-How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.4.0`, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (D-054), so a pin bump is one readable version across every repo; the apps Sourdough generates pin the release commit SHA. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
+How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.4.0`, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (a rule across the stack), so a pin bump is one readable version across every repo; the apps Sourdough generates pin the release commit SHA. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
 
 ## 8. MFA
 

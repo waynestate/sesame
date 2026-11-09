@@ -81,7 +81,7 @@ WayneAuth::boot([
     'driver' =&gt; 'cas',
     'environment' =&gt; 'production',
     'cas' =&gt; [
-        'base_url' =&gt; 'https://login.wayne.edu/cas',
+        'base_url' =&gt; 'https://academica.aws.wayne.edu/cas',
         'service_url' =&gt; 'https://app.apps.wayne.edu/',
     ],
 ]);
@@ -96,7 +96,8 @@ require_once('lib/WayneAuth/WayneAuth.php');
 require_once('config/sesame.php');
 </code></pre>
 <p>That is the whole code change. <code>boot()</code> builds SESAME, registers it with <code>sesame()</code>, and makes the old global name <code>WayneAuth</code> point at the bridge, so every <code>new WayneAuth($config['wayneauth'])</code> in the app gets the bridge. An app that refers to the class by a <code>use</code> line can import <code>Waynestate\Sesame\WayneAuth\WayneAuth</code> instead. Delete the old class file once nothing loads it: <code>boot()</code> refuses to start while a different <code>WayneAuth</code> class is loaded, so a half-done swap fails loudly instead of quietly keeping Wayne Auth.</p>
-<p>The <code>cas.service_url</code> is where CAS sends people back: the page that calls <code>authenticateSSO()</code> (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's <code>forward_url</code> sent them to the app's root. With <a href="wsu-values.html">Playbook</a> installed, or <code>SESAME_CAS_BASE_URL</code> set, <code>base_url</code> can be left out.</p>
+<p>The <code>cas.service_url</code> is where CAS sends people back: the page that calls <code>authenticateSSO()</code> (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's <code>forward_url</code> sent them to the app's root.</p>
+<p>The <code>cas.base_url</code> is Academica's CAS server, <code>https://academica.aws.wayne.edu/cas</code>. People still see the familiar <code>login.wayne.edu</code> screen: Academica sends the browser there to sign in, then back with a ticket. <code>boot()</code> reads <code>base_url</code> from this array and nowhere else, so it cannot be left out: unlike the Laravel config file, the bridge does not look in the environment or in <a href="wsu-values.html">Playbook</a> on its own. To take the address from <code>SESAME_CAS_BASE_URL</code> or Playbook, pass <code>'base_url' =&gt; \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')</code>.</p>
 <h3 id="the-session">The session<a class="docs-heading-link" aria-label="Link to this section" href="#the-session">#</a></h3>
 <p>The app owns the session, as everywhere in SESAME: call <code>session_start()</code> before the first <code>authenticateSSO()</code>. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Turn on strict mode first: without <code>session.use_strict_mode</code> PHP accepts any session ID a client sends, and SESAME raises one <code>E_USER_WARNING</code> per request until it is on. Call <code>ini_set('session.use_strict_mode', '1')</code> before <code>session_start()</code>, or let HELMET's <code>helmet_boot()</code> do it with the cookie flags (<a href="raw-php.html">Raw PHP</a> has the settings). The cookie flags matter too: from 0.7.0 SESAME also raises one warning per request when the session cookie lacks <code>HttpOnly</code>, <code>Secure</code> (on https) or <code>SameSite=Lax</code>, which PHP's defaults leave off, so add <code>session_set_cookie_params(['httponly' =&gt; true, 'secure' =&gt; true, 'samesite' =&gt; 'Lax'])</code> before <code>session_start()</code> if <code>helmet_boot()</code> is not there. Also set <code>session.gc_maxlifetime</code> to at least the idle timeout.</p>
 <p>Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: <code>boot()</code> re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.</p>
@@ -239,7 +240,7 @@ try {
 <h2 id="check-it-before-you-ship">Check it before you ship<a class="docs-heading-link" aria-label="Link to this section" href="#check-it-before-you-ship">#</a></h2>
 <ol>
 <li>On a laptop, boot with the <code>fake</code> driver (<code>'driver' =&gt; 'fake', 'environment' =&gt; 'local', 'fake' =&gt; ['username' =&gt; 'ab1234']]</code>): every page should say who is signed in without any CAS server.</li>
-<li>On pre-production, with the real <code>cas</code> config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no <code>ticket</code> in the address bar, and see the app signed in as you. Check the AccessID's case against any <code>authorized_ids</code> list the app keeps.</li>
+<li>On pre-production, with the real <code>cas</code> config: open a page in a private window. You should land on the <code>login.wayne.edu</code> sign-in screen, come back to the service URL with no <code>ticket</code> in the address bar, and see the app signed in as you. Check the AccessID's case against any <code>authorized_ids</code> list the app keeps.</li>
 <li>Leave the tab alone past the idle timeout (2 hours) and reload: you should go through CAS again (silently, if your CAS session is still alive), never a blank page. A save the page makes by XHR after the timeout should get a 401, not a 500.</li>
 <li>Grep the app for <code>validUser</code>, <code>sso_host</code> and <code>_parseSSOCookie('d')</code>: none should be left doing work.</li>
 </ol>

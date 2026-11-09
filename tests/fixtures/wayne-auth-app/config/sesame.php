@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 // The app's SESAME config: the file that replaces the old Wayne Auth class.
 //
-// A real app requires its own vendor/autoload.php, takes cas.base_url from
-// Playbook or SESAME_CAS_BASE_URL, and passes no $http (Guzzle is found).
+// A real app requires its own vendor/autoload.php, sets cas.base_url to
+// https://academica.aws.wayne.edu/cas (or passes
+// Setting::get('SESAME_CAS_BASE_URL'): boot() reads only this array), and
+// passes no $http (Guzzle is found).
 // This fixture points at a CAS server that does not exist and answers the
 // ticket validation with SESAME's own CAS test fixtures, so the sign-in runs
 // end to end without a network.

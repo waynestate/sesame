@@ -50,7 +50,7 @@
 <p><img src="../readme/duplicator.svg" alt="SESAME's key duplicator tracing the cas key: five notches, one per sign-in step, and logout at the tip" /></p>
 <p>The duplicator traces the cas key from the front page: five notches, one per sign-in step, and logout at the tip. The cut is the sign-in; the lock is still yours. With reduced motion on, you get the finished key.</p>
 <h2 id="configure-the-driver">Configure the driver<a class="docs-heading-link" aria-label="Link to this section" href="#configure-the-driver">#</a></h2>
-<p>The cas driver logs in against a CAS server, CAS 2.0 by default. The base URL is required config with no default, and it must include the path the CAS server lives under. For Academica, which serves CAS under <code>/cas</code>, it is <code>https://login.wayne.edu/cas</code>.</p>
+<p>The cas driver logs in against a CAS server, CAS 2.0 by default. The base URL is required config with no default, and it must include the path the CAS server lives under. For Academica, which serves CAS under <code>/cas</code>, it is <code>https://academica.aws.wayne.edu/cas</code>. People still see the familiar <code>login.wayne.edu</code> screen: Academica's <code>/cas/login</code> sends the browser there to sign in and back with a ticket, and SESAME checks the ticket against Academica.</p>
 <pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ $config = Config::fromArray([
     'driver' =&gt; 'cas',
     'environment' =&gt; 'production',
     'cas' =&gt; [
-        'base_url' =&gt; 'https://login.wayne.edu/cas',
+        'base_url' =&gt; 'https://academica.aws.wayne.edu/cas',
         'service_url' =&gt; 'https://app.apps.wayne.edu/login',
     ],
 ]);

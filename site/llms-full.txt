@@ -455,7 +455,10 @@ throws never changes what the facade returns or throws.
 The cas driver logs in against a CAS server, CAS 2.0 by default. The base
 URL is required config with no default, and it must include the path the
 CAS server lives under. For Academica, which serves CAS under `/cas`, it is
-`https://login.wayne.edu/cas`.
+`https://academica.aws.wayne.edu/cas`. People still see the familiar
+`login.wayne.edu` screen: Academica's `/cas/login` sends the browser there to
+sign in and back with a ticket, and SESAME checks the ticket against
+Academica.
 
 ```php
 <?php
@@ -470,7 +473,7 @@ $config = Config::fromArray([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://login.wayne.edu/cas',
+        'base_url' => 'https://academica.aws.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/login',
     ],
 ]);
@@ -1963,6 +1966,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set `cas.base_url` to a `login.wayne.edu` address that answers 404, so an app that copied it never reached the sign-in. The address is `https://academica.aws.wayne.edu/cas`; people still see the familiar `login.wayne.edu` screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.
+- Fixed: the Wayne Auth guide said `cas.base_url` could be left out of `WayneAuth::boot()` when Playbook is installed or `SESAME_CAS_BASE_URL` is set. The bridge reads only the array it is given; the guide now says so and shows how to pass `Setting::get('SESAME_CAS_BASE_URL')` instead.
+- Docs: the upgrading guide has an Unreleased section with the one value to check. MAINTAINING names the CAS server the same way.
+- Docs: BEST_PRACTICES, the CI file and the Oracle check say their reasons in plain words instead of internal decision numbers.
+
 ### \[0.7.1\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-1-2026-11-09)
 
 - Fixed: a session past its idle (2 hours) or absolute (12 hours) timeout no longer ends in a blank 500. `NativeSession::invalidate()` closed the session and started nothing in its place, so the cas driver's pending-login write that follows a timeout (in `sesame_login()` and the Wayne Auth bridge) threw `LogicException: No session is active`. It now leaves the logout marker under the old ID and starts a fresh, empty session under a new ID from `session_create_id()`, never one from the request, with strict mode kept as the app set it; when headers are already sent it leaves the session closed, as before. Sign-out takes the same path.
@@ -2199,7 +2207,7 @@ The duplicator traces the cas key from the front page: five notches, one per sig
 
 ### Configure the driver[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#configure-the-driver)
 
-The cas driver logs in against a CAS server, CAS 2.0 by default. The base URL is required config with no default, and it must include the path the CAS server lives under. For Academica, which serves CAS under `/cas`, it is `https://login.wayne.edu/cas`.
+The cas driver logs in against a CAS server, CAS 2.0 by default. The base URL is required config with no default, and it must include the path the CAS server lives under. For Academica, which serves CAS under `/cas`, it is `https://academica.aws.wayne.edu/cas`. People still see the familiar `login.wayne.edu` screen: Academica's `/cas/login` sends the browser there to sign in and back with a ticket, and SESAME checks the ticket against Academica.
 
 ```php
 <?php
@@ -2215,7 +2223,7 @@ $config = Config::fromArray([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://login.wayne.edu/cas',
+        'base_url' => 'https://academica.aws.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/login',
     ],
 ]);
@@ -3332,7 +3340,7 @@ WayneAuth::boot([
     'driver' => 'cas',
     'environment' => 'production',
     'cas' => [
-        'base_url' => 'https://login.wayne.edu/cas',
+        'base_url' => 'https://academica.aws.wayne.edu/cas',
         'service_url' => 'https://app.apps.wayne.edu/',
     ],
 ]);
@@ -3350,7 +3358,9 @@ require_once('config/sesame.php');
 
 That is the whole code change. `boot()` builds SESAME, registers it with `sesame()`, and makes the old global name `WayneAuth` point at the bridge, so every `new WayneAuth($config['wayneauth'])` in the app gets the bridge. An app that refers to the class by a `use` line can import `Waynestate\Sesame\WayneAuth\WayneAuth` instead. Delete the old class file once nothing loads it: `boot()` refuses to start while a different `WayneAuth` class is loaded, so a half-done swap fails loudly instead of quietly keeping Wayne Auth.
 
-The `cas.service_url` is where CAS sends people back: the page that calls `authenticateSSO()` (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's `forward_url` sent them to the app's root. With [Playbook](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html) installed, or `SESAME_CAS_BASE_URL` set, `base_url` can be left out.
+The `cas.service_url` is where CAS sends people back: the page that calls `authenticateSSO()` (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's `forward_url` sent them to the app's root.
+
+The `cas.base_url` is Academica's CAS server, `https://academica.aws.wayne.edu/cas`. People still see the familiar `login.wayne.edu` screen: Academica sends the browser there to sign in, then back with a ticket. `boot()` reads `base_url` from this array and nowhere else, so it cannot be left out: unlike the Laravel config file, the bridge does not look in the environment or in [Playbook](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html) on its own. To take the address from `SESAME_CAS_BASE_URL` or Playbook, pass `'base_url' => \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')`.
 
 #### The session[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
 
@@ -3429,7 +3439,7 @@ A session that timed out is not an exception: from 0.7.1 the visitor is simply s
 ### Check it before you ship[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
 
 1. On a laptop, boot with the `fake` driver (`'driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'ab1234']]`): every page should say who is signed in without any CAS server.
-2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
+2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the `login.wayne.edu` sign-in screen, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
 3. Leave the tab alone past the idle timeout (2 hours) and reload: you should go through CAS again (silently, if your CAS session is still alive), never a blank page. A save the page makes by XHR after the timeout should get a 401, not a 500.
 4. Grep the app for `validUser`, `sso_host` and `_parseSSOCookie('d')`: none should be left doing work.
 
@@ -5669,6 +5679,13 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### Unreleased[#](https://sesame.apps.wayne.edu/docs/upgrading.html#unreleased)
+
+No breaks, and no code changes: this release fixes the docs' CAS address. Check the one setting below, then upgrade with `composer update waynestate/sesame`.
+
+- **Point `cas.base_url` at `https://academica.aws.wayne.edu/cas`.** Earlier docs gave a `login.wayne.edu` address, which answers 404 on `/cas/login`. An app that copied it (into `SESAME_CAS_BASE_URL`, `config/sesame.php`, or the array it passes to `Config::fromArray()` or `WayneAuth::boot()`) never reached the sign-in; change the value. People still see the `login.wayne.edu` screen. An app that takes the address from Playbook gets whatever Playbook supplies, so check that value too.
+- **The Wayne Auth bridge needs `base_url` in its array.** `WayneAuth::boot()` does not read `SESAME_CAS_BASE_URL` or Playbook on its own. To use them, pass `'base_url' => \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')`.
 
 ### 0.7.1 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-1-2026-11-09)
 
