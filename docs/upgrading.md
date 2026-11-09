@@ -21,8 +21,10 @@ No breaks. Two fixes and one new warning:
   path for any other class. An app that wrote its own resolver subclass (or
   its own `refreshUser()`) only to get past that error can delete it and set
   `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`,
-  unless its `config/session.php` sets `'serialization' => 'json'`
-  ([Moving from wayne-cas](guides/moving-from-wayne-cas.md#the-model) says why).
+  unless its `config/session.php` sets `'serialization' => 'json'`: on 0.6.2
+  the shim passes a JSON session's array user through unchanged, so that app
+  keeps its own `refreshUser()` until the next release, whose shim looks the
+  array user up by its primary key.
 - **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and
   `session.use_only_cookies`** whenever no session is active. An app that
   starts its session with either one off gets one `E_USER_WARNING` per request
