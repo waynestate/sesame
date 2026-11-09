@@ -57,6 +57,9 @@ use Waynestate\Sesame\SessionPort;
  * keeps working. `checkSessionSettings: true` turns that warning into a
  * `LogicException` on every call; `false` turns the settings and the
  * warning off. HELMET's `helmet_boot()` and Squire's php.ini set both.
+ * The session cookie's HttpOnly, Secure (on https) and SameSite (Lax or
+ * Strict) flags are checked the same way, warned once per request, never
+ * set.
  */
 final class NativeSession implements SessionPort
 {
@@ -65,6 +68,9 @@ final class NativeSession implements SessionPort
 
     /** Whether this request has had its warning: one is plenty. */
     private static bool $warned = false;
+
+    /** Whether this request has had its cookie-flag warning: one is plenty. */
+    private static bool $warnedCookie = false;
 
     private bool $checked = false;
 
@@ -200,6 +206,7 @@ final class NativeSession implements SessionPort
         // Before the flag is set, so with checkSessionSettings: true a
         // refused session stays refused on every call, not only the first.
         $this->checkSafeSettings();
+        $this->checkCookieFlags();
 
         $this->checked = true;
 
@@ -276,6 +283,79 @@ final class NativeSession implements SessionPort
         }
 
         self::$warned = true;
+        trigger_error($message, E_USER_WARNING);
+    }
+
+    /**
+     * Speak up about an active session whose cookie lacks its flags.
+     *
+     * A session cookie without HttpOnly is readable from JavaScript on the
+     * page, one without Secure can travel over plain http, and one without
+     * a Lax or Strict SameSite can be made to ride along on other sites'
+     * requests. SESAME never sets the flags (S2: HELMET does), so it only
+     * tells the app, in the style of checkSafeSettings(): once per request
+     * by default, a LogicException on every call with
+     * checkSessionSettings: true, silent with false. The values are read
+     * from the active session's cookie params, so the check sees what
+     * session_start() used. Secure is named only on an https request,
+     * where a missing flag actually matters.
+     */
+    private function checkCookieFlags(): void
+    {
+        if ($this->checkSessionSettings === false) {
+            return;
+        }
+
+        $params = session_get_cookie_params();
+
+        $https = (isset($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+            || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+
+        $sameSite = strtolower($params['samesite']);
+        $missingHttpOnly = ! $params['httponly'];
+        $missingSecure = ! $params['secure'] && $https;
+        $missingSameSite = $sameSite !== 'lax' && $sameSite !== 'strict';
+
+        $names = array_values(array_filter(
+            [
+                $missingHttpOnly ? 'HttpOnly' : null,
+                $missingSecure ? 'Secure' : null,
+                $missingSameSite ? 'SameSite' : null,
+            ],
+            static fn(?string $name): bool => $name !== null,
+        ));
+
+        if ($names === []) {
+            return;
+        }
+
+        $reason = match (true) {
+            $missingHttpOnly && ! $missingSecure && ! $missingSameSite => 'scripts on the page can read it',
+            $missingSecure && ! $missingHttpOnly && ! $missingSameSite => 'it can travel over plain http',
+            $missingSameSite && ! $missingHttpOnly && ! $missingSecure => 'other sites can make the browser send it',
+            default => 'it is easier to steal or misuse',
+        };
+
+        $last = array_pop($names);
+        $flags = $names === []
+            ? $last
+            : implode(', ', $names) . ' and ' . $last;
+
+        $message = sprintf(
+            'SESAME: the session cookie is sent without %s, so %s. Set them before session_start(): session_set_cookie_params([\'httponly\' => true, \'secure\' => true, \'samesite\' => \'Lax\']); (or call helmet_boot()).',
+            $flags,
+            $reason,
+        );
+
+        if ($this->checkSessionSettings === true) {
+            throw new LogicException($message);
+        }
+
+        if (self::$warnedCookie) {
+            return;
+        }
+
+        self::$warnedCookie = true;
         trigger_error($message, E_USER_WARNING);
     }
 

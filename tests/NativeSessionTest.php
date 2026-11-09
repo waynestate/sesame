@@ -21,6 +21,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_TEST');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['test'] = 'value';
 $oldId = session_id();
@@ -60,6 +61,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_TEST_ZERO');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['test'] = 'value';
 $oldId = session_id();
@@ -95,6 +97,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_KEEP');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $_SESSION['count'] = 3;
@@ -145,6 +148,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_STRICT');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -206,6 +210,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_USABLE');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $_SESSION['count'] = 3;
@@ -252,6 +257,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_REJECT');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -316,6 +322,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_ZERO');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -360,6 +367,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_GRACE_NODATA');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $_SESSION['secret'] = 'top-secret-value';
@@ -414,6 +422,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_REUSE_LOG');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -474,6 +483,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_REUSE_EXPIRED');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -522,6 +532,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_REUSE_THROW');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -570,6 +581,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_REUSE_FRESH');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $id = session_id();
@@ -621,6 +633,7 @@ if (! is_dir($savePath)) {
 }
 session_save_path($savePath);
 session_name('SESAME_REUSE_ZERO');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $oldId = session_id();
@@ -687,6 +700,7 @@ set_error_handler(static function (int $level, string $message) use (&$warnings)
 $session = new NativeSession();
 $planted = 'plantedbyanattacker0123456789ab';
 session_id($planted);
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $session->put('user', 'jdoe');
 
@@ -722,6 +736,7 @@ if (! is_dir($savePath)) {
 session_save_path($savePath);
 session_name('SESAME_SETTINGS_WARN');
 ini_set('session.use_strict_mode', '0');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 
@@ -825,6 +840,7 @@ set_error_handler(static function (int $level, string $message) use (&$warnings)
 
 ini_set('session.use_strict_mode', 'On');
 ini_set('session.use_only_cookies', 'yes');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 $_SESSION['user'] = 'jdoe';
 $spelledOn = (new NativeSession(checkSessionSettings: true))->get('user');
@@ -852,6 +868,255 @@ PHP;
         self::assertSame('jdoe', $result['checkOff'], 'checkSessionSettings: false neither throws nor stops the session.');
         self::assertSame('0', $result['strictAfterConstruct'], 'checkSessionSettings: false leaves the settings alone.');
         self::assertSame([], $result['warnings'], 'checkSessionSettings: false raises no warning.');
+    }
+
+    public function testACookieWithoutHttpOnlyWarnsOncePerRequest(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-httponly-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_HTTPONLY');
+session_set_cookie_params(['httponly' => false, 'samesite' => 'Lax']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$first = new NativeSession();
+$users = [$first->get('user'), $first->get('user')];
+$first->put('count', 1);
+$second = new NativeSession();
+$users[] = $second->get('user');
+
+echo json_encode([
+    'users' => $users,
+    'warnings' => $warnings,
+]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame(['jdoe', 'jdoe', 'jdoe'], $result['users'], 'The session keeps working: a warning, not a stop.');
+        self::assertCount(1, $result['warnings'], 'One cookie warning per request, however many calls and instances.');
+        self::assertStringContainsString('HttpOnly', $result['warnings'][0], 'The missing flag is named.');
+        self::assertStringContainsString('session_set_cookie_params(', $result['warnings'][0], 'The warning carries the fix.');
+        self::assertStringNotContainsString('Secure', $result['warnings'][0], 'Only HttpOnly is missing, so Secure is not named.');
+        self::assertStringNotContainsString('SameSite', $result['warnings'][0], 'SameSite is Lax, so it is not named.');
+    }
+
+    public function testSecureIsNamedOnlyOnHttps(): void
+    {
+        $noHttps = $this->cookieFlagCase(['httponly' => true, 'samesite' => 'Lax', 'secure' => false]);
+        self::assertSame([], $noHttps['warnings'], 'Without an https signal Secure is not named, so there is no warning.');
+
+        $direct = $this->cookieFlagCase(['httponly' => true, 'samesite' => 'Lax', 'secure' => false], "\$_SERVER['HTTPS'] = 'on';");
+        self::assertCount(1, $direct['warnings'], 'An https request names the missing Secure flag.');
+        self::assertStringContainsString('Secure', $direct['warnings'][0]);
+        self::assertStringNotContainsString('HttpOnly', $direct['warnings'][0]);
+        self::assertStringNotContainsString('SameSite', $direct['warnings'][0]);
+
+        $proxied = $this->cookieFlagCase(['httponly' => true, 'samesite' => 'Lax', 'secure' => false], "\$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';");
+        self::assertCount(1, $proxied['warnings'], 'A proxied https request names the missing Secure flag.');
+        self::assertStringContainsString('Secure', $proxied['warnings'][0]);
+        self::assertStringNotContainsString('HttpOnly', $proxied['warnings'][0]);
+        self::assertStringNotContainsString('SameSite', $proxied['warnings'][0]);
+    }
+
+    public function testSameSiteNoneOrEmptyWarns(): void
+    {
+        $none = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => 'None']);
+        self::assertCount(1, $none['warnings'], 'SameSite=None is not Lax or Strict, so it warns.');
+        self::assertStringContainsString('SameSite', $none['warnings'][0]);
+        self::assertStringNotContainsString('HttpOnly', $none['warnings'][0]);
+        self::assertStringNotContainsString('Secure', $none['warnings'][0]);
+
+        $empty = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => '']);
+        self::assertCount(1, $empty['warnings'], 'An empty SameSite warns too.');
+        self::assertStringContainsString('SameSite', $empty['warnings'][0]);
+
+        $strict = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => 'Strict']);
+        self::assertSame([], $strict['warnings'], 'Strict is a Lax-or-Strict value, so no warning.');
+    }
+
+    public function testHardenedCookieGivesNoWarning(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-hardened-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_HARDENED');
+$_SERVER['HTTPS'] = 'on';
+session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$session = new NativeSession();
+$user = $session->get('user');
+
+echo json_encode(['user' => $user, 'warnings' => $warnings]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('jdoe', $result['user']);
+        self::assertSame([], $result['warnings'], 'A hardened cookie on https raises no warning.');
+    }
+
+    public function testCookieFlagsWithCheckSessionSettingsTrueThrows(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-throw-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_THROW');
+session_set_cookie_params(['httponly' => false, 'samesite' => 'Lax']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$session = new NativeSession(checkSessionSettings: true);
+$messages = [];
+foreach (['get', 'get'] as $call) {
+    try {
+        $session->get('user');
+        $messages[] = null;
+    } catch (LogicException $e) {
+        $messages[] = $e->getMessage();
+    }
+}
+
+echo json_encode(['messages' => $messages, 'user' => $_SESSION['user']]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertCount(2, $result['messages']);
+
+        foreach ($result['messages'] as $message) {
+            self::assertIsString($message, 'With checkSessionSettings: true every call is refused, not only the first.');
+            self::assertStringContainsString('HttpOnly', $message);
+            self::assertStringContainsString('session_set_cookie_params(', $message);
+        }
+
+        self::assertSame('jdoe', $result['user'], 'A refused get() must not change the session.');
+    }
+
+    public function testCookieFlagsWithCheckSessionSettingsFalseIsSilent(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-silent-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_SILENT');
+session_set_cookie_params(['httponly' => false, 'samesite' => 'Lax']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$session = new NativeSession(checkSessionSettings: false);
+$user = $session->get('user');
+
+echo json_encode(['user' => $user, 'warnings' => $warnings]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('jdoe', $result['user'], 'checkSessionSettings: false still serves the session.');
+        self::assertSame([], $result['warnings'], 'checkSessionSettings: false raises no cookie warning.');
+    }
+
+    /**
+     * Start a session in a child with the given cookie params and an optional
+     * server-variable line, use it once, and return the decoded result.
+     *
+     * Each case runs in its own child because the cookie warning is once per
+     * request, i.e. once per child process.
+     *
+     * @param array<string, mixed> $cookieParams
+     * @return array<string, mixed>
+     */
+    private function cookieFlagCase(array $cookieParams, string $serverLine = ''): array
+    {
+        $head = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-flags-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_FLAGS');
+PHP;
+
+        $tail = <<<'PHP'
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$session = new NativeSession();
+$user = $session->get('user');
+
+echo json_encode(['user' => $user, 'warnings' => $warnings]);
+PHP;
+
+        $body = $head . "\n" . $serverLine . "\n"
+            . "session_set_cookie_params(" . var_export($cookieParams, true) . ");\n"
+            . $tail;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+
+        return $result;
     }
 
     /**

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.
+### Added
+
+- NativeSession warns once per request when the session cookie lacks HttpOnly, Secure (on https) or a Lax or Strict SameSite, and throws with checkSessionSettings: true; it still never sets cookie flags (S3).
 
 ## [0.6.3] - 2026-11-09
 

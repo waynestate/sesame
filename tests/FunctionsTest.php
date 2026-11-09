@@ -712,6 +712,7 @@ use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 
 ini_set('session.use_strict_mode', '1'); // NativeSession warns without it
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 
 $success =(new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
