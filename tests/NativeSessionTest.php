@@ -134,6 +134,66 @@ PHP;
         self::assertSame($result['newId'], $result['oldNewSessionId'], 'The old session should carry the new session ID.');
     }
 
+    public function testRegenerateUnderStrictModeKeepsItsNewIdAndTheSetting(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-grace-strict-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_GRACE_STRICT');
+session_start();
+$_SESSION['user'] = 'jdoe';
+$oldId = session_id();
+
+$session = new NativeSession(60);
+$session->regenerate();
+
+$newId = session_id();
+$strictAfter = ini_get('session.use_strict_mode');
+$status = session_status();
+$newData = $_SESSION;
+session_write_close();
+
+// A later request on the new ID, with strict mode on, must find its data.
+session_id($newId);
+session_start();
+$laterId = session_id();
+$laterData = $_SESSION;
+session_write_close();
+
+session_id($oldId);
+session_start();
+$oldData = $_SESSION;
+session_write_close();
+
+echo json_encode([
+    'strictAfter' => $strictAfter,
+    'status' => $status,
+    'newData' => $newData,
+    'newFileExists' => file_exists($savePath.'/sess_'.$newId),
+    'laterKeptTheNewId' => $laterId === $newId,
+    'laterData' => $laterData,
+    'markerNamesTheNewId' => ($oldData['sesame.new_session_id'] ?? null) === $newId,
+]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('1', $result['strictAfter'], 'regenerate() must leave strict mode as the app set it.');
+        self::assertSame(2, $result['status'], 'The new session should be active (PHP_SESSION_ACTIVE).');
+        self::assertSame(['user' => 'jdoe'], $result['newData'], 'The new session should hold the data and neither marker.');
+        self::assertTrue($result['newFileExists'], 'The new session should be in the store under its new ID.');
+        self::assertTrue($result['laterKeptTheNewId'], 'Strict mode must accept the new ID on the next request.');
+        self::assertSame(['user' => 'jdoe'], $result['laterData'], 'The next request on the new ID should see the data.');
+        self::assertTrue($result['markerNamesTheNewId'], 'The old session marker should name the ID the user is really on.');
+    }
+
     public function testTheOldSessionIsStillUsableWithinTheGrace(): void
     {
         $body = <<<'PHP'
@@ -593,18 +653,23 @@ PHP;
         self::assertIsArray($result, 'Child output was not JSON: ' . $output);
         self::assertNull($result['user'], 'The old session data is gone either way.');
         self::assertSame(2, $result['status'], 'A fresh session should be active (PHP_SESSION_ACTIVE).');
-        self::assertTrue($result['keptTheOldId'], 'With the check off the request gets an ordinary session under the ID.');
+        self::assertFalse($result['keptTheOldId'], 'With the check off, strict mode still refuses the dead ID: PHP starts the fresh session under a new one.');
         self::assertSame(0, $result['recordCount'], 'No anomaly should be logged with the check off.');
     }
 
     /**
      * Wrap a snippet in a runnable script that loads the autoloader first.
+     *
+     * Every child runs with strict mode on, as production does (HELMET and
+     * Squire's php.ini turn it on), so the tests take the path real apps
+     * take. A test that needs it off says so in its own body.
      */
     private function childScript(string $body): string
     {
         $autoloader = dirname(__DIR__) . '/vendor/autoload.php';
 
-        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n\n" . $body;
+        return "<?php\ndeclare(strict_types=1);\nrequire " . var_export($autoloader, true) . ";\n"
+            . "ini_set('session.use_strict_mode', '1');\n\n" . $body;
     }
 
     /**

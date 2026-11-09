@@ -84,12 +84,10 @@ final class NativeSession implements SessionPort
         // The data is copied explicitly: starting the new session replaces
         // $_SESSION with the new session's (empty) contents.
         $data = $_SESSION;
+        unset($data['sesame.destroyed_at'], $data['sesame.new_session_id']);
 
         session_write_close();
-        session_id($newId);
-        session_start();
-        $_SESSION = $data;
-        unset($_SESSION['sesame.destroyed_at'], $_SESSION['sesame.new_session_id']);
+        $this->startUnderNewId($newId, $data);
     }
 
     public function get(string $key): mixed
@@ -273,6 +271,49 @@ final class NativeSession implements SessionPort
         } catch (\Throwable) {
             // Best effort: a broken logger must not break the request.
         }
+    }
+
+    /**
+     * Start the session under the ID regenerate() just made, holding $data.
+     *
+     * Strict mode (HELMET and Squire's php.ini turn it on) refuses an ID the
+     * store has never seen, and the new ID is not in the store yet: PHP
+     * would quietly swap in an ID of its own, and the old session's marker
+     * would name an ID that never exists. The ID came from
+     * session_create_id() a moment ago, never from the request, so the new
+     * session is first stored with strict mode off (the PHP manual's own
+     * regenerate recipe does the same), then reopened with the app's
+     * setting back, so the rest of the request runs as the app set it up.
+     * A strict bouncer, but it does let in the guest it just wrote on the
+     * list.
+     *
+     * @param array<mixed> $data
+     */
+    private function startUnderNewId(string $id, array $data): void
+    {
+        $strict = ini_get('session.use_strict_mode');
+
+        if ($strict !== false && self::isOn($strict)) {
+            ini_set('session.use_strict_mode', '0');
+            session_id($id);
+            session_start();
+            $_SESSION = $data;
+            session_write_close();
+            ini_set('session.use_strict_mode', $strict);
+        } else {
+            session_id($id);
+        }
+
+        session_start();
+        $_SESSION = $data;
+    }
+
+    /**
+     * Whether a boolean ini value is on ("1", "On", "true", "yes").
+     */
+    private static function isOn(string $value): bool
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
