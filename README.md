@@ -1429,7 +1429,8 @@ first. What the hop does:
   package, any `wayne-cas` path entry and its VCS repository entries.
   Booster 1.12.0 and later write `^0.6`; an app hopped by an earlier Booster
   got `^0.4`, so take the 0.5.0 and 0.6.0 steps in the
-  [upgrading guide](docs/upgrading.md).
+  [upgrading guide](docs/upgrading.md), and its 0.7.0 step to move from `^0.6`
+  to `^0.7`.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config
   keys any more; while anything still does, the file stays and a manual note
   names the readers.

@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-11-09 (release 0.6.3). The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
+The tags describe the repo as it stands on 2026-11-09 (release 0.7.0). The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
 
 ## 1. Sessions
 
@@ -303,7 +303,7 @@ How the stack holds it: `Enforced`. `sesame_logout()` sends `Cache-Control: no-s
 Do not set `session.sid_length` or `session.sid_bits_per_character`. On PHP 8.4 and later they are deprecated, and the default ID is 32 hexadecimal characters (128 bits).
 Why: a low setting weakens the ID, and the settings now raise deprecation notices. OWASP asks for at least 64 bits of entropy in an ID.
 Sources: [PHP RFC, Deprecations for PHP 8.4](https://wiki.php.net/rfc/deprecations_php_8_4) (confirmed through search results, not read in full), [OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
-How the stack holds it: `Checked`. The README ("The session cookie") tells apps to leave both settings alone, and SESAME and HELMET's hardening step never set them. Squire's kit (0.10.0 in this repo's `deploy/`) does not write them into `.squire/php.ini`, and Squire's CI fails if it ever does again (`ImageHardeningTest::testPhpIniLeavesTheSessionIdLengthAtPhpsDefaults`); in an app, `squire init --check` reports a kit `php.ini` that was edited. An ini file an app adds outside the kit is not checked.
+How the stack holds it: `Checked`. The README ("The session cookie") tells apps to leave both settings alone, and SESAME and HELMET's hardening step never set them. Squire's kit (0.10.1 in this repo's `deploy/`) does not write them into `.squire/php.ini`, and Squire's CI fails if it ever does again (`ImageHardeningTest::testPhpIniLeavesTheSessionIdLengthAtPhpsDefaults`); in an app, `squire init --check` reports a kit `php.ini` that was edited. An ini file an app adds outside the kit is not checked.
 
 ### S46. Take login time from the IdP, and read time through a clock
 Prefer the IdP's `authenticationDate` over the time SESAME received the response, and give the library a PSR-20 clock instead of calling `new DateTimeImmutable()`.

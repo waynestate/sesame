@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.7.0\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-0-2026-11-09)
+
+- Docs: the upgrading guide has a 0.7.0 section: what to set so the new cookie flag warning stays quiet, and the `^0.7` constraint step.
 - Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.
 - Changed: the deploy kit is Squire 0.10.1 (was 0.10.0): the fallback base image copies Composer 2.11.1 (was 2.10.3, no longer maintained); the deploy layer requires PROCTOR ^0.11 (locked 0.11.0, was ^0.8 at 0.8.0).
 - Added: NativeSession warns once per request when the session cookie lacks HttpOnly, Secure (on https) or a Lax or Strict SameSite, and throws with checkSessionSettings: true; it still never sets cookie flags (S3).

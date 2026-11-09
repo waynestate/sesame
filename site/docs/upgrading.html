@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Upgrading | SESAME docs</title>
 <meta name="description" content="How to move between SESAME versions.">
-<meta name="docs-version" content="0.6.3">
+<meta name="docs-version" content="0.7.0">
 <link rel="stylesheet" href="../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../assets/docs.css">
 <link rel="stylesheet" href="../docs/theme/sesame.css">
@@ -50,6 +50,54 @@
 version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.</p>
+<h2 id="0-7-0-2026-11-09">0.7.0 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></h2>
+<p>One new check that can need a step, and one that can stop an app that asked
+for hard stops. Laravel apps are not affected: the Laravel adapter uses
+Laravel's session, not <code>NativeSession</code>.</p>
+<ul>
+<li><strong><code>NativeSession</code> (raw PHP, and the Wayne Auth bridge) checks the session
+cookie's flags.</strong> When the active session's cookie lacks <code>HttpOnly</code>, lacks
+<code>Secure</code> on an https request (<code>HTTPS</code> set, or <code>X-Forwarded-Proto: https</code>),
+or has a <code>SameSite</code> other than <code>Lax</code> or <code>Strict</code>, the first use in a request
+raises one <code>E_USER_WARNING</code> that names the missing flags and the fix, and
+the session keeps working. SESAME still never sets a flag itself. PHP's own
+defaults trip it (<code>session.cookie_httponly</code> off, <code>session.cookie_samesite</code>
+empty), and so does Squire's kit <code>php.ini</code>, which sets <code>HttpOnly</code> and
+<code>Secure</code> but leaves <code>SameSite</code> empty. An app that calls HELMET's
+<code>helmet_boot()</code> before <code>session_start()</code> already sets all three and sees
+nothing.</li>
+<li><strong>With <code>checkSessionSettings: true</code> it is a hard stop.</strong> An app that passes
+<code>checkSessionSettings: true</code> to <code>new NativeSession()</code> and starts its session
+without those flags now gets a <code>LogicException</code> on every call, the same way
+it already did for strict mode. Set the flags before you deploy 0.7.0.</li>
+</ul>
+<p><strong>Steps.</strong></p>
+<ol>
+<li><code>composer require waynestate/sesame:^0.7</code> (SESAME is below 1.0, so <code>^0.6</code>
+does not take 0.7.0).</li>
+<li>Set the cookie flags before <code>session_start()</code>, in one of these ways:
+<ul>
+<li>call <code>helmet_boot()</code> (HELMET sets strict mode and all three flags);</li>
+<li>or add
+<code>session_set_cookie_params(['httponly' =&gt; true, 'secure' =&gt; true, 'samesite' =&gt; 'Lax']);</code>
+before <code>session_start()</code>;</li>
+<li>or set <code>session.cookie_httponly = 1</code>, <code>session.cookie_secure = 1</code> and
+<code>session.cookie_samesite = Lax</code> in <code>php.ini</code> or the FPM pool. On a Squire
+kit, the one line to add is <code>session.cookie_samesite = Lax</code>.
+Keep <code>Lax</code>, not <code>Strict</code>: the identity provider sends the browser back with
+a cross-site navigation, and a <code>Strict</code> cookie is not sent on it, so every
+sign-in would fail. SESAME lets <code>Strict</code> through, so it will not warn you.</li>
+</ul>
+</li>
+<li>To stay quiet without fixing the flags (not recommended), pass
+<code>checkSessionSettings: false</code>; it also turns off the strict mode settings
+and their warning.</li>
+</ol>
+<p><strong>How to verify.</strong> Sign in and open a protected page: the PHP error log has
+no <code>SESAME: the session cookie is sent without</code> line. In the browser's
+developer tools the session cookie shows <code>HttpOnly</code>, <code>Secure</code> (on https) and
+<code>SameSite=Lax</code>. An app with <code>checkSessionSettings: true</code> signs in without a
+<code>LogicException</code>.</p>
 <h2 id="0-6-3-2026-11-09">0.6.3 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-3-2026-11-09">#</a></h2>
 <p>No breaks. One fix:</p>
 <ul>
@@ -363,10 +411,10 @@ context check fails closed when there is no user or no identity.
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../docs/troubleshooting.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Troubleshooting</span></a><a class="docs-pager__link docs-pager__link--next" href="../docs/changelog.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Changelog</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#0-6-3-2026-11-09">0.6.3 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-2-2026-11-09">0.6.2 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-1-2026-11-08">0.6.1 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">0.6.0 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">0.5.0 (2026-11-07)</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">0.4.0 (2026-11-03)</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">0.3.0 (2026-10-30)</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">0.2.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">0.2.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">0.2.0 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">0.1.3 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">0.1.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">0.1.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">0.1.0 (2026-10-27)</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#0-7-0-2026-11-09">0.7.0 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-3-2026-11-09">0.6.3 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-2-2026-11-09">0.6.2 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-1-2026-11-08">0.6.1 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">0.6.0 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">0.5.0 (2026-11-07)</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">0.4.0 (2026-11-03)</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">0.3.0 (2026-10-30)</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">0.2.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">0.2.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">0.2.0 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">0.1.3 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">0.1.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">0.1.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">0.1.0 (2026-10-27)</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents SESAME <span data-docs-version>0.6.3</span></span>
+  <span>Documents SESAME <span data-docs-version>0.7.0</span></span>
   <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="upgrading.md">Markdown</a></span>
 </footer>
 </body>
