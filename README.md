@@ -1534,7 +1534,7 @@ docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app comp
 ```
 
 The committed site gets checked in a real browser too: Preflight's own a11y
-checker, vendored at the CI tag (0.3.1) and pinned by a test, run in Docker
+checker, vendored at the CI tag (0.4.0) and pinned by a test, run in Docker
 through Playwright, so no host browser is needed. It looks at every page under
 site/, in light and dark at 320 and 1280 px, with the WCAG 1.4.10 reflow check:
 

@@ -315,7 +315,7 @@ How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from 
 Include pipeline components by commit SHA, never `~latest`.
 Why: a moving component can change what your pipeline runs, or what it skips, with no change in your repo. GitLab says components are used at your own risk.
 Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (commit SHA is the preferred pin; "Avoid using `latest`").
-How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.3.1`, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (D-054), so a pin bump is one readable version across every repo; the apps Sourdough generates pin the release commit SHA. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
+How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.4.0`, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (D-054), so a pin bump is one readable version across every repo; the apps Sourdough generates pin the release commit SHA. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
 
 ## 8. MFA
 
