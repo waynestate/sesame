@@ -88,5 +88,6 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
 
 ## Who maintains it
 
-Adam Perkins, Wayne State University Enterprise Applications. Internal runbook (accounts, tokens, mirrors, identity
-provider contacts): ask Enterprise Applications.
+The stack maintainer (a role, not a named person), Wayne State University Enterprise Applications. To reach them,
+open an issue on git.wayne.edu. Internal runbook (accounts, tokens, mirrors, identity provider contacts): ask
+Enterprise Applications.
