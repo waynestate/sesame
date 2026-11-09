@@ -73,7 +73,7 @@ No breaks. SESAME's routes now point at `SesameController` methods instead of cl
 
 ## 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
 
-**Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (SESAME-22), so an app that already has an older copy of either cannot take 0.6 until it updates them.
+**Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (the security floor for the SAML libraries), so an app that already has an older copy of either cannot take 0.6 until it updates them.
 
 **Deprecated.** Nothing is deprecated in this release.
 

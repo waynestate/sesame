@@ -83,7 +83,7 @@ final class SamlDriver implements Driver, RemembersReturnTo
     public const LIBRARY_PACKAGE = 'onelogin/php-saml';
 
     /**
-     * The lowest php-saml release SESAME accepts (SESAME-22). 4.3.1 fixed
+     * The lowest php-saml release SESAME accepts (its security floor). 4.3.1 fixed
      * CVE-2025-66475; 4.3.2 requires an xmlseclibs with the fix for
      * CVE-2026-32313. composer.json's "conflict" holds the same floor.
      */

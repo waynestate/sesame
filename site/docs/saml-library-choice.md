@@ -33,7 +33,7 @@ Ali Baba did not forge his own cave door, and SESAME does not write its own XML 
 
 simplesamlphp/saml2 is the strongest alternative if SESAME ever needs the whole SAML protocol (artifact binding, SOAP, attribute queries); the driver needs only Web Browser SSO.
 
-## The floor (SESAME-22)[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-floor-sesame-22)
+## The security floor[#](https://sesame.apps.wayne.edu/docs/saml-library-choice.html#the-security-floor)
 
 SESAME refuses php-saml below **4.3.2** and xmlseclibs below **3.1.5**:
 

@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: the deploy kit is Squire 0.10.2 (was 0.10.1): the kit's `php.ini` sets `session.cookie_samesite = Lax` (the value `NativeSession`'s cookie check asks for); the fallback base names its images in full (`docker.io/library/...`) with Composer as a build argument; and the portable image drops `node_modules/` after the build. BEST_PRACTICES S45 names kit 0.10.2.
 - Changed: the deploy layer requires HELMET ^1.3 (locked 1.3.0, was ^1.0 at 1.0.1) and CREED ^0.1.8 (locked 0.1.8, was ^0.1 at 0.1.7); PROCTOR stays ^0.11 at 0.11.0. The dev dependency on Pinstripe moves to ^0.1.4 (locked 0.1.4, was ^0.1 at 0.1.0).
 - Docs: the Proof page records the 2026-11-09 run on the main head after 0.7.0 (839 tests, 2432 assertions, on PHP 8.3, 8.4 and 8.5, and `composer ci`).
+- Docs: the SAML library choice page, the upgrading guide, BEST_PRACTICES and the saml driver's comments say "the security floor" in plain words instead of an internal item number; the heading "The floor" is now "The security floor" (anchor `#the-security-floor`).
 - Docs: MAINTAINING names the maintainer as a role (the stack maintainer), reached through an issue on git.wayne.edu.
 - Docs: the `NativeSession` constructor docblock says `checkSessionSettings` also covers the cookie flag check (HttpOnly, Secure on https, a Lax or Strict SameSite; checked, never set), and BEST_PRACTICES' `NativeSession.php` line citations follow it.
 

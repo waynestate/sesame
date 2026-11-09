@@ -19,7 +19,7 @@ use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 /**
  * The saml driver's config (SamlOptions), its DriverFactory arm, and the
- * library floor (SESAME-22).
+ * security floor for php-saml and xmlseclibs.
  */
 final class SamlConfigTest extends TestCase
 {
@@ -34,8 +34,8 @@ final class SamlConfigTest extends TestCase
 
     public function testTheInstalledLibrariesMeetTheFloor(): void
     {
-        // SESAME-22: fails if the installed php-saml or xmlseclibs is
-        // older than the floor the driver enforces at boot.
+        // The security floor: fails if the installed php-saml or
+        // xmlseclibs is older than the floor the driver enforces at boot.
         foreach ([SamlDriver::LIBRARY_PACKAGE => SamlDriver::LIBRARY_FLOOR, SamlDriver::XMLSECLIBS_PACKAGE => SamlDriver::XMLSECLIBS_FLOOR] as $package => $floor) {
             self::assertTrue(InstalledVersions::isInstalled($package), $package . ' is not installed.');
             $version = (string) InstalledVersions::getPrettyVersion($package);

@@ -159,7 +159,7 @@ only at release time.
 token introspection and the logged-out session marker are additions, each off
 until it is configured. One install-time catch: `composer.json` now conflicts
 with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5
-(SESAME-22), so an app that already has an older copy of either cannot take
+(the security floor for the SAML libraries), so an app that already has an older copy of either cannot take
 0.6 until it updates them.
 
 **Deprecated.** Nothing is deprecated in this release.
