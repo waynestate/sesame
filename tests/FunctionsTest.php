@@ -711,9 +711,10 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Support\FakeHttpClient;
 use Waynestate\Sesame\Tests\Support\RecordingResolver;
 
+ini_set('session.use_strict_mode', '1'); // NativeSession warns without it
 session_start();
 
-$success = (new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
+$success =(new Response())->withStatus(200)->withBody(Stream::create(file_get_contents(__FIXTURE__)));
 $http = new FakeHttpClient([$success]);
 // Binding off: this script exercises the loop guard, not login binding.
 $driver = new CasDriver('https://cas.test/cas', 'https://app.test/login', $http, new Psr17Factory(), '2.0', false, false, null, null, false);

@@ -54,6 +54,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([

@@ -657,6 +657,203 @@ PHP;
         self::assertSame(0, $result['recordCount'], 'No anomaly should be logged with the check off.');
     }
 
+    public function testTheSafeSettingsAreTurnedOnBeforeTheSessionStarts(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+// PHP 8.4 deprecates use_only_cookies=0, which is the point: set it anyway.
+error_reporting(E_ALL & ~E_DEPRECATED);
+
+$savePath = sys_get_temp_dir().'/sesame-settings-auto-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_SETTINGS_AUTO');
+// A shared php.ini that nobody hardened.
+ini_set('session.use_strict_mode', '0');
+ini_set('session.use_only_cookies', '0');
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+// The app builds SESAME's session first, then starts the session with an
+// ID an attacker planted.
+$session = new NativeSession();
+$planted = 'plantedbyanattacker0123456789ab';
+session_id($planted);
+session_start();
+$session->put('user', 'jdoe');
+
+echo json_encode([
+    'strict' => ini_get('session.use_strict_mode'),
+    'onlyCookies' => ini_get('session.use_only_cookies'),
+    'plantedIdRefused' => session_id() !== $planted,
+    'user' => $session->get('user'),
+    'warnings' => $warnings,
+]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('1', $result['strict'], 'Strict mode should be turned on before the session starts.');
+        self::assertSame('1', $result['onlyCookies'], 'Cookie-only IDs should be turned on before the session starts.');
+        self::assertTrue($result['plantedIdRefused'], 'With strict mode on, PHP must refuse the planted ID.');
+        self::assertSame('jdoe', $result['user']);
+        self::assertSame([], $result['warnings'], 'Settings that were fixed in time need no warning.');
+    }
+
+    public function testAnActiveSessionWithoutTheSafeSettingsWarnsOncePerRequest(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-settings-warn-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_SETTINGS_WARN');
+ini_set('session.use_strict_mode', '0');
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$first = new NativeSession();
+$users = [$first->get('user'), $first->get('user')];
+$first->put('count', 1);
+$second = new NativeSession();
+$users[] = $second->get('user');
+
+echo json_encode([
+    'users' => $users,
+    'warnings' => $warnings,
+    'strictStillOff' => ini_get('session.use_strict_mode') === '0',
+]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame(['jdoe', 'jdoe', 'jdoe'], $result['users'], 'The session keeps working: a warning, not a stop.');
+        self::assertCount(1, $result['warnings'], 'One warning per request, however many calls and instances.');
+        self::assertStringContainsString('session.use_strict_mode', $result['warnings'][0]);
+        self::assertStringNotContainsString('use_only_cookies', $result['warnings'][0], 'Only the setting that is off is named.');
+        self::assertStringContainsString("ini_set('session.use_strict_mode', '1');", $result['warnings'][0], 'The warning should carry the one-line fix.');
+        self::assertTrue($result['strictStillOff'], 'An active session cannot change its settings, so they are left as they are.');
+    }
+
+    public function testCheckSessionSettingsTrueRefusesOnEveryCall(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+// PHP 8.4 deprecates use_only_cookies=0, which is the point: set it anyway.
+error_reporting(E_ALL & ~E_DEPRECATED);
+
+$savePath = sys_get_temp_dir().'/sesame-settings-strict-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_SETTINGS_STRICT');
+ini_set('session.use_strict_mode', '0');
+ini_set('session.use_only_cookies', '0');
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$session = new NativeSession(checkSessionSettings: true);
+$messages = [];
+foreach (['get', 'put', 'get'] as $call) {
+    try {
+        $call === 'get' ? $session->get('user') : $session->put('user', 'mallory');
+        $messages[] = null;
+    } catch (LogicException $e) {
+        $messages[] = $e->getMessage();
+    }
+}
+
+echo json_encode(['messages' => $messages, 'user' => $_SESSION['user']]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertCount(3, $result['messages']);
+
+        foreach ($result['messages'] as $message) {
+            self::assertIsString($message, 'With checkSessionSettings: true every call is refused, not only the first.');
+            self::assertStringContainsString('session.use_strict_mode and session.use_only_cookies', $message);
+        }
+
+        self::assertSame('jdoe', $result['user'], 'A refused put() must not write to the session.');
+    }
+
+    public function testSettingsSpelledOnPassAndFalseTurnsEverythingOff(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-settings-off-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_SETTINGS_OFF');
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+ini_set('session.use_strict_mode', 'On');
+ini_set('session.use_only_cookies', 'yes');
+session_start();
+$_SESSION['user'] = 'jdoe';
+$spelledOn = (new NativeSession(checkSessionSettings: true))->get('user');
+session_write_close();
+
+ini_set('session.use_strict_mode', '0');
+$off = new NativeSession(checkSessionSettings: false);
+$strictAfterConstruct = ini_get('session.use_strict_mode');
+session_start();
+$checkOff = $off->get('user');
+
+echo json_encode([
+    'spelledOn' => $spelledOn,
+    'checkOff' => $checkOff,
+    'strictAfterConstruct' => $strictAfterConstruct,
+    'warnings' => $warnings,
+]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('jdoe', $result['spelledOn'], 'On, yes and 1 all count as on.');
+        self::assertSame('jdoe', $result['checkOff'], 'checkSessionSettings: false neither throws nor stops the session.');
+        self::assertSame('0', $result['strictAfterConstruct'], 'checkSessionSettings: false leaves the settings alone.');
+        self::assertSame([], $result['warnings'], 'checkSessionSettings: false raises no warning.');
+    }
+
     /**
      * Wrap a snippet in a runnable script that loads the autoloader first.
      *

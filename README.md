@@ -147,6 +147,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -218,6 +219,22 @@ reads the user with `sesame_user()`:
 ```php
 $user = sesame_user();
 ```
+
+**Strict mode, on by default.** Two PHP settings stop a client choosing its
+own session ID: `session.use_strict_mode` (without it PHP accepts any ID a
+client sends, so an attacker can plant one) and `session.use_only_cookies`
+(without it PHP takes the ID from the URL, where links and logs leak it).
+`NativeSession` turns both on with `ini_set()` whenever no session is active:
+when it is built before `session_start()`, and before every session start of
+its own. When your app already started the session with either one off, the
+first use in the request raises one `E_USER_WARNING` naming the setting and the
+fix, and the session keeps working. The fix is the one line in the examples
+above, `ini_set('session.use_strict_mode', '1')` before `session_start()`, or
+HELMET's `helmet_boot()`; Squire's `php.ini` already sets both. Pass
+`checkSessionSettings: true` to `new NativeSession()` for a hard stop (a
+`LogicException` on every call) instead of the warning, or `false` to leave the
+settings alone and stay quiet. The Laravel adapter uses Laravel's session and
+is not affected.
 
 **Session regeneration grace.** On login SESAME regenerates the session ID.
 For the native session the old ID is not deleted at once: it is marked with
@@ -858,6 +875,7 @@ use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Support\Setting;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -1055,6 +1073,7 @@ spot the first time anything asks who is signed in.
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
+| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode` and `session.use_only_cookies`. A `new NativeSession()` option, not a config key. `null` turns both on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off; `true` also turns them on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. |
 
 On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live

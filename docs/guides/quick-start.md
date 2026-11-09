@@ -26,6 +26,7 @@ driver, which needs no server and no registration. Every snippet below is the
 
    require __DIR__.'/vendor/autoload.php';
 
+   ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
    session_start();
    ```
 

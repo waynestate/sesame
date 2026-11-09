@@ -46,16 +46,40 @@ use Waynestate\Sesame\SessionPort;
  * empty session and the old ID stays dead. Pass
  * `logoutReuseTtlSeconds: 0` to turn the check off: the session is
  * destroyed outright, the old behavior.
+ *
+ * Safe session settings land without a code change. `session.use_strict_mode`
+ * off lets PHP accept any ID a client sends, and `session.use_only_cookies`
+ * off lets it take the ID from the URL. Whenever no session is active (at
+ * construction, and before each session_start() this class makes itself),
+ * both are turned on with ini_set(). When the app already started its
+ * session with either one off, the first use in the request raises one
+ * E_USER_WARNING naming the setting and the one-line fix, and the session
+ * keeps working. `checkSessionSettings: true` turns that warning into a
+ * `LogicException` on every call; `false` turns the settings and the
+ * warning off. HELMET's `helmet_boot()` and Squire's php.ini set both.
  */
 final class NativeSession implements SessionPort
 {
+    /** The settings that stop a client choosing its own session ID. */
+    private const SAFE_SETTINGS = ['session.use_strict_mode', 'session.use_only_cookies'];
+
+    /** Whether this request has had its warning: one is plenty. */
+    private static bool $warned = false;
+
     private bool $checked = false;
 
+    /**
+     * @param bool|null $checkSessionSettings null (the default) turns the
+     *        safe settings on when it can and warns once when the app's
+     *        session was started without them; true also turns them on and
+     *        throws instead of warning; false does neither.
+     */
     public function __construct(
         private readonly int $graceSeconds = 60,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?ClockInterface $clock = null,
         private readonly int $logoutReuseTtlSeconds = 60,
+        private readonly ?bool $checkSessionSettings = null,
     ) {
         if ($this->graceSeconds < 0) {
             throw new InvalidArgumentException('The grace period cannot be negative.');
@@ -64,6 +88,8 @@ final class NativeSession implements SessionPort
         if ($this->logoutReuseTtlSeconds < 0) {
             throw new InvalidArgumentException('The logout reuse window cannot be negative.');
         }
+
+        $this->hardenBeforeStart();
     }
 
     public function regenerate(): void
@@ -171,10 +197,86 @@ final class NativeSession implements SessionPort
             return;
         }
 
+        // Before the flag is set, so with checkSessionSettings: true a
+        // refused session stays refused on every call, not only the first.
+        $this->checkSafeSettings();
+
         $this->checked = true;
 
         $this->rejectExpiredOldSession();
         $this->rejectLoggedOutSession();
+    }
+
+    /**
+     * Turn the safe settings on while no session is active.
+     *
+     * Session settings can only change while no session is active and no
+     * header has gone out, so this runs at construction (an app that builds
+     * NativeSession before session_start() gets them for free) and before
+     * every session_start() this class makes itself. A setting that is
+     * already on is left alone. Off with checkSessionSettings: false.
+     */
+    private function hardenBeforeStart(): void
+    {
+        if ($this->checkSessionSettings === false
+            || session_status() !== PHP_SESSION_NONE
+            || headers_sent()
+        ) {
+            return;
+        }
+
+        foreach (self::SAFE_SETTINGS as $setting) {
+            if (! self::isOn((string) ini_get($setting))) {
+                ini_set($setting, '1');
+            }
+        }
+    }
+
+    /**
+     * Speak up about an active session started without the safe settings.
+     *
+     * Without session.use_strict_mode PHP adopts any ID a client sends, so
+     * an attacker can plant a known ID before the sign-in; with
+     * session.use_only_cookies off PHP also takes the ID from the URL, where
+     * links, logs and Referer headers leak it. SESAME regenerates the ID at
+     * login either way (S1), so by default the session keeps working and
+     * the app hears about it once per request, with the fix. With
+     * checkSessionSettings: true it is refused on every call instead. The
+     * values are read from the active session's settings, so the check sees
+     * what session_start() used.
+     */
+    private function checkSafeSettings(): void
+    {
+        if ($this->checkSessionSettings === false) {
+            return;
+        }
+
+        $off = array_values(array_filter(
+            self::SAFE_SETTINGS,
+            static fn(string $setting): bool => ! self::isOn((string) ini_get($setting)),
+        ));
+
+        if ($off === []) {
+            return;
+        }
+
+        $fixes = implode(' ', array_map(static fn(string $setting): string => "ini_set('" . $setting . "', '1');", $off));
+        $message = sprintf(
+            'SESAME: the session was started with %s off, so PHP lets a client choose its session ID. Add %s before session_start() (or call helmet_boot()).',
+            implode(' and ', $off),
+            $fixes,
+        );
+
+        if ($this->checkSessionSettings === true) {
+            throw new LogicException($message);
+        }
+
+        if (self::$warned) {
+            return;
+        }
+
+        self::$warned = true;
+        trigger_error($message, E_USER_WARNING);
     }
 
     /**
@@ -207,6 +309,7 @@ final class NativeSession implements SessionPort
 
         $_SESSION = [];
         session_destroy();
+        $this->hardenBeforeStart();
         session_id($this->createId());
         session_start();
     }
@@ -239,6 +342,7 @@ final class NativeSession implements SessionPort
 
         $_SESSION = [];
         session_destroy();
+        $this->hardenBeforeStart();
         session_id($this->createId());
         session_start();
     }
@@ -291,6 +395,9 @@ final class NativeSession implements SessionPort
      */
     private function startUnderNewId(string $id, array $data): void
     {
+        // The old session is closed here, so this is a start of our own.
+        $this->hardenBeforeStart();
+
         $strict = ini_get('session.use_strict_mode');
 
         if ($strict !== false && self::isOn($strict)) {
