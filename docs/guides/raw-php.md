@@ -116,7 +116,7 @@ The raw-PHP path is a set of plain functions in the global namespace behind a `s
 |---|---|
 | `sesame(?Sesame $instance = null)` | Hold the one `Sesame` instance for this process: pass the instance to set it, pass nothing to read it. Throws `LogicException` when read before it is set. |
 | `sesame_request()` | Build the PSR-7 request for the current request from the globals, using the `nyholm/psr7` factories the library already requires. |
-| `sesame_login(): mixed` | Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or `null` when the resolver refused the identity. |
+| `sesame_login(): mixed` | Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or `null` when the resolver refused the identity. A script's request (JSON `Accept`, or `X-Requested-With: XMLHttpRequest`) with no one signed in gets a 401 with `{"signedIn":false}` instead of the redirect. Throws `ProviderUnavailable` when the provider cannot be reached, and `AuthenticationFailed` when it refuses the sign-in. |
 | `sesame_user(): mixed` | The app's user for the current session, or `null` when there is none. |
 | `sesame_require_mfa(int $maxAgeSeconds = 28800): mixed` | Require that the signed-in user's MFA is still good. Returns the user when satisfied, throws `MfaNotSatisfied` otherwise. |
 | `sesame_require_context(string $id): mixed` | Require that the signed-in identity has the given authentication context. Returns the user when it does, throws `AuthContextNotSatisfied` otherwise. |

@@ -81,6 +81,18 @@ timeout. Read it when the app loads and after a sign-in, and let the
 `idleExpiresAt` and `absoluteExpiresAt` in the answer tell you how long the
 state can be trusted.
 
+## A 401 from any page means "reload"
+
+A script's request (an XHR, or a `fetch` whose first `Accept` type is JSON)
+that reaches a page behind `sesame_login()`, the Wayne Auth bridge or the
+`auth.sesame` middleware with no one signed in gets a 401, never a redirect to
+the identity provider, which a script could not follow. That includes a
+session that timed out since the page loaded (2 hours idle, 12 hours
+absolute). The raw-PHP and bridge answers carry `{"signedIn":false}`, the same
+body as the status endpoint. Send `Accept: application/json` (or
+`X-Requested-With: XMLHttpRequest`) from your client so the server can tell,
+and treat a 401 as "reload the page": the reload goes through the sign-in.
+
 ## Adding your own user fields
 
 Pass a closure that returns an array of extra fields for the app's user:

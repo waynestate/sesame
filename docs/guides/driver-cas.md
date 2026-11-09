@@ -40,9 +40,9 @@ $config = Config::fromArray([
 // five by default, to any host or to plain http) and leave TLS verification
 // on (`verify` is true by default; never set it to false). PSR-18 has no
 // standard option for either, so the client you hand SESAME must carry them.
-// SESAME treats any non-200 answer (including a redirect) as a failed login
-// and lets a client exception through, so a client that is set up wrong fails
-// the sign-in and never signs anyone in.
+// SESAME treats any non-200 answer (including a redirect) as a failed login,
+// and a client exception (a timeout, no route) as ProviderUnavailable, so a
+// client that is set up wrong fails the sign-in and never signs anyone in.
 $http = new \GuzzleHttp\Client([
     'timeout' => 10,
     'connect_timeout' => 5,
@@ -100,6 +100,32 @@ The driver needs the app's session for the marker, so pass it to `DriverFactory:
 
 > [!WARNING]
 > On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
+
+## When CAS is down
+
+The ticket check is one HTTP call to the CAS server. When that call cannot be made (no route, DNS, TLS), runs past the client's timeout (10 seconds in the example above), or gets a 5xx answer, the driver throws `Waynestate\Sesame\Exception\ProviderUnavailable` with the reason code `cas.unavailable`. It is a subclass of `AuthenticationFailed`, so code that already catches `AuthenticationFailed` keeps working, and nobody is signed in either way. Catch it first to tell the visitor to try again rather than that the sign-in was refused:
+
+```php
+use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $user = sesame_login();
+} catch (ProviderUnavailable $e) {
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+```
+
+The HTTP client's own exception is never chained: it holds the validation URL, and the URL holds the ticket. A 4xx answer is still a plain `AuthenticationFailed` (the server refused the call). Before 0.7.1 the client's exception (for Guzzle, a `ConnectException`) escaped `sesame_login()` as it was, so an app that caught only `AuthenticationFailed` showed a blank 500 while CAS was down. The oauth2, oidc and saml drivers use the same class when their provider cannot be reached (`oauth2.introspection_unavailable`, `oidc.discovery_unavailable`, `oidc.token_exchange`, `saml.metadata`, and `jwks_unavailable` for a key set). Laravel apps can render it from the exception handler the same way.
 
 ## Related
 

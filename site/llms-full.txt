@@ -383,6 +383,14 @@ timer would keep a session alive past the idle timeout. Read it when the app
 loads and after a sign-in, and let the `idleExpiresAt` and
 `absoluteExpiresAt` in the answer tell you how long the state can be trusted.
 
+**A script that finds no one signed in gets a 401, never a redirect.** An
+XHR or `fetch` (the first `Accept` type is JSON, or it sends
+`X-Requested-With: XMLHttpRequest`) to a page behind `sesame_login()`, the
+Wayne Auth bridge or the `auth.sesame` middleware gets a 401 when the session
+has timed out or never existed: the body is `{"signedIn":false}` on the raw
+PHP and bridge paths, the same shape as above. Treat a 401 as "reload the
+page": the reload goes to the sign-in.
+
 **Add your own user fields.** Pass a closure that returns an array of extra
 fields for the app's user: `sesame_status(fn ($user) => ['name' => $user->name])`
 in raw PHP, or bind the closure as `sesame.describe_user` in Laravel. Its
@@ -473,9 +481,9 @@ $config = Config::fromArray([
 // five by default, to any host or to plain http) and leave TLS verification
 // on (`verify` is true by default; never set it to false). PSR-18 has no
 // standard option for either, so the client you hand SESAME must carry them.
-// SESAME treats any non-200 answer (including a redirect) as a failed login
-// and lets a client exception through, so a client that is set up wrong fails
-// the sign-in and never signs anyone in.
+// SESAME treats any non-200 answer (including a redirect) as a failed login,
+// and a client exception (a timeout, no route) as ProviderUnavailable, so a
+// client that is set up wrong fails the sign-in and never signs anyone in.
 $http = new \GuzzleHttp\Client([
     'timeout' => 10,
     'connect_timeout' => 5,
@@ -542,6 +550,13 @@ not send one, the MFA check fails because there is no sign-in time to age.
 `AuthenticationFailed` message can carry the CAS failure code (for example
 `INVALID_TICKET`), which tells an attacker how the server refused the ticket.
 Log the message for operators and show the user one generic line instead.
+
+**When CAS is down, answer 503.** A ticket check that cannot reach the CAS
+server, runs past the client's timeout or gets a 5xx answer throws
+`Waynestate\Sesame\Exception\ProviderUnavailable`, a subclass of
+`AuthenticationFailed`. Catch it first, log it, and answer 503 with a line
+such as "The university sign-in is not answering; try again in a minute."
+Nobody is signed in either way.
 
 ### The gateway driver
 
@@ -1079,8 +1094,8 @@ spot the first time anything asks who is signed in.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
-| `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+| `session.idle_minutes` | `120` | Drop the session after this much quiet time (2 hours by default). |
+| `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active (12 hours by default). |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
 | `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode`, `session.use_only_cookies` and the session cookie's flags. A `new NativeSession()` option, not a config key. `null` turns both settings on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off, or with a cookie that lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` also turns the settings on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. SESAME never sets a cookie flag. |
 
@@ -1088,6 +1103,14 @@ On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live
 session. A session made before the timeouts existed (a user, no timestamps)
 counts as expired.
+
+When a session times out, the request carries on as a guest's. The native
+session starts a fresh, empty session under a new ID in place of the old one
+(from 0.7.1; before that the next write threw "No session is active"), so a
+page goes to the sign-in as usual, and a script's request (XHR or `fetch`
+asking for JSON) gets a 401 instead of a redirect from `sesame_login()`, the
+Wayne Auth bridge and the Laravel middleware alike (the first two send
+`{"signedIn":false}`).
 
 The native session adds a third clock for logouts. When `invalidate()` retires
 a session it leaves a "logged out at" marker in the session store itself, under
@@ -1543,8 +1566,10 @@ require_once('config/sesame.php'); // calls WayneAuth::boot([...cas config...])
 The bridge is deprecated on arrival: it is the short step, and SESAME's
 native `sesame_login()` is the next one. Wayne Auth's password mode
 (`_parseSSOCookie('d')`) has no equivalent, because CAS never gives an app the
-password. The full guide, with the call-by-call differences and the checks
-to run before shipping, is
+password. A page that calls `authenticateSSO()` should catch
+`ProviderUnavailable` (CAS down, answer 503) before `AuthenticationFailed`
+(a refused ticket). The full guide, with the call-by-call differences, the
+two catches and the checks to run before shipping, is
 [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
 
 ### Proof
@@ -1662,7 +1687,7 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
-Protected pages call `sesame_user()`. Login and logout end the script after they redirect, so nothing below them runs.
+Protected pages call `sesame_user()`. Login and logout end the script after they redirect, so nothing below them runs. A script request from a guest gets a 401.
 
 Job 02
 
@@ -1938,6 +1963,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Fixed (for 0.7.1): a session past its idle (2 hours) or absolute (12 hours) timeout no longer ends in a blank 500. `NativeSession::invalidate()` closed the session and started nothing in its place, so the cas driver's pending-login write that follows a timeout (in `sesame_login()` and the Wayne Auth bridge) threw `LogicException: No session is active`. It now leaves the logout marker under the old ID and starts a fresh, empty session under a new ID from `session_create_id()`, never one from the request, with strict mode kept as the app set it; when headers are already sent it leaves the session closed, as before. Sign-out takes the same path.
+- Added: `Waynestate\Sesame\Exception\ProviderUnavailable`, a subclass of `AuthenticationFailed`. The cas driver throws it when the ticket check cannot reach the CAS server, runs past the HTTP client's timeout, or gets a 5xx answer (`cas.unavailable`); before this the client's own exception (for Guzzle, a `ConnectException`) escaped `sesame_login()` and `authenticateSSO()`. The client's exception is never chained, because it holds the ticket URL. A 4xx answer is still a plain `AuthenticationFailed`. Catch `ProviderUnavailable` first and answer 503.
+- Changed: the oauth2, oidc and saml drivers and the JWKS provider throw `ProviderUnavailable` (same messages and reason codes) where they threw `AuthenticationFailed` for a provider they could not reach, so `catch (AuthenticationFailed $e)` still catches them; the oidc token exchange turns a client exception into `ProviderUnavailable` (`oidc.token_exchange`).
+- Changed: a script request from a guest (an XHR with `X-Requested-With: XMLHttpRequest`, or a `fetch` whose first `Accept` type is JSON) gets a 401 with `{"signedIn":false}` and `Cache-Control: no-store` from `sesame_login()` and the Wayne Auth bridge's `authenticateSSO()`, instead of a redirect to the identity provider the script could not follow. Page navigations and PJAX requests are still redirected, and the bridge's `on_guest => deny` still answers `false`.
+- Docs: the README, session timeouts, cas driver, Wayne Auth, single-page apps and raw PHP guides, the API reference and the upgrading guide (a 0.7.1 section) say what a timed-out visitor and a script get, and how to catch `ProviderUnavailable`; the session lifetimes are given in hours as well as minutes; troubleshooting has an entry for `No session is active` after a break and rewrites the hung-CAS cause; BEST_PRACTICES S2, S7, S16, S18, S22, S23 and S42 follow the new behavior, and its line citations are current.
 - Changed: the `wayneui-copies` and `composer-ci` CI jobs run Composer 2.11.1 (was 2.10.3, no longer maintained), pinned by its multi-arch list digest; 2.11 fixes GHSA-c968-33g3-wh7p and GHSA-fm2w-xgf2-f9fh.
 - Changed: the deploy kit is Squire 0.10.2 (was 0.10.1): the kit's `php.ini` sets `session.cookie_samesite = Lax` (the value `NativeSession`'s cookie check asks for); the fallback base names its images in full (`docker.io/library/...`) with Composer as a build argument; and the portable image drops `node_modules/` after the build. BEST_PRACTICES S45 names kit 0.10.2.
 - Changed: the deploy layer requires HELMET ^1.3 (locked 1.3.0, was ^1.0 at 1.0.1) and CREED ^0.1.8 (locked 0.1.8, was ^0.1 at 0.1.7); PROCTOR stays ^0.11 at 0.11.0. The dev dependency on Pinstripe moves to ^0.1.4 (locked 0.1.4, was ^0.1 at 0.1.0).
@@ -2193,9 +2223,9 @@ $config = Config::fromArray([
 // five by default, to any host or to plain http) and leave TLS verification
 // on (`verify` is true by default; never set it to false). PSR-18 has no
 // standard option for either, so the client you hand SESAME must carry them.
-// SESAME treats any non-200 answer (including a redirect) as a failed login
-// and lets a client exception through, so a client that is set up wrong fails
-// the sign-in and never signs anyone in.
+// SESAME treats any non-200 answer (including a redirect) as a failed login,
+// and a client exception (a timeout, no route) as ProviderUnavailable, so a
+// client that is set up wrong fails the sign-in and never signs anyone in.
 $http = new \GuzzleHttp\Client([
     'timeout' => 10,
     'connect_timeout' => 5,
@@ -2254,6 +2284,32 @@ The driver needs the app's session for the marker, so pass it to `DriverFactory:
 Warning
 
 On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
+
+### When CAS is down[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)
+
+The ticket check is one HTTP call to the CAS server. When that call cannot be made (no route, DNS, TLS), runs past the client's timeout (10 seconds in the example above), or gets a 5xx answer, the driver throws `Waynestate\Sesame\Exception\ProviderUnavailable` with the reason code `cas.unavailable`. It is a subclass of `AuthenticationFailed`, so code that already catches `AuthenticationFailed` keeps working, and nobody is signed in either way. Catch it first to tell the visitor to try again rather than that the sign-in was refused:
+
+```php
+use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $user = sesame_login();
+} catch (ProviderUnavailable $e) {
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+```
+
+The HTTP client's own exception is never chained: it holds the validation URL, and the URL holds the ticket. A 4xx answer is still a plain `AuthenticationFailed` (the server refused the call). Before 0.7.1 the client's exception (for Guzzle, a `ConnectException`) escaped `sesame_login()` as it was, so an app that caught only `AuthenticationFailed` showed a blank 500 while CAS was down. The oauth2, oidc and saml drivers use the same class when their provider cannot be reached (`oauth2.introspection_unavailable`, `oidc.discovery_unavailable`, `oidc.token_exchange`, `saml.metadata`, and `jwks_unavailable` for a key set). Laravel apps can render it from the exception handler the same way.
 
 ### Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#related)
 
@@ -3319,10 +3375,13 @@ With `on_guest` left at `redirect`, the app's old else branch (the redirect to t
 | Wayne Auth | The bridge |
 | --- | --- |
 | `new WayneAuth($config)` | Same. The old keys (`sso_host`, `sso_port`, `ldap_host`, `timeout` and the rest) are accepted and ignored; `$wayne_auth->config` still holds them |
-| `authenticateSSO()` true | Same: someone is signed in. SESAME's idle (120 minutes) and absolute (12 hours) timeouts apply |
+| `authenticateSSO()` true | Same: someone is signed in. SESAME's idle (120 minutes, 2 hours) and absolute (12 hours) timeouts apply |
 | `authenticateSSO()` false for a visitor with no cookie | Sends the visitor to CAS and stops the script (`on_guest => redirect`), or `false` (`on_guest => deny`) |
+| (nothing) | A visitor whose session timed out (2 hours quiet, or 12 hours since the sign-in) is a guest again: the old session is retired, a fresh one takes its place, and the visitor goes through CAS as above (before 0.7.1 this was a blank 500) |
+| (nothing) | A guest's script request (an XHR save, or a `fetch` asking for JSON) gets a 401 with `{"signedIn":false}` and the script stops, instead of a redirect to CAS the script cannot follow |
 | (nothing) | A visitor coming back from CAS with a ticket: the ticket is checked, the user is stored, and the browser is sent on to the service URL without the ticket |
 | (nothing) | A ticket that does not check out throws `AuthenticationFailed`. Answering `false` would send the browser to CAS and back forever |
+| (nothing) | CAS down, unreachable or slower than the 10 second timeout while it checks the ticket: throws `ProviderUnavailable`, a subclass of `AuthenticationFailed` (see the next section) |
 | `false` for a refused visitor | Your resolver returned `null`: `false`, nothing stored |
 | `getAccessID()` | The CAS username, the same AccessID. `$wayne_auth->accessid` is set too |
 | `_parseSSOCookie('v')` | `['verified' => true, 'accessid' => ..., 'timeout' => seconds left]`, or `['verified' => false]`; never redirects |
@@ -3331,11 +3390,44 @@ With `on_guest` left at `redirect`, the app's old else branch (the redirect to t
 
 Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the `Identity` your resolver receives, once you move to the native calls.
 
+### Catch the two sign-in exceptions[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#catch-the-two-sign-in-exceptions)
+
+`authenticateSSO()` throws in two cases, and an uncaught one is a blank 500. Wrap the call where the page makes it, and catch the narrower class first:
+
+```php
+use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $signedIn = $wayne_auth->authenticateSSO();
+} catch (ProviderUnavailable $e) {
+    // CAS is down, unreachable, or did not answer within the timeout.
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    // The ticket was refused, or the sign-in was not started in this browser.
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+```
+
+- `ProviderUnavailable` means nobody could be checked: no route to CAS, a TLS failure, the 10 second timeout ran out, or CAS answered 5xx. Nobody is signed in. The visitor can retry from the app; the ticket in the address bar is spent, so a reload of that exact URL gets the second case.
+- `AuthenticationFailed` means CAS (or SESAME) refused the sign-in. Its message can carry the CAS failure code, so log it and show one generic line.
+
+Since `ProviderUnavailable` extends `AuthenticationFailed`, a page that catches only `AuthenticationFailed` still catches both; the first catch is what turns "CAS is down" into a 503 instead of a refusal.
+
+A session that timed out is not an exception: from 0.7.1 the visitor is simply sent through CAS again (or a script gets its 401). An app that added `catch (\LogicException $e)` around `authenticateSSO()` as a stopgap for 0.7.0 can drop it after the upgrade.
+
 ### Check it before you ship[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
 
 1. On a laptop, boot with the `fake` driver (`'driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'ab1234']]`): every page should say who is signed in without any CAS server.
 2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
-3. Leave the tab alone past the idle timeout and reload: you should go through CAS again (silently, if your CAS session is still alive).
+3. Leave the tab alone past the idle timeout (2 hours) and reload: you should go through CAS again (silently, if your CAS session is still alive), never a blank page. A save the page makes by XHR after the timeout should get a 401, not a 500.
 4. Grep the app for `validUser`, `sso_host` and `_parseSSOCookie('d')`: none should be left doing work.
 
 SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (`tests/WayneAuthLegacyAppTest.php`).
@@ -3567,7 +3659,7 @@ The raw-PHP path is a set of plain functions in the global namespace behind a `s
 | --- | --- |
 | `sesame(?Sesame $instance = null)` | Hold the one `Sesame` instance for this process: pass the instance to set it, pass nothing to read it. Throws `LogicException` when read before it is set. |
 | `sesame_request()` | Build the PSR-7 request for the current request from the globals, using the `nyholm/psr7` factories the library already requires. |
-| `sesame_login(): mixed` | Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or `null` when the resolver refused the identity. |
+| `sesame_login(): mixed` | Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or `null` when the resolver refused the identity. A script's request (JSON `Accept`, or `X-Requested-With: XMLHttpRequest`) with no one signed in gets a 401 with `{"signedIn":false}` instead of the redirect. Throws `ProviderUnavailable` when the provider cannot be reached, and `AuthenticationFailed` when it refuses the sign-in. |
 | `sesame_user(): mixed` | The app's user for the current session, or `null` when there is none. |
 | `sesame_require_mfa(int $maxAgeSeconds = 28800): mixed` | Require that the signed-in user's MFA is still good. Returns the user when satisfied, throws `MfaNotSatisfied` otherwise. |
 | `sesame_require_context(string $id): mixed` | Require that the signed-in identity has the given authentication context. Returns the user when it does, throws `AuthContextNotSatisfied` otherwise. |
@@ -3738,8 +3830,8 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
-| `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
+| `session.idle_minutes` | `120` | Drop the session after this much quiet time (2 hours by default). |
+| `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active (12 hours by default). |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
 | `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode`, `session.use_only_cookies` and the session cookie's flags. A `new NativeSession()` option, not a config key. `null` turns both settings on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off, or with a cookie that lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` also turns the settings on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. SESAME never sets a cookie flag. |
 
@@ -3747,13 +3839,26 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 
 On login the session stores the sign-in time and the last activity time, and `user()` refreshes the last activity time on every call that finds a live session. A session made before the timeouts existed (a user, no timestamps) counts as expired.
 
+### When a session times out[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#when-a-session-times-out)
+
+A session past either clock is signed out by the `user()` call that finds it, and the rest of the request runs as a guest's. What the guest gets depends on the request:
+
+| Request | Answer |
+| --- | --- |
+| A page (a browser navigation) | The sign-in, as for any guest: `sesame_login()` and the Wayne Auth bridge send the browser to CAS (or the driver's identity provider), and the Laravel middleware to the login route. With a live CAS session the trip is silent. |
+| A script (an XHR, or a `fetch` whose first `Accept` type is JSON) | A 401 instead of a redirect the script could not follow. `sesame_login()` and the Wayne Auth bridge send `{"signedIn":false}` (the signed-out answer of `sesame_status()`), with `Cache-Control: no-store`; the Laravel middleware sends its plain 401. Treat it as "reload the page". |
+| `sesame_status()` or `GET /sesame/status` | `{"signedIn":false}` with a 401, as for any signed-out session. |
+| The sign-out form | The sign-out runs as usual: there is nothing left to end in the app, and the browser still goes to the provider's logout. |
+
+On the native PHP session, signing out retires the old session (its ID is dead, see the logout reuse window below) and starts a fresh, empty one under a new ID that `session_create_id()` made, never one from the request, with strict mode kept as the app set it. That is what lets the same request store the pending sign-in the cas driver binds to the browser. Before 0.7.1 the old session was closed and nothing replaced it, so that write threw `LogicException: No session is active` and a timed-out visitor saw a blank 500. When the page has already printed something (headers sent), no new cookie can go out, so the session stays closed, as it did before. Laravel's own session has always carried on after a sign-out.
+
 ### Regeneration grace[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#regeneration-grace)
 
 On login the session ID is regenerated. For the native PHP session the old ID is not deleted at once: it is marked with a "destroyed at" time and the new ID and kept for a 60 second grace, so a user whose browser is still sending the old ID after a slow network does not lose the login. After the grace, any use of the old ID is treated as a possible hijack: the session is retired, a clean one is started, and `sesame.session_anomaly` is logged as a warning with `reason` `destroyed_session_reused`. Pass `graceSeconds: 0` to `new NativeSession()` to restore the old behavior, where the old session is deleted at once. Laravel uses the framework's own regenerate.
 
 ### Logout reuse window[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#logout-reuse-window)
 
-When `invalidate()` retires a session it leaves a "logged out at" marker in the session store itself, under the same ID. The marker lives in the store, not in process memory, so no extra cache is needed and every worker sees the same marker. A later request that presents that ID is not revived: the marked session is retired, a fresh empty one starts, and while the reuse window lasts (60 seconds by default, the `logoutReuseTtlSeconds` option of `new NativeSession()`) the reuse is logged once with `reason` `logged_out_session_reused`. Past the window the marked session is still retired, just not logged. Pass `logoutReuseTtlSeconds: 0` to turn the check off: the session is destroyed outright on logout, the old behavior.
+When `invalidate()` retires a session it leaves a "logged out at" marker in the session store itself, under the same ID, and the request carries on in the fresh session described above. The marker lives in the store, not in process memory, so no extra cache is needed and every worker sees the same marker. A later request that presents that ID is not revived: the marked session is retired, a fresh empty one starts, and while the reuse window lasts (60 seconds by default, the `logoutReuseTtlSeconds` option of `new NativeSession()`) the reuse is logged once with `reason` `logged_out_session_reused`. Past the window the marked session is still retired, just not logged. Pass `logoutReuseTtlSeconds: 0` to turn the check off: the session is destroyed outright on logout, the old behavior.
 
 ### In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#in-laravel)
 
@@ -3825,6 +3930,10 @@ This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://g
 ### Read it on page load, not on a timer[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#read-it-on-page-load-not-on-a-timer)
 
 A poll counts as activity: reading the status moves the session's `last_seen`, so polling on a timer would keep a session alive past the idle timeout. Read it when the app loads and after a sign-in, and let the `idleExpiresAt` and `absoluteExpiresAt` in the answer tell you how long the state can be trusted.
+
+### A 401 from any page means "reload"[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#a-401-from-any-page-means-reload)
+
+A script's request (an XHR, or a `fetch` whose first `Accept` type is JSON) that reaches a page behind `sesame_login()`, the Wayne Auth bridge or the `auth.sesame` middleware with no one signed in gets a 401, never a redirect to the identity provider, which a script could not follow. That includes a session that timed out since the page loaded (2 hours idle, 12 hours absolute). The raw-PHP and bridge answers carry `{"signedIn":false}`, the same body as the status endpoint. Send `Accept: application/json` (or `X-Requested-With: XMLHttpRequest`) from your client so the server can tell, and treat a 401 as "reload the page": the reload goes through the sign-in.
 
 ### Adding your own user fields[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#adding-your-own-user-fields)
 
@@ -4409,7 +4518,7 @@ interface SessionPort
 }
 ```
 
-`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts a session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. Its constructor takes `graceSeconds` (60, the regenerate grace), `logger`, `clock`, `logoutReuseTtlSeconds` (60, the logged-out reuse window) and `checkSessionSettings` (`null`). With `checkSessionSettings` left at `null` it turns `session.use_strict_mode` and `session.use_only_cookies` on while no session is active, and on the first use in a request it raises one `E_USER_WARNING` when the active session runs with either one off, or when its cookie lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` throws `LogicException` on every call instead, and `false` does neither. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout.
+`Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts the request's first session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. Its constructor takes `graceSeconds` (60, the regenerate grace), `logger`, `clock`, `logoutReuseTtlSeconds` (60, the logged-out reuse window) and `checkSessionSettings` (`null`). With `checkSessionSettings` left at `null` it turns `session.use_strict_mode` and `session.use_only_cookies` on while no session is active, and on the first use in a request it raises one `E_USER_WARNING` when the active session runs with either one off, or when its cookie lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` throws `LogicException` on every call instead, and `false` does neither. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout. From 0.7.1 it then starts a fresh, empty session under a new ID it made itself (strict mode kept), so the rest of the request can still use the port: a session signed out for a timeout can store the pending sign-in on its way to CAS. When headers are already sent it leaves the session closed.
 
 #### MFA[#](https://sesame.apps.wayne.edu/docs/reference/api.html#mfa)
 
@@ -4528,7 +4637,7 @@ function sesame_saml_metadata(SamlDriver $driver): never
 
 - `sesame()`: hold the one `Sesame` instance for this process. Set it once at boot, read it after: `sesame($sesame);` then `sesame();`. Reading it with none set throws `LogicException`.
 - `sesame_request()`: build the PSR-7 request for the current request from the globals. The PSR-17 factories come from nyholm/psr7, which the library already requires, so the raw-PHP path needs nothing but the autoloader.
-- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. The oidc driver's callback (a request with `state` and a `code` or an `error`) and the saml driver's return from the ACS (a request with `saml_handle`) count as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
+- `sesame_login()`: run a login against the current request. When the driver answers with a `Redirect`, sends the 302 and stops the script, so no protected code runs after the redirect. A request that already has a user and no ticket returns that user without calling the driver, so a page that calls it on every request cannot bounce the signed-in user back to the identity provider in a loop. When a ticket completes the login, the user is sent to the driver's service URL (or the checked return-to the oidc sign-in began with) and the script stops, so the ticket never stays in the address bar. When the resolver refuses the identity, null is returned and no redirect is sent: the ticket is single-use, so leaving it in that one refused URL is harmless. A request with no user, no ticket and no `step_up` that comes from a script (the first `Accept` type is JSON, or `X-Requested-With: XMLHttpRequest` with no pjax) is not redirected: it gets a 401 with `{"signedIn":false}`, `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`, and the script stops. A session that has just timed out counts as no user. The oidc driver's callback (a request with `state` and a `code` or an `error`) and the saml driver's return from the ACS (a request with `saml_handle`) count as a ticket here, and a request with `step_up=1` always goes to the driver too, so a signed-in user can be asked for a fresh sign-in.
 - `sesame_user()`: the app's user for the current session, or null when there is none.
 - `sesame_require_mfa()`: require that the signed-in user's MFA is still good. When it is satisfied, the app's user is returned, so a protected page can read the user and the MFA proof in one call; when it is not, `MfaNotSatisfied` is thrown, carrying the result with the stable reason and the human message.
 - `sesame_require_context()`: require that the signed-in identity has the given authentication context. When it does, the app's user is returned; when it does not, `AuthContextNotSatisfied` is thrown, carrying the context id.
@@ -4550,6 +4659,7 @@ function sesame_saml_metadata(SamlDriver $driver): never
 The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 
 - `AuthenticationFailed`: a driver could not verify the identity. The message can carry the ticket or other provider details, so it is never logged and should not be shown: log it for operators and show the user one generic line.
+- `ProviderUnavailable` (from 0.7.1): a subclass of `AuthenticationFailed` for an identity provider that could not be reached, or did not answer in time: the PSR-18 client threw (no route, DNS, TLS, the timeout ran out), or the CAS server answered 5xx. Nobody is signed in. Catch it before `AuthenticationFailed` and answer 503 ("try again in a minute"). The message names a reason code (`cas.unavailable`, `oauth2.introspection_unavailable`, `oidc.discovery_unavailable`, `oidc.token_exchange`, `saml.metadata`, `*.jwks_unavailable`); the client's exception is never chained, because it holds the request URL.
 - `MfaNotSatisfied`: the MFA check is not satisfied; carries the `MfaResult` with the stable reason and the human message.
 - `AuthContextNotSatisfied`: the identity lacks the authentication context; carries the context id.
 - `InvalidConfig`: a config error at boot: a missing or invalid key from `Config::fromArray()`, or a driver missing the dependency `DriverFactory::make()` needs.
@@ -5285,7 +5395,7 @@ composer update onelogin/php-saml robrichards/xmlseclibs
 
 #### A sign-in fails on a hung or slow CAS server, or a client that is set up wrong[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong)
 
-**Cause.** SESAME treats any non-200 answer (including a redirect) as a failed login and lets a client exception through, so a PSR-18 client that is set up wrong fails the sign-in and never signs anyone in. Guzzle has no total timeout by default, so a hung CAS server would hold the request open forever, and it follows up to five redirects by default, to any host or to plain http.
+**Cause.** SESAME treats any non-200 answer (including a redirect) as a failed login, and a client exception (no route, a TLS failure, the timeout ran out) or a 5xx answer as `ProviderUnavailable`, a subclass of `AuthenticationFailed`, so a PSR-18 client that is set up wrong fails the sign-in and never signs anyone in. Guzzle has no total timeout by default, so a hung CAS server would hold the request open forever, and it follows up to five redirects by default, to any host or to plain http. An app that does not catch the exception shows a blank 500 while CAS is down; catch `ProviderUnavailable` and answer 503 (see [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)).
 
 **Fix.** Hand SESAME a client with a timeout, redirects off for the validation call, and TLS verification on:
 
@@ -5418,6 +5528,14 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 
 **Check.** Read the user with `sesame_user()` after the quiet time; the session is gone and the next `sesame_login()` starts fresh.
 
+#### A visitor back from a break gets a blank 500: `No session is active` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active)
+
+**Cause.** SESAME 0.7.0 on the native PHP session (raw PHP, or the Wayne Auth bridge). A session past the 2 hour idle timeout or the 12 hour absolute limit was signed out and the PHP session closed; the same request then sent the visitor to CAS, and storing the pending sign-in threw `LogicException: No session is active. Start one before using NativeSession.` An XHR save at that moment failed the same way.
+
+**Fix.** Upgrade to 0.7.1 or later: the sign-out starts a fresh session under a new ID, so the visitor goes through CAS again, and a script's request gets a 401 with `{"signedIn":false}`. Until you can upgrade, catch `\LogicException` around the sign-in call and, when `session_status() !== PHP_SESSION_ACTIVE`, redirect to the app's own root: the next request starts clean and goes to CAS. It cannot loop, because the old cookie was expired and a reused ID is retired.
+
+**Check.** `tests/WayneAuthLegacyAppTest.php` ages a real session file past each limit and expects the CAS redirect, then the sign-in, then a 401 for an XHR.
+
 ### Config and playbook[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#config-and-playbook)
 
 #### Boot fails: `Missing required setting SESAME_....` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#boot-fails-missing-required-setting-sesame)
@@ -5548,6 +5666,14 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.7.1 (unreleased)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-1-unreleased)
+
+No breaks for an app that follows the docs; three fixes, and two lines some apps can delete. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
+
+- **A timed-out session goes back through the sign-in, not a blank 500.** On the native PHP session (raw PHP and the Wayne Auth bridge), a visitor who came back after the 2 hour idle timeout or past the 12 hour absolute limit was signed out, and the redirect to CAS then threw `LogicException: No session is active`. `NativeSession::invalidate()` now starts a fresh, empty session under a new ID after it retires the old one, so the rest of the request carries on. An app that added `catch (\LogicException $e)` around `authenticateSSO()` or `sesame_login()` for this, or that calls `session_start()` again after `sesame()->signOutLocal()`, can drop that line: the session is already active (a second `session_start()` only raises a notice).
+- **Scripts get a 401, not a redirect.** An XHR or `fetch` asking for JSON that reaches `sesame_login()` or the Wayne Auth bridge with no one signed in gets a 401 with `{"signedIn":false}`, as the Laravel middleware already answered. Page navigations are redirected as before. Client code that treated a failed save as "reload the page" keeps working; code can now check `status === 401`.
+- **CAS down is its own exception.** A ticket check that cannot reach CAS, times out or gets a 5xx throws `ProviderUnavailable`, a subclass of `AuthenticationFailed`, instead of letting the HTTP client's exception escape. An app that catches `AuthenticationFailed` already catches it; add a `catch (ProviderUnavailable $e)` before it to answer 503 (see [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)). An app that caught `Psr\Http\Client\ClientExceptionInterface` around the sign-in can switch that catch to `ProviderUnavailable`.
 
 ### 0.7.0 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-0-2026-11-09)
 

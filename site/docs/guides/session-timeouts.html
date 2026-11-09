@@ -69,12 +69,12 @@ spot the first time anything asks who is signed in.</p>
 <tr>
 <td><code>session.idle_minutes</code></td>
 <td><code>120</code></td>
-<td>Drop the session after this much quiet time.</td>
+<td>Drop the session after this much quiet time (2 hours by default).</td>
 </tr>
 <tr>
 <td><code>session.absolute_minutes</code></td>
 <td><code>720</code></td>
-<td>End the session this long after sign-in, even if it is still active.</td>
+<td>End the session this long after sign-in, even if it is still active (12 hours by default).</td>
 </tr>
 <tr>
 <td><code>logoutReuseTtlSeconds</code></td>
@@ -93,6 +93,46 @@ spot the first time anything asks who is signed in.</p>
 <code>user()</code> refreshes the last activity time on every call that finds a live
 session. A session made before the timeouts existed (a user, no timestamps)
 counts as expired.</p>
+<h2 id="when-a-session-times-out">When a session times out<a class="docs-heading-link" aria-label="Link to this section" href="#when-a-session-times-out">#</a></h2>
+<p>A session past either clock is signed out by the <code>user()</code> call that finds it,
+and the rest of the request runs as a guest's. What the guest gets depends on
+the request:</p>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A page (a browser navigation)</td>
+<td>The sign-in, as for any guest: <code>sesame_login()</code> and the Wayne Auth bridge send the browser to CAS (or the driver's identity provider), and the Laravel middleware to the login route. With a live CAS session the trip is silent.</td>
+</tr>
+<tr>
+<td>A script (an XHR, or a <code>fetch</code> whose first <code>Accept</code> type is JSON)</td>
+<td>A 401 instead of a redirect the script could not follow. <code>sesame_login()</code> and the Wayne Auth bridge send <code>{&quot;signedIn&quot;:false}</code> (the signed-out answer of <code>sesame_status()</code>), with <code>Cache-Control: no-store</code>; the Laravel middleware sends its plain 401. Treat it as &quot;reload the page&quot;.</td>
+</tr>
+<tr>
+<td><code>sesame_status()</code> or <code>GET /sesame/status</code></td>
+<td><code>{&quot;signedIn&quot;:false}</code> with a 401, as for any signed-out session.</td>
+</tr>
+<tr>
+<td>The sign-out form</td>
+<td>The sign-out runs as usual: there is nothing left to end in the app, and the browser still goes to the provider's logout.</td>
+</tr>
+</tbody>
+</table></div>
+<p>On the native PHP session, signing out retires the old session (its ID is
+dead, see the logout reuse window below) and starts a fresh, empty one under
+a new ID that <code>session_create_id()</code> made, never one from the request, with
+strict mode kept as the app set it. That is what lets the same request store
+the pending sign-in the cas driver binds to the browser. Before 0.7.1 the old
+session was closed and nothing replaced it, so that write threw
+<code>LogicException: No session is active</code> and a timed-out visitor saw a blank
+500. When the page has already printed something (headers sent), no new
+cookie can go out, so the session stays closed, as it did before. Laravel's
+own session has always carried on after a sign-out.</p>
 <h2 id="regeneration-grace">Regeneration grace<a class="docs-heading-link" aria-label="Link to this section" href="#regeneration-grace">#</a></h2>
 <p>On login the session ID is regenerated. For the native PHP session the old
 ID is not deleted at once: it is marked with a &quot;destroyed at&quot; time and the
@@ -105,7 +145,8 @@ warning with <code>reason</code> <code>destroyed_session_reused</code>. Pass <co
 deleted at once. Laravel uses the framework's own regenerate.</p>
 <h2 id="logout-reuse-window">Logout reuse window<a class="docs-heading-link" aria-label="Link to this section" href="#logout-reuse-window">#</a></h2>
 <p>When <code>invalidate()</code> retires a session it leaves a &quot;logged out at&quot; marker in
-the session store itself, under the same ID. The marker lives in the store,
+the session store itself, under the same ID, and the request carries on in
+the fresh session described above. The marker lives in the store,
 not in process memory, so no extra cache is needed and every worker sees the
 same marker. A later request that presents that ID is not revived: the marked
 session is retired, a fresh empty one starts, and while the reuse window lasts
@@ -128,7 +169,7 @@ off: the session is destroyed outright on logout, the old behavior.</p>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/saml-library-choice.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">The saml driver&#039;s library choice</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/single-page-apps.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Single-page apps</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-clocks">The two clocks</a></li><li class="docs-toc__item"><a href="#how-the-clocks-are-checked">How the clocks are checked</a></li><li class="docs-toc__item"><a href="#regeneration-grace">Regeneration grace</a></li><li class="docs-toc__item"><a href="#logout-reuse-window">Logout reuse window</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-clocks">The two clocks</a></li><li class="docs-toc__item"><a href="#how-the-clocks-are-checked">How the clocks are checked</a></li><li class="docs-toc__item"><a href="#when-a-session-times-out">When a session times out</a></li><li class="docs-toc__item"><a href="#regeneration-grace">Regeneration grace</a></li><li class="docs-toc__item"><a href="#logout-reuse-window">Logout reuse window</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.0</span></span>

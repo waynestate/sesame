@@ -75,9 +75,9 @@ $config = Config::fromArray([
 // five by default, to any host or to plain http) and leave TLS verification
 // on (`verify` is true by default; never set it to false). PSR-18 has no
 // standard option for either, so the client you hand SESAME must carry them.
-// SESAME treats any non-200 answer (including a redirect) as a failed login
-// and lets a client exception through, so a client that is set up wrong fails
-// the sign-in and never signs anyone in.
+// SESAME treats any non-200 answer (including a redirect) as a failed login,
+// and a client exception (a timeout, no route) as ProviderUnavailable, so a
+// client that is set up wrong fails the sign-in and never signs anyone in.
 $http = new \GuzzleHttp\Client([
     'timeout' =&gt; 10,
     'connect_timeout' =&gt; 5,
@@ -156,6 +156,27 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, nu
 <p>With <code>cas.require_pending_login</code> on (the default), the driver stores a marker in the app's session before it sends the browser to CAS, and a returning ticket is accepted only against a live marker. The marker is single use and lives ten minutes, and the session keeps at most five of them, one per open sign-in tab, newest kept. A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF: an attacker who signs in through CAS for their own account cannot make a victim's browser deliver the attacker's ticket, because the victim's session holds no marker.</p>
 <p>The driver needs the app's session for the marker, so pass it to <code>DriverFactory::make()</code> as the seventh argument (the example above passes a <code>NativeSession</code>). Set <code>cas.require_pending_login</code> to <code>false</code> only for an app that must accept a ticket for a login it did not start, for example a link from the CAS login page itself; that reopens login CSRF, so keep such an opt-out deliberate.</p>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>On a failed login, show a generic line, not the exception. An <code>AuthenticationFailed</code> message can carry the CAS failure code (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.</p></aside>
+<h2 id="when-cas-is-down">When CAS is down<a class="docs-heading-link" aria-label="Link to this section" href="#when-cas-is-down">#</a></h2>
+<p>The ticket check is one HTTP call to the CAS server. When that call cannot be made (no route, DNS, TLS), runs past the client's timeout (10 seconds in the example above), or gets a 5xx answer, the driver throws <code>Waynestate\Sesame\Exception\ProviderUnavailable</code> with the reason code <code>cas.unavailable</code>. It is a subclass of <code>AuthenticationFailed</code>, so code that already catches <code>AuthenticationFailed</code> keeps working, and nobody is signed in either way. Catch it first to tell the visitor to try again rather than that the sign-in was refused:</p>
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $user = sesame_login();
+} catch (ProviderUnavailable $e) {
+    error_log('Sign-in: ' . $e-&gt;getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    error_log('Sign-in: ' . $e-&gt;getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+</code></pre>
+<p>The HTTP client's own exception is never chained: it holds the validation URL, and the URL holds the ticket. A 4xx answer is still a plain <code>AuthenticationFailed</code> (the server refused the call). Before 0.7.1 the client's exception (for Guzzle, a <code>ConnectException</code>) escaped <code>sesame_login()</code> as it was, so an app that caught only <code>AuthenticationFailed</code> showed a blank 500 while CAS was down. The oauth2, oidc and saml drivers use the same class when their provider cannot be reached (<code>oauth2.introspection_unavailable</code>, <code>oidc.discovery_unavailable</code>, <code>oidc.token_exchange</code>, <code>saml.metadata</code>, and <code>jwks_unavailable</code> for a key set). Laravel apps can render it from the exception handler the same way.</p>
 <h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
 <ul>
 <li><a href="running-off-citadel.html">Running off Citadel</a></li>
@@ -165,7 +186,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, nu
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/raw-php.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Raw PHP</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/driver-gateway.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">The gateway driver</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#protocol">Protocol</a></li><li class="docs-toc__item"><a href="#renew">Renew</a></li><li class="docs-toc__item"><a href="#sign-in-time">Sign-in time</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#binding-the-sign-in-to-the-browser">Binding the sign-in to the browser</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#configure-the-driver">Configure the driver</a></li><li class="docs-toc__item"><a href="#config-keys">Config keys</a></li><li class="docs-toc__item"><a href="#protocol">Protocol</a></li><li class="docs-toc__item"><a href="#renew">Renew</a></li><li class="docs-toc__item"><a href="#sign-in-time">Sign-in time</a></li><li class="docs-toc__item"><a href="#mfa">MFA</a></li><li class="docs-toc__item"><a href="#binding-the-sign-in-to-the-browser">Binding the sign-in to the browser</a></li><li class="docs-toc__item"><a href="#when-cas-is-down">When CAS is down</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.0</span></span>

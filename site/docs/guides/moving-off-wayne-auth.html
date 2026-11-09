@@ -159,11 +159,19 @@ require_once('config/sesame.php');
 </tr>
 <tr>
 <td><code>authenticateSSO()</code> true</td>
-<td>Same: someone is signed in. SESAME's idle (120 minutes) and absolute (12 hours) timeouts apply</td>
+<td>Same: someone is signed in. SESAME's idle (120 minutes, 2 hours) and absolute (12 hours) timeouts apply</td>
 </tr>
 <tr>
 <td><code>authenticateSSO()</code> false for a visitor with no cookie</td>
 <td>Sends the visitor to CAS and stops the script (<code>on_guest =&gt; redirect</code>), or <code>false</code> (<code>on_guest =&gt; deny</code>)</td>
+</tr>
+<tr>
+<td>(nothing)</td>
+<td>A visitor whose session timed out (2 hours quiet, or 12 hours since the sign-in) is a guest again: the old session is retired, a fresh one takes its place, and the visitor goes through CAS as above (before 0.7.1 this was a blank 500)</td>
+</tr>
+<tr>
+<td>(nothing)</td>
+<td>A guest's script request (an XHR save, or a <code>fetch</code> asking for JSON) gets a 401 with <code>{&quot;signedIn&quot;:false}</code> and the script stops, instead of a redirect to CAS the script cannot follow</td>
 </tr>
 <tr>
 <td>(nothing)</td>
@@ -172,6 +180,10 @@ require_once('config/sesame.php');
 <tr>
 <td>(nothing)</td>
 <td>A ticket that does not check out throws <code>AuthenticationFailed</code>. Answering <code>false</code> would send the browser to CAS and back forever</td>
+</tr>
+<tr>
+<td>(nothing)</td>
+<td>CAS down, unreachable or slower than the 10 second timeout while it checks the ticket: throws <code>ProviderUnavailable</code>, a subclass of <code>AuthenticationFailed</code> (see the next section)</td>
 </tr>
 <tr>
 <td><code>false</code> for a refused visitor</td>
@@ -196,11 +208,39 @@ require_once('config/sesame.php');
 </tbody>
 </table></div>
 <p>Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the <code>Identity</code> your resolver receives, once you move to the native calls.</p>
+<h2 id="catch-the-two-sign-in-exceptions">Catch the two sign-in exceptions<a class="docs-heading-link" aria-label="Link to this section" href="#catch-the-two-sign-in-exceptions">#</a></h2>
+<p><code>authenticateSSO()</code> throws in two cases, and an uncaught one is a blank 500. Wrap the call where the page makes it, and catch the narrower class first:</p>
+<pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $signedIn = $wayne_auth-&gt;authenticateSSO();
+} catch (ProviderUnavailable $e) {
+    // CAS is down, unreachable, or did not answer within the timeout.
+    error_log('Sign-in: ' . $e-&gt;getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    // The ticket was refused, or the sign-in was not started in this browser.
+    error_log('Sign-in: ' . $e-&gt;getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+</code></pre>
+<ul>
+<li><code>ProviderUnavailable</code> means nobody could be checked: no route to CAS, a TLS failure, the 10 second timeout ran out, or CAS answered 5xx. Nobody is signed in. The visitor can retry from the app; the ticket in the address bar is spent, so a reload of that exact URL gets the second case.</li>
+<li><code>AuthenticationFailed</code> means CAS (or SESAME) refused the sign-in. Its message can carry the CAS failure code, so log it and show one generic line.</li>
+</ul>
+<p>Since <code>ProviderUnavailable</code> extends <code>AuthenticationFailed</code>, a page that catches only <code>AuthenticationFailed</code> still catches both; the first catch is what turns &quot;CAS is down&quot; into a 503 instead of a refusal.</p>
+<p>A session that timed out is not an exception: from 0.7.1 the visitor is simply sent through CAS again (or a script gets its 401). An app that added <code>catch (\LogicException $e)</code> around <code>authenticateSSO()</code> as a stopgap for 0.7.0 can drop it after the upgrade.</p>
 <h2 id="check-it-before-you-ship">Check it before you ship<a class="docs-heading-link" aria-label="Link to this section" href="#check-it-before-you-ship">#</a></h2>
 <ol>
 <li>On a laptop, boot with the <code>fake</code> driver (<code>'driver' =&gt; 'fake', 'environment' =&gt; 'local', 'fake' =&gt; ['username' =&gt; 'ab1234']]</code>): every page should say who is signed in without any CAS server.</li>
 <li>On pre-production, with the real <code>cas</code> config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no <code>ticket</code> in the address bar, and see the app signed in as you. Check the AccessID's case against any <code>authorized_ids</code> list the app keeps.</li>
-<li>Leave the tab alone past the idle timeout and reload: you should go through CAS again (silently, if your CAS session is still alive).</li>
+<li>Leave the tab alone past the idle timeout (2 hours) and reload: you should go through CAS again (silently, if your CAS session is still alive), never a blank page. A save the page makes by XHR after the timeout should get a 401, not a 500.</li>
 <li>Grep the app for <code>validUser</code>, <code>sso_host</code> and <code>_parseSSOCookie('d')</code>: none should be left doing work.</li>
 </ol>
 <p>SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (<code>tests/WayneAuthLegacyAppTest.php</code>).</p>
@@ -244,7 +284,7 @@ require_once('config/sesame.php');
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/moving-from-wayne-cas.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Moving from wayne-cas</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/instance-runner.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Strongly recommended: a git.wayne.edu instance runner</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#does-this-fit-my-app">Does this fit my app?</a></li><li class="docs-toc__item"><a href="#the-one-line-swap">The one-line swap</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-session">The session</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#options">Options</a></li><li class="docs-toc__item"><a href="#what-changes-call-by-call">What changes, call by call</a></li><li class="docs-toc__item"><a href="#check-it-before-you-ship">Check it before you ship</a></li><li class="docs-toc__item"><a href="#going-native-later">Going native later</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#does-this-fit-my-app">Does this fit my app?</a></li><li class="docs-toc__item"><a href="#the-one-line-swap">The one-line swap</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#the-session">The session</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#options">Options</a></li><li class="docs-toc__item"><a href="#what-changes-call-by-call">What changes, call by call</a></li><li class="docs-toc__item"><a href="#catch-the-two-sign-in-exceptions">Catch the two sign-in exceptions</a></li><li class="docs-toc__item"><a href="#check-it-before-you-ship">Check it before you ship</a></li><li class="docs-toc__item"><a href="#going-native-later">Going native later</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.0</span></span>

@@ -247,7 +247,7 @@
 // build $sesame (see the README), then:
 sesame($sesame);
 $user = sesame_login();</code></pre>
-          <p class="ticket__foot">Protected pages call <code>sesame_user()</code>. Login and logout end the script after they redirect, so nothing below them runs.</p>
+          <p class="ticket__foot">Protected pages call <code>sesame_user()</code>. Login and logout end the script after they redirect, so nothing below them runs. A script request from a guest gets a 401.</p>
         </article>
 
         <article class="ticket" style="--i:1">

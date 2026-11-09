@@ -62,6 +62,10 @@ This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://g
 
 A poll counts as activity: reading the status moves the session's `last_seen`, so polling on a timer would keep a session alive past the idle timeout. Read it when the app loads and after a sign-in, and let the `idleExpiresAt` and `absoluteExpiresAt` in the answer tell you how long the state can be trusted.
 
+## A 401 from any page means "reload"[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#a-401-from-any-page-means-reload)
+
+A script's request (an XHR, or a `fetch` whose first `Accept` type is JSON) that reaches a page behind `sesame_login()`, the Wayne Auth bridge or the `auth.sesame` middleware with no one signed in gets a 401, never a redirect to the identity provider, which a script could not follow. That includes a session that timed out since the page loaded (2 hours idle, 12 hours absolute). The raw-PHP and bridge answers carry `{"signedIn":false}`, the same body as the status endpoint. Send `Accept: application/json` (or `X-Requested-With: XMLHttpRequest`) from your client so the server can tell, and treat a 401 as "reload the page": the reload goes through the sign-in.
+
 ## Adding your own user fields[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#adding-your-own-user-fields)
 
 Pass a closure that returns an array of extra fields for the app's user: `sesame_status(fn ($user) => ['name' => $user->name])` in raw PHP, or bind the closure as `sesame.describe_user` in Laravel. Its array fills the answer's `user` field (null without a closure); the session facts stay untouched, and the identity provider's raw attributes are never part of the answer.

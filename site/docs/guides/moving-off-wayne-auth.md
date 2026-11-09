@@ -99,10 +99,13 @@ With `on_guest` left at `redirect`, the app's old else branch (the redirect to t
 | Wayne Auth | The bridge |
 | --- | --- |
 | `new WayneAuth($config)` | Same. The old keys (`sso_host`, `sso_port`, `ldap_host`, `timeout` and the rest) are accepted and ignored; `$wayne_auth->config` still holds them |
-| `authenticateSSO()` true | Same: someone is signed in. SESAME's idle (120 minutes) and absolute (12 hours) timeouts apply |
+| `authenticateSSO()` true | Same: someone is signed in. SESAME's idle (120 minutes, 2 hours) and absolute (12 hours) timeouts apply |
 | `authenticateSSO()` false for a visitor with no cookie | Sends the visitor to CAS and stops the script (`on_guest => redirect`), or `false` (`on_guest => deny`) |
+| (nothing) | A visitor whose session timed out (2 hours quiet, or 12 hours since the sign-in) is a guest again: the old session is retired, a fresh one takes its place, and the visitor goes through CAS as above (before 0.7.1 this was a blank 500) |
+| (nothing) | A guest's script request (an XHR save, or a `fetch` asking for JSON) gets a 401 with `{"signedIn":false}` and the script stops, instead of a redirect to CAS the script cannot follow |
 | (nothing) | A visitor coming back from CAS with a ticket: the ticket is checked, the user is stored, and the browser is sent on to the service URL without the ticket |
 | (nothing) | A ticket that does not check out throws `AuthenticationFailed`. Answering `false` would send the browser to CAS and back forever |
+| (nothing) | CAS down, unreachable or slower than the 10 second timeout while it checks the ticket: throws `ProviderUnavailable`, a subclass of `AuthenticationFailed` (see the next section) |
 | `false` for a refused visitor | Your resolver returned `null`: `false`, nothing stored |
 | `getAccessID()` | The CAS username, the same AccessID. `$wayne_auth->accessid` is set too |
 | `_parseSSOCookie('v')` | `['verified' => true, 'accessid' => ..., 'timeout' => seconds left]`, or `['verified' => false]`; never redirects |
@@ -111,11 +114,44 @@ With `on_guest` left at `redirect`, the app's old else branch (the redirect to t
 
 Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the `Identity` your resolver receives, once you move to the native calls.
 
+## Catch the two sign-in exceptions[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#catch-the-two-sign-in-exceptions)
+
+`authenticateSSO()` throws in two cases, and an uncaught one is a blank 500. Wrap the call where the page makes it, and catch the narrower class first:
+
+```php
+use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+
+try {
+    $signedIn = $wayne_auth->authenticateSSO();
+} catch (ProviderUnavailable $e) {
+    // CAS is down, unreachable, or did not answer within the timeout.
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(503);
+    header('Retry-After: 60');
+    echo 'The university sign-in is not answering. Try again in a minute.';
+    exit;
+} catch (AuthenticationFailed $e) {
+    // The ticket was refused, or the sign-in was not started in this browser.
+    error_log('Sign-in: ' . $e->getMessage());
+    http_response_code(403);
+    echo 'The sign-in did not go through. Open the app again to retry.';
+    exit;
+}
+```
+
+- `ProviderUnavailable` means nobody could be checked: no route to CAS, a TLS failure, the 10 second timeout ran out, or CAS answered 5xx. Nobody is signed in. The visitor can retry from the app; the ticket in the address bar is spent, so a reload of that exact URL gets the second case.
+- `AuthenticationFailed` means CAS (or SESAME) refused the sign-in. Its message can carry the CAS failure code, so log it and show one generic line.
+
+Since `ProviderUnavailable` extends `AuthenticationFailed`, a page that catches only `AuthenticationFailed` still catches both; the first catch is what turns "CAS is down" into a 503 instead of a refusal.
+
+A session that timed out is not an exception: from 0.7.1 the visitor is simply sent through CAS again (or a script gets its 401). An app that added `catch (\LogicException $e)` around `authenticateSSO()` as a stopgap for 0.7.0 can drop it after the upgrade.
+
 ## Check it before you ship[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
 
 1. On a laptop, boot with the `fake` driver (`'driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'ab1234']]`): every page should say who is signed in without any CAS server.
 2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the CAS sign-in, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
-3. Leave the tab alone past the idle timeout and reload: you should go through CAS again (silently, if your CAS session is still alive).
+3. Leave the tab alone past the idle timeout (2 hours) and reload: you should go through CAS again (silently, if your CAS session is still alive), never a blank page. A save the page makes by XHR after the timeout should get a 401, not a 500.
 4. Grep the app for `validUser`, `sso_host` and `_parseSSOCookie('d')`: none should be left doing work.
 
 SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (`tests/WayneAuthLegacyAppTest.php`).

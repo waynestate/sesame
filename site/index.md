@@ -74,7 +74,7 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
-Protected pages call `sesame_user()`. Login and logout end the script after they redirect, so nothing below them runs.
+Protected pages call `sesame_user()`. Login and logout end the script after they redirect, so nothing below them runs. A script request from a guest gets a 401.
 
 Job 02
 

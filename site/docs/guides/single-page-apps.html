@@ -101,6 +101,16 @@ the reason below.</p>
 timeout. Read it when the app loads and after a sign-in, and let the
 <code>idleExpiresAt</code> and <code>absoluteExpiresAt</code> in the answer tell you how long the
 state can be trusted.</p>
+<h2 id="a-401-from-any-page-means-reload">A 401 from any page means &quot;reload&quot;<a class="docs-heading-link" aria-label="Link to this section" href="#a-401-from-any-page-means-reload">#</a></h2>
+<p>A script's request (an XHR, or a <code>fetch</code> whose first <code>Accept</code> type is JSON)
+that reaches a page behind <code>sesame_login()</code>, the Wayne Auth bridge or the
+<code>auth.sesame</code> middleware with no one signed in gets a 401, never a redirect to
+the identity provider, which a script could not follow. That includes a
+session that timed out since the page loaded (2 hours idle, 12 hours
+absolute). The raw-PHP and bridge answers carry <code>{&quot;signedIn&quot;:false}</code>, the same
+body as the status endpoint. Send <code>Accept: application/json</code> (or
+<code>X-Requested-With: XMLHttpRequest</code>) from your client so the server can tell,
+and treat a 401 as &quot;reload the page&quot;: the reload goes through the sign-in.</p>
 <h2 id="adding-your-own-user-fields">Adding your own user fields<a class="docs-heading-link" aria-label="Link to this section" href="#adding-your-own-user-fields">#</a></h2>
 <p>Pass a closure that returns an array of extra fields for the app's user:
 <code>sesame_status(fn ($user) =&gt; ['name' =&gt; $user-&gt;name])</code> in raw PHP, or bind the
@@ -123,7 +133,7 @@ the identity provider's raw attributes are never part of the answer.</p>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/session-timeouts.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Session timeouts</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/requiring-mfa.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Requiring MFA</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-endpoints">The two endpoints</a></li><li class="docs-toc__item"><a href="#in-raw-php">In raw PHP</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#with-vue">With Vue</a></li><li class="docs-toc__item"><a href="#read-it-on-page-load-not-on-a-timer">Read it on page load, not on a timer</a></li><li class="docs-toc__item"><a href="#adding-your-own-user-fields">Adding your own user fields</a></li><li class="docs-toc__item"><a href="#signing-out">Signing out</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#the-two-endpoints">The two endpoints</a></li><li class="docs-toc__item"><a href="#in-raw-php">In raw PHP</a></li><li class="docs-toc__item"><a href="#in-laravel">In Laravel</a></li><li class="docs-toc__item"><a href="#with-vue">With Vue</a></li><li class="docs-toc__item"><a href="#read-it-on-page-load-not-on-a-timer">Read it on page load, not on a timer</a></li><li class="docs-toc__item"><a href="#a-401-from-any-page-means-reload">A 401 from any page means &quot;reload&quot;</a></li><li class="docs-toc__item"><a href="#adding-your-own-user-fields">Adding your own user fields</a></li><li class="docs-toc__item"><a href="#signing-out">Signing out</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.0</span></span>

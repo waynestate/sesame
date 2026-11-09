@@ -145,7 +145,7 @@ sesame_logout('https://app.example.test/');
 </tr>
 <tr>
 <td><code>sesame_login(): mixed</code></td>
-<td>Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or <code>null</code> when the resolver refused the identity.</td>
+<td>Run a login against the current request. Sends the 302 and stops the script when the driver answers with a redirect; returns the app's user, or <code>null</code> when the resolver refused the identity. A script's request (JSON <code>Accept</code>, or <code>X-Requested-With: XMLHttpRequest</code>) with no one signed in gets a 401 with <code>{&quot;signedIn&quot;:false}</code> instead of the redirect. Throws <code>ProviderUnavailable</code> when the provider cannot be reached, and <code>AuthenticationFailed</code> when it refuses the sign-in.</td>
 </tr>
 <tr>
 <td><code>sesame_user(): mixed</code></td>

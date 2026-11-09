@@ -63,7 +63,7 @@ composer update onelogin/php-saml robrichards/xmlseclibs
 
 ### A sign-in fails on a hung or slow CAS server, or a client that is set up wrong[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong)
 
-**Cause.** SESAME treats any non-200 answer (including a redirect) as a failed login and lets a client exception through, so a PSR-18 client that is set up wrong fails the sign-in and never signs anyone in. Guzzle has no total timeout by default, so a hung CAS server would hold the request open forever, and it follows up to five redirects by default, to any host or to plain http.
+**Cause.** SESAME treats any non-200 answer (including a redirect) as a failed login, and a client exception (no route, a TLS failure, the timeout ran out) or a 5xx answer as `ProviderUnavailable`, a subclass of `AuthenticationFailed`, so a PSR-18 client that is set up wrong fails the sign-in and never signs anyone in. Guzzle has no total timeout by default, so a hung CAS server would hold the request open forever, and it follows up to five redirects by default, to any host or to plain http. An app that does not catch the exception shows a blank 500 while CAS is down; catch `ProviderUnavailable` and answer 503 (see [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)).
 
 **Fix.** Hand SESAME a client with a timeout, redirects off for the validation call, and TLS verification on:
 
@@ -195,6 +195,14 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 **Fix.** This is the expected behavior, not a fault. If the limits are wrong for the app, set `session.idle_minutes` and `session.absolute_minutes` (env `SESAME_SESSION_IDLE_MINUTES` and `SESAME_SESSION_ABSOLUTE_MINUTES` in Laravel). See [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html).
 
 **Check.** Read the user with `sesame_user()` after the quiet time; the session is gone and the next `sesame_login()` starts fresh.
+
+### A visitor back from a break gets a blank 500: `No session is active` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active)
+
+**Cause.** SESAME 0.7.0 on the native PHP session (raw PHP, or the Wayne Auth bridge). A session past the 2 hour idle timeout or the 12 hour absolute limit was signed out and the PHP session closed; the same request then sent the visitor to CAS, and storing the pending sign-in threw `LogicException: No session is active. Start one before using NativeSession.` An XHR save at that moment failed the same way.
+
+**Fix.** Upgrade to 0.7.1 or later: the sign-out starts a fresh session under a new ID, so the visitor goes through CAS again, and a script's request gets a 401 with `{"signedIn":false}`. Until you can upgrade, catch `\LogicException` around the sign-in call and, when `session_status() !== PHP_SESSION_ACTIVE`, redirect to the app's own root: the next request starts clean and goes to CAS. It cannot loop, because the old cookie was expired and a reused ID is retired.
+
+**Check.** `tests/WayneAuthLegacyAppTest.php` ages a real session file past each limit and expects the CAS redirect, then the sign-in, then a 401 for an XHR.
 
 ## Config and playbook[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#config-and-playbook)
 

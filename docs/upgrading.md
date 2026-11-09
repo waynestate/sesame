@@ -10,6 +10,38 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.7.1 (unreleased)
+
+No breaks for an app that follows the docs; three fixes, and two lines some
+apps can delete. Upgrade with `composer update waynestate/sesame` (the `^0.7`
+constraint already takes it).
+
+- **A timed-out session goes back through the sign-in, not a blank 500.**
+  On the native PHP session (raw PHP and the Wayne Auth bridge), a visitor
+  who came back after the 2 hour idle timeout or past the 12 hour absolute
+  limit was signed out, and the redirect to CAS then threw `LogicException:
+  No session is active`. `NativeSession::invalidate()` now starts a fresh,
+  empty session under a new ID after it retires the old one, so the rest of
+  the request carries on. An app that added `catch (\LogicException $e)`
+  around `authenticateSSO()` or `sesame_login()` for this, or that calls
+  `session_start()` again after `sesame()->signOutLocal()`, can drop that
+  line: the session is already active (a second `session_start()` only
+  raises a notice).
+- **Scripts get a 401, not a redirect.** An XHR or `fetch` asking for JSON
+  that reaches `sesame_login()` or the Wayne Auth bridge with no one signed
+  in gets a 401 with `{"signedIn":false}`, as the Laravel middleware already
+  answered. Page navigations are redirected as before. Client code that
+  treated a failed save as "reload the page" keeps working; code can now
+  check `status === 401`.
+- **CAS down is its own exception.** A ticket check that cannot reach CAS,
+  times out or gets a 5xx throws `ProviderUnavailable`, a subclass of
+  `AuthenticationFailed`, instead of letting the HTTP client's exception
+  escape. An app that catches `AuthenticationFailed` already catches it; add
+  a `catch (ProviderUnavailable $e)` before it to answer 503 (see
+  [The cas driver](guides/driver-cas.md#when-cas-is-down)). An app that
+  caught `Psr\Http\Client\ClientExceptionInterface` around the sign-in can
+  switch that catch to `ProviderUnavailable`.
+
 ## 0.7.0 (2026-11-09)
 
 One new check that can need a step, and one that can stop an app that asked
