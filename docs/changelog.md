@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.
+
 ## [0.6.3] - 2026-11-09
 
 - Docs: the upgrading guide has a 0.6.3 section, and the README, Laravel guide and wayne-cas guide say JSON sessions work with the shim from 0.6.3.
