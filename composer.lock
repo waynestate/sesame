@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8edab2cd5374d75bb03ff4bca7335d12",
+    "content-hash": "57e97a924dfb88311b556b44ae98e963",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -3780,7 +3780,8 @@
                 "issues": "https://github.com/nette/neon/issues",
                 "source": "https://github.com/nette/neon/tree/v3.4.10"
             },
-            "time": "2026-10-25T22:35:03+00:00"
+            "time": "2026-10-25T22:35:03+00:00",
+            "published-time": "2026-10-25T23:02:33+00:00"
         },
         {
             "name": "nette/schema",
@@ -5123,7 +5124,8 @@
                 "issues": "https://github.com/phpstan/extension-installer/issues",
                 "source": "https://github.com/phpstan/extension-installer/tree/1.4.3"
             },
-            "time": "2024-09-04T20:21:43+00:00"
+            "time": "2024-09-04T20:21:43+00:00",
+            "published-time": "2024-09-04T20:22:27+00:00"
         },
         {
             "name": "phpstan/phpstan",
@@ -5238,7 +5240,8 @@
                 "issues": "https://github.com/phpstan/phpstan-deprecation-rules/issues",
                 "source": "https://github.com/phpstan/phpstan-deprecation-rules/tree/2.0.5"
             },
-            "time": "2026-07-22T06:50:43+00:00"
+            "time": "2026-07-22T06:50:43+00:00",
+            "published-time": "2026-07-27T15:18:00+00:00"
         },
         {
             "name": "phpstan/phpstan-strict-rules",
@@ -10007,16 +10010,16 @@
         },
         {
             "name": "waynestate/pinstripe",
-            "version": "0.1.0",
+            "version": "0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waynestate/pinstripe.git",
-                "reference": "e6d399c95976be53d6f9aa9c8dca494eadc5685f"
+                "reference": "eb030787b2b9558e31b3e571a341675c34309c7f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/e6d399c95976be53d6f9aa9c8dca494eadc5685f",
-                "reference": "e6d399c95976be53d6f9aa9c8dca494eadc5685f",
+                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/eb030787b2b9558e31b3e571a341675c34309c7f",
+                "reference": "eb030787b2b9558e31b3e571a341675c34309c7f",
                 "shasum": ""
             },
             "require": {
@@ -10031,6 +10034,7 @@
             "require-dev": {
                 "larastan/larastan": "^3.13",
                 "laravel/framework": "^11 || ^12 || ^13",
+                "league/commonmark": "^2.10",
                 "phpunit/phpunit": "^12",
                 "rector/rector": "^2.8"
             },
@@ -10042,6 +10046,11 @@
                 "bin/pinstripe-baseline"
             ],
             "type": "library",
+            "extra": {
+                "proctor": {
+                    "wayneui.copies": "fail"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "WayneState\\Pinstripe\\": "src/"
@@ -10054,10 +10063,11 @@
             "description": "The coding standard for the Wayne State app stack: shared Pint and PHPStan presets.",
             "homepage": "https://pinstripe.apps.wayne.edu/",
             "support": {
-                "issues": "https://github.com/waynestate/pinstripe/issues",
-                "source": "https://github.com/waynestate/pinstripe"
+                "issues": "https://nougat.snu.gs/enterprise-apps/pinstripe/-/issues",
+                "source": "https://nougat.snu.gs/enterprise-apps/pinstripe"
             },
-            "time": "2026-10-29T03:28:00+00:00"
+            "time": "2026-11-07T00:59:25+00:00",
+            "published-time": "2026-11-07T01:31:49+00:00"
         }
     ],
     "aliases": [],
@@ -10073,5 +10083,5 @@
     "platform-overrides": {
         "php": "8.3.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

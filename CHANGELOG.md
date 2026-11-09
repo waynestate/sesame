@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed: the `wayneui-copies` and `composer-ci` CI jobs run Composer 2.11.1 (was 2.10.3, no longer maintained), pinned by its multi-arch list digest; 2.11 fixes GHSA-c968-33g3-wh7p and GHSA-fm2w-xgf2-f9fh.
 - Changed: the deploy kit is Squire 0.10.2 (was 0.10.1): the kit's `php.ini` sets `session.cookie_samesite = Lax` (the value `NativeSession`'s cookie check asks for); the fallback base names its images in full (`docker.io/library/...`) with Composer as a build argument; and the portable image drops `node_modules/` after the build. BEST_PRACTICES S45 names kit 0.10.2.
+- Changed: the deploy layer requires HELMET ^1.3 (locked 1.3.0, was ^1.0 at 1.0.1) and CREED ^0.1.8 (locked 0.1.8, was ^0.1 at 0.1.7); PROCTOR stays ^0.11 at 0.11.0. The dev dependency on Pinstripe moves to ^0.1.4 (locked 0.1.4, was ^0.1 at 0.1.0).
 
 ## [0.7.0] - 2026-11-09
 

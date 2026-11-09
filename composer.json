@@ -38,7 +38,7 @@
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
-        "waynestate/pinstripe": "^0.1"
+        "waynestate/pinstripe": "^0.1.4"
     },
     "conflict": {
         "onelogin/php-saml": "<4.3.2",
