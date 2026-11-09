@@ -666,6 +666,7 @@ final class OidcDriverTest extends TestCase
         self::assertStringNotContainsString($secret, print_r($config, true));
         self::assertStringContainsString('[redacted]', print_r($config, true));
         ob_start();
+        // @phpstan-ignore pinstripe.banned.varDump (the test proves a dump hides the secret; output is captured, never shown)
         var_dump($driver, $config);
         self::assertStringNotContainsString($secret, (string) ob_get_clean());
     }

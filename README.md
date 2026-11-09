@@ -1453,13 +1453,13 @@ first. What the hop does:
   `eloquent`, adding a model key when the provider has none.
 - Rewrites user models that use `WayneCasable` as a trait to
   `implements WayneCasable` plus `use ReadOnlyAttributes`.
-- Swaps the Composer requirement to `waynestate/sesame:^0.6` (SESAME is on
+- Swaps the Composer requirement to `waynestate/sesame:^0.7` (SESAME is on
   Packagist, so no extra repository is needed) and drops the `wayne-cas`
   package, any `wayne-cas` path entry and its VCS repository entries.
-  Booster 1.12.0 and later write `^0.6`; an app hopped by an earlier Booster
-  got `^0.4`, so take the 0.5.0 and 0.6.0 steps in the
-  [upgrading guide](docs/upgrading.md), and its 0.7.0 step to move from `^0.6`
-  to `^0.7`.
+  Booster 1.14.0 and later write `^0.7`. Booster 1.12.0 and 1.13.0 wrote
+  `^0.6`, so an app they hopped takes the 0.7.0 step in the
+  [upgrading guide](docs/upgrading.md) to move to `^0.7`; an app hopped by an
+  earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0 and 0.7.0 steps.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config
   keys any more; while anything still does, the file stays and a manual note
   names the readers.

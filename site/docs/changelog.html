@@ -51,6 +51,9 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
+<ul>
+<li>Changed: refreshed version mentions. The README and the moving-from-wayne-cas guide say Booster 1.14.0 and later write <code>waynestate/sesame:^0.7</code> (they said <code>^0.6</code>, which Booster 1.12.0 and 1.13.0 wrote; apps those hopped take the 0.7.0 upgrading step). The dev tools require Pinstripe ^0.3 (lock 0.3.0, was ^0.1.4 at 0.1.4), which bans <code>var_dump()</code>: the one in <code>tests/OidcDriverTest.php</code>, which proves a dump never shows the client secret, carries a reasoned <code>pinstripe.banned.varDump</code> ignore. Open sesame: the doors now match the keys.</li>
+</ul>
 <h2 id="0-7-2-2026-11-09">[0.7.2] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-2-2026-11-09">#</a></h2>
 <ul>
 <li>Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set <code>cas.base_url</code> to a <code>login.wayne.edu</code> address that answers 404, so an app that copied it never reached the sign-in. The address is <code>https://academica.aws.wayne.edu/cas</code>; people still see the familiar <code>login.wayne.edu</code> screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.</li>
