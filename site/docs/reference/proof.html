@@ -60,36 +60,36 @@
 </thead>
 <tbody>
 <tr>
-<td>Test suite (PHPUnit) on PHP 8.3</td>
-<td>2026-11-07</td>
-<td>2505033</td>
-<td>pass, 631 tests, 1704 assertions</td>
-<td>36.8 s</td>
+<td>Test suite (PHPUnit) on PHP 8.3.36</td>
+<td>2026-11-09</td>
+<td>0039f55</td>
+<td>pass, 839 tests, 2432 assertions</td>
+<td>2.9 s</td>
 </tr>
 <tr>
-<td>Test suite (PHPUnit) on PHP 8.4</td>
-<td>2026-11-07</td>
-<td>2505033</td>
-<td>pass, 631 tests, 1704 assertions</td>
-<td>36.3 s</td>
+<td>Test suite (PHPUnit) on PHP 8.4.27</td>
+<td>2026-11-09</td>
+<td>0039f55</td>
+<td>pass, 839 tests, 2432 assertions</td>
+<td>2.9 s</td>
 </tr>
 <tr>
-<td>Test suite (PHPUnit) on PHP 8.5</td>
-<td>2026-11-07</td>
-<td>2505033</td>
-<td>pass, 631 tests, 1704 assertions</td>
-<td>35.7 s</td>
+<td>Test suite (PHPUnit) on PHP 8.5.12</td>
+<td>2026-11-09</td>
+<td>0039f55</td>
+<td>pass, 839 tests, 2432 assertions</td>
+<td>3.0 s</td>
 </tr>
 <tr>
-<td>composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit)</td>
-<td>2026-11-07</td>
-<td>2505033</td>
-<td>pass, all seven steps (tests: 631, 1704 assertions)</td>
-<td>333.8 s, includes a fresh composer install</td>
+<td>composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12</td>
+<td>2026-11-09</td>
+<td>0039f55</td>
+<td>pass, all seven steps (tests: 839, 2432 assertions; PHPStan: no errors; audit: no advisories)</td>
+<td>10 s, after a composer install from a warm cache</td>
 </tr>
 </tbody>
 </table></div>
-<p>To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.</p>
+<p>The run is on the main branch head after SESAME 0.7.0, which adds the commits listed under Unreleased in the changelog. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.</p>
 <h2 id="the-proof-site">The proof site<a class="docs-heading-link" aria-label="Link to this section" href="#the-proof-site">#</a></h2>
 <p>Proof runs against real Wayne State applications on a private site, <a rel="noopener" href="https://proof.apps.wayne.edu/sesame/">proof.apps.wayne.edu/sesame</a>, behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.</p>
 <h2 id="tests">Tests<a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></h2>
