@@ -23,6 +23,7 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
    
    require __DIR__.'/vendor/autoload.php';
    
+   ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
    session_start();
    ```
    Note

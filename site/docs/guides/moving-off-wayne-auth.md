@@ -75,7 +75,7 @@ The `cas.service_url` is where CAS sends people back: the page that calls `authe
 
 ### The session[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
 
-The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Let HELMET harden it if you can ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the cookie settings), and set `session.gc_maxlifetime` to at least the idle timeout.
+The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Turn on strict mode first: without `session.use_strict_mode` PHP accepts any session ID a client sends, and SESAME raises one `E_USER_WARNING` per request until it is on. Call `ini_set('session.use_strict_mode', '1')` before `session_start()`, or let HELMET's `helmet_boot()` do it with the cookie flags ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the settings). Also set `session.gc_maxlifetime` to at least the idle timeout.
 
 Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: `boot()` re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.
 

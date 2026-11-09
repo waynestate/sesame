@@ -51,6 +51,8 @@
 <p><code>NativeSession::regenerate()</code> marks the old session with a &quot;destroyed at&quot; time and the new ID, keeps it for a 60 second grace, and copies the data to the new session. The constructor takes <code>graceSeconds</code>, and 60 is the default.</p>
 <h2 id="why">Why<a class="docs-heading-link" aria-label="Link to this section" href="#why">#</a></h2>
 <p>The <a rel="noopener" href="https://www.php.net/manual/en/function.session-regenerate-id.php">PHP manual</a> says <code>session_regenerate_id()</code> does not handle an unstable network well. When the old ID is deleted at once, a user whose browser is still sending the old ID can lose the session when the response with the new ID never arrives. Deleting at once also removes the chance to see a stolen ID being replayed. The manual's example keeps the old session for 300 seconds; that is the example's choice, not a rule. The full reasoning is in <code>BEST_PRACTICES.md</code>, section S43.</p>
+<h2 id="under-strict-mode">Under strict mode<a class="docs-heading-link" aria-label="Link to this section" href="#under-strict-mode">#</a></h2>
+<p><code>session.use_strict_mode=1</code> (HELMET and Squire's php.ini set it) refuses a session ID the store has never seen, and the new ID is not in the store yet. So <code>regenerate()</code> stores the new session once with strict mode off, then reopens it with the app's setting back. The new ID comes from <code>session_create_id()</code>, never from the request, and the old session's marker names the ID the user is really on. The PHP manual's own example turns strict mode off for the same step.</p>
 <h2 id="turning-it-off">Turning it off<a class="docs-heading-link" aria-label="Link to this section" href="#turning-it-off">#</a></h2>
 <p>Pass <code>graceSeconds: 0</code> to the <code>NativeSession</code> constructor to restore the immediate delete. A negative value is refused with an <code>InvalidArgumentException</code>.</p>
 <h2 id="after-the-grace">After the grace<a class="docs-heading-link" aria-label="Link to this section" href="#after-the-grace">#</a></h2>
@@ -61,6 +63,7 @@
 <p><code>NativeSessionTest</code> covers the behavior:</p>
 <ul>
 <li><code>testRegenerateKeepsTheOldSessionDuringTheGrace</code></li>
+<li><code>testRegenerateUnderStrictModeKeepsItsNewIdAndTheSetting</code></li>
 <li><code>testTheOldSessionIsStillUsableWithinTheGrace</code></li>
 <li><code>testTheOldSessionIsRejectedAfterTheGraceAndLogged</code></li>
 <li><code>testZeroGraceDeletesTheOldSessionAtOnce</code></li>
@@ -71,7 +74,7 @@
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/reference/api.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">API</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/reference/proof.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Proof</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#decision">Decision</a></li><li class="docs-toc__item"><a href="#why">Why</a></li><li class="docs-toc__item"><a href="#turning-it-off">Turning it off</a></li><li class="docs-toc__item"><a href="#after-the-grace">After the grace</a></li><li class="docs-toc__item"><a href="#not-covered">Not covered</a></li><li class="docs-toc__item"><a href="#tests">Tests</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#decision">Decision</a></li><li class="docs-toc__item"><a href="#why">Why</a></li><li class="docs-toc__item"><a href="#under-strict-mode">Under strict mode</a></li><li class="docs-toc__item"><a href="#turning-it-off">Turning it off</a></li><li class="docs-toc__item"><a href="#after-the-grace">After the grace</a></li><li class="docs-toc__item"><a href="#not-covered">Not covered</a></li><li class="docs-toc__item"><a href="#tests">Tests</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.6.1</span></span>

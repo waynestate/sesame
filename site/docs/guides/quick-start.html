@@ -64,6 +64,7 @@ declare(strict_types=1);
 
 require __DIR__.'/vendor/autoload.php';
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 </code></pre>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>Set <code>session.gc_maxlifetime</code> to at least SESAME's idle timeout. PHP's

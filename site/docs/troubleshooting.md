@@ -130,6 +130,14 @@ vendor/bin/phpunit
 
 **Check.** In the local environment the `fake` driver signs in; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
 
+### The log has `SESAME: the session was started with session.use_strict_mode off` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off)
+
+**Cause.** The app started its session with `session.use_strict_mode` off (PHP then accepts any session ID a client sends, so an attacker can plant a known one) or `session.use_only_cookies` off (PHP takes the ID from the URL). PHP's own default leaves strict mode off, and so does a shared `php.ini` that nobody hardened. `NativeSession` turns both on itself whenever no session is active yet, but a session the app already started keeps the settings it started with, so SESAME raises one `E_USER_WARNING` per request and carries on. With `checkSessionSettings: true` it throws `LogicException` instead.
+
+**Fix.** Add `ini_set('session.use_strict_mode', '1');` before `session_start()`, or call `helmet_boot()` there (HELMET sets both, with the cookie flags), or set `session.use_strict_mode = 1` in `php.ini` or the FPM pool. Squire's `php.ini` already does. Building `new NativeSession()` before `session_start()` also works, since it turns the settings on while no session is active.
+
+**Check.** The warning stops. `php -r "echo ini_get('session.use_strict_mode');"` prints `1` for the CLI; for the web, the same `ini_get()` on a page. `NativeSessionTest` covers the settings, the warning and the hard stop.
+
 ## The session ends too soon, or looks wrong[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-session-ends-too-soon-or-looks-wrong)
 
 ### A raw-PHP app signs people out after 24 quiet minutes[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-raw-php-app-signs-people-out-after-24-quiet-minutes)

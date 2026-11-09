@@ -19,6 +19,7 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
+| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode` and `session.use_only_cookies`. A `new NativeSession()` option, not a config key. `null` turns both on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off; `true` also turns them on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. |
 
 ## How the clocks are checked[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#how-the-clocks-are-checked)
 

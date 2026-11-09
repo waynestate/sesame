@@ -26,6 +26,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -70,6 +71,8 @@ The app owns the session: start it with `session_start()`, and let HELMET set th
 ```php
 $user = sesame_user();
 ```
+
+**Strict mode, on by default.** Two PHP settings stop a client choosing its own session ID: `session.use_strict_mode` (without it PHP accepts any ID a client sends, so an attacker can plant one) and `session.use_only_cookies` (without it PHP takes the ID from the URL, where links and logs leak it). `NativeSession` turns both on with `ini_set()` whenever no session is active: when it is built before `session_start()`, and before every session start of its own. When your app already started the session with either one off, the first use in the request raises one `E_USER_WARNING` naming the setting and the fix, and the session keeps working. The fix is the one line in the example above, `ini_set('session.use_strict_mode', '1')` before `session_start()`, or HELMET's `helmet_boot()`; Squire's `php.ini` already sets both. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop (a `LogicException` on every call) instead of the warning, or `false` to leave the settings alone and stay quiet.
 
 Warning
 

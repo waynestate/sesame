@@ -81,6 +81,11 @@ spot the first time anything asks who is signed in.</p>
 <td><code>60</code></td>
 <td>The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A <code>new NativeSession()</code> option, not a config key; <code>0</code> makes <code>invalidate()</code> destroy the session outright instead of leaving the logout marker.</td>
 </tr>
+<tr>
+<td><code>checkSessionSettings</code></td>
+<td><code>null</code></td>
+<td>How a native session treats <code>session.use_strict_mode</code> and <code>session.use_only_cookies</code>. A <code>new NativeSession()</code> option, not a config key. <code>null</code> turns both on whenever no session is active and warns once per request (<code>E_USER_WARNING</code>) when the app started its session with either one off; <code>true</code> also turns them on but throws <code>LogicException</code> on every call instead of warning; <code>false</code> leaves the settings alone and stays quiet.</td>
+</tr>
 </tbody>
 </table></div>
 <h2 id="how-the-clocks-are-checked">How the clocks are checked<a class="docs-heading-link" aria-label="Link to this section" href="#how-the-clocks-are-checked">#</a></h2>

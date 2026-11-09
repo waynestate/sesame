@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: `NativeSession` keeps a client from choosing its own session ID without a code change (BEST_PRACTICES S3). Whenever no session is active (when it is built before `session_start()`, and before every session start of its own) it turns `session.use_strict_mode` and `session.use_only_cookies` on with `ini_set()`; when the app already started its session with either one off, it raises one `E_USER_WARNING` per request naming the setting and the fix, and the session keeps working. The new `checkSessionSettings` option makes that a hard stop (`true`, a `LogicException` on every call) or turns it all off (`false`). Every raw-PHP example now sets strict mode before `session_start()`; HELMET's `helmet_boot()` and Squire's php.ini already set both. The Laravel adapter is not affected.
+- Fixed: `NativeSession::regenerate()` keeps the new session ID it made when `session.use_strict_mode` is on (as HELMET and Squire's php.ini set it): PHP's strict mode had swapped in an ID of its own, so the old session's `sesame.new_session_id` marker named an ID that never existed. The new session is stored once with strict mode off, then reopened with the app's setting back, and the NativeSession tests now run with strict mode on, as production does.
 - Changed: CI pins the Preflight components to 0.4.0 (the proctor job clones the full history, so the override-approver check can read git blame).
 - Docs: BEST_PRACTICES S20 (CAS single logout) is tagged `Documented`, not `Not yet`: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).
 

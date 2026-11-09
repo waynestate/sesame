@@ -140,6 +140,7 @@ require __DIR__.'/boot-saml.php';
 use Waynestate\Sesame\Sesame;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 sesame(new Sesame($driver, new MyUserResolver(), $session, $config));

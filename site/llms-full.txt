@@ -148,6 +148,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -219,6 +220,22 @@ reads the user with `sesame_user()`:
 ```php
 $user = sesame_user();
 ```
+
+**Strict mode, on by default.** Two PHP settings stop a client choosing its
+own session ID: `session.use_strict_mode` (without it PHP accepts any ID a
+client sends, so an attacker can plant one) and `session.use_only_cookies`
+(without it PHP takes the ID from the URL, where links and logs leak it).
+`NativeSession` turns both on with `ini_set()` whenever no session is active:
+when it is built before `session_start()`, and before every session start of
+its own. When your app already started the session with either one off, the
+first use in the request raises one `E_USER_WARNING` naming the setting and the
+fix, and the session keeps working. The fix is the one line in the examples
+above, `ini_set('session.use_strict_mode', '1')` before `session_start()`, or
+HELMET's `helmet_boot()`; Squire's `php.ini` already sets both. Pass
+`checkSessionSettings: true` to `new NativeSession()` for a hard stop (a
+`LogicException` on every call) instead of the warning, or `false` to leave the
+settings alone and stay quiet. The Laravel adapter uses Laravel's session and
+is not affected.
 
 **Session regeneration grace.** On login SESAME regenerates the session ID.
 For the native session the old ID is not deleted at once: it is marked with
@@ -846,6 +863,7 @@ use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Support\Setting;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -1043,6 +1061,7 @@ spot the first time anything asks who is signed in.
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
+| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode` and `session.use_only_cookies`. A `new NativeSession()` option, not a config key. `null` turns both on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off; `true` also turns them on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. |
 
 On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live
@@ -1884,6 +1903,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: `NativeSession` keeps a client from choosing its own session ID without a code change (BEST_PRACTICES S3). Whenever no session is active (when it is built before `session_start()`, and before every session start of its own) it turns `session.use_strict_mode` and `session.use_only_cookies` on with `ini_set()`; when the app already started its session with either one off, it raises one `E_USER_WARNING` per request naming the setting and the fix, and the session keeps working. The new `checkSessionSettings` option makes that a hard stop (`true`, a `LogicException` on every call) or turns it all off (`false`). Every raw-PHP example now sets strict mode before `session_start()`; HELMET's `helmet_boot()` and Squire's php.ini already set both. The Laravel adapter is not affected.
+- Fixed: `NativeSession::regenerate()` keeps the new session ID it made when `session.use_strict_mode` is on (as HELMET and Squire's php.ini set it): PHP's strict mode had swapped in an ID of its own, so the old session's `sesame.new_session_id` marker named an ID that never existed. The new session is stored once with strict mode off, then reopened with the app's setting back, and the NativeSession tests now run with strict mode on, as production does.
 - Changed: CI pins the Preflight components to 0.4.0 (the proctor job clones the full history, so the override-approver check can read git blame).
 - Docs: BEST_PRACTICES S20 (CAS single logout) is tagged `Documented`, not `Not yet`: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).
 
@@ -2470,6 +2491,7 @@ use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Support\Setting;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -2712,6 +2734,7 @@ require __DIR__.'/boot-saml.php';
 use Waynestate\Sesame\Sesame;
 
 ini_set('session.gc_maxlifetime', '7200'); // at least SESAME's idle timeout; see Raw PHP
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 sesame(new Sesame($driver, new MyUserResolver(), $session, $config));
@@ -3204,7 +3227,7 @@ The `cas.service_url` is where CAS sends people back: the page that calls `authe
 
 #### The session[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
 
-The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Let HELMET harden it if you can ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the cookie settings), and set `session.gc_maxlifetime` to at least the idle timeout.
+The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Turn on strict mode first: without `session.use_strict_mode` PHP accepts any session ID a client sends, and SESAME raises one `E_USER_WARNING` per request until it is on. Call `ini_set('session.use_strict_mode', '1')` before `session_start()`, or let HELMET's `helmet_boot()` do it with the cookie flags ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the settings). Also set `session.gc_maxlifetime` to at least the idle timeout.
 
 Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: `boot()` re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.
 
@@ -3290,6 +3313,7 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
    
    require __DIR__.'/vendor/autoload.php';
    
+   ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
    session_start();
    ```
    Note
@@ -3378,6 +3402,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -3422,6 +3447,8 @@ The app owns the session: start it with `session_start()`, and let HELMET set th
 ```php
 $user = sesame_user();
 ```
+
+**Strict mode, on by default.** Two PHP settings stop a client choosing its own session ID: `session.use_strict_mode` (without it PHP accepts any ID a client sends, so an attacker can plant one) and `session.use_only_cookies` (without it PHP takes the ID from the URL, where links and logs leak it). `NativeSession` turns both on with `ini_set()` whenever no session is active: when it is built before `session_start()`, and before every session start of its own. When your app already started the session with either one off, the first use in the request raises one `E_USER_WARNING` naming the setting and the fix, and the session keeps working. The fix is the one line in the example above, `ini_set('session.use_strict_mode', '1')` before `session_start()`, or HELMET's `helmet_boot()`; Squire's `php.ini` already sets both. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop (a `LogicException` on every call) instead of the warning, or `false` to leave the settings alone and stay quiet.
 
 Warning
 
@@ -3637,6 +3664,7 @@ Every signed-in session has two clocks. The idle timeout is the quiet time after
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time. |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active. |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
+| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode` and `session.use_only_cookies`. A `new NativeSession()` option, not a config key. `null` turns both on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off; `true` also turns them on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. |
 
 ### How the clocks are checked[#](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html#how-the-clocks-are-checked)
 
@@ -3969,6 +3997,7 @@ use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\UserResolver;
 
+ini_set('session.use_strict_mode', '1'); // or helmet_boot(); NativeSession warns without it
 session_start();
 
 $config = Config::fromArray([
@@ -5022,6 +5051,10 @@ When SESAME regenerates the session ID at login, it does not delete the old sess
 
 The [PHP manual](https://www.php.net/manual/en/function.session-regenerate-id.php) says `session_regenerate_id()` does not handle an unstable network well. When the old ID is deleted at once, a user whose browser is still sending the old ID can lose the session when the response with the new ID never arrives. Deleting at once also removes the chance to see a stolen ID being replayed. The manual's example keeps the old session for 300 seconds; that is the example's choice, not a rule. The full reasoning is in `BEST_PRACTICES.md`, section S43.
 
+### Under strict mode[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#under-strict-mode)
+
+`session.use_strict_mode=1` (HELMET and Squire's php.ini set it) refuses a session ID the store has never seen, and the new ID is not in the store yet. So `regenerate()` stores the new session once with strict mode off, then reopens it with the app's setting back. The new ID comes from `session_create_id()`, never from the request, and the old session's marker names the ID the user is really on. The PHP manual's own example turns strict mode off for the same step.
+
 ### Turning it off[#](https://sesame.apps.wayne.edu/docs/reference/regenerate-grace.html#turning-it-off)
 
 Pass `graceSeconds: 0` to the `NativeSession` constructor to restore the immediate delete. A negative value is refused with an `InvalidArgumentException`.
@@ -5039,6 +5072,7 @@ The Laravel adapter uses the framework's own regenerate and is unchanged. Logout
 `NativeSessionTest` covers the behavior:
 
 - `testRegenerateKeepsTheOldSessionDuringTheGrace`
+- `testRegenerateUnderStrictModeKeepsItsNewIdAndTheSetting`
 - `testTheOldSessionIsStillUsableWithinTheGrace`
 - `testTheOldSessionIsRejectedAfterTheGraceAndLogged`
 - `testZeroGraceDeletesTheOldSessionAtOnce`
@@ -5238,6 +5272,14 @@ vendor/bin/phpunit
 **Fix.** Use a real driver in production: `cas` for a Citadel app today, `gateway` once Drawbridge is live, or `oidc` or `oauth2` for apps off Citadel. See [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html).
 
 **Check.** In the local environment the `fake` driver signs in; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
+
+#### The log has `SESAME: the session was started with session.use_strict_mode off` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off)
+
+**Cause.** The app started its session with `session.use_strict_mode` off (PHP then accepts any session ID a client sends, so an attacker can plant a known one) or `session.use_only_cookies` off (PHP takes the ID from the URL). PHP's own default leaves strict mode off, and so does a shared `php.ini` that nobody hardened. `NativeSession` turns both on itself whenever no session is active yet, but a session the app already started keeps the settings it started with, so SESAME raises one `E_USER_WARNING` per request and carries on. With `checkSessionSettings: true` it throws `LogicException` instead.
+
+**Fix.** Add `ini_set('session.use_strict_mode', '1');` before `session_start()`, or call `helmet_boot()` there (HELMET sets both, with the cookie flags), or set `session.use_strict_mode = 1` in `php.ini` or the FPM pool. Squire's `php.ini` already does. Building `new NativeSession()` before `session_start()` also works, since it turns the settings on while no session is active.
+
+**Check.** The warning stops. `php -r "echo ini_get('session.use_strict_mode');"` prints `1` for the CLI; for the web, the same `ini_get()` on a page. `NativeSessionTest` covers the settings, the warning and the hard stop.
 
 ### The session ends too soon, or looks wrong[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-session-ends-too-soon-or-looks-wrong)
 
