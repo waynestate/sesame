@@ -14,7 +14,7 @@
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.
 
-Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
+Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
 
 Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
 
@@ -417,7 +417,7 @@ throws never changes what the facade returns or throws.
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
+| `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released (0.4.0) but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
@@ -1304,8 +1304,9 @@ back from its own store on every request, so a change made after the sign-in
 resolver also implements `Waynestate\Sesame\RefreshesUser`: its
 `refreshUser($user)` runs on every request, and a `null` answer signs the
 session out. The wayne-cas shim already implements it, looking the user up
-through `auth.providers.users.model`; a resolver that does not implement it
-keeps handing back the stored copy, as it always has.
+through `auth.providers.users.model` (an Eloquent model works as it is from
+0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that
+does not implement it keeps handing back the stored copy, as it always has.
 
 The same user is available through Laravel's own auth, because the provider
 registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
@@ -1462,6 +1463,20 @@ The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from
 protected to public, keeping its `$persistedAttributes` parameter. The
 interface and the trait share that signature, so a model that satisfies one
 satisfies both.
+
+The shim also looks the signed-in user up again on every request (a plain
+find by primary key, never an import). Take SESAME 0.6.2 or later for this:
+from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
+`refreshUser()` of your own. On 0.6.1 and earlier every signed-in request
+failed with `InvalidConfig`, because the refresh asked for a declared static
+`find` method; an app that wrote its own resolver to get around that can
+delete it and set `user_resolver` back to
+`Waynestate\Sesame\WayneCas\UserResolver`. One exception: an app whose
+`config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app
+does) gets the stored user back as an array, which the shim passes through as
+it is, so it still needs its own `refreshUser()` (the Laravel guide's
+[Reading the user](docs/guides/laravel.md#reading-the-user) has the one
+Sourdough ships).
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 `Waynestate\Sesame\WayneCas` namespace.

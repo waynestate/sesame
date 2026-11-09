@@ -1,6 +1,6 @@
 # SESAME: everything in one file
 
-> SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
+> SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, SAML, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
 
 The README and the Markdown twin of every page, joined. The index is https://sesame.apps.wayne.edu/llms.txt. Written by Squire's agent-ready kit; do not edit.
 
@@ -15,7 +15,7 @@ Source: https://github.com/waynestate/sesame/blob/HEAD/README.md
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.
 
-Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
+Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
 
 Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
 
@@ -418,7 +418,7 @@ throws never changes what the facade returns or throws.
 |---|---|
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
+| `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released (0.4.0) but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
@@ -1292,8 +1292,9 @@ back from its own store on every request, so a change made after the sign-in
 resolver also implements `Waynestate\Sesame\RefreshesUser`: its
 `refreshUser($user)` runs on every request, and a `null` answer signs the
 session out. The wayne-cas shim already implements it, looking the user up
-through `auth.providers.users.model`; a resolver that does not implement it
-keeps handing back the stored copy, as it always has.
+through `auth.providers.users.model` (an Eloquent model works as it is from
+0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that
+does not implement it keeps handing back the stored copy, as it always has.
 
 The same user is available through Laravel's own auth, because the provider
 registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
@@ -1451,6 +1452,20 @@ protected to public, keeping its `$persistedAttributes` parameter. The
 interface and the trait share that signature, so a model that satisfies one
 satisfies both.
 
+The shim also looks the signed-in user up again on every request (a plain
+find by primary key, never an import). Take SESAME 0.6.2 or later for this:
+from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
+`refreshUser()` of your own. On 0.6.1 and earlier every signed-in request
+failed with `InvalidConfig`, because the refresh asked for a declared static
+`find` method; an app that wrote its own resolver to get around that can
+delete it and set `user_resolver` back to
+`Waynestate\Sesame\WayneCas\UserResolver`. One exception: an app whose
+`config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app
+does) gets the stored user back as an array, which the shim passes through as
+it is, so it still needs its own `refreshUser()` (the Laravel guide's
+[Reading the user](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/laravel.md#reading-the-user) has the one
+Sourdough ships).
+
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 `Waynestate\Sesame\WayneCas` namespace.
 
@@ -1562,7 +1577,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.5
+Keys cut while you wait · `waynestate/sesame` 0.6.2
 
 ## SESAME
 
@@ -1682,7 +1697,7 @@ Works out what kind of app you have and which driver it needs, then writes a pla
 A prompt for your coding agent. Copy it as it stands:
 
 ```text
-You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
+You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, saml when an app opts in, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
 
 Read first:
 - https://sesame.apps.wayne.edu/llms.txt, the index of SESAME's pages, each one as Markdown. Fetch the pages you need; do not work from memory.
@@ -1691,7 +1706,7 @@ Read first:
 
 Task:
 1. Say which kind of app this is: raw PHP, Laravel with Blade, or Laravel with Inertia and Vue. If it uses wayne-cas today, say so: SESAME has a shim for that.
-2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, gateway only behind the auth gateway. Say why.
+2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, saml only when the app must use a SAML 2.0 IdP, gateway only behind the auth gateway. Say why.
 3. List the settings that driver needs and where each value comes from: the environment, or the Playbook.
 4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
 
@@ -1817,6 +1832,7 @@ Task:
 
 Constraints:
 - Keep the model's static findOrImportUser: the shim finds the user the way wayne-cas did.
+- Require waynestate/sesame 0.6.2 or later. From 0.6.2 the shim looks an Eloquent User up again on every request by itself, so write no resolver subclass or custom refreshUser() for that.
 - Remove wayne-cas only after the app signs in through SESAME, never in the same step.
 - Ask me before you guess, and before you touch anything that deploys.
 
@@ -1852,7 +1868,7 @@ Cross-reference
 
 ### Re-key from wayne-cas
 
-Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app.
+Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app. From 0.6.2 it also looks an Eloquent user up again on every request with no resolver of your own, so a removed role or a deleted account shows up on the next click.
 
 **wayne-cas names and the SESAME names that replace them**
 
@@ -1862,7 +1878,7 @@ Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas
 | `auth.providers.users.model` | `auth.providers.users.model`, unchanged |
 | `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
 | `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
-| `auth()->login($user)` | `app(Sesame::class)->user()` |
+| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame` |
 | `use2FA` | not carried; the shim logs a warning once when it's on |
 
 On the key ring
@@ -1902,6 +1918,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+- Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on (except with JSON sessions); the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
 
 ### \[0.6.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-2-2026-11-09)
 
@@ -2991,7 +3009,7 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model`; a resolver that does not implement it keeps handing back the stored copy, as it always has.
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model` (an Eloquent model works as it is from 0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.
 
 On Laravel 13, implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and the guard sees nobody. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
@@ -3124,6 +3142,12 @@ class User extends Model implements WayneCasable
 ```
 
 The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protected to public, keeping its `$persistedAttributes` parameter. The interface and the trait share that signature, so a model that satisfies one satisfies both.
+
+The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.2 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
+
+Warning
+
+One exception: an app whose `config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app does). The session then hands the stored user back as an array, and the shim passes an array through as it is, so the guard sees nobody. Such an app still needs its own `refreshUser()`; [Reading the user](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user) has the one Sourdough ships. An app hopped up from an older Laravel keeps its own `config/session.php`, so check that key.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
 
@@ -4042,7 +4066,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.6.1, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.6.2, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -4799,7 +4823,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 | --- | --- |
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now. The recommended driver for apps on Citadel: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. |
+| `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released (0.4.0) but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
@@ -5380,11 +5404,19 @@ The token in those commands is a secret. Keep it in the environment, never in th
 
 **Check.** After the move, log in through the pre-production host before you ship, and check the session timeout, the Access ID attribute and Duo there. `tests/Laravel/WayneCasShimTest.php` covers the shim.
 
+#### A wayne-cas app signs in, then every page fails with `InvalidConfig` naming a static `find` method[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method)
+
+**Cause.** SESAME 0.6.1 and earlier: the wayne-cas shim's `refreshUser()` looked for a declared static `find` method on `auth.providers.users.model`. An Eloquent model reaches `find()` through its query builder instead of declaring it, so the check failed on every signed-in request.
+
+**Fix.** `composer update waynestate/sesame` to 0.6.2 or later. The shim looks an Eloquent model up through `query()->find()` now. If the app worked around the error with its own resolver subclass or `refreshUser()`, delete it and point `user_resolver` back at `Waynestate\Sesame\WayneCas\UserResolver`.
+
+**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/WayneCasShimTest.php` covers an Eloquent model and a plain class with a static `find`.
+
 ### Build, CI and docs[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#build-ci-and-docs)
 
 #### `composer ci` fails[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#composer-ci-fails)
 
-**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
+**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
 
 **Fix.** Read the failing step; static analysis is PHPStan at level 8 from Pinstripe's strict preset, where a call to a deprecated method fails the build.
 
@@ -5446,6 +5478,18 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.6.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-2-2026-11-09)
+
+No breaks. Two fixes and one new warning:
+
+- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'` ([Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-model) says why).
+- **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and `session.use_only_cookies`** whenever no session is active. An app that starts its session with either one off gets one `E_USER_WARNING` per request that names the setting and the fix; the session keeps working. Put `ini_set('session.use_strict_mode', '1')` before `session_start()`, or call HELMET's `helmet_boot()`. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop, or `false` to leave the settings alone. Laravel apps are not affected.
+- **`NativeSession::regenerate()` keeps the ID it made** under strict mode, so the old session's marker names the new session again.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already allows 0.6.2).
+
+**How to verify.** A wayne-cas app signs in, then opens a second page while signed in with no `InvalidConfig` in the log. A raw PHP app shows no `E_USER_WARNING` about `session.use_strict_mode` in its PHP error log after a sign-in.
 
 ### 0.6.1 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
 

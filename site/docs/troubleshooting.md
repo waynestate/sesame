@@ -234,11 +234,19 @@ The token in those commands is a secret. Keep it in the environment, never in th
 
 **Check.** After the move, log in through the pre-production host before you ship, and check the session timeout, the Access ID attribute and Duo there. `tests/Laravel/WayneCasShimTest.php` covers the shim.
 
+### A wayne-cas app signs in, then every page fails with `InvalidConfig` naming a static `find` method[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method)
+
+**Cause.** SESAME 0.6.1 and earlier: the wayne-cas shim's `refreshUser()` looked for a declared static `find` method on `auth.providers.users.model`. An Eloquent model reaches `find()` through its query builder instead of declaring it, so the check failed on every signed-in request.
+
+**Fix.** `composer update waynestate/sesame` to 0.6.2 or later. The shim looks an Eloquent model up through `query()->find()` now. If the app worked around the error with its own resolver subclass or `refreshUser()`, delete it and point `user_resolver` back at `Waynestate\Sesame\WayneCas\UserResolver`.
+
+**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/WayneCasShimTest.php` covers an Eloquent model and a plain class with a static `find`.
+
 ## Build, CI and docs[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#build-ci-and-docs)
 
 ### `composer ci` fails[#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#composer-ci-fails)
 
-**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same five checks (manifest, tests, Pint, PHPStan, audit), so a green build means the same thing on both sides.
+**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
 
 **Fix.** Read the failing step; static analysis is PHPStan at level 8 from Pinstripe's strict preset, where a call to a deprecated method fails the build.
 

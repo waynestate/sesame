@@ -50,6 +50,35 @@
 version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.</p>
+<h2 id="0-6-2-2026-11-09">0.6.2 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-2-2026-11-09">#</a></h2>
+<p>No breaks. Two fixes and one new warning:</p>
+<ul>
+<li><strong>The wayne-cas shim works with an Eloquent user model.</strong> Its <code>refreshUser()</code>
+looked for a declared static <code>find</code> method, which an Eloquent model does not
+have, so every signed-in request failed with <code>InvalidConfig</code>. It now looks an
+Eloquent model up through <code>query()-&gt;find()</code>, and keeps the static <code>find</code>
+path for any other class. An app that wrote its own resolver subclass (or
+its own <code>refreshUser()</code>) only to get past that error can delete it and set
+<code>user_resolver</code> back to the shim's <code>Waynestate\Sesame\WayneCas\UserResolver</code>,
+unless its <code>config/session.php</code> sets <code>'serialization' =&gt; 'json'</code>
+(<a href="guides/moving-from-wayne-cas.html#the-model">Moving from wayne-cas</a> says why).</li>
+<li><strong><code>NativeSession</code> (raw PHP) turns on <code>session.use_strict_mode</code> and
+<code>session.use_only_cookies</code></strong> whenever no session is active. An app that
+starts its session with either one off gets one <code>E_USER_WARNING</code> per request
+that names the setting and the fix; the session keeps working. Put
+<code>ini_set('session.use_strict_mode', '1')</code> before <code>session_start()</code>, or call
+HELMET's <code>helmet_boot()</code>. Pass <code>checkSessionSettings: true</code> to
+<code>new NativeSession()</code> for a hard stop, or <code>false</code> to leave the settings
+alone. Laravel apps are not affected.</li>
+<li><strong><code>NativeSession::regenerate()</code> keeps the ID it made</strong> under strict mode, so
+the old session's marker names the new session again.</li>
+</ul>
+<p><strong>Steps.</strong> <code>composer update waynestate/sesame</code> (the <code>^0.6</code> constraint already
+allows 0.6.2).</p>
+<p><strong>How to verify.</strong> A wayne-cas app signs in, then opens a second page while
+signed in with no <code>InvalidConfig</code> in the log. A raw PHP app shows no
+<code>E_USER_WARNING</code> about <code>session.use_strict_mode</code> in its PHP error log after a
+sign-in.</p>
 <h2 id="0-6-1-2026-11-08">0.6.1 (2026-11-08)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></h2>
 <p>No breaks. SESAME's routes now point at <code>SesameController</code> methods instead of
 closures, with the same names, URIs and middleware, so <code>php artisan route:cache</code>
@@ -315,7 +344,7 @@ context check fails closed when there is no user or no identity.
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../docs/troubleshooting.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Troubleshooting</span></a><a class="docs-pager__link docs-pager__link--next" href="../docs/changelog.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Changelog</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#0-6-1-2026-11-08">0.6.1 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">0.6.0 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">0.5.0 (2026-11-07)</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">0.4.0 (2026-11-03)</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">0.3.0 (2026-10-30)</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">0.2.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">0.2.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">0.2.0 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">0.1.3 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">0.1.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">0.1.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">0.1.0 (2026-10-27)</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#0-6-2-2026-11-09">0.6.2 (2026-11-09)</a></li><li class="docs-toc__item"><a href="#0-6-1-2026-11-08">0.6.1 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-6-0-2026-11-08">0.6.0 (2026-11-08)</a></li><li class="docs-toc__item"><a href="#0-5-0-2026-11-07">0.5.0 (2026-11-07)</a></li><li class="docs-toc__item"><a href="#0-4-0-2026-11-03">0.4.0 (2026-11-03)</a></li><li class="docs-toc__item"><a href="#0-3-0-2026-10-30">0.3.0 (2026-10-30)</a></li><li class="docs-toc__item"><a href="#0-2-2-2026-10-29">0.2.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-1-2026-10-29">0.2.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-2-0-2026-10-29">0.2.0 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-3-2026-10-29">0.1.3 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-2-2026-10-29">0.1.2 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-1-2026-10-29">0.1.1 (2026-10-29)</a></li><li class="docs-toc__item"><a href="#0-1-0-2026-10-27">0.1.0 (2026-10-27)</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.6.2</span></span>

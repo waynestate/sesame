@@ -97,6 +97,6 @@ Every piece named, and what the app owns and what SESAME does:
 - [Install](install.md): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](reference/drivers.md): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.6.1, MIT license. The changelog's top heading is [Unreleased].
+Status: version 0.6.2, MIT license. The changelog's top heading is [Unreleased].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.

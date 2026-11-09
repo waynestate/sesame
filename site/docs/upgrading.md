@@ -10,6 +10,18 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.6.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-2-2026-11-09)
+
+No breaks. Two fixes and one new warning:
+
+- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'` ([Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-model) says why).
+- **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and `session.use_only_cookies`** whenever no session is active. An app that starts its session with either one off gets one `E_USER_WARNING` per request that names the setting and the fix; the session keeps working. Put `ini_set('session.use_strict_mode', '1')` before `session_start()`, or call HELMET's `helmet_boot()`. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop, or `false` to leave the settings alone. Laravel apps are not affected.
+- **`NativeSession::regenerate()` keeps the ID it made** under strict mode, so the old session's marker names the new session again.
+
+**Steps.** `composer update waynestate/sesame` (the `^0.6` constraint already allows 0.6.2).
+
+**How to verify.** A wayne-cas app signs in, then opens a second page while signed in with no `InvalidConfig` in the log. A raw PHP app shows no `E_USER_WARNING` about `session.use_strict_mode` in its PHP error log after a sign-in.
+
 ## 0.6.1 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
 
 No breaks. SESAME's routes now point at `SesameController` methods instead of closures, with the same names, URIs and middleware, so `php artisan route:cache` and `php artisan optimize` work in an app that uses SESAME. A Citadel release runs `optimize`, so an app that turned it off for SESAME (Squire's `SQUIRE_ARTISAN_OPTIMIZE=0`) can turn it back on.

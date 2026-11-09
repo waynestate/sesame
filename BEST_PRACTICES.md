@@ -1,6 +1,6 @@
 # SESAME best practices
 
-This guide covers authentication and session handling for PHP apps that use SESAME, `waynestate/sesame`. It is for WSU developers who add login to an app, and for the people who maintain SESAME. It follows the stack's auth design: SESAME returns a verified identity, and the app owns the session. Every driver (`cas`, `gateway`, `saml`, `oauth2`, `fake`) ends in the app's `findOrImportUser(Identity)`.
+This guide covers authentication and session handling for PHP apps that use SESAME, `waynestate/sesame`. It is for WSU developers who add login to an app, and for the people who maintain SESAME. It follows the stack's auth design: SESAME returns a verified identity, and the app owns the session. Every driver (`cas`, `gateway`, `saml`, `oauth2`, `oidc`, `fake`) ends in the app's `findOrImportUser(Identity)`.
 
 Each practice has a short statement, one sentence of why, the sources, and how the stack holds it. The tags are:
 
@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-11-08. The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
+The tags describe the repo as it stands on 2026-11-09 (release 0.6.2). The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
 
 ## 1. Sessions
 

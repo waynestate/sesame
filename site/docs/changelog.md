@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on (except with JSON sessions); the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
+
 ## \[0.6.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-2-2026-11-09)
 
 - Fixed: the wayne-cas shim's `refreshUser()` works with an Eloquent user model. It checked for a declared static `find` method, which Eloquent models do not have, so every signed-in request failed with `InvalidConfig`. It now looks Eloquent models up through `query()->find()` and keeps the static `find` path for other classes.

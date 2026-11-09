@@ -1,6 +1,6 @@
 ---
 title: "SESAME: The way in."
-description: "SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue."
+description: "SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, SAML, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue."
 url: https://sesame.apps.wayne.edu/
 llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
@@ -8,7 +8,7 @@ generator: Squire agent-ready
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.5
+Keys cut while you wait · `waynestate/sesame` 0.6.2
 
 # SESAME
 
@@ -128,7 +128,7 @@ Works out what kind of app you have and which driver it needs, then writes a pla
 A prompt for your coding agent. Copy it as it stands:
 
 ```text
-You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
+You are a coding agent helping a Wayne State University developer add sign-in to the PHP app in this folder with SESAME. SESAME is the auth library of WELD, the Wayne State application stack: it hands the app a verified identity and leaves the session to the app. Every driver (cas, gateway, oauth2, oidc, saml when an app opts in, and fake for local work) ends in the app's findOrImportUser(Identity), and switching driver is a config change.
 
 Read first:
 - https://sesame.apps.wayne.edu/llms.txt, the index of SESAME's pages, each one as Markdown. Fetch the pages you need; do not work from memory.
@@ -137,7 +137,7 @@ Read first:
 
 Task:
 1. Say which kind of app this is: raw PHP, Laravel with Blade, or Laravel with Inertia and Vue. If it uses wayne-cas today, say so: SESAME has a shim for that.
-2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, gateway only behind the auth gateway. Say why.
+2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, saml only when the app must use a SAML 2.0 IdP, gateway only behind the auth gateway. Say why.
 3. List the settings that driver needs and where each value comes from: the environment, or the Playbook.
 4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
 
@@ -263,6 +263,7 @@ Task:
 
 Constraints:
 - Keep the model's static findOrImportUser: the shim finds the user the way wayne-cas did.
+- Require waynestate/sesame 0.6.2 or later. From 0.6.2 the shim looks an Eloquent User up again on every request by itself, so write no resolver subclass or custom refreshUser() for that.
 - Remove wayne-cas only after the app signs in through SESAME, never in the same step.
 - Ask me before you guess, and before you touch anything that deploys.
 
@@ -298,7 +299,7 @@ Cross-reference
 
 ## Re-key from wayne-cas
 
-Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app.
+Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app. From 0.6.2 it also looks an Eloquent user up again on every request with no resolver of your own, so a removed role or a deleted account shows up on the next click.
 
 **wayne-cas names and the SESAME names that replace them**
 
@@ -308,7 +309,7 @@ Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas
 | `auth.providers.users.model` | `auth.providers.users.model`, unchanged |
 | `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
 | `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
-| `auth()->login($user)` | `app(Sesame::class)->user()` |
+| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame` |
 | `use2FA` | not carried; the shim logs a warning once when it's on |
 
 On the key ring
