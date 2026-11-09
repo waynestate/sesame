@@ -1624,7 +1624,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.7.1
+Keys cut while you wait · `waynestate/sesame` 0.7.2
 
 ## SESAME
 
@@ -1966,10 +1966,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### \[0.7.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-2-2026-11-09)
+
 - Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set `cas.base_url` to a `login.wayne.edu` address that answers 404, so an app that copied it never reached the sign-in. The address is `https://academica.aws.wayne.edu/cas`; people still see the familiar `login.wayne.edu` screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.
 - Fixed: the Wayne Auth guide said `cas.base_url` could be left out of `WayneAuth::boot()` when Playbook is installed or `SESAME_CAS_BASE_URL` is set. The bridge reads only the array it is given; the guide now says so and shows how to pass `Setting::get('SESAME_CAS_BASE_URL')` instead.
-- Docs: the upgrading guide has an Unreleased section with the one value to check. MAINTAINING names the CAS server the same way.
+- Docs: the upgrading guide has a 0.7.2 section with the one value to check. MAINTAINING names the CAS server the same way.
 - Docs: BEST_PRACTICES, the CI file and the Oracle check say their reasons in plain words instead of internal decision numbers.
+- Changed: CI pins the Preflight components to 0.5.0 (was 0.4.0), and the composer-audit job takes the component's own image instead of naming one; the a11y pin test expects 0.5.0, and BEST_PRACTICES S48 names `@0.5.0`.
+- Docs: the Proof page records the 2026-11-09 run on the 0.7.2 fixes (863 tests, 2517 assertions, on PHP 8.3, 8.4 and 8.5, and `composer ci`).
 
 ### \[0.7.1\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-1-2026-11-09)
 
@@ -4240,7 +4244,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.7.1, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.7.2, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5201,12 +5205,12 @@ The name does double duty: this is where SESAME proves itself. There are two kin
 
 | Check | Date | Commit | Result | Duration |
 | --- | --- | --- | --- | --- |
-| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 63 s |
-| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 41 s |
-| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-09 | aac8ebf | pass, 860 tests, 2511 assertions | 41 s |
-| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-09 | aac8ebf | pass, all seven steps (tests: 860, 2511 assertions; PHPStan: no errors; audit: no advisories) | 105 s, after a composer install from a warm cache |
+| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.0 s |
+| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.1 s |
+| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.1 s |
+| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-09 | 8062938 | pass, all seven steps (tests: 863, 2517 assertions; PHPStan: no errors; audit: no advisories) | 10 s, after a composer install from a warm cache |
 
-The run is on the 0.7.1 fixes, the commit just before the 0.7.1 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo bind-mounted, where file access is slow. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
+The run is on the 0.7.2 fixes, the commit just before the 0.7.2 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
 
 ### The proof site[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#the-proof-site)
 
@@ -5680,7 +5684,7 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
-### Unreleased[#](https://sesame.apps.wayne.edu/docs/upgrading.html#unreleased)
+### 0.7.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-2-2026-11-09)
 
 No breaks, and no code changes: this release fixes the docs' CAS address. Check the one setting below, then upgrade with `composer update waynestate/sesame`.
 

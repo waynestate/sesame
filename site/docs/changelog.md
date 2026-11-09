@@ -14,10 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.7.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-2-2026-11-09)
+
 - Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set `cas.base_url` to a `login.wayne.edu` address that answers 404, so an app that copied it never reached the sign-in. The address is `https://academica.aws.wayne.edu/cas`; people still see the familiar `login.wayne.edu` screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.
 - Fixed: the Wayne Auth guide said `cas.base_url` could be left out of `WayneAuth::boot()` when Playbook is installed or `SESAME_CAS_BASE_URL` is set. The bridge reads only the array it is given; the guide now says so and shows how to pass `Setting::get('SESAME_CAS_BASE_URL')` instead.
-- Docs: the upgrading guide has an Unreleased section with the one value to check. MAINTAINING names the CAS server the same way.
+- Docs: the upgrading guide has a 0.7.2 section with the one value to check. MAINTAINING names the CAS server the same way.
 - Docs: BEST_PRACTICES, the CI file and the Oracle check say their reasons in plain words instead of internal decision numbers.
+- Changed: CI pins the Preflight components to 0.5.0 (was 0.4.0), and the composer-audit job takes the component's own image instead of naming one; the a11y pin test expects 0.5.0, and BEST_PRACTICES S48 names `@0.5.0`.
+- Docs: the Proof page records the 2026-11-09 run on the 0.7.2 fixes (863 tests, 2517 assertions, on PHP 8.3, 8.4 and 8.5, and `composer ci`).
 
 ## \[0.7.1\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-1-2026-11-09)
 
