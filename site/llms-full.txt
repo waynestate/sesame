@@ -1459,12 +1459,7 @@ from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
 failed with `InvalidConfig`, because the refresh asked for a declared static
 `find` method; an app that wrote its own resolver to get around that can
 delete it and set `user_resolver` back to
-`Waynestate\Sesame\WayneCas\UserResolver`. One exception: an app whose
-`config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app
-does) gets the stored user back as an array, which the shim passes through as
-it is, so it still needs its own `refreshUser()` (the Laravel guide's
-[Reading the user](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/laravel.md#reading-the-user) has the one
-Sourdough ships).
+`Waynestate\Sesame\WayneCas\UserResolver`.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
 `Waynestate\Sesame\WayneCas` namespace.
@@ -1919,7 +1914,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
-- Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on (except with JSON sessions); the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
+- Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on; the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
+- Fixed: the wayne-cas shim's refreshUser() looks the user up again when the session hands the stored user back as an array (Laravel 13's JSON session serialization). It reads the array's primary key and returns the model through query()->find(), signing the session out when the account is gone; before this it passed the array through, so the guard saw nobody while the middleware let the request in. A wayne-cas app on JSON sessions no longer needs a resolver of its own.
 
 ### \[0.6.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-2-2026-11-09)
 
@@ -3011,7 +3007,7 @@ $user = app(\Waynestate\Sesame\Sesame::class)->user();
 
 SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model` (an Eloquent model works as it is from 0.6.2 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.
 
-On Laravel 13, implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and the guard sees nobody. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
+On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. The wayne-cas shim looks the array up through the model itself, so a wayne-cas app needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
 ```php
 public function refreshUser(mixed $user): mixed
@@ -3144,10 +3140,6 @@ class User extends Model implements WayneCasable
 The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protected to public, keeping its `$persistedAttributes` parameter. The interface and the trait share that signature, so a model that satisfies one satisfies both.
 
 The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.2 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
-
-Warning
-
-One exception: an app whose `config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app does). The session then hands the stored user back as an array, and the shim passes an array through as it is, so the guard sees nobody. Such an app still needs its own `refreshUser()`; [Reading the user](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user) has the one Sourdough ships. An app hopped up from an older Laravel keeps its own `config/session.php`, so check that key.
 
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
 
@@ -5483,7 +5475,7 @@ How to move between SESAME versions. Each section below is one released version 
 
 No breaks. Two fixes and one new warning:
 
-- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'` ([Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-model) says why).
+- **The wayne-cas shim works with an Eloquent user model.** Its `refreshUser()` looked for a declared static `find` method, which an Eloquent model does not have, so every signed-in request failed with `InvalidConfig`. It now looks an Eloquent model up through `query()->find()`, and keeps the static `find` path for any other class. An app that wrote its own resolver subclass (or its own `refreshUser()`) only to get past that error can delete it and set `user_resolver` back to the shim's `Waynestate\Sesame\WayneCas\UserResolver`, unless its `config/session.php` sets `'serialization' => 'json'`: on 0.6.2 the shim passes a JSON session's array user through unchanged, so that app keeps its own `refreshUser()` until the next release, whose shim looks the array user up by its primary key.
 - **`NativeSession` (raw PHP) turns on `session.use_strict_mode` and `session.use_only_cookies`** whenever no session is active. An app that starts its session with either one off gets one `E_USER_WARNING` per request that names the setting and the fix; the session keeps working. Put `ini_set('session.use_strict_mode', '1')` before `session_start()`, or call HELMET's `helmet_boot()`. Pass `checkSessionSettings: true` to `new NativeSession()` for a hard stop, or `false` to leave the settings alone. Laravel apps are not affected.
 - **`NativeSession::regenerate()` keeps the ID it made** under strict mode, so the old session's marker names the new session again.
 

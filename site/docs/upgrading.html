@@ -60,8 +60,10 @@ Eloquent model up through <code>query()-&gt;find()</code>, and keeps the static 
 path for any other class. An app that wrote its own resolver subclass (or
 its own <code>refreshUser()</code>) only to get past that error can delete it and set
 <code>user_resolver</code> back to the shim's <code>Waynestate\Sesame\WayneCas\UserResolver</code>,
-unless its <code>config/session.php</code> sets <code>'serialization' =&gt; 'json'</code>
-(<a href="guides/moving-from-wayne-cas.html#the-model">Moving from wayne-cas</a> says why).</li>
+unless its <code>config/session.php</code> sets <code>'serialization' =&gt; 'json'</code>: on 0.6.2
+the shim passes a JSON session's array user through unchanged, so that app
+keeps its own <code>refreshUser()</code> until the next release, whose shim looks the
+array user up by its primary key.</li>
 <li><strong><code>NativeSession</code> (raw PHP) turns on <code>session.use_strict_mode</code> and
 <code>session.use_only_cookies</code></strong> whenever no session is active. An app that
 starts its session with either one off gets one <code>E_USER_WARNING</code> per request

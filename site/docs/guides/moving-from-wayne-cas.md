@@ -76,10 +76,6 @@ The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protec
 
 The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.2 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
 
-Warning
-
-One exception: an app whose `config/session.php` sets `'serialization' => 'json'` (a new Laravel 13 app does). The session then hands the stored user back as an array, and the shim passes an array through as it is, so the guard sees nobody. Such an app still needs its own `refreshUser()`; [Reading the user](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user) has the one Sourdough ships. An app hopped up from an older Laravel keeps its own `config/session.php`, so check that key.
-
 The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
 
 ### The middleware[#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-middleware)
