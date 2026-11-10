@@ -10,6 +10,13 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.7.4 (2026-11-10)
+
+No breaks, and no library code changes: docs, the front page and the
+deploy layer (PROCTOR ^0.15, Squire 0.10.7) only. Upgrade with
+`composer update waynestate/sesame` (the `^0.7` constraint already takes
+it).
+
 ## 0.7.3 (2026-11-09)
 
 No breaks, and no library code changes: docs and dev tools only. Upgrade
