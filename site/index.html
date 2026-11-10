@@ -322,7 +322,7 @@ Task:
 4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
 
 Constraints:
-- The app owns the session. SESAME never starts one and never sets a cookie; never ask it to.
+- The app owns the session. SESAME never opens one and never sets a cookie flag; never ask it to.
 - Fail closed: no default user, no fallback login, no bare header trusted as an identity.
 - The fake driver is for local work only; it refuses to boot in production.
 - Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access. SESAME runs without it, from the environment alone.
@@ -473,7 +473,7 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
         <!-- From BEST_PRACTICES.md; each rule is held in code (S2, S1, S16,
              S30/S31, S28, S29, S49) or by README behavior (logout). -->
         <ol class="rules">
-          <li><strong>The app owns the session.</strong> SESAME never starts one and never touches a cookie.</li>
+          <li><strong>The app owns the session.</strong> SESAME never opens one and never sets a cookie flag: your settings win.</li>
           <li><strong>A new session ID at login,</strong> before anything is stored in it.</li>
           <li><strong>Fail closed.</strong> A non-200 answer from the CAS server, malformed XML or an empty user ends the login. There is no default user to fall back on.</li>
           <li><strong>No bare headers.</strong> The gateway driver trusts only a signed assertion that comes through a trusted proxy, and it refuses one it has seen before.</li>

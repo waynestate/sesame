@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: dev dependencies add HELMET ^1.4 (locked 1.4.1) and promphp ^2.15 (locked 2.15.1), so the metrics tests count into HELMET's real SQLite store and render its `/metrics`; `promphp/prometheus_client_php` is suggested for the counter. No runtime dependency changes.
 - Docs: the README names the a11y checker's tag as 0.5.0, the one CI pins (it said 0.4.0), and the drivers reference no longer names an old Drawbridge version.
 - Site: the front page hangs a "Door count" card under the shop hours, a nickel hand tally for the sign-in counter. Its four wheels roll up to the count when the card comes into view, the plunger is a real button that counts one more (with a toast, and a screen reader line that says the count), and the outcome tags wear the Grafana dashboard's colors. It links the Counting sign-ins guide. With reduced motion on, the wheels show the count and nothing moves.
+- Docs: "SESAME never touches a cookie" said more than BEST_PRACTICES S2 promises. The front page's first shop rule, its planning prompt, the README and the raw PHP guide now say what holds: SESAME never opens the session and never sets a cookie flag, and the only session cookies it causes are the new ID at login and the expired one at logout, both with the app's own cookie params.
 
 ## \[0.7.4\] - 2026-11-10 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-4-2026-11-10)
 

@@ -214,8 +214,10 @@ public function findOrImportUser(Identity $identity): mixed
 
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
-user and identity in it, but it never starts a session and never touches a
-cookie. `sesame_login()` and `sesame_logout()` stop the script after they send
+user and identity in it, but it never opens the session and never sets a cookie
+flag: the only session cookies it causes are the new ID at login and the
+expired one at logout, both with the app's own cookie params (S2).
+`sesame_login()` and `sesame_logout()` stop the script after they send
 their redirect, so nothing after them runs in that request. A protected page
 reads the user with `sesame_user()`:
 
@@ -276,7 +278,7 @@ to restore the old behavior, where the old session is deleted at once.
 > SESAME's timeouts stay the authority; this only stops PHP from ending the
 > session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
-**The session cookie (name and SameSite).** SESAME never sets a cookie, so two
+**The session cookie (name and SameSite).** SESAME never sets a cookie flag, so two
 choices belong to the session setup. In raw PHP HELMET makes both for you
 (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel they are
 settings in `config/session.php`:
@@ -1806,7 +1808,7 @@ Task:
 4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
 
 Constraints:
-- The app owns the session. SESAME never starts one and never sets a cookie; never ask it to.
+- The app owns the session. SESAME never opens one and never sets a cookie flag; never ask it to.
 - Fail closed: no default user, no fallback login, no bare header trusted as an identity.
 - The fake driver is for local work only; it refuses to boot in production.
 - Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access. SESAME runs without it, from the environment alone.
@@ -1940,7 +1942,7 @@ Posted by the door
 
 ### Shop rules
 
-1. **The app owns the session.** SESAME never starts one and never touches a cookie.
+1. **The app owns the session.** SESAME never opens one and never sets a cookie flag: your settings win.
 2. **A new session ID at login,** before anything is stored in it.
 3. **Fail closed.** A non-200 answer from the CAS server, malformed XML or an empty user ends the login. There is no default user to fall back on.
 4. **No bare headers.** The gateway driver trusts only a signed assertion that comes through a trusted proxy, and it refuses one it has seen before.
@@ -2031,6 +2033,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: dev dependencies add HELMET ^1.4 (locked 1.4.1) and promphp ^2.15 (locked 2.15.1), so the metrics tests count into HELMET's real SQLite store and render its `/metrics`; `promphp/prometheus_client_php` is suggested for the counter. No runtime dependency changes.
 - Docs: the README names the a11y checker's tag as 0.5.0, the one CI pins (it said 0.4.0), and the drivers reference no longer names an old Drawbridge version.
 - Site: the front page hangs a "Door count" card under the shop hours, a nickel hand tally for the sign-in counter. Its four wheels roll up to the count when the card comes into view, the plunger is a real button that counts one more (with a toast, and a screen reader line that says the count), and the outcome tags wear the Grafana dashboard's colors. It links the Counting sign-ins guide. With reduced motion on, the wheels show the count and nothing moves.
+- Docs: "SESAME never touches a cookie" said more than BEST_PRACTICES S2 promises. The front page's first shop rule, its planning prompt, the README and the raw PHP guide now say what holds: SESAME never opens the session and never sets a cookie flag, and the only session cookies it causes are the new ID at login and the expired one at logout, both with the app's own cookie params.
 
 ### \[0.7.4\] - 2026-11-10 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-4-2026-11-10)
 
@@ -3831,7 +3834,7 @@ Your `findOrImportUser` looks the person up in the app's own store, so key that 
 
 ### Session ownership [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#session-ownership)
 
-The app owns the session: start it with `session_start()`, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never starts a session and never touches a cookie. `sesame_login()` and `sesame_logout()` stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with `sesame_user()`:
+The app owns the session: start it with `session_start()`, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never opens the session and never sets a cookie flag: the only session cookies it causes are the new ID at login and the expired one at logout, both with the app's own cookie params. `sesame_login()` and `sesame_logout()` stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with `sesame_user()`:
 
 ```php
 $user = sesame_user();

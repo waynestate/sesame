@@ -213,8 +213,10 @@ public function findOrImportUser(Identity $identity): mixed
 
 The app owns the session: start it with `session_start()`, and let HELMET set
 the cookie flags. SESAME regenerates the session ID on login and stores the
-user and identity in it, but it never starts a session and never touches a
-cookie. `sesame_login()` and `sesame_logout()` stop the script after they send
+user and identity in it, but it never opens the session and never sets a cookie
+flag: the only session cookies it causes are the new ID at login and the
+expired one at logout, both with the app's own cookie params (S2).
+`sesame_login()` and `sesame_logout()` stop the script after they send
 their redirect, so nothing after them runs in that request. A protected page
 reads the user with `sesame_user()`:
 
@@ -275,7 +277,7 @@ to restore the old behavior, where the old session is deleted at once.
 > SESAME's timeouts stay the authority; this only stops PHP from ending the
 > session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
-**The session cookie (name and SameSite).** SESAME never sets a cookie, so two
+**The session cookie (name and SameSite).** SESAME never sets a cookie flag, so two
 choices belong to the session setup. In raw PHP HELMET makes both for you
 (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel they are
 settings in `config/session.php`:

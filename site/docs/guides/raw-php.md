@@ -68,7 +68,7 @@ Your `findOrImportUser` looks the person up in the app's own store, so key that 
 
 ## Session ownership [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#session-ownership)
 
-The app owns the session: start it with `session_start()`, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never starts a session and never touches a cookie. `sesame_login()` and `sesame_logout()` stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with `sesame_user()`:
+The app owns the session: start it with `session_start()`, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never opens the session and never sets a cookie flag: the only session cookies it causes are the new ID at login and the expired one at logout, both with the app's own cookie params. `sesame_login()` and `sesame_logout()` stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with `sesame_user()`:
 
 ```php
 $user = sesame_user();
