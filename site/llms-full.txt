@@ -1624,7 +1624,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.7.3
+Keys cut while you wait · `waynestate/sesame` 0.7.4
 
 ## SESAME
 
@@ -1966,6 +1966,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+### \[0.7.4\] - 2026-11-10 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-4-2026-11-10)
 
 - Docs: the README's `gateway` row no longer names an old Drawbridge version.
 - Changed: the deploy layer requires PROCTOR ^0.15 (locked 0.15.0, was ^0.12): 0.13 checks the release cooldown against the CREED policy and 0.14 adds `script-pair`; 0.15 adds `mysql56-ci`; all of these only warn, nothing breaks.
@@ -4263,7 +4265,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.7.3, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.7.4, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5702,6 +5704,10 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.7.4 (2026-11-10) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-4-2026-11-10)
+
+No breaks, and no library code changes: docs, the front page and the deploy layer (PROCTOR ^0.15, Squire 0.10.7) only. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
 
 ### 0.7.3 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-3-2026-11-09)
 
