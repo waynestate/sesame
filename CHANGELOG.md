@@ -1,4 +1,5 @@
 # Changelog
+- Changed: the deploy kit is Squire 0.10.7 (was 0.10.6): it ships a `.gitattributes` that pins line endings, so the deploy layer clears PROCTOR's line-ending warnings.
 
 All notable changes to this project will be documented in this file.
 
