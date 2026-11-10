@@ -28,7 +28,7 @@
         "deployments/001-first-release.sh": "adb3a9eb9a7d5b6cfa3f50043169b97253bab90c40ff37adba44201326557803",
         "docker-compose.squire.yml": "1c24acb88eebf8c6bc72a685d18e3ec7b25eeaf526a418ee4b78f6ff8ad0c039",
         "health.php": "8d3b203f53bd436ccbe7177471547866b8800471043c979ea2f0251aaae0b3b4",
-        "oracle-check.php": "44dae9fbf0ef3ffe840cd374488fee9f26a63db3ac653a029f49849665ad9640",
+        "oracle-check.php": "7a0553430bb0c5868e7c754da5fab4c0f907a3f55a0766e9fb8a9fe1a45153e4",
         "public/up.php": "84d1b3d8823fcd5519fbe92988f822ce68cdc05eff2c889814deb3f33982600a",
         "scripts/parity.ps1": "da69deebe08280a5054a4b3724ceaeb61aa22b73febb9bcc2cdc913177414736",
         "scripts/parity.sh": "f0fb6a963277bde29b77e8b7869a1775acd517ea8d4f2774567469bf77235eae",
