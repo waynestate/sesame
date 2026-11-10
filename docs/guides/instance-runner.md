@@ -24,6 +24,7 @@ WayneUI and the stack. Each one gets in its own way.
 - ![HELMET](../readme/cast/helmet.png)
 - ![Sourdough](../readme/cast/sourdough.png)
 - ![Squire](../readme/cast/squire.png)
+- ![Parity](../readme/cast/parity.png)
 - ![Preflight](../readme/cast/preflight.png)
 - ![Pinstripe](../readme/cast/pinstripe.png)
 - ![Booster](../readme/cast/booster.png)

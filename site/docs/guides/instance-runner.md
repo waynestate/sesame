@@ -27,6 +27,7 @@ WayneUI and the stack. Each one gets in its own way.
 - ![HELMET](https://sesame.apps.wayne.edu/docs/readme/cast/helmet.png)
 - ![Sourdough](https://sesame.apps.wayne.edu/docs/readme/cast/sourdough.png)
 - ![Squire](https://sesame.apps.wayne.edu/docs/readme/cast/squire.png)
+- ![Parity](https://sesame.apps.wayne.edu/docs/readme/cast/parity.png)
 - ![Preflight](https://sesame.apps.wayne.edu/docs/readme/cast/preflight.png)
 - ![Pinstripe](https://sesame.apps.wayne.edu/docs/readme/cast/pinstripe.png)
 - ![Booster](https://sesame.apps.wayne.edu/docs/readme/cast/booster.png)
