@@ -334,7 +334,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 - [WELD](https://weld.apps.wayne.edu/)Laravel and Vue, stack installed
 - [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway, not live yet
 - [Squire](https://squire.apps.wayne.edu/)the Citadel deploy kit
-- ParityCitadel on your computer, site coming
+- [Parity](https://parity.apps.wayne.edu/)Citadel on your computer
 - [Rollcall](https://rollcall.apps.wayne.edu/)every app answers “present”
 - [ADVISOR](https://advisor.apps.wayne.edu/)the stack's MCP server
 - [Booster](https://booster.apps.wayne.edu/)upgrades PHP and Laravel

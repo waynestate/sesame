@@ -1950,7 +1950,7 @@ SESAME is one part of Wayne State's app stack. Here's where it sits in a signed-
 - [WELD](https://weld.apps.wayne.edu/)Laravel and Vue, stack installed
 - [Drawbridge](https://drawbridge.apps.wayne.edu/)the Citadel sign-in gateway, not live yet
 - [Squire](https://squire.apps.wayne.edu/)the Citadel deploy kit
-- ParityCitadel on your computer, site coming
+- [Parity](https://parity.apps.wayne.edu/)Citadel on your computer
 - [Rollcall](https://rollcall.apps.wayne.edu/)every app answers “present”
 - [ADVISOR](https://advisor.apps.wayne.edu/)the stack's MCP server
 - [Booster](https://booster.apps.wayne.edu/)upgrades PHP and Laravel
@@ -1967,6 +1967,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Site: Parity is out; the party list links its site.
 - Deploy kit refreshed to Squire 0.10.5.
 - Docs: BEST_PRACTICES lists the drivers SESAME ships and states one pinning rule.
 
