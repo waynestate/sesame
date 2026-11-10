@@ -97,6 +97,23 @@ curl -s -H "Authorization: Bearer $HELMET_METRICS_TOKEN" https://your-app.exampl
 Expect `sesame_logins_total{driver="cas",outcome="success"} 1`. Nothing there? Look in the log for
 `sesame.metrics_failed` (see [Troubleshooting](../troubleshooting.md)).
 
+## Graph it in Grafana
+
+The sign-ins dashboard ships in
+[`docs/grafana/sesame.json`](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/docs/grafana/sesame.json).
+In Grafana, open Dashboards, New, Import, upload the file, and pick your Prometheus data source for the
+`DS_PROMETHEUS` input. It sits next to HELMET's fleet dashboard and has two rows:
+
+- **Sign-ins**: sign-ins in the time range, the success rate, how many hit an unreachable identity provider (red
+  above zero), how many the app refused, and sign-ins per minute by outcome and by driver.
+- **When it goes wrong**: identity provider outages by app (one app alone points at its own network or HTTP client,
+  every app at once points at the provider), the failed share by driver (a jump after a deploy is usually a changed
+  URL, audience or key), and a table of sign-ins by app, driver and outcome.
+
+`job` and `instance` variables at the top narrow every panel. The dashboard was checked against a local Prometheus
+and Grafana with two simulated apps (one `cas`, one `saml` with an identity provider outage) signing in through
+SESAME into HELMET's SQLite store and scraped from HELMET's `/metrics`.
+
 ## Queries worth keeping
 
 ```promql

@@ -151,6 +151,21 @@ its own promphp store. A Wayne Auth app passes the same object as the last argum
 </code></pre>
 <p>Expect <code>sesame_logins_total{driver=&quot;cas&quot;,outcome=&quot;success&quot;} 1</code>. Nothing there? Look in the log for
 <code>sesame.metrics_failed</code> (see <a href="../troubleshooting.html">Troubleshooting</a>).</p>
+<h2 id="graph-it-in-grafana">Graph it in <span class="docs-heading-tail"><span>Grafana</span><a class="docs-heading-link" aria-label="Link to this section" href="#graph-it-in-grafana">#</a></span></h2>
+<p>The sign-ins dashboard ships in
+<a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/docs/grafana/sesame.json"><code>docs/grafana/sesame.json</code></a>.
+In Grafana, open Dashboards, New, Import, upload the file, and pick your Prometheus data source for the
+<code>DS_PROMETHEUS</code> input. It sits next to HELMET's fleet dashboard and has two rows:</p>
+<ul>
+<li><strong>Sign-ins</strong>: sign-ins in the time range, the success rate, how many hit an unreachable identity provider (red
+above zero), how many the app refused, and sign-ins per minute by outcome and by driver.</li>
+<li><strong>When it goes wrong</strong>: identity provider outages by app (one app alone points at its own network or HTTP client,
+every app at once points at the provider), the failed share by driver (a jump after a deploy is usually a changed
+URL, audience or key), and a table of sign-ins by app, driver and outcome.</li>
+</ul>
+<p><code>job</code> and <code>instance</code> variables at the top narrow every panel. The dashboard was checked against a local Prometheus
+and Grafana with two simulated apps (one <code>cas</code>, one <code>saml</code> with an identity provider outage) signing in through
+SESAME into HELMET's SQLite store and scraped from HELMET's <code>/metrics</code>.</p>
 <h2 id="queries-worth-keeping">Queries worth <span class="docs-heading-tail"><span>keeping</span><a class="docs-heading-link" aria-label="Link to this section" href="#queries-worth-keeping">#</a></span></h2>
 <pre tabindex="0"><code class="language-promql"># Sign-ins per minute, by outcome
 sum by (outcome) (rate(sesame_logins_total[5m])) * 60
@@ -178,7 +193,7 @@ record adds <code>reason</code> saying what to turn on.</p>
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/laravel.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Laravel</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/running-off-citadel.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Running off Citadel</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#what-it-counts">What it counts</a></li><li class="docs-toc__item"><a href="#how-it-reaches-metrics">How it reaches /metrics</a></li><li class="docs-toc__item"><a href="#turn-it-on">Turn it on</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#laravel">Laravel</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#raw-php">Raw PHP</a></li><li class="docs-toc__item"><a href="#check-it">Check it</a></li><li class="docs-toc__item"><a href="#queries-worth-keeping">Queries worth keeping</a></li><li class="docs-toc__item"><a href="#when-the-store-breaks">When the store breaks</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#what-it-counts">What it counts</a></li><li class="docs-toc__item"><a href="#how-it-reaches-metrics">How it reaches /metrics</a></li><li class="docs-toc__item"><a href="#turn-it-on">Turn it on</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#laravel">Laravel</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#raw-php">Raw PHP</a></li><li class="docs-toc__item"><a href="#check-it">Check it</a></li><li class="docs-toc__item"><a href="#graph-it-in-grafana">Graph it in Grafana</a></li><li class="docs-toc__item"><a href="#queries-worth-keeping">Queries worth keeping</a></li><li class="docs-toc__item"><a href="#when-the-store-breaks">When the store breaks</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.4</span></span>

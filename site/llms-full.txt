@@ -473,7 +473,8 @@ The store is opened on the first sign-in, never on a request that signs
 nobody in. No label carries a username, an IP or a session ID, and a store
 that breaks never changes a sign-in. Off by default: without the argument
 nothing is counted. `unavailable` is the outcome to alert on, since it means
-the identity provider is down for this app. More in
+the identity provider is down for this app. A Grafana dashboard to import
+ships in [`docs/grafana/sesame.json`](https://github.com/waynestate/sesame/blob/HEAD/docs/grafana/sesame.json). More in
 [Counting sign-ins](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/metrics.md).
 
 ### Drivers
@@ -1958,6 +1959,17 @@ Posted by the door
 
 SESAME checks both session clocks each time `user()` is called. A stale session finds the door locked.
 
+#### Door count
+
+The counter reads 427.
+
+- success
+- failed
+- refused
+- unavailable
+
+Turn it on and SESAME counts each sign-in as `sesame_logins_total`, by driver and outcome, on HELMET's `/metrics`. It tallies turns of the key, never whose hand. [Counting sign-ins](https://sesame.apps.wayne.edu/docs/guides/metrics.html)
+
 Cross-reference
 
 ### Re-key from wayne-cas
@@ -2015,6 +2027,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
 - Added: an opt-in sign-in counter (ADR-0011, metrics speak Prometheus). `Sesame` takes an optional seventh argument, a `Waynestate\Sesame\Metrics\LoginMetrics`, and `login()` counts every sign-in that finishes as `success`, `failed`, `refused` or `unavailable` (the identity provider was down), labelled by driver; a trip to the provider is not counted. `PrometheusLoginMetrics` writes `sesame_logins_total{driver, outcome}` into a promphp store, so on the store HELMET's request metrics use it shows on HELMET's `/metrics` behind HELMET's token; SESAME serves no endpoint. Labels are bounded (anything else is `other`), and no label carries a username, IP or session ID. The Laravel adapter turns it on with `SESAME_METRICS_ENABLED=true` (off by default) and counts into the app's `Prometheus\Storage\Adapter` binding, else HELMET's `helmet.metrics` store, opened on the first sign-in only; `WayneAuth::boot()` takes the counter as a new last argument. A counter that fails never changes a sign-in: it logs one `sesame.metrics_failed` warning, with a `reason` only when SESAME's own setup is the cause, never the store's error. New guide: Counting sign-ins (metrics). Nothing changes for an app that does not turn it on.
+- Added: a Grafana dashboard for the sign-in counter, `docs/grafana/sesame.json` ("SESAME sign-ins", import it like HELMET's fleet dashboard): sign-ins, success rate, identity provider outages (red above zero) and refusals, per minute by outcome and by driver, outages by app, the failed share by driver, and a table by app. Checked against a local Prometheus and Grafana with two simulated apps counting through SESAME into HELMET's store; `GrafanaDashboardTest` keeps every query on `sesame_logins_total`, the `job` and `instance` variables and the outcomes SESAME counts.
 - Changed: dev dependencies add HELMET ^1.4 (locked 1.4.1) and promphp ^2.15 (locked 2.15.1), so the metrics tests count into HELMET's real SQLite store and render its `/metrics`; `promphp/prometheus_client_php` is suggested for the counter. No runtime dependency changes.
 - Docs: the README names the a11y checker's tag as 0.5.0, the one CI pins (it said 0.4.0), and the drivers reference no longer names an old Drawbridge version.
 
@@ -3346,6 +3359,15 @@ curl -s -H "Authorization: Bearer $HELMET_METRICS_TOKEN" https://your-app.exampl
 ```
 
 Expect `sesame_logins_total{driver="cas",outcome="success"} 1`. Nothing there? Look in the log for `sesame.metrics_failed` (see [Troubleshooting](https://sesame.apps.wayne.edu/docs/troubleshooting.html)).
+
+### Graph it in Grafana [#](https://sesame.apps.wayne.edu/docs/guides/metrics.html#graph-it-in-grafana)
+
+The sign-ins dashboard ships in [`docs/grafana/sesame.json`](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/docs/grafana/sesame.json). In Grafana, open Dashboards, New, Import, upload the file, and pick your Prometheus data source for the `DS_PROMETHEUS` input. It sits next to HELMET's fleet dashboard and has two rows:
+
+- **Sign-ins**: sign-ins in the time range, the success rate, how many hit an unreachable identity provider (red above zero), how many the app refused, and sign-ins per minute by outcome and by driver.
+- **When it goes wrong**: identity provider outages by app (one app alone points at its own network or HTTP client, every app at once points at the provider), the failed share by driver (a jump after a deploy is usually a changed URL, audience or key), and a table of sign-ins by app, driver and outcome.
+
+`job` and `instance` variables at the top narrow every panel. The dashboard was checked against a local Prometheus and Grafana with two simulated apps (one `cas`, one `saml` with an identity provider outage) signing in through SESAME into HELMET's SQLite store and scraped from HELMET's `/metrics`.
 
 ### Queries worth keeping [#](https://sesame.apps.wayne.edu/docs/guides/metrics.html#queries-worth-keeping)
 

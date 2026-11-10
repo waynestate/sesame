@@ -472,7 +472,8 @@ The store is opened on the first sign-in, never on a request that signs
 nobody in. No label carries a username, an IP or a session ID, and a store
 that breaks never changes a sign-in. Off by default: without the argument
 nothing is counted. `unavailable` is the outcome to alert on, since it means
-the identity provider is down for this app. More in
+the identity provider is down for this app. A Grafana dashboard to import
+ships in [`docs/grafana/sesame.json`](docs/grafana/sesame.json). More in
 [Counting sign-ins](docs/guides/metrics.md).
 
 ## Drivers
