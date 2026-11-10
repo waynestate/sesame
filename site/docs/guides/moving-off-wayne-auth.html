@@ -45,10 +45,10 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html" aria-current="page">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="moving-off-wayne-auth">Moving off Wayne Auth<a class="docs-heading-link" aria-label="Link to this section" href="#moving-off-wayne-auth">#</a></h1>
+      <article class="docs-article"><h1 id="moving-off-wayne-auth">Moving off Wayne <span class="docs-heading-tail"><span>Auth</span><a class="docs-heading-link" aria-label="Link to this section" href="#moving-off-wayne-auth">#</a></span></h1>
 <p>Older WSU PHP apps sign people in through <strong>Wayne Auth</strong>: a small PHP class reads the SSO cookie and checks it with the Wayne Auth service over a socket. Wayne Auth is deprecated. When the service is retired, every app still calling it stops letting anyone in, whatever PHP version it runs. SESAME's Wayne Auth bridge turns that move into a one-line change: the app keeps its <code>new WayneAuth(...)</code>, <code>authenticateSSO()</code> and <code>getAccessID()</code> calls, and they sign people in through CAS instead. Open sesame, say the magic words you already know.</p>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>The bridge is deprecated on arrival. It exists so the move off Wayne Auth is small and provable today; plan the move to SESAME's native calls next (the last section). It says so once per process, as a silenced <code>E_USER_DEPRECATED</code> that reaches your error log but never the page.</p></aside>
-<h2 id="does-this-fit-my-app">Does this fit my app?<a class="docs-heading-link" aria-label="Link to this section" href="#does-this-fit-my-app">#</a></h2>
+<h2 id="does-this-fit-my-app">Does this fit my <span class="docs-heading-tail"><span>app?</span><a class="docs-heading-link" aria-label="Link to this section" href="#does-this-fit-my-app">#</a></span></h2>
 <p>The bridge keeps the API of the classic <code>WayneAuth</code> class, the one apps copy into <code>lib/</code> or next to their pages:</p>
 <pre tabindex="0"><code class="language-php">$wayne_auth = new WayneAuth($config['wayneauth']);
 if ($wayne_auth-&gt;authenticateSSO() == true) {
@@ -64,7 +64,7 @@ if ($wayne_auth-&gt;authenticateSSO() == true) {
 <li>An app that asks Wayne Auth for the user's <strong>password</strong> (<code>_parseSSOCookie('d')</code>, or a client built with <code>'d'</code>). CAS never gives an app the password, so no bridge can; that app needs a different design (a service account, or the target system's own SSO).</li>
 </ul>
 <p>SESAME needs PHP 8.3 or newer. An app on older PHP moves its PHP first (<a rel="noopener" href="https://github.com/waynestate/booster">Booster</a> does that part).</p>
-<h2 id="the-one-line-swap">The one-line swap<a class="docs-heading-link" aria-label="Link to this section" href="#the-one-line-swap">#</a></h2>
+<h2 id="the-one-line-swap">The one-line <span class="docs-heading-tail"><span>swap</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-one-line-swap">#</a></span></h2>
 <ol>
 <li>Require SESAME with Composer (<code>composer require waynestate/sesame guzzlehttp/guzzle</code>). Guzzle is the HTTP client the cas driver uses to check tickets; any PSR-18 client works if you pass it yourself.</li>
 <li>Add the app's SESAME config file, for example <code>config/sesame.php</code>:</li>
@@ -98,10 +98,10 @@ require_once('config/sesame.php');
 <p>That is the whole code change. <code>boot()</code> builds SESAME, registers it with <code>sesame()</code>, and makes the old global name <code>WayneAuth</code> point at the bridge, so every <code>new WayneAuth($config['wayneauth'])</code> in the app gets the bridge. An app that refers to the class by a <code>use</code> line can import <code>Waynestate\Sesame\WayneAuth\WayneAuth</code> instead. Delete the old class file once nothing loads it: <code>boot()</code> refuses to start while a different <code>WayneAuth</code> class is loaded, so a half-done swap fails loudly instead of quietly keeping Wayne Auth.</p>
 <p>The <code>cas.service_url</code> is where CAS sends people back: the page that calls <code>authenticateSSO()</code> (or one that every page passes through). After the sign-in, people land there, the way Wayne Auth's <code>forward_url</code> sent them to the app's root.</p>
 <p>The <code>cas.base_url</code> is Academica's CAS server, <code>https://academica.aws.wayne.edu/cas</code>. People still see the familiar <code>login.wayne.edu</code> screen: Academica sends the browser there to sign in, then back with a ticket. <code>boot()</code> reads <code>base_url</code> from this array and nowhere else, so it cannot be left out: unlike the Laravel config file, the bridge does not look in the environment or in <a href="wsu-values.html">Playbook</a> on its own. To take the address from <code>SESAME_CAS_BASE_URL</code> or Playbook, pass <code>'base_url' =&gt; \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')</code>.</p>
-<h3 id="the-session">The session<a class="docs-heading-link" aria-label="Link to this section" href="#the-session">#</a></h3>
+<h3 id="the-session">The <span class="docs-heading-tail"><span>session</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-session">#</a></span></h3>
 <p>The app owns the session, as everywhere in SESAME: call <code>session_start()</code> before the first <code>authenticateSSO()</code>. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Turn on strict mode first: without <code>session.use_strict_mode</code> PHP accepts any session ID a client sends, and SESAME raises one <code>E_USER_WARNING</code> per request until it is on. Call <code>ini_set('session.use_strict_mode', '1')</code> before <code>session_start()</code>, or let HELMET's <code>helmet_boot()</code> do it with the cookie flags (<a href="raw-php.html">Raw PHP</a> has the settings). The cookie flags matter too: from 0.7.0 SESAME also raises one warning per request when the session cookie lacks <code>HttpOnly</code>, <code>Secure</code> (on https) or <code>SameSite=Lax</code>, which PHP's defaults leave off, so add <code>session_set_cookie_params(['httponly' =&gt; true, 'secure' =&gt; true, 'samesite' =&gt; 'Lax'])</code> before <code>session_start()</code> if <code>helmet_boot()</code> is not there. Also set <code>session.gc_maxlifetime</code> to at least the idle timeout.</p>
 <p>Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: <code>boot()</code> re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.</p>
-<h3 id="options">Options<a class="docs-heading-link" aria-label="Link to this section" href="#options">#</a></h3>
+<h3 id="options"><span class="docs-heading-tail"><span>Options</span><a class="docs-heading-link" aria-label="Link to this section" href="#options">#</a></span></h3>
 <p><code>boot()</code> takes a few more arguments, all optional:</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -145,7 +145,7 @@ require_once('config/sesame.php');
 </tbody>
 </table></div>
 <p>With <code>on_guest</code> left at <code>redirect</code>, the app's old else branch (the redirect to the Wayne Auth login page) never runs again, so the old login URL in its config stops mattering. With <code>deny</code>, point that login URL at a page of your own that calls <code>sesame_login()</code>.</p>
-<h2 id="what-changes-call-by-call">What changes, call by call<a class="docs-heading-link" aria-label="Link to this section" href="#what-changes-call-by-call">#</a></h2>
+<h2 id="what-changes-call-by-call">What changes, call by <span class="docs-heading-tail"><span>call</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-changes-call-by-call">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -209,7 +209,7 @@ require_once('config/sesame.php');
 </tbody>
 </table></div>
 <p>Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the <code>Identity</code> your resolver receives, once you move to the native calls.</p>
-<h2 id="catch-the-two-sign-in-exceptions">Catch the two sign-in exceptions<a class="docs-heading-link" aria-label="Link to this section" href="#catch-the-two-sign-in-exceptions">#</a></h2>
+<h2 id="catch-the-two-sign-in-exceptions">Catch the two sign-in <span class="docs-heading-tail"><span>exceptions</span><a class="docs-heading-link" aria-label="Link to this section" href="#catch-the-two-sign-in-exceptions">#</a></span></h2>
 <p><code>authenticateSSO()</code> throws in two cases, and an uncaught one is a blank 500. Wrap the call where the page makes it, and catch the narrower class first:</p>
 <pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\ProviderUnavailable;
@@ -237,7 +237,7 @@ try {
 </ul>
 <p>Since <code>ProviderUnavailable</code> extends <code>AuthenticationFailed</code>, a page that catches only <code>AuthenticationFailed</code> still catches both; the first catch is what turns &quot;CAS is down&quot; into a 503 instead of a refusal.</p>
 <p>A session that timed out is not an exception: from 0.7.1 the visitor is simply sent through CAS again (or a script gets its 401). An app that added <code>catch (\LogicException $e)</code> around <code>authenticateSSO()</code> as a stopgap for 0.7.0 can drop it after the upgrade.</p>
-<h2 id="check-it-before-you-ship">Check it before you ship<a class="docs-heading-link" aria-label="Link to this section" href="#check-it-before-you-ship">#</a></h2>
+<h2 id="check-it-before-you-ship">Check it before you <span class="docs-heading-tail"><span>ship</span><a class="docs-heading-link" aria-label="Link to this section" href="#check-it-before-you-ship">#</a></span></h2>
 <ol>
 <li>On a laptop, boot with the <code>fake</code> driver (<code>'driver' =&gt; 'fake', 'environment' =&gt; 'local', 'fake' =&gt; ['username' =&gt; 'ab1234']]</code>): every page should say who is signed in without any CAS server.</li>
 <li>On pre-production, with the real <code>cas</code> config: open a page in a private window. You should land on the <code>login.wayne.edu</code> sign-in screen, come back to the service URL with no <code>ticket</code> in the address bar, and see the app signed in as you. Check the AccessID's case against any <code>authorized_ids</code> list the app keeps.</li>
@@ -245,7 +245,7 @@ try {
 <li>Grep the app for <code>validUser</code>, <code>sso_host</code> and <code>_parseSSOCookie('d')</code>: none should be left doing work.</li>
 </ol>
 <p>SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (<code>tests/WayneAuthLegacyAppTest.php</code>).</p>
-<h2 id="going-native-later">Going native later<a class="docs-heading-link" aria-label="Link to this section" href="#going-native-later">#</a></h2>
+<h2 id="going-native-later">Going native <span class="docs-heading-tail"><span>later</span><a class="docs-heading-link" aria-label="Link to this section" href="#going-native-later">#</a></span></h2>
 <p>The bridge is three thin calls over SESAME's raw-PHP functions. When you have a quiet afternoon:</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -274,7 +274,7 @@ try {
 </tbody>
 </table></div>
 <p>Then delete the config line that calls <code>boot()</code>, and the bridge is gone.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="raw-php.html">Raw PHP</a></li>
 <li><a href="driver-cas.html">The cas driver</a></li>

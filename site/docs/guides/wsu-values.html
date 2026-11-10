@@ -45,7 +45,7 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html" aria-current="page">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="wsu-values-playbook">WSU values (Playbook)<a class="docs-heading-link" aria-label="Link to this section" href="#wsu-values-playbook">#</a></h1>
+      <article class="docs-article"><h1 id="wsu-values-playbook">WSU values <span class="docs-heading-tail"><span>(Playbook)</span><a class="docs-heading-link" aria-label="Link to this section" href="#wsu-values-playbook">#</a></span></h1>
 <p>These four settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.</p>
 <p>Open sesame, minus the incantation. Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
@@ -81,9 +81,9 @@
 </table></div>
 <p>Set them in the environment, as with every other setting. When the environment is empty, the private <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/playbook">waynestate/playbook</a> package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset.</p>
 <p>The playbook is never required. It sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone.</p>
-<h2 id="get-the-playbook">Get the Playbook<a class="docs-heading-link" aria-label="Link to this section" href="#get-the-playbook">#</a></h2>
+<h2 id="get-the-playbook">Get the <span class="docs-heading-tail"><span>Playbook</span><a class="docs-heading-link" aria-label="Link to this section" href="#get-the-playbook">#</a></span></h2>
 <p>Get it through Composer, fetch the values into a <code>.env.playbook</code> file, or clone the repository.</p>
-<h3 id="composer">Composer<a class="docs-heading-link" aria-label="Link to this section" href="#composer">#</a></h3>
+<h3 id="composer"><span class="docs-heading-tail"><span>Composer</span><a class="docs-heading-link" aria-label="Link to this section" href="#composer">#</a></span></h3>
 <p>Add the repository to your <code>composer.json</code>:</p>
 <pre tabindex="0"><code class="language-json">{
     &quot;repositories&quot;: [
@@ -95,18 +95,18 @@
 <pre tabindex="0"><code class="language-bash">composer require waynestate/playbook
 </code></pre>
 <p>Composer keeps the git.wayne.edu credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry, so later installs do not ask again.</p>
-<h3 id="fetch-the-values">Fetch the values<a class="docs-heading-link" aria-label="Link to this section" href="#fetch-the-values">#</a></h3>
+<h3 id="fetch-the-values">Fetch the <span class="docs-heading-tail"><span>values</span><a class="docs-heading-link" aria-label="Link to this section" href="#fetch-the-values">#</a></span></h3>
 <p><strong>curl (Linux, macOS).</strong></p>
 <pre tabindex="0"><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
 </code></pre>
 <p><strong>PowerShell (Windows).</strong></p>
 <pre tabindex="0"><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
 </code></pre>
-<h3 id="a-clone">A clone<a class="docs-heading-link" aria-label="Link to this section" href="#a-clone">#</a></h3>
+<h3 id="a-clone">A <span class="docs-heading-tail"><span>clone</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-clone">#</a></span></h3>
 <p>When the app keeps its private dependencies by hand:</p>
 <pre tabindex="0"><code class="language-bash">git clone https://git.wayne.edu/enterprise-apps/playbook.git
 </code></pre>
-<h2 id="use-the-values">Use the values<a class="docs-heading-link" aria-label="Link to this section" href="#use-the-values">#</a></h2>
+<h2 id="use-the-values">Use the <span class="docs-heading-tail"><span>values</span><a class="docs-heading-link" aria-label="Link to this section" href="#use-the-values">#</a></span></h2>
 <p>A fetched <code>.env.playbook</code> is plain <code>KEY=value</code> lines: copy the ones you need into your app's <code>.env</code> (or your Citadel environment). SESAME does not read <code>.env.playbook</code> itself.</p>
 <p>The token is your own: <code>read_api</code> for curl, <code>read_repository</code> for clone and Composer.</p>
 <p>Playbook is private on git.wayne.edu. If you get a 404, ask the Enterprise Applications team for read access.</p>
@@ -115,7 +115,7 @@
 
 $baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
 </code></pre>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="./which-driver.html">Which driver for my app?</a></li>
 <li><a href="./raw-php.html">Raw PHP</a></li>

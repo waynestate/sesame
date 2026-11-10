@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Quick start[#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#quick-start)
+# Quick start [#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#quick-start)
 
 The shortest walk through the door: a framework-free PHP page and the `fake` driver, which needs no server and no registration. Every snippet below is the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) example, one move at a time.
 
@@ -80,11 +80,11 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
    ```
    Expected: the user the login stored in the session.
 
-## What you built[#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#what-you-built)
+## What you built [#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#what-you-built)
 
 A framework-free PHP page that signs a user in through SESAME and reads the signed-in user back out of the session. The protocol never held the session: you started it and you read it, and switching driver is a config change with no code change.
 
-## Next steps[#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#next-steps)
+## Next steps [#](https://sesame.apps.wayne.edu/docs/guides/quick-start.html#next-steps)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html): pick the key for your real door.
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html): the whole example, with every piece named.

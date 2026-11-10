@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Configuration[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#configuration)
+# Configuration [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#configuration)
 
 Every setting SESAME reads, from the plain array `Config::fromArray()` takes to the environment variables the Laravel config resolves. The magic word here is a config array, not an incantation. Start here when you are wiring a driver; the driver guides show the full examples.
 
-## Reading config[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#reading-config)
+## Reading config [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#reading-config)
 
 SESAME reads its config from a plain array through one method on the `final readonly class Config`:
 
@@ -32,7 +32,7 @@ $config = Config::fromArray($configArray);
 
 The message reads: `Missing required setting <SETTING>. Set it in the environment, or install waynestate/playbook (see the README).`
 
-## Validation[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#validation)
+## Validation [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#validation)
 
 A present key with the wrong type is also an `InvalidConfig` error at boot, before any request is served:
 
@@ -46,7 +46,7 @@ A present key with the wrong type is also an `InvalidConfig` error at boot, befo
 - The `oidc` block must be an array; `OidcOptions::fromArray()` validates it and names the key in its errors.
 - The `saml` block must be an array; `SamlOptions::fromArray()` validates it at boot (URLs, exactly one IdP metadata source, the certificate and key files, which must match) and names the key in its errors.
 
-## Environment variables[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#environment-variables)
+## Environment variables [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#environment-variables)
 
 Every environment variable SESAME reads, what it does, and its default. The table is generated from the source by Squire's docs builder; do not edit it by hand.
 
@@ -138,7 +138,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_SESSION_IDLE_MINUTES | The idle timeout in minutes: the quiet time after which the session is dropped | `120` | config/sesame.php |
 | SESAME_USER_RESOLVER | The class that turns a verified identity into the app's user; it must implement `Waynestate\Sesame\UserResolver` | none | config/sesame.php |
 
-## WSU values (Playbook)[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#wsu-values-playbook)
+## WSU values (Playbook) [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#wsu-values-playbook)
 
 Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
 
@@ -159,7 +159,7 @@ use Waynestate\Sesame\Support\Setting;
 $baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
 ```
 
-## Example .env block[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#example-env-block)
+## Example .env block [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#example-env-block)
 
 The Laravel oidc block, straight from the README:
 
@@ -176,23 +176,23 @@ Danger
 
 `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
-## Config keys[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#config-keys)
+## Config keys [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#config-keys)
 
-### Common[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#common)
+### Common [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#common)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
 | `driver` | Yes | none | `fake`, `cas`, `gateway`, `oauth2` or `oidc`. |
 | `environment` | Yes | none | Always required; the `fake` driver refuses to boot in production. |
 
-### fake[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#fake)
+### fake [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#fake)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
 | `fake.username` | Yes | none | The identity the `fake` driver returns, for local development. |
 | `fake.attributes` | No | `[]` | Attribute name to its values, on the returned identity. |
 
-### cas[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#cas)
+### cas [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#cas)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ Danger
 
 The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-\* headers to build it. Protocol behavior, `renew` against Academica, and the MFA facts the driver reads from `authenticationDate` are covered by the [cas driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html).
 
-### gateway[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#gateway)
+### gateway [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#gateway)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -223,7 +223,7 @@ The service URL is the configured value only: the driver never reads the request
 
 The assertion must carry `sub`, `iat`, `exp` and `jti`; the `sub` claim becomes the username. Replay protection and key rotation are covered by the [gateway driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html).
 
-### oauth2[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#oauth2)
+### oauth2 [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#oauth2)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -244,7 +244,7 @@ The assertion must carry `sub`, `iat`, `exp` and `jti`; the `sub` claim becomes 
 
 A JWT must carry an `exp` claim; a JWT without one is refused. Opaque tokens are refused while introspection is off, and an accepted introspection answer is checked for `active === true` before its issuer, audience, expiry and not-before claims are applied. The Entra registration and the key set fetch are covered by the [oauth2 with Entra guide](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html).
 
-### oidc[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#oidc)
+### oidc [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#oidc)
 
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
@@ -273,7 +273,7 @@ A JWT must carry an `exp` claim; a JWT without one is refused. Opaque tokens are
 
 Browser sign-in flow, the ID token rules and the Entra app registration are covered by the [oidc driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html).
 
-### Session timeouts[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#session-timeouts)
+### Session timeouts [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#session-timeouts)
 
 Open sesame opens the door for a live session; a stale one finds it locked. Every signed-in session has two clocks. The idle timeout is the quiet time after which the session is dropped, and the absolute lifetime is the longest a session may live, no matter how active it is. Both are in minutes, and both are checked on every `user()` call, so a stale session is signed out on the spot the first time anything asks who is signed in.
 
@@ -284,7 +284,7 @@ Open sesame opens the door for a live session; a stale one finds it locked. Ever
 
 In Laravel the keys are `SESAME_SESSION_IDLE_MINUTES` and `SESAME_SESSION_ABSOLUTE_MINUTES`.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/reference/configuration.html#related)
 
 - [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html)
 - [API](https://sesame.apps.wayne.edu/docs/reference/api.html)

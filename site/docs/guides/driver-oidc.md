@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# The oidc driver (Entra sign-in)[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-oidc-driver-entra-sign-in)
+# The oidc driver (Entra sign-in) [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-oidc-driver-entra-sign-in)
 
 The goal: sign a person into your app through the browser, straight at Microsoft Entra ID, with OpenID Connect. This page walks through how a sign-in runs, every config key, and the one-time Entra app registration; then set the driver up on the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) or [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html) page.
 
@@ -14,7 +14,7 @@ Note
 
 This is the exception, not the default. On Citadel prefer the `gateway` driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see "The Entra app registration" below).
 
-## What you need[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#what-you-need)
+## What you need [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#what-you-need)
 
 Open sesame, said straight to Entra. The oidc driver signs a person in through the browser with OpenID Connect: the authorization code flow with PKCE (S256), the ID token checked against the issuer's key set. It is the Entra-direct path beside `cas` and `gateway` (Drawbridge), and it needs `league/oauth2-client`, which SESAME suggests but does not require:
 
@@ -24,19 +24,19 @@ composer require league/oauth2-client
 
 Without it, building the driver fails with `The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client`. Why that library, and what else was weighed: [docs/oidc-library-choice.md](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html).
 
-## How a sign-in runs[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#how-a-sign-in-runs)
+## How a sign-in runs [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#how-a-sign-in-runs)
 
 1. A request to the login URL without a `code` starts it. The driver makes a fresh `state` and `nonce` and a PKCE verifier, keeps all three in the app's session (bound to this browser, single use, gone after ten minutes), and redirects to the authorization endpoint with `response_mode=query`.
 2. Entra sends the browser back to the redirect URI with `code` and `state`. The driver takes the pending sign-in for that state out of the session first (a replayed callback finds nothing), exchanges the code with the verifier and the client secret, and validates the ID token: signature against the JWKS (RS256 by default, never `none` or HMAC), `iss` exactly, `aud` is the client id, `azp` when present, `exp`, `nbf` and `iat` with a 60-second leeway, and the `nonce`. No request to the provider (token, discovery, key set) follows a redirect: a 3xx answer fails the sign-in, so the code, the verifier and the secret are never resent elsewhere.
 3. The identity goes to the app's `findOrImportUser(Identity)`, and the core regenerates the session ID, as for every driver. The access token and the ID token are never stored.
 
-## Silent SSO and step-up[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#silent-sso-and-step-up)
+## Silent SSO and step-up [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#silent-sso-and-step-up)
 
 **SSO stays silent.** No `prompt` and no `max_age` are sent by default, so a person already signed in to Entra (Outlook, Teams, Canvas) is signed in without a click.
 
 **Step-up.** A login request with `step_up=1` adds the app's configured step-up parameters: `prompt=login` by default, and optionally `max_age`, `acr_values` and `claims`. The request can ask for a step-up but cannot choose what it is; only config feeds those values. The callback then requires a fresh `auth_time`: not in the future (beyond the leeway), not before the sign-in started when `prompt=login` was sent, and within `max_age`, which is 300 seconds when `oidc.step_up.max_age` is not set, so a step-up is never unbounded. In Laravel, `sesame.mfa` with `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
 
-## Identity, roles and claims[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#identity-roles-and-claims)
+## Identity, roles and claims [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#identity-roles-and-claims)
 
 The username comes from `oidc.username_claim` (default `accessid`, the UPN's prefix). When the token has no such claim, the sign-in fails with `oidc.missing_claim` and the error names the settings to change. `oidc.username_fallback` (off by default) uses the part of `preferred_username` before the `@` instead.
 
@@ -46,17 +46,17 @@ Warning
 
 The roles claim (`oidc.roles_claim`, default `wsu_roles`) becomes the `roles` attribute; a mapped claim that arrives under a custom-claim namespace (`http://schemas.example.test/claims/wsu_roles` or `extn.wsu_roles`) is found by its short name. The exact name and the namespaced forms are counted together: two or more candidates (an exact `wsu_roles` beside a namespaced one, say) count as none. `oidc.claims` (default `wsu_roles,accessid`) lists the claims passed to the resolver under their own names, so `$identity->attributes['wsu_roles']` works. Set `roles_claim` (and `claims`) to `wsuRoles` to keep the old name. `iss`, `sub`, `oid`, `tid`, `email`, `name` and `preferred_username` are attributes too; key the app's users on `iss` plus `sub`, or `tid` plus `oid` (S24), never on the username alone.
 
-## MFA[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#mfa)
+## MFA [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#mfa)
 
 `auth_time` becomes the identity's MFA time and `amr` its methods, with the cas driver's rules: the driver never invents a sign-in time, and without an MFA method in `amr` the MFA check fails closed. Entra's v2 ID tokens often carry no `amr`; when Conditional Access enforces MFA for this app, `oidc.assume_mfa` adds `mfa` to the methods, exactly like `cas.assume_mfa`. `acrs` (authentication contexts `c1` to `c99`) feeds `hasAuthContext()`.
 
-## Return-to and logout[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#return-to-and-logout)
+## Return-to and logout [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#return-to-and-logout)
 
 A login request may carry `return_to`. It is kept only when it passes the ReturnTo rule (an absolute https URL with the redirect URI's scheme, host and port, and no user name or password); anything else is dropped, so it can never be an open redirect. After the callback, `sesame_login()` and the Laravel route send the user there.
 
 The app session is cleared first, as for every driver. With `oidc.post_logout_redirect_uri` set, the user then goes through Entra's `end_session_endpoint` with that `post_logout_redirect_uri`, which must also be registered on the app registration. Without it, logout stays local and the Entra session lives on (the next sign-in is silent).
 
-## Raw PHP[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#raw-php)
+## Raw PHP [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#raw-php)
 
 ```php
 <?php
@@ -113,7 +113,7 @@ $user = sesame_login();
 
 A protected page sends a guest to `login.php?return_to=<its own https URL>`, and a page that needs fresh credentials to `login.php?step_up=1`.
 
-## Laravel[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#laravel)
+## Laravel [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#laravel)
 
 ```
 SESAME_DRIVER=oidc
@@ -126,7 +126,7 @@ SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 
 The adapter registers `GET /login/callback` (`sesame.callback`) beside `GET /login`, passes the Laravel session and cache to the driver, and after the callback redirects to the checked `return_to`, or to the page `auth.sesame` saved. Laravel's default `SameSite=Lax` session cookie is right: Entra's redirect back is a top-level GET, which Lax allows (S41); `Strict` would drop the cookie and fail every callback with `oidc.state`.
 
-## Config keys[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#config-keys)
+## Config keys [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#config-keys)
 
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
@@ -157,7 +157,7 @@ Danger
 
 `SESAME_OIDC_CLIENT_SECRET` is environment only: never the playbook, never logged. It is held in a `SensitiveParameterValue`, so `var_export`, `json_encode` and dumps show nothing and `serialize` refuses. Keep PHP's production default `zend.exception_ignore_args = On` as well.
 
-## The Entra app registration[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-entra-app-registration)
+## The Entra app registration [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#the-entra-app-registration)
 
 What the developer (or the Entra admin) sets on the app registration:
 
@@ -171,7 +171,7 @@ What the developer (or the Entra admin) sets on the app registration:
 
 Use the v2.0 issuer (`https://login.microsoftonline.com/<tenant>/v2.0`); the tenant id comes from the playbook or the environment, never from code.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html#related)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
 - [The gateway driver](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html)

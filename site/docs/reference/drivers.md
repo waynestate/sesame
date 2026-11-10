@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Drivers[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#drivers)
+# Drivers [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#drivers)
 
 The drivers SESAME can build, their status, and the exact values each one ships with. Pick a driver with [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html), then read the matching guide for setup.
 
-## Status[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#status)
+## Status [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#status)
 
 | Driver | Status |
 | --- | --- |
@@ -21,7 +21,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |
 
-## The factory[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#the-factory)
+## The factory [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#the-factory)
 
 `DriverFactory::make()` builds the driver named by the `driver` config value. Anything else throws `InvalidConfig` with `Unknown driver "<name>".`
 
@@ -63,7 +63,7 @@ When a required argument or config value is missing, the factory throws `Invalid
 | Non-empty `gateway.public_key`, `gateway.issuer` or `gateway.audience` (and `oauth2.issuer`, `oauth2.jwks_url`, `oauth2.audience`) | `The config key "%s" must be a non-empty string.` |
 | Unknown driver | `Unknown driver "%s".` |
 
-## fake[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#fake)
+## fake [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#fake)
 
 A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct outside the allowed development environments: it throws, it never silently falls back. The check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver.
 
@@ -77,7 +77,7 @@ A driver for local development and tests only. It returns the identity it was bu
 
 The factory builds it from the `fakeUsername` and `fakeAttributes` config properties, with the username defaulting to the empty string.
 
-## cas[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#cas)
+## cas [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#cas)
 
 CAS 2.0 against Academica by default.
 
@@ -104,7 +104,7 @@ The exact error messages:
 | Bad URL | `The config key "%s" must be an absolute https:// URL, got "%s".` |
 | Bad ticket | `The ticket in the request is not a valid CAS ticket.` |
 
-## gateway[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#gateway)
+## gateway [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#gateway)
 
 Signed JWT assertions from the Drawbridge gateway. "Open Sesame", but only the real magic word gets the door.
 
@@ -135,7 +135,7 @@ The exact error messages:
 | Missing key set file | `The gateway key set file named by "gateway.jwks_file" does not exist or cannot be read.` |
 | Private key material in the key set | `The key "<kid>" in the gateway key set ("gateway.jwks_file") holds private key material. Publish only the public half, and treat that private key as exposed.` |
 
-## oauth2[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#oauth2)
+## oauth2 [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#oauth2)
 
 JWT bearer tokens from an identity provider. "Open Sesame", where the magic word is a token only the issuer can sign.
 
@@ -153,7 +153,7 @@ JWT bearer tokens from an identity provider. "Open Sesame", where the magic word
 | Key set | Fetched from `jwks_url` over HTTP and kept in the PSR-16 cache |
 | Unknown key | `AuthenticationFailed` with `No published signing key matches the access token (oauth2.unknown_key).` |
 
-## oidc[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#oidc)
+## oidc [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#oidc)
 
 Browser sign-in with OpenID Connect, Microsoft Entra ID first. "Open Sesame" said to the right door, then checked at the counter. The driver runs the authorization code flow with PKCE (S256):
 
@@ -169,7 +169,7 @@ Browser sign-in with OpenID Connect, Microsoft Entra ID first. "Open Sesame" sai
 - The driver needs `league/oauth2-client`, which SESAME suggests but does not require.
 - The token request goes through Guzzle (via `league/oauth2-client`). When the app's PSR-18 client is Guzzle, it is reused for that too, with redirects turned off on each token request; otherwise a Guzzle client is built that does not follow redirects and gives up after ten seconds. Discovery and the key set go through the PSR-18 client.
 
-## saml[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#saml)
+## saml [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#saml)
 
 Browser sign-in as a SAML 2.0 service provider, opt-in, for a Shibboleth-style IdP. The same magic words, now with a schema. The driver stands on `onelogin/php-saml` (strict mode) and runs in three requests:
 
@@ -187,17 +187,17 @@ Browser sign-in as a SAML 2.0 service provider, opt-in, for a Shibboleth-style I
 
 Setup and every key: [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html).
 
-## What every driver returns[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#what-every-driver-returns)
+## What every driver returns [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#what-every-driver-returns)
 
 Every driver exposes the same four methods: `name()`, `login()`, `logoutUrl()` and `serviceUrl()`. `login()` answers with a `Redirect` to the identity provider, or with an `Authenticated` step carrying an `Identity` (the username, the attributes, the driver name and the sign-in time). The `fake` driver's `logoutUrl()` and `serviceUrl()` return `null`; the `cas` driver's return the configured logout URL and service URL.
 
-## Walk around the shop[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#walk-around-the-shop)
+## Walk around the shop [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#walk-around-the-shop)
 
 The front page's counter, pegboard and duplicator.
 
 ![Three cuts of the front page: the hero with SESAME's mark under the shop light; the pegboard 'One blank per protocol', with all six keys cut, fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked opt-in; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234.](https://sesame.apps.wayne.edu/docs/readme/gallery.jpg)
 
-## Related[#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#related)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
 - [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)

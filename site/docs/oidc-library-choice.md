@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# The oidc driver's library choice[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-oidc-driver-s-library-choice)
+# The oidc driver's library choice [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-oidc-driver-s-library-choice)
 
 Open sesame needs the right words, and we would rather borrow a maintained dictionary than write our own. This note records which library the `oidc` driver stands on, what else was weighed, and why. Data checked on 2026-10-29 against Packagist (`repo.packagist.org/p2/<package>.json`) and the Packagist security advisory API.
 
-## What the driver needs[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#what-the-driver-needs)
+## What the driver needs [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#what-the-driver-needs)
 
 - The authorization code flow with PKCE (S256), `state` and `nonce`.
 - Discovery from the issuer's `/.well-known/openid-configuration`, cached.
@@ -20,7 +20,7 @@ Open sesame needs the right words, and we would rather borrow a maintained dicti
 
 SESAME already ships a JWT verifier for the `oauth2` driver (firebase/php-jwt plus `JwksProvider`: cached key set, one refetch per minute for an unknown `kid`, fail closed). A second JWT stack would mean two verifiers to keep correct.
 
-## The candidates[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-candidates)
+## The candidates [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-candidates)
 
 | Package | Latest release | PHP | HTTP | PKCE | ID token validation | Weight | Advisories |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ SESAME already ships a JWT verifier for the `oauth2` driver (firebase/php-jwt pl
 | league/oauth2-client | 2.9.1, 2026-09-16 | ^7.1 or >=8.0 \<8.6 | Guzzle (required) | Yes, S256 built in since 2.7 | No: OAuth 2.0 only | Light: Guzzle and guzzlehttp/psr7 | None listed |
 | thenetworg/oauth2-azure | v2.2.6, 2026-06-22 | ^7.1 or ^8.0 | Guzzle, through league/oauth2-client | Through league | Yes, Azure-specific, with its own key fetching on firebase/php-jwt | league plus Azure-specific code | None listed |
 
-## The choice: league/oauth2-client, plus SESAME's own ID token validation[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-choice-league-oauth2-client-plus-sesame-s-own-id-token-validation)
+## The choice: league/oauth2-client, plus SESAME's own ID token validation [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#the-choice-league-oauth2-client-plus-sesame-s-own-id-token-validation)
 
 - **league/oauth2-client** does the OAuth 2.0 mechanics: the authorization URL, the PKCE verifier and its S256 challenge, the token request with the client's credentials, and the token response parsing. It is the most used OAuth 2.0 client in PHP, released last month, supports PHP up to 8.5, has no published advisories, and its only weight is Guzzle, which the Laravel adapter already uses.
 - **SESAME's firebase/php-jwt and `JwksProvider`** validate the ID token, the same code the `oauth2` driver uses for bearer tokens. The OpenID Connect checks league does not do (discovery, `nonce`, `azp`, `iat`, the algorithm allowlist) are a few dozen lines in `src/Drivers/Oidc/IdTokenValidator.php` and `Discovery.php`, written against OpenID Connect Core 3.1.3.7 and Discovery 4.3.
@@ -40,7 +40,7 @@ Why not the others:
 - **jumbojett/openid-connect-php** talks to curl directly (no PSR-18, so the tests cannot swap the transport), allows PHP 7.0, and has not had a release since September 2024.
 - **thenetworg/oauth2-azure** ties the driver to Azure-specific code and fetches its own keys, duplicating `JwksProvider`. SESAME's driver works with any OpenID provider; Entra is configuration.
 
-## How the dependency is kept optional[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#how-the-dependency-is-kept-optional)
+## How the dependency is kept optional [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#how-the-dependency-is-kept-optional)
 
 league/oauth2-client is in `suggest` and `require-dev`, not `require`, the same way SESAME treats a PSR-18 client. Only the `oidc` driver needs it. When it is missing, building the driver fails with:
 
@@ -48,7 +48,7 @@ league/oauth2-client is in `suggest` and `require-dev`, not `require`, the same 
 The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client
 ```
 
-## Two small layers on top of league[#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#two-small-layers-on-top-of-league)
+## Two small layers on top of league [#](https://sesame.apps.wayne.edu/docs/oidc-library-choice.html#two-small-layers-on-top-of-league)
 
 - `LeagueProvider` drops league's default `approval_prompt=auto`, a pre-standard parameter OpenID Connect does not define, so the authorization request carries only what the driver chose.
 - `BasicAuthOptionProvider` form-encodes the client id and secret before base64 for `client_secret_basic`, as RFC 6749 section 2.3.1 requires; league's own basic provider skips that step.

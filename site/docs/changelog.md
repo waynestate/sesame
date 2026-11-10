@@ -6,26 +6,27 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Changelog[#](https://sesame.apps.wayne.edu/docs/changelog.html#changelog)
+# Changelog [#](https://sesame.apps.wayne.edu/docs/changelog.html#changelog)
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: the docs, agent-ready and deploy kits are Squire 0.10.6 (was 0.10.5): the docs builder and agent-ready generator see every file on Docker Desktop mounts.
 - Site: `assets/stack-env.js` knows Parity, so a pre-production page links Parity's pre-production site and a dev page links its local `site/` folder. Until now Parity, of all parts, was the one link that ignored its environment.
 - Site: Parity is out; the party list links its site.
 - Deploy kit refreshed to Squire 0.10.5.
 - Docs: BEST_PRACTICES lists the drivers SESAME ships and states one pinning rule.
 
-## \[0.7.3\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-3-2026-11-09)
+## \[0.7.3\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-3-2026-11-09)
 
 - Docs: the upgrading guide has a 0.7.3 section (no breaks, no library code changes), and the docs index and BEST_PRACTICES name release 0.7.3.
 - Docs: Parity joins the party. The README cast, the instance runner page's cast and the front page's key ring carry Parity next to Squire, with its spirit-level mark: the stack's new tool that runs Citadel on your computer (its PHP image, its proxy and MySQL 5.6), where a local copy signs in with SESAME's fake driver. 0.1.0 is coming and it has no site yet, so its tag links nowhere. One more key on the ring, and this one is level.
 - Changed: refreshed version mentions. The README and the moving-from-wayne-cas guide say Booster 1.14.0 and later write `waynestate/sesame:^0.7` (they said `^0.6`, which Booster 1.12.0 and 1.13.0 wrote; apps those hopped take the 0.7.0 upgrading step). The dev tools require Pinstripe ^0.3 (lock 0.3.0, was ^0.1.4 at 0.1.4), which bans `var_dump()`: the one in `tests/OidcDriverTest.php`, which proves a dump never shows the client secret, carries a reasoned `pinstripe.banned.varDump` ignore. Open sesame: the doors now match the keys.
 
-## \[0.7.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-2-2026-11-09)
+## \[0.7.2\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-2-2026-11-09)
 
 - Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set `cas.base_url` to a `login.wayne.edu` address that answers 404, so an app that copied it never reached the sign-in. The address is `https://academica.aws.wayne.edu/cas`; people still see the familiar `login.wayne.edu` screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.
 - Fixed: the Wayne Auth guide said `cas.base_url` could be left out of `WayneAuth::boot()` when Playbook is installed or `SESAME_CAS_BASE_URL` is set. The bridge reads only the array it is given; the guide now says so and shows how to pass `Setting::get('SESAME_CAS_BASE_URL')` instead.
@@ -34,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: CI pins the Preflight components to 0.5.0 (was 0.4.0), and the composer-audit job takes the component's own image instead of naming one; the a11y pin test expects 0.5.0, and BEST_PRACTICES S48 names `@0.5.0`.
 - Docs: the Proof page records the 2026-11-09 run on the 0.7.2 fixes (863 tests, 2517 assertions, on PHP 8.3, 8.4 and 8.5, and `composer ci`).
 
-## \[0.7.1\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-1-2026-11-09)
+## \[0.7.1\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-1-2026-11-09)
 
 - Fixed: a session past its idle (2 hours) or absolute (12 hours) timeout no longer ends in a blank 500. `NativeSession::invalidate()` closed the session and started nothing in its place, so the cas driver's pending-login write that follows a timeout (in `sesame_login()` and the Wayne Auth bridge) threw `LogicException: No session is active`. It now leaves the logout marker under the old ID and starts a fresh, empty session under a new ID from `session_create_id()`, never one from the request, with strict mode kept as the app set it; when headers are already sent it leaves the session closed, as before. Sign-out takes the same path.
 - Changed: on the native PHP session (raw PHP and the Wayne Auth bridge), because sign-out (`sesame_logout()`, `sesame()->logout()`, `sesame()->signOutLocal()`) now leaves a fresh, empty session open, an app that calls `session_start()` itself after it in the same request (after `logout()` or `signOutLocal()`, or in a shutdown function after `sesame_logout()`) gets PHP's notice "Ignoring session_start() because a session is already active". Drop that call, or guard it with `session_status() !== PHP_SESSION_ACTIVE`.
@@ -51,7 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: MAINTAINING names the maintainer as a role (the stack maintainer), reached through an issue on git.wayne.edu.
 - Docs: the `NativeSession` constructor docblock says `checkSessionSettings` also covers the cookie flag check (HttpOnly, Secure on https, a Lax or Strict SameSite; checked, never set), and BEST_PRACTICES' `NativeSession.php` line citations follow it.
 
-## \[0.7.0\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-0-2026-11-09)
+## \[0.7.0\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-0-2026-11-09)
 
 - Docs: the upgrading guide has a 0.7.0 section: what to set so the new cookie flag warning stays quiet, and the `^0.7` constraint step.
 - Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.
@@ -60,13 +61,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: the upgrading guide's 0.7.0 section and the troubleshooting entry for `SESAME: the session cookie is sent without` give the fix per case: Squire kit 0.10.2 or later (`squire update`, its `php.ini` sets `session.cookie_samesite = Lax`), Laravel (unaffected, it sets its own cookie), and raw PHP on a host whose `php.ini` you do not control (`helmet_boot()` or three `ini_set()` lines before `session_start()`); `Lax` keeps CAS, OIDC and SAML working.
 - Docs: truth pass for 2026-11-09. Every raw-PHP example sets the cookie flags with `session_set_cookie_params()` before `session_start()`, so following the docs gives no warning; the README, raw PHP guide, session timeouts table, API reference, troubleshooting and the Wayne Auth guide describe the cookie flag check; BEST_PRACTICES cites current line numbers throughout, S2 says which `session_start()` and cookie calls `NativeSession` does make, S11 says the CAS URL check parses the URL (it said a prefix test), S12 names the `ST-` prefix, S41 says a missing or `None` SameSite is now caught but `Strict` is not, and S45 names kit 0.10.0; MAINTAINING lists every runtime dependency and every `composer ci` step.
 
-## \[0.6.3\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-3-2026-11-09)
+## \[0.6.3\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-3-2026-11-09)
 
 - Docs: the upgrading guide has a 0.6.3 section, and the README, Laravel guide and wayne-cas guide say JSON sessions work with the shim from 0.6.3.
 - Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on; the front page stamp follows the release (`data-docs-version`, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say `gateway` waits on a live Drawbridge; the check count is seven.
 - Fixed: the wayne-cas shim's refreshUser() looks the user up again when the session hands the stored user back as an array (Laravel 13's JSON session serialization). It reads the array's primary key and returns the model through query()->find(), signing the session out when the account is gone; before this it passed the array through, so the guard saw nobody while the middleware let the request in. A wayne-cas app on JSON sessions no longer needs a resolver of its own.
 
-## \[0.6.2\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-2-2026-11-09)
+## \[0.6.2\] - 2026-11-09 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-2-2026-11-09)
 
 - Fixed: the wayne-cas shim's `refreshUser()` works with an Eloquent user model. It checked for a declared static `find` method, which Eloquent models do not have, so every signed-in request failed with `InvalidConfig`. It now looks Eloquent models up through `query()->find()` and keeps the static `find` path for other classes.
 - Changed: `NativeSession` keeps a client from choosing its own session ID without a code change (BEST_PRACTICES S3). Whenever no session is active (when it is built before `session_start()`, and before every session start of its own) it turns `session.use_strict_mode` and `session.use_only_cookies` on with `ini_set()`; when the app already started its session with either one off, it raises one `E_USER_WARNING` per request naming the setting and the fix, and the session keeps working. The new `checkSessionSettings` option makes that a hard stop (`true`, a `LogicException` on every call) or turns it all off (`false`). Every raw-PHP example now sets strict mode before `session_start()`; HELMET's `helmet_boot()` and Squire's php.ini already set both. The Laravel adapter is not affected.
@@ -74,7 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: CI pins the Preflight components to 0.4.0 (the proctor job clones the full history, so the override-approver check can read git blame).
 - Docs: BEST_PRACTICES S20 (CAS single logout) is tagged `Documented`, not `Not yet`: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).
 
-## \[0.6.1\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-1-2026-11-08)
+## \[0.6.1\] - 2026-11-08 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-1-2026-11-08)
 
 - Fixed: SESAME's routes are controller actions instead of closures, so `php artisan route:cache` and `optimize` work in an app that uses SESAME (a Citadel release runs optimize).
 - Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write `waynestate/sesame:^0.6` (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is `Checked` now that Squire's CI fails if its kit `php.ini` sets `session.sid_length` or `session.sid_bits_per_character`.
@@ -83,7 +84,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: BEST_PRACTICES S44 now asks for `Clear-Site-Data: "cache", "storage"` and says why `"cookies"` stays out on a shared host, so the row is `Enforced`; S48 describes the Preflight pins as they are (four components at the `@0.3.1` release tag) and is `Checked`, since PROCTOR's `preflight-pinned` check warns on an unpinned include.
 - Changed: the local a11y scripts run Preflight's own checker (vendored from 0.3.1 and pinned by a test), so they check what CI checks: axe-core 4.14.0, 320 and 1280 px, and the reflow check.
 
-## \[0.6.0\] - 2026-11-08[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-0-2026-11-08)
+## \[0.6.0\] - 2026-11-08 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-6-0-2026-11-08)
 
 - Added: CI runs Preflight's a11y component (0.3.1) on site/, every page in light and dark at 320 and 1280 px with the WCAG 1.4.10 reflow check, blocking.
 - Changed: CI pins the Preflight components to 0.3.1 (fixed cache keys, and caches saved even when a job fails; D-072).
@@ -116,7 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docs: "The saml driver (SAML 2.0 sign-in)" guide and "The saml driver's library choice"; the drivers, configuration, API, install, troubleshooting, Laravel and raw PHP pages cover the driver; BEST_PRACTICES S34, S35 and S47 move to `Enforced`.
 - Changed: CI caches Composer downloads per lock file (`.composer-cache`, keyed on `composer.lock` and `deploy/composer.lock`), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.
 
-## \[0.5.0\] - 2026-11-07[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
+## \[0.5.0\] - 2026-11-07 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-5-0-2026-11-07)
 
 - Added: `gateway.jwks_file` (env `SESAME_GATEWAY_JWKS_FILE`), a path to a JWKS file of the gateway's public keys by `kid`, the file Drawbridge's `keys:jwks` publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated `kid`, more than 8 keys or a key of the wrong type for `gateway.algorithm` stops the app with `InvalidConfig`. Set one of `public_key`, `public_keys` and `jwks_file`.
 - Changed: with exactly one key listed (`public_keys` or `jwks_file`), an assertion with no `kid` is verified with that key instead of refused; a `kid` that names another key is still refused, and with two or more keys a missing `kid` is still refused. `gateway.public_key` still ignores `kid`.
@@ -152,7 +153,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed: code blocks on the docs pages are keyboard focusable (`tabindex="0"`), so a block that scrolls sideways on a narrow screen can be reached and scrolled from the keyboard (axe `scrollable-region-focusable`). The docs builder adds the attribute; the pages were rebuilt.
 - Fixed: "On this page" sub-items on the docs pages carry the base item classes again, so the kit's block link styles apply and the links meet the minimum target size (axe `target-size`). The docs builder sets both classes; the pages were rebuilt.
 
-## \[0.4.0\] - 2026-11-03[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-4-0-2026-11-03)
+## \[0.4.0\] - 2026-11-03 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-4-0-2026-11-03)
 
 - This is a pre-1.0 minor: apps that pin `^0.3` stay on 0.3.x until they move their constraint to `^0.4`. The `gateway` driver now refuses a token whose `typ` header is `at+jwt`, so read the Security line first.
 - Docs: the cas quick start's Guzzle client now sets `allow_redirects` to false and `verify` to true, with a note that PSR-18 has no standard option for either (S42).
@@ -170,7 +171,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: CI pulls its Docker Hub images through the GitLab Dependency Proxy (the group's CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX), so pipelines no longer hit Docker Hub's anonymous pull limit.
 - Changed: docs and package metadata name nougat as the canonical repository, with git.wayne.edu and GitHub as read-only mirrors, until git.wayne.edu has CI runners.
 
-## \[0.3.0\] - 2026-10-30[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-3-0-2026-10-30)
+## \[0.3.0\] - 2026-10-30 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-3-0-2026-10-30)
 
 - Security: the signed-in user is looked up again on every request when the app's resolver implements the new `RefreshesUser` interface, and a user who no longer exists signs the session out. Before, `Sesame::user()` returned the copy saved at sign-in, so a user whose role was removed kept it until the session ended. The wayne-cas `UserResolver` implements it (a plain find by primary key, never an import).
 - Added: a `sesame` Laravel guard driver. Set `auth.guards.web.driver` to `sesame` and the users provider to `eloquent`, and `auth()->user()` returns the SESAME user; a Laravel login, `onceUsingId()` or `actingAs()` still wins for the request.
@@ -180,13 +181,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed: the missing `sesame.user_resolver` error names the wayne-cas resolver class.
 - Changed: the deploy layer's Squire kit is refreshed to 0.3.4 (the local .env.squire file is now git-ignored).
 
-## \[0.2.2\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-2-2026-10-29)
+## \[0.2.2\] - 2026-10-29 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-2-2026-10-29)
 
 - Changed: README leads with the gateway driver for Citadel apps and labels the oidc driver as the exception that needs its own Entra registration.
 - Changed: the deploy layer's Squire kit is refreshed to 0.3.3 (release options can now live in ./.env.squire).
 - Fixed: the oidc driver's default roles claim is wsu_roles, the name Entra sends; set roles_claim (and claims) to wsuRoles to keep the old name. Apps that relied on the old default must set it.
 
-## \[0.2.1\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-1-2026-10-29)
+## \[0.2.1\] - 2026-10-29 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-1-2026-10-29)
 
 - Added: agent-ready site (prompt blocks, Markdown twins, llms.txt), from Squire's kit.
 - Fixed: the oauth2 peg on the site hangs as a cut key, since the driver ships.
@@ -194,11 +195,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed: stale capability claims in the site and docs.
 - Changed: the site shows the oidc driver.
 
-## \[0.2.0\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-0-2026-10-29)
+## \[0.2.0\] - 2026-10-29 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-2-0-2026-10-29)
 
 - Changed: the proof page moves to a private site that needs a Wayne State sign-in.
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added)
+### Added [#](https://sesame.apps.wayne.edu/docs/changelog.html#added)
 
 - The `oidc` driver: browser sign-in with OpenID Connect (authorization code flow with PKCE S256, `state` and `nonce` bound to the session, single use, ten-minute expiry), Microsoft Entra ID first. Discovery and the key set are cached through PSR-16 for `oidc.cache_ttl_seconds` (default and maximum 3600) and each endpoint can be overridden; the ID token is checked for signature (RS256 by default, never `none` or HMAC), `iss`, `aud`, `azp`, `exp`, `nbf`, `iat` and `nonce`. No `prompt` or `max_age` by default (silent SSO); `step_up=1` adds the configured step-up parameters and requires a fresh `auth_time` (never in the future, and within `max_age`, 300 seconds when none is configured). Username from `accessid` (the `preferred_username` fallback is an opt-in, off by default, because users can change that claim), `iss`, `sub`, `tid` and `oid` passed to the resolver as stable account keys, roles from `wsuRoles`, MFA from `auth_time` and `amr` (or `oidc.assume_mfa`), and the claims in `SESAME_OIDC_CLAIMS` (default `wsuRoles,accessid`) passed to the resolver as attributes. Optional logout through Entra with `post_logout_redirect_uri`. Token, discovery and key-set requests never follow a redirect: a 3xx answer is an error (`oidc.token_redirect`, `oidc.discovery_unavailable`, `oidc.jwks_unavailable`), so the code, verifier and secret cannot be resent elsewhere. See "The oidc driver (Entra sign-in)".
 - The oidc driver stands on `league/oauth2-client` (suggested, not required; a clear error names the install command when it is missing) for the OAuth mechanics, and on SESAME's own firebase/php-jwt key-set code for the ID token. Why: `docs/oidc-library-choice.md`.
@@ -207,7 +208,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `Setting::env()`, and `SESAME_OIDC_CLIENT_SECRET` read from the environment only, never from the playbook. The secret is held in a `SensitiveParameterValue` (hidden from `var_export`, `json_encode`, dumps and array casts; `serialize` refuses), and the parameters that carry it, the ID token, the code or the PKCE verifier are marked `#[\SensitiveParameter]`.
 - README: a loud note that raw-PHP apps must raise `session.gc_maxlifetime` to at least SESAME's idle timeout.
 
-### Changed[#](https://sesame.apps.wayne.edu/docs/changelog.html#changed)
+### Changed [#](https://sesame.apps.wayne.edu/docs/changelog.html#changed)
 
 - Raw PHP: `sesame_logout()` is POST-only with a CSRF token. It runs only when the POST body's `sesame_logout_token` matches the session's token (new `sesame_logout_token()`, `Sesame::logoutToken()` and `Sesame::isLogoutToken()`); a GET answers 405 and a bad token 403, and neither touches the session. Apps must change a logout link to a POST form carrying the token. The Laravel `POST /logout` route stays in the `web` group and so under Laravel's CSRF check, now covered by a test.
 - Laravel: the Guzzle client SESAME builds when the app binds none has redirects off.
@@ -216,22 +217,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `JwksProvider` takes the algorithm per key lookup and a reason prefix, so the oauth2 and oidc drivers share it.
 - `JwksProvider`: the first (cold) key-set fetch no longer starts the one-minute refetch cooldown, so a key rotated just after it is picked up by the next unknown key id (oauth2 and oidc).
 
-## \[0.1.3\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-3-2026-10-29)
+## \[0.1.3\] - 2026-10-29 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-3-2026-10-29)
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-1)
+### Added [#](https://sesame.apps.wayne.edu/docs/changelog.html#added-1)
 
 - The four shared WSU values (`SESAME_CAS_BASE_URL`, `SESAME_GATEWAY_ISSUER`, `SESAME_OAUTH2_ISSUER`, `SESAME_OAUTH2_JWKS_URL`) now resolve through `Waynestate\Sesame\Support\Setting::get()`: the environment wins, and when it is empty the private `waynestate/playbook` package supplies the value. `waynestate/playbook` is suggested, never required.
 - A missing routed setting now fails with `Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).` instead of naming the config key.
 
-## \[0.1.2\] - 2026-10-29[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-2-2026-10-29)
+## \[0.1.2\] - 2026-10-29 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-2-2026-10-29)
 
-### Fixed[#](https://sesame.apps.wayne.edu/docs/changelog.html#fixed)
+### Fixed [#](https://sesame.apps.wayne.edu/docs/changelog.html#fixed)
 
 - The CAS driver reads `serviceValidate` responses by namespace URI instead of prefix: a body that binds the `cas:` prefix to a different namespace can no longer be read as a success, while a body that binds another prefix (or none) to the real CAS namespace keeps working.
 
-## \[0.1.1\] (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-1-2026-10-29)
+## \[0.1.1\] (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-1-2026-10-29)
 
-### Added[#](https://sesame.apps.wayne.edu/docs/changelog.html#added-2)
+### Added [#](https://sesame.apps.wayne.edu/docs/changelog.html#added-2)
 
 - Step-up by authentication context: the gateway driver reads the signed assertion's `acrs` claim (authentication context ids `c1` through `c99`, anything else dropped) and carries the contexts on the `Identity`.
 - `Identity::authContexts()` and `Identity::hasAuthContext(string $id)`: membership in the context list, never a prefix match.
@@ -248,10 +249,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Laravel adapter wires the oauth2 driver: the PSR-18 client comes from the app's `ClientInterface` binding or Guzzle, and the key set cache comes from the app's cache, using the store named by `oauth2.jwks_store` (the default store when none is named).
 - `firebase/php-jwt` as a dependency: JWKS parsing and RS256 verification come from the library, not from SESAME's own code.
 
-### Changed[#](https://sesame.apps.wayne.edu/docs/changelog.html#changed-1)
+### Changed [#](https://sesame.apps.wayne.edu/docs/changelog.html#changed-1)
 
 - Static analysis now includes Pinstripe's `phpstan/strict.neon` preset from the `waynestate/pinstripe` dev dependency instead of the hand-copied settings: PHPStan level 8, deprecation checks on, strict rules stay on. No behaviour changed.
 
-## \[0.1.0\] (2026-10-27)[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-0-2026-10-27)
+## \[0.1.0\] (2026-10-27) [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-1-0-2026-10-27)
 
 - First tagged release.

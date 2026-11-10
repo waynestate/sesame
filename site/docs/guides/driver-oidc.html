@@ -45,10 +45,10 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html" aria-current="page">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="the-oidc-driver-entra-sign-in">The oidc driver (Entra sign-in)<a class="docs-heading-link" aria-label="Link to this section" href="#the-oidc-driver-entra-sign-in">#</a></h1>
+      <article class="docs-article"><h1 id="the-oidc-driver-entra-sign-in">The oidc driver (Entra <span class="docs-heading-tail"><span>sign-in)</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-oidc-driver-entra-sign-in">#</a></span></h1>
 <p>The goal: sign a person into your app through the browser, straight at Microsoft Entra ID, with OpenID Connect. This page walks through how a sign-in runs, every config key, and the one-time Entra app registration; then set the driver up on the <a href="raw-php.html">Raw PHP</a> or <a href="laravel.html">Laravel</a> page.</p>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>This is the exception, not the default. On Citadel prefer the <code>gateway</code> driver behind Drawbridge, which needs no Entra registration per app. This driver needs its own registration (see &quot;The Entra app registration&quot; below).</p></aside>
-<h2 id="what-you-need">What you need<a class="docs-heading-link" aria-label="Link to this section" href="#what-you-need">#</a></h2>
+<h2 id="what-you-need">What you <span class="docs-heading-tail"><span>need</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-you-need">#</a></span></h2>
 <p>Open sesame, said straight to Entra. The oidc driver signs a person in
 through the browser with OpenID Connect: the authorization code flow with
 PKCE (S256), the ID token checked against the issuer's key set. It is the
@@ -59,7 +59,7 @@ needs <code>league/oauth2-client</code>, which SESAME suggests but does not requ
 <p>Without it, building the driver fails with <code>The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client</code>.
 Why that library, and what else was weighed:
 <a href="../oidc-library-choice.html">docs/oidc-library-choice.md</a>.</p>
-<h2 id="how-a-sign-in-runs">How a sign-in runs<a class="docs-heading-link" aria-label="Link to this section" href="#how-a-sign-in-runs">#</a></h2>
+<h2 id="how-a-sign-in-runs">How a sign-in <span class="docs-heading-tail"><span>runs</span><a class="docs-heading-link" aria-label="Link to this section" href="#how-a-sign-in-runs">#</a></span></h2>
 <ol>
 <li>A request to the login URL without a <code>code</code> starts it. The driver makes a
 fresh <code>state</code> and <code>nonce</code> and a PKCE verifier, keeps all three in the
@@ -79,7 +79,7 @@ so the code, the verifier and the secret are never resent elsewhere.</li>
 regenerates the session ID, as for every driver. The access token and the
 ID token are never stored.</li>
 </ol>
-<h2 id="silent-sso-and-step-up">Silent SSO and step-up<a class="docs-heading-link" aria-label="Link to this section" href="#silent-sso-and-step-up">#</a></h2>
+<h2 id="silent-sso-and-step-up">Silent SSO and <span class="docs-heading-tail"><span>step-up</span><a class="docs-heading-link" aria-label="Link to this section" href="#silent-sso-and-step-up">#</a></span></h2>
 <p><strong>SSO stays silent.</strong> No <code>prompt</code> and no <code>max_age</code> are sent by default, so a
 person already signed in to Entra (Outlook, Teams, Canvas) is signed in
 without a click.</p>
@@ -92,7 +92,7 @@ before the sign-in started when <code>prompt=login</code> was sent, and within
 <code>max_age</code>, which is 300 seconds when <code>oidc.step_up.max_age</code> is not set, so
 a step-up is never unbounded. In Laravel, <code>sesame.mfa</code> with
 <code>mfa.on_failure=reauth</code> sends the user to <code>/login?step_up=1</code> for you.</p>
-<h2 id="identity-roles-and-claims">Identity, roles and claims<a class="docs-heading-link" aria-label="Link to this section" href="#identity-roles-and-claims">#</a></h2>
+<h2 id="identity-roles-and-claims">Identity, roles and <span class="docs-heading-tail"><span>claims</span><a class="docs-heading-link" aria-label="Link to this section" href="#identity-roles-and-claims">#</a></span></h2>
 <p>The username comes from <code>oidc.username_claim</code> (default
 <code>accessid</code>, the UPN's prefix). When the token has no such claim, the
 sign-in fails with <code>oidc.missing_claim</code> and the error names the settings to
@@ -112,7 +112,7 @@ names, so <code>$identity-&gt;attributes['wsu_roles']</code> works. Set <code>ro
 <code>tid</code>, <code>email</code>, <code>name</code> and <code>preferred_username</code> are attributes too; key the
 app's users on <code>iss</code> plus <code>sub</code>, or <code>tid</code> plus <code>oid</code> (S24), never on the
 username alone.</p>
-<h2 id="mfa">MFA<a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></h2>
+<h2 id="mfa"><span class="docs-heading-tail"><span>MFA</span><a class="docs-heading-link" aria-label="Link to this section" href="#mfa">#</a></span></h2>
 <p><code>auth_time</code> becomes the identity's MFA time and <code>amr</code> its methods,
 with the cas driver's rules: the driver never invents a sign-in time, and
 without an MFA method in <code>amr</code> the MFA check fails closed. Entra's v2 ID
@@ -120,7 +120,7 @@ tokens often carry no <code>amr</code>; when Conditional Access enforces MFA for
 app, <code>oidc.assume_mfa</code> adds <code>mfa</code> to the methods, exactly like
 <code>cas.assume_mfa</code>. <code>acrs</code> (authentication contexts <code>c1</code> to <code>c99</code>) feeds
 <code>hasAuthContext()</code>.</p>
-<h2 id="return-to-and-logout">Return-to and logout<a class="docs-heading-link" aria-label="Link to this section" href="#return-to-and-logout">#</a></h2>
+<h2 id="return-to-and-logout">Return-to and <span class="docs-heading-tail"><span>logout</span><a class="docs-heading-link" aria-label="Link to this section" href="#return-to-and-logout">#</a></span></h2>
 <p>A login request may carry <code>return_to</code>. It is kept only when
 it passes the ReturnTo rule (an absolute https URL with the redirect URI's
 scheme, host and port, and no user name or password); anything else is
@@ -131,7 +131,7 @@ the callback, <code>sesame_login()</code> and the Laravel route send the user th
 <code>end_session_endpoint</code> with that <code>post_logout_redirect_uri</code>, which must also
 be registered on the app registration. Without it, logout stays local and
 the Entra session lives on (the next sign-in is silent).</p>
-<h2 id="raw-php">Raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></h2>
+<h2 id="raw-php">Raw <span class="docs-heading-tail"><span>PHP</span><a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></span></h2>
 <pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
@@ -185,7 +185,7 @@ $user = sesame_login();
 </code></pre>
 <p>A protected page sends a guest to <code>login.php?return_to=&lt;its own https URL&gt;</code>,
 and a page that needs fresh credentials to <code>login.php?step_up=1</code>.</p>
-<h2 id="laravel">Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></h2>
+<h2 id="laravel"><span class="docs-heading-tail"><span>Laravel</span><a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></span></h2>
 <pre tabindex="0"><code>SESAME_DRIVER=oidc
 SESAME_OIDC_CLIENT_ID=&lt;application (client) id&gt;
 SESAME_OIDC_CLIENT_SECRET=&lt;client secret value&gt;
@@ -199,7 +199,7 @@ the callback redirects to the checked <code>return_to</code>, or to the page
 <code>auth.sesame</code> saved. Laravel's default <code>SameSite=Lax</code> session cookie is
 right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 <code>Strict</code> would drop the cookie and fail every callback with <code>oidc.state</code>.</p>
-<h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
+<h2 id="config-keys">Config <span class="docs-heading-tail"><span>keys</span><a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -345,7 +345,7 @@ right: Entra's redirect back is a top-level GET, which Lax allows (S41);
 </tbody>
 </table></div>
 <aside class="docs-callout docs-callout--danger" role="note"><p class="docs-callout__label">Danger</p><p><code>SESAME_OIDC_CLIENT_SECRET</code> is environment only: never the playbook, never logged. It is held in a <code>SensitiveParameterValue</code>, so <code>var_export</code>, <code>json_encode</code> and dumps show nothing and <code>serialize</code> refuses. Keep PHP's production default <code>zend.exception_ignore_args = On</code> as well.</p></aside>
-<h2 id="the-entra-app-registration">The Entra app registration<a class="docs-heading-link" aria-label="Link to this section" href="#the-entra-app-registration">#</a></h2>
+<h2 id="the-entra-app-registration">The Entra app <span class="docs-heading-tail"><span>registration</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-entra-app-registration">#</a></span></h2>
 <p>What the developer (or the Entra admin) sets on the app registration:</p>
 <ul>
 <li><strong>Platform: Web</strong>, with the redirect URI exactly as <code>oidc.redirect_uri</code>
@@ -371,7 +371,7 @@ delegated) are enough.</li>
 </ul>
 <p>Use the v2.0 issuer (<code>https://login.microsoftonline.com/&lt;tenant&gt;/v2.0</code>); the
 tenant id comes from the playbook or the environment, never from code.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="which-driver.html">Which driver for my app?</a></li>
 <li><a href="driver-gateway.html">The gateway driver</a></li>

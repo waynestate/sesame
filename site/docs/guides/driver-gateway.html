@@ -45,14 +45,14 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html" aria-current="page">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="the-gateway-driver">The gateway driver<a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver">#</a></h1>
+      <article class="docs-article"><h1 id="the-gateway-driver">The gateway <span class="docs-heading-tail"><span>driver</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver">#</a></span></h1>
 <p>This page sets up the <code>gateway</code> driver, the recommended path on Citadel: it verifies the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header. Configure the driver below, then read the key rotation steps before you rotate the gateway's signing key.</p>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the <code>cas</code> driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.</p></aside>
-<h2 id="how-it-verifies">How it verifies<a class="docs-heading-link" aria-label="Link to this section" href="#how-it-verifies">#</a></h2>
+<h2 id="how-it-verifies">How it <span class="docs-heading-tail"><span>verifies</span><a class="docs-heading-link" aria-label="Link to this section" href="#how-it-verifies">#</a></span></h2>
 <p>The gateway driver signs the user in from a signed JWT assertion that the auth gateway (Drawbridge) puts in one header. It verifies the assertion's signature against the gateway's public key, then checks the issuer, audience and time claims. It never reads a plain identity header: <code>Remote-User</code>, <code>X-Remote-User</code>, or any spelling of them, because a plain header can come from anywhere on the shared network. And the request must come from a trusted proxy: the direct peer (<code>REMOTE_ADDR</code>) must match one of the configured CIDR ranges. A valid assertion from an untrusted peer is still rejected.</p>
 <p>The algorithm is pinned from config, so a token that claims a different algorithm (or <code>none</code>) is refused before its signature is even looked at.</p>
 <p>Every assertion is single-use. The driver requires a <code>jti</code> claim, refuses an assertion that lives longer than <code>gateway.max_lifetime</code> seconds, and remembers each <code>jti</code> it has seen in a replay guard, so a captured assertion cannot be played back a second time. The guard is a PSR-16 cache: the Laravel adapter wires one up for you, and a raw PHP app passes its own (below).</p>
-<h2 id="configure-the-driver">Configure the driver<a class="docs-heading-link" aria-label="Link to this section" href="#configure-the-driver">#</a></h2>
+<h2 id="configure-the-driver">Configure the <span class="docs-heading-tail"><span>driver</span><a class="docs-heading-link" aria-label="Link to this section" href="#configure-the-driver">#</a></span></h2>
 <pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ $guard = new Psr16ReplayGuard(new FilesystemAdapter());
 $driver = DriverFactory::make($config, null, null, null, $guard);
 </code></pre>
 <p>Then build the Sesame facade with the driver, as in the Raw PHP section of the README.</p>
-<h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
+<h2 id="config-keys">Config <span class="docs-heading-tail"><span>keys</span><a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -166,12 +166,12 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 </tr>
 </tbody>
 </table></div>
-<h2 id="assertion-claims">Assertion claims<a class="docs-heading-link" aria-label="Link to this section" href="#assertion-claims">#</a></h2>
+<h2 id="assertion-claims">Assertion <span class="docs-heading-tail"><span>claims</span><a class="docs-heading-link" aria-label="Link to this section" href="#assertion-claims">#</a></span></h2>
 <p>The assertion must carry <code>sub</code>, <code>iat</code>, <code>exp</code> and <code>jti</code>; the <code>sub</code> claim becomes the username. The optional <code>email</code>, <code>name</code> and <code>affiliations</code> claims become read-only identity attributes. The sign-in time on the identity comes from the driver's clock.</p>
 <p>The optional <code>auth_time</code> and <code>amr</code> claims become the identity's MFA facts, for <code>requireMfa()</code>. <code>auth_time</code> is the epoch seconds of the user's last MFA sign-in; <code>amr</code> is the list of methods they used. A missing or malformed <code>auth_time</code> leaves the MFA time unset, and a missing or malformed <code>amr</code> leaves the method list empty, so a claim the gateway did not verify can never satisfy the check.</p>
-<h2 id="rotating-the-gateway-s-signing-key">Rotating the gateway's signing key<a class="docs-heading-link" aria-label="Link to this section" href="#rotating-the-gateway-s-signing-key">#</a></h2>
+<h2 id="rotating-the-gateway-s-signing-key">Rotating the gateway's signing <span class="docs-heading-tail"><span>key</span><a class="docs-heading-link" aria-label="Link to this section" href="#rotating-the-gateway-s-signing-key">#</a></span></h2>
 <p>The gateway signs with one key at a time and names it in the <code>kid</code> header of every assertion. An app may list several public keys at once, so a key rotation needs no coordinated window. The driver verifies each assertion with the key listed under its <code>kid</code>; an unknown <code>kid</code> is refused, and so is one signed by another listed key under the wrong <code>kid</code>. With two or more keys listed, an assertion with no <code>kid</code> is refused; with exactly one, it is verified with that key, so a single-key setup keeps working. The algorithm stays pinned from config for every key.</p>
-<h3 id="the-key-set-file">The key set file<a class="docs-heading-link" aria-label="Link to this section" href="#the-key-set-file">#</a></h3>
+<h3 id="the-key-set-file">The key set <span class="docs-heading-tail"><span>file</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-key-set-file">#</a></span></h3>
 <p>The easy way to list the keys is the key set file Drawbridge publishes (<code>bin/drawbridge keys:jwks</code>): a standard JWKS file that always holds the gateway's current key and its next one. Point <code>gateway.jwks_file</code> (or <code>SESAME_GATEWAY_JWKS_FILE</code>) at it. Public keys are not secrets, so the file may live in your repository or on a read-only mount.</p>
 <pre tabindex="0"><code class="language-dotenv">SESAME_GATEWAY_JWKS_FILE=/var/www/app/config/drawbridge-keys.json
 </code></pre>
@@ -183,13 +183,13 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 <li>holds any private key material (<code>d</code>, <code>p</code>, <code>q</code>, <code>dp</code>, <code>dq</code>, <code>qi</code>, <code>oth</code> or <code>k</code>); if this happens, treat that private key as exposed;</li>
 <li>has a key of the wrong type for <code>gateway.algorithm</code> (ES256 needs EC P-256, RS256 needs RSA of 2048 bits or more, EdDSA needs OKP Ed25519), or an <code>alg</code> or <code>use</code> that does not match.</li>
 </ul>
-<h3 id="a-rotation-from-the-app-s-side">A rotation, from the app's side<a class="docs-heading-link" aria-label="Link to this section" href="#a-rotation-from-the-app-s-side">#</a></h3>
+<h3 id="a-rotation-from-the-app-s-side">A rotation, from the app's <span class="docs-heading-tail"><span>side</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-rotation-from-the-app-s-side">#</a></span></h3>
 <ol>
 <li>The gateway switches to its next key. Your app already trusts it, because it was in the file all along: nothing to do.</li>
 <li>Drawbridge publishes a new file (the new current key and a new next key; the retired key is gone). Deploy it, or refresh the mount, when you can. Until then the old file still works.</li>
 </ol>
 <p>Drawbridge's <a rel="noopener" href="https://drawbridge.apps.wayne.edu/docs/guides/rotating-the-signing-key.html">rotation guide</a> has the gateway's side and the emergency steps.</p>
-<h3 id="the-same-keys-in-php-config">The same keys in PHP config<a class="docs-heading-link" aria-label="Link to this section" href="#the-same-keys-in-php-config">#</a></h3>
+<h3 id="the-same-keys-in-php-config">The same keys in PHP <span class="docs-heading-tail"><span>config</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-same-keys-in-php-config">#</a></span></h3>
 <p><code>gateway.public_keys</code> takes the same keys as a map. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>, never two.</p>
 <pre tabindex="0"><code class="language-php">'gateway' =&gt; [
     'public_keys' =&gt; [
@@ -200,7 +200,7 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 ],
 </code></pre>
 <p>Two keys on the pegboard, one door: while the old one still hangs there, nobody gets locked out.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="driver-cas.html">The cas driver</a></li>
 <li><a href="running-off-citadel.html">Running off Citadel</a></li>

@@ -46,24 +46,25 @@
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><!-- Generated from CHANGELOG.md by bin/docs-site.php. Edit CHANGELOG.md, not this file. -->
-<h1 id="changelog">Changelog<a class="docs-heading-link" aria-label="Link to this section" href="#changelog">#</a></h1>
+<h1 id="changelog"><span class="docs-heading-tail"><span>Changelog</span><a class="docs-heading-link" aria-label="Link to this section" href="#changelog">#</a></span></h1>
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
-<h2 id="unreleased">[Unreleased]<a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></h2>
+<h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
+<li>Changed: the docs, agent-ready and deploy kits are Squire 0.10.6 (was 0.10.5): the docs builder and agent-ready generator see every file on Docker Desktop mounts.</li>
 <li>Site: <code>assets/stack-env.js</code> knows Parity, so a pre-production page links Parity's pre-production site and a dev page links its local <code>site/</code> folder. Until now Parity, of all parts, was the one link that ignored its environment.</li>
 <li>Site: Parity is out; the party list links its site.</li>
 <li>Deploy kit refreshed to Squire 0.10.5.</li>
 <li>Docs: BEST_PRACTICES lists the drivers SESAME ships and states one pinning rule.</li>
 </ul>
-<h2 id="0-7-3-2026-11-09">[0.7.3] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-3-2026-11-09">#</a></h2>
+<h2 id="0-7-3-2026-11-09">[0.7.3] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-3-2026-11-09">#</a></span></h2>
 <ul>
 <li>Docs: the upgrading guide has a 0.7.3 section (no breaks, no library code changes), and the docs index and BEST_PRACTICES name release 0.7.3.</li>
 <li>Docs: Parity joins the party. The README cast, the instance runner page's cast and the front page's key ring carry Parity next to Squire, with its spirit-level mark: the stack's new tool that runs Citadel on your computer (its PHP image, its proxy and MySQL 5.6), where a local copy signs in with SESAME's fake driver. 0.1.0 is coming and it has no site yet, so its tag links nowhere. One more key on the ring, and this one is level.</li>
 <li>Changed: refreshed version mentions. The README and the moving-from-wayne-cas guide say Booster 1.14.0 and later write <code>waynestate/sesame:^0.7</code> (they said <code>^0.6</code>, which Booster 1.12.0 and 1.13.0 wrote; apps those hopped take the 0.7.0 upgrading step). The dev tools require Pinstripe ^0.3 (lock 0.3.0, was ^0.1.4 at 0.1.4), which bans <code>var_dump()</code>: the one in <code>tests/OidcDriverTest.php</code>, which proves a dump never shows the client secret, carries a reasoned <code>pinstripe.banned.varDump</code> ignore. Open sesame: the doors now match the keys.</li>
 </ul>
-<h2 id="0-7-2-2026-11-09">[0.7.2] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-2-2026-11-09">#</a></h2>
+<h2 id="0-7-2-2026-11-09">[0.7.2] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-2-2026-11-09">#</a></span></h2>
 <ul>
 <li>Fixed: the docs gave the wrong address for the university's CAS server. The README, the cas driver guide and the Wayne Auth guide set <code>cas.base_url</code> to a <code>login.wayne.edu</code> address that answers 404, so an app that copied it never reached the sign-in. The address is <code>https://academica.aws.wayne.edu/cas</code>; people still see the familiar <code>login.wayne.edu</code> screen, because Academica sends the browser there to sign in. SESAME has no built-in CAS address, so no code changes, and a new test keeps every example on the working address.</li>
 <li>Fixed: the Wayne Auth guide said <code>cas.base_url</code> could be left out of <code>WayneAuth::boot()</code> when Playbook is installed or <code>SESAME_CAS_BASE_URL</code> is set. The bridge reads only the array it is given; the guide now says so and shows how to pass <code>Setting::get('SESAME_CAS_BASE_URL')</code> instead.</li>
@@ -72,7 +73,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: CI pins the Preflight components to 0.5.0 (was 0.4.0), and the composer-audit job takes the component's own image instead of naming one; the a11y pin test expects 0.5.0, and BEST_PRACTICES S48 names <code>@0.5.0</code>.</li>
 <li>Docs: the Proof page records the 2026-11-09 run on the 0.7.2 fixes (863 tests, 2517 assertions, on PHP 8.3, 8.4 and 8.5, and <code>composer ci</code>).</li>
 </ul>
-<h2 id="0-7-1-2026-11-09">[0.7.1] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-1-2026-11-09">#</a></h2>
+<h2 id="0-7-1-2026-11-09">[0.7.1] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-1-2026-11-09">#</a></span></h2>
 <ul>
 <li>Fixed: a session past its idle (2 hours) or absolute (12 hours) timeout no longer ends in a blank 500. <code>NativeSession::invalidate()</code> closed the session and started nothing in its place, so the cas driver's pending-login write that follows a timeout (in <code>sesame_login()</code> and the Wayne Auth bridge) threw <code>LogicException: No session is active</code>. It now leaves the logout marker under the old ID and starts a fresh, empty session under a new ID from <code>session_create_id()</code>, never one from the request, with strict mode kept as the app set it; when headers are already sent it leaves the session closed, as before. Sign-out takes the same path.</li>
 <li>Changed: on the native PHP session (raw PHP and the Wayne Auth bridge), because sign-out (<code>sesame_logout()</code>, <code>sesame()-&gt;logout()</code>, <code>sesame()-&gt;signOutLocal()</code>) now leaves a fresh, empty session open, an app that calls <code>session_start()</code> itself after it in the same request (after <code>logout()</code> or <code>signOutLocal()</code>, or in a shutdown function after <code>sesame_logout()</code>) gets PHP's notice &quot;Ignoring session_start() because a session is already active&quot;. Drop that call, or guard it with <code>session_status() !== PHP_SESSION_ACTIVE</code>.</li>
@@ -89,7 +90,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Docs: MAINTAINING names the maintainer as a role (the stack maintainer), reached through an issue on git.wayne.edu.</li>
 <li>Docs: the <code>NativeSession</code> constructor docblock says <code>checkSessionSettings</code> also covers the cookie flag check (HttpOnly, Secure on https, a Lax or Strict SameSite; checked, never set), and BEST_PRACTICES' <code>NativeSession.php</code> line citations follow it.</li>
 </ul>
-<h2 id="0-7-0-2026-11-09">[0.7.0] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></h2>
+<h2 id="0-7-0-2026-11-09">[0.7.0] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></span></h2>
 <ul>
 <li>Docs: the upgrading guide has a 0.7.0 section: what to set so the new cookie flag warning stays quiet, and the <code>^0.7</code> constraint step.</li>
 <li>Changed: the deploy kit is Squire 0.10.0 (was 0.7.1): release.sh keeps Composer and npm download caches in the app folder and the gate takes SQUIRE_PHP_RUNTIME; the compose file, health.php and .env.squire.example follow the template, and the portable image files are added.</li>
@@ -98,13 +99,13 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Docs: the upgrading guide's 0.7.0 section and the troubleshooting entry for <code>SESAME: the session cookie is sent without</code> give the fix per case: Squire kit 0.10.2 or later (<code>squire update</code>, its <code>php.ini</code> sets <code>session.cookie_samesite = Lax</code>), Laravel (unaffected, it sets its own cookie), and raw PHP on a host whose <code>php.ini</code> you do not control (<code>helmet_boot()</code> or three <code>ini_set()</code> lines before <code>session_start()</code>); <code>Lax</code> keeps CAS, OIDC and SAML working.</li>
 <li>Docs: truth pass for 2026-11-09. Every raw-PHP example sets the cookie flags with <code>session_set_cookie_params()</code> before <code>session_start()</code>, so following the docs gives no warning; the README, raw PHP guide, session timeouts table, API reference, troubleshooting and the Wayne Auth guide describe the cookie flag check; BEST_PRACTICES cites current line numbers throughout, S2 says which <code>session_start()</code> and cookie calls <code>NativeSession</code> does make, S11 says the CAS URL check parses the URL (it said a prefix test), S12 names the <code>ST-</code> prefix, S41 says a missing or <code>None</code> SameSite is now caught but <code>Strict</code> is not, and S45 names kit 0.10.0; MAINTAINING lists every runtime dependency and every <code>composer ci</code> step.</li>
 </ul>
-<h2 id="0-6-3-2026-11-09">[0.6.3] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-3-2026-11-09">#</a></h2>
+<h2 id="0-6-3-2026-11-09">[0.6.3] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-3-2026-11-09">#</a></span></h2>
 <ul>
 <li>Docs: the upgrading guide has a 0.6.3 section, and the README, Laravel guide and wayne-cas guide say JSON sessions work with the shim from 0.6.3.</li>
 <li>Docs: freshness pass for 0.6.2. The upgrading guide has a 0.6.2 section, and the wayne-cas guide, Laravel guide, README and troubleshooting say a wayne-cas app on an Eloquent model needs no resolver subclass from 0.6.2 on; the front page stamp follows the release (<code>data-docs-version</code>, it said 0.5), names SAML, fixes the wayne-cas guard row, and its agent prompts know the saml driver and the 0.6.2 floor; the driver tables say <code>gateway</code> waits on a live Drawbridge; the check count is seven.</li>
 <li>Fixed: the wayne-cas shim's refreshUser() looks the user up again when the session hands the stored user back as an array (Laravel 13's JSON session serialization). It reads the array's primary key and returns the model through query()-&gt;find(), signing the session out when the account is gone; before this it passed the array through, so the guard saw nobody while the middleware let the request in. A wayne-cas app on JSON sessions no longer needs a resolver of its own.</li>
 </ul>
-<h2 id="0-6-2-2026-11-09">[0.6.2] - 2026-11-09<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-2-2026-11-09">#</a></h2>
+<h2 id="0-6-2-2026-11-09">[0.6.2] - <span class="docs-heading-tail"><span>2026-11-09</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-2-2026-11-09">#</a></span></h2>
 <ul>
 <li>Fixed: the wayne-cas shim's <code>refreshUser()</code> works with an Eloquent user model. It checked for a declared static <code>find</code> method, which Eloquent models do not have, so every signed-in request failed with <code>InvalidConfig</code>. It now looks Eloquent models up through <code>query()-&gt;find()</code> and keeps the static <code>find</code> path for other classes.</li>
 <li>Changed: <code>NativeSession</code> keeps a client from choosing its own session ID without a code change (BEST_PRACTICES S3). Whenever no session is active (when it is built before <code>session_start()</code>, and before every session start of its own) it turns <code>session.use_strict_mode</code> and <code>session.use_only_cookies</code> on with <code>ini_set()</code>; when the app already started its session with either one off, it raises one <code>E_USER_WARNING</code> per request naming the setting and the fix, and the session keeps working. The new <code>checkSessionSettings</code> option makes that a hard stop (<code>true</code>, a <code>LogicException</code> on every call) or turns it all off (<code>false</code>). Every raw-PHP example now sets strict mode before <code>session_start()</code>; HELMET's <code>helmet_boot()</code> and Squire's php.ini already set both. The Laravel adapter is not affected.</li>
@@ -112,7 +113,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: CI pins the Preflight components to 0.4.0 (the proctor job clones the full history, so the override-approver check can read git blame).</li>
 <li>Docs: BEST_PRACTICES S20 (CAS single logout) is tagged <code>Documented</code>, not <code>Not yet</code>: Academica never sends single logout, and the entry already says apps rely on SESAME's session timeouts (S5).</li>
 </ul>
-<h2 id="0-6-1-2026-11-08">[0.6.1] - 2026-11-08<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></h2>
+<h2 id="0-6-1-2026-11-08">[0.6.1] - <span class="docs-heading-tail"><span>2026-11-08</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></span></h2>
 <ul>
 <li>Fixed: SESAME's routes are controller actions instead of closures, so <code>php artisan route:cache</code> and <code>optimize</code> work in an app that uses SESAME (a Citadel release runs optimize).</li>
 <li>Docs: the README and the wayne-cas guide say Booster 1.12.0 and later write <code>waynestate/sesame:^0.6</code> (an app hopped by an earlier Booster takes the 0.5.0 and 0.6.0 upgrade steps), and BEST_PRACTICES S45 is <code>Checked</code> now that Squire's CI fails if its kit <code>php.ini</code> sets <code>session.sid_length</code> or <code>session.sid_bits_per_character</code>.</li>
@@ -121,7 +122,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Docs: BEST_PRACTICES S44 now asks for <code>Clear-Site-Data: &quot;cache&quot;, &quot;storage&quot;</code> and says why <code>&quot;cookies&quot;</code> stays out on a shared host, so the row is <code>Enforced</code>; S48 describes the Preflight pins as they are (four components at the <code>@0.3.1</code> release tag) and is <code>Checked</code>, since PROCTOR's <code>preflight-pinned</code> check warns on an unpinned include.</li>
 <li>Changed: the local a11y scripts run Preflight's own checker (vendored from 0.3.1 and pinned by a test), so they check what CI checks: axe-core 4.14.0, 320 and 1280 px, and the reflow check.</li>
 </ul>
-<h2 id="0-6-0-2026-11-08">[0.6.0] - 2026-11-08<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-0-2026-11-08">#</a></h2>
+<h2 id="0-6-0-2026-11-08">[0.6.0] - <span class="docs-heading-tail"><span>2026-11-08</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-0-2026-11-08">#</a></span></h2>
 <ul>
 <li>
 <p>Added: CI runs Preflight's a11y component (0.3.1) on site/, every page in light and dark at 320 and 1280 px with the WCAG 1.4.10 reflow check, blocking.</p>
@@ -214,7 +215,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <p>Changed: CI caches Composer downloads per lock file (<code>.composer-cache</code>, keyed on <code>composer.lock</code> and <code>deploy/composer.lock</code>), so a pipeline stops fetching every package from Packagist on every run. Images already come through the Dependency Proxy.</p>
 </li>
 </ul>
-<h2 id="0-5-0-2026-11-07">[0.5.0] - 2026-11-07<a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></h2>
+<h2 id="0-5-0-2026-11-07">[0.5.0] - <span class="docs-heading-tail"><span>2026-11-07</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></span></h2>
 <ul>
 <li>
 <p>Added: <code>gateway.jwks_file</code> (env <code>SESAME_GATEWAY_JWKS_FILE</code>), a path to a JWKS file of the gateway's public keys by <code>kid</code>, the file Drawbridge's <code>keys:jwks</code> publishes (its current key and its next). It is read at boot through firebase/php-jwt's JWK parser, and a missing file, private key material, a repeated <code>kid</code>, more than 8 keys or a key of the wrong type for <code>gateway.algorithm</code> stops the app with <code>InvalidConfig</code>. Set one of <code>public_key</code>, <code>public_keys</code> and <code>jwks_file</code>.</p>
@@ -316,7 +317,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <p>Fixed: &quot;On this page&quot; sub-items on the docs pages carry the base item classes again, so the kit's block link styles apply and the links meet the minimum target size (axe <code>target-size</code>). The docs builder sets both classes; the pages were rebuilt.</p>
 </li>
 </ul>
-<h2 id="0-4-0-2026-11-03">[0.4.0] - 2026-11-03<a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></h2>
+<h2 id="0-4-0-2026-11-03">[0.4.0] - <span class="docs-heading-tail"><span>2026-11-03</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></span></h2>
 <ul>
 <li>This is a pre-1.0 minor: apps that pin <code>^0.3</code> stay on 0.3.x until they move their constraint to <code>^0.4</code>. The <code>gateway</code> driver now refuses a token whose <code>typ</code> header is <code>at+jwt</code>, so read the Security line first.</li>
 <li>Docs: the cas quick start's Guzzle client now sets <code>allow_redirects</code> to false and <code>verify</code> to true, with a note that PSR-18 has no standard option for either (S42).</li>
@@ -334,7 +335,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: CI pulls its Docker Hub images through the GitLab Dependency Proxy (the group's CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX), so pipelines no longer hit Docker Hub's anonymous pull limit.</li>
 <li>Changed: docs and package metadata name nougat as the canonical repository, with git.wayne.edu and GitHub as read-only mirrors, until git.wayne.edu has CI runners.</li>
 </ul>
-<h2 id="0-3-0-2026-10-30">[0.3.0] - 2026-10-30<a class="docs-heading-link" aria-label="Link to this section" href="#0-3-0-2026-10-30">#</a></h2>
+<h2 id="0-3-0-2026-10-30">[0.3.0] - <span class="docs-heading-tail"><span>2026-10-30</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-3-0-2026-10-30">#</a></span></h2>
 <ul>
 <li>Security: the signed-in user is looked up again on every request when the app's resolver implements the new <code>RefreshesUser</code> interface, and a user who no longer exists signs the session out. Before, <code>Sesame::user()</code> returned the copy saved at sign-in, so a user whose role was removed kept it until the session ended. The wayne-cas <code>UserResolver</code> implements it (a plain find by primary key, never an import).</li>
 <li>Added: a <code>sesame</code> Laravel guard driver. Set <code>auth.guards.web.driver</code> to <code>sesame</code> and the users provider to <code>eloquent</code>, and <code>auth()-&gt;user()</code> returns the SESAME user; a Laravel login, <code>onceUsingId()</code> or <code>actingAs()</code> still wins for the request.</li>
@@ -344,13 +345,13 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: the missing <code>sesame.user_resolver</code> error names the wayne-cas resolver class.</li>
 <li>Changed: the deploy layer's Squire kit is refreshed to 0.3.4 (the local .env.squire file is now git-ignored).</li>
 </ul>
-<h2 id="0-2-2-2026-10-29">[0.2.2] - 2026-10-29<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-2-2026-10-29">#</a></h2>
+<h2 id="0-2-2-2026-10-29">[0.2.2] - <span class="docs-heading-tail"><span>2026-10-29</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-2-2026-10-29">#</a></span></h2>
 <ul>
 <li>Changed: README leads with the gateway driver for Citadel apps and labels the oidc driver as the exception that needs its own Entra registration.</li>
 <li>Changed: the deploy layer's Squire kit is refreshed to 0.3.3 (release options can now live in ./.env.squire).</li>
 <li>Fixed: the oidc driver's default roles claim is wsu_roles, the name Entra sends; set roles_claim (and claims) to wsuRoles to keep the old name. Apps that relied on the old default must set it.</li>
 </ul>
-<h2 id="0-2-1-2026-10-29">[0.2.1] - 2026-10-29<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-1-2026-10-29">#</a></h2>
+<h2 id="0-2-1-2026-10-29">[0.2.1] - <span class="docs-heading-tail"><span>2026-10-29</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-1-2026-10-29">#</a></span></h2>
 <ul>
 <li>Added: agent-ready site (prompt blocks, Markdown twins, llms.txt), from Squire's kit.</li>
 <li>Fixed: the oauth2 peg on the site hangs as a cut key, since the driver ships.</li>
@@ -358,11 +359,11 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Fixed: stale capability claims in the site and docs.</li>
 <li>Changed: the site shows the oidc driver.</li>
 </ul>
-<h2 id="0-2-0-2026-10-29">[0.2.0] - 2026-10-29<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-0-2026-10-29">#</a></h2>
+<h2 id="0-2-0-2026-10-29">[0.2.0] - <span class="docs-heading-tail"><span>2026-10-29</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-0-2026-10-29">#</a></span></h2>
 <ul>
 <li>Changed: the proof page moves to a private site that needs a Wayne State sign-in.</li>
 </ul>
-<h3 id="added">Added<a class="docs-heading-link" aria-label="Link to this section" href="#added">#</a></h3>
+<h3 id="added"><span class="docs-heading-tail"><span>Added</span><a class="docs-heading-link" aria-label="Link to this section" href="#added">#</a></span></h3>
 <ul>
 <li>The <code>oidc</code> driver: browser sign-in with OpenID Connect (authorization
 code flow with PKCE S256, <code>state</code> and <code>nonce</code> bound to the session, single
@@ -404,7 +405,7 @@ the ID token, the code or the PKCE verifier are marked
 <li>README: a loud note that raw-PHP apps must raise
 <code>session.gc_maxlifetime</code> to at least SESAME's idle timeout.</li>
 </ul>
-<h3 id="changed">Changed<a class="docs-heading-link" aria-label="Link to this section" href="#changed">#</a></h3>
+<h3 id="changed"><span class="docs-heading-tail"><span>Changed</span><a class="docs-heading-link" aria-label="Link to this section" href="#changed">#</a></span></h3>
 <ul>
 <li>
 <p>Raw PHP: <code>sesame_logout()</code> is POST-only with a CSRF token. It runs only
@@ -440,8 +441,8 @@ one-minute refetch cooldown, so a key rotated just after it is picked up
 by the next unknown key id (oauth2 and oidc).</p>
 </li>
 </ul>
-<h2 id="0-1-3-2026-10-29">[0.1.3] - 2026-10-29<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-3-2026-10-29">#</a></h2>
-<h3 id="added-1">Added<a class="docs-heading-link" aria-label="Link to this section" href="#added-1">#</a></h3>
+<h2 id="0-1-3-2026-10-29">[0.1.3] - <span class="docs-heading-tail"><span>2026-10-29</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-3-2026-10-29">#</a></span></h2>
+<h3 id="added-1"><span class="docs-heading-tail"><span>Added</span><a class="docs-heading-link" aria-label="Link to this section" href="#added-1">#</a></span></h3>
 <ul>
 <li>The four shared WSU values (<code>SESAME_CAS_BASE_URL</code>, <code>SESAME_GATEWAY_ISSUER</code>,
 <code>SESAME_OAUTH2_ISSUER</code>, <code>SESAME_OAUTH2_JWKS_URL</code>) now resolve through
@@ -450,16 +451,16 @@ it is empty the private <code>waynestate/playbook</code> package supplies the va
 <code>waynestate/playbook</code> is suggested, never required.</li>
 <li>A missing routed setting now fails with <code>Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).</code> instead of naming the config key.</li>
 </ul>
-<h2 id="0-1-2-2026-10-29">[0.1.2] - 2026-10-29<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-2-2026-10-29">#</a></h2>
-<h3 id="fixed">Fixed<a class="docs-heading-link" aria-label="Link to this section" href="#fixed">#</a></h3>
+<h2 id="0-1-2-2026-10-29">[0.1.2] - <span class="docs-heading-tail"><span>2026-10-29</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-2-2026-10-29">#</a></span></h2>
+<h3 id="fixed"><span class="docs-heading-tail"><span>Fixed</span><a class="docs-heading-link" aria-label="Link to this section" href="#fixed">#</a></span></h3>
 <ul>
 <li>The CAS driver reads <code>serviceValidate</code> responses by namespace URI instead
 of prefix: a body that binds the <code>cas:</code> prefix to a different namespace
 can no longer be read as a success, while a body that binds another
 prefix (or none) to the real CAS namespace keeps working.</li>
 </ul>
-<h2 id="0-1-1-2026-10-29">[0.1.1] (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-1-2026-10-29">#</a></h2>
-<h3 id="added-2">Added<a class="docs-heading-link" aria-label="Link to this section" href="#added-2">#</a></h3>
+<h2 id="0-1-1-2026-10-29">[0.1.1] <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-1-2026-10-29">#</a></span></h2>
+<h3 id="added-2"><span class="docs-heading-tail"><span>Added</span><a class="docs-heading-link" aria-label="Link to this section" href="#added-2">#</a></span></h3>
 <ul>
 <li>Step-up by authentication context: the gateway driver reads the signed
 assertion's <code>acrs</code> claim (authentication context ids <code>c1</code> through <code>c99</code>,
@@ -516,14 +517,14 @@ default store when none is named).</li>
 <li><code>firebase/php-jwt</code> as a dependency: JWKS parsing and RS256 verification
 come from the library, not from SESAME's own code.</li>
 </ul>
-<h3 id="changed-1">Changed<a class="docs-heading-link" aria-label="Link to this section" href="#changed-1">#</a></h3>
+<h3 id="changed-1"><span class="docs-heading-tail"><span>Changed</span><a class="docs-heading-link" aria-label="Link to this section" href="#changed-1">#</a></span></h3>
 <ul>
 <li>Static analysis now includes Pinstripe's <code>phpstan/strict.neon</code> preset
 from the <code>waynestate/pinstripe</code> dev dependency instead of the hand-copied
 settings: PHPStan level 8, deprecation checks on, strict rules stay on.
 No behaviour changed.</li>
 </ul>
-<h2 id="0-1-0-2026-10-27">[0.1.0] (2026-10-27)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-0-2026-10-27">#</a></h2>
+<h2 id="0-1-0-2026-10-27">[0.1.0] <span class="docs-heading-tail"><span>(2026-10-27)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-0-2026-10-27">#</a></span></h2>
 <ul>
 <li>First tagged release.</li>
 </ul>

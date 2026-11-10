@@ -6,22 +6,22 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
+# Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
-## 0.7.3 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-3-2026-11-09)
+## 0.7.3 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-3-2026-11-09)
 
 No breaks, and no library code changes: docs and dev tools only. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
 
-## 0.7.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-2-2026-11-09)
+## 0.7.2 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-2-2026-11-09)
 
 No breaks, and no code changes: this release fixes the docs' CAS address. Check the one setting below, then upgrade with `composer update waynestate/sesame`.
 
 - **Point `cas.base_url` at `https://academica.aws.wayne.edu/cas`.** Earlier docs gave a `login.wayne.edu` address, which answers 404 on `/cas/login`. An app that copied it (into `SESAME_CAS_BASE_URL`, `config/sesame.php`, or the array it passes to `Config::fromArray()` or `WayneAuth::boot()`) never reached the sign-in; change the value. People still see the `login.wayne.edu` screen. An app that takes the address from Playbook gets whatever Playbook supplies, so check that value too.
 - **The Wayne Auth bridge needs `base_url` in its array.** `WayneAuth::boot()` does not read `SESAME_CAS_BASE_URL` or Playbook on its own. To use them, pass `'base_url' => \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')`.
 
-## 0.7.1 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-1-2026-11-09)
+## 0.7.1 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-1-2026-11-09)
 
 No breaks for an app that follows the docs; three fixes, and two lines some apps can delete. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
 
@@ -29,14 +29,14 @@ No breaks for an app that follows the docs; three fixes, and two lines some apps
 - **Scripts get a 401, not a redirect.** An XHR or `fetch` asking for JSON that reaches `sesame_login()` or the Wayne Auth bridge with no one signed in gets a 401 with `{"signedIn":false}`, as the Laravel middleware already answered. Page navigations are redirected as before. Client code that treated a failed save as "reload the page" keeps working; code can now check `status === 401`.
 - **CAS down is its own exception.** A ticket check that cannot reach CAS, times out or gets a 5xx throws `ProviderUnavailable`, a subclass of `AuthenticationFailed`, instead of letting the HTTP client's exception escape. An app that catches `AuthenticationFailed` already catches it; add a `catch (ProviderUnavailable $e)` before it to answer 503 (see [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)). An app that caught `Psr\Http\Client\ClientExceptionInterface` around the sign-in can switch that catch to `ProviderUnavailable`.
 
-## 0.7.0 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-0-2026-11-09)
+## 0.7.0 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-0-2026-11-09)
 
 One new check that can need a step, and one that can stop an app that asked for hard stops. Laravel apps are not affected: the Laravel adapter uses Laravel's session, not `NativeSession`.
 
 - **`NativeSession` (raw PHP, and the Wayne Auth bridge) checks the session cookie's flags.** When the active session's cookie lacks `HttpOnly`, lacks `Secure` on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`), or has a `SameSite` other than `Lax` or `Strict`, the first use in a request raises one `E_USER_WARNING` that names the missing flags and the fix, and the session keeps working. SESAME still never sets a flag itself. PHP's own defaults trip it (`session.cookie_httponly` off, `session.cookie_samesite` empty), and so does Squire's kit `php.ini` before Squire 0.10.2, which set `HttpOnly` and `Secure` but left `SameSite` empty. An app that calls HELMET's `helmet_boot()` before `session_start()` already sets all three and sees nothing.
 - **With `checkSessionSettings: true` it is a hard stop.** An app that passes `checkSessionSettings: true` to `new NativeSession()` and starts its session without those flags now gets a `LogicException` on every call, the same way it already did for strict mode. Set the flags before you deploy 0.7.0.
 
-### Session cookie warning[#](https://sesame.apps.wayne.edu/docs/upgrading.html#session-cookie-warning)
+### Session cookie warning [#](https://sesame.apps.wayne.edu/docs/upgrading.html#session-cookie-warning)
 
 The warning starts with `SESAME: the session cookie is sent without` and names the missing flags. Which fix you need depends on how the app runs:
 
@@ -60,7 +60,7 @@ The warning starts with `SESAME: the session cookie is sent without` and names t
 
 **How to verify.** Sign in and open a protected page: the PHP error log has no `SESAME: the session cookie is sent without` line. In the browser's developer tools the session cookie shows `HttpOnly`, `Secure` (on https) and `SameSite=Lax`. An app with `checkSessionSettings: true` signs in without a `LogicException`.
 
-## 0.6.3 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-3-2026-11-09)
+## 0.6.3 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-3-2026-11-09)
 
 No breaks. One fix:
 
@@ -70,7 +70,7 @@ No breaks. One fix:
 
 **How to verify.** On a wayne-cas app with JSON sessions, sign in and open a second page: `Auth::user()` is the app's model, not `null`. Delete that account's row and reload: the session is signed out.
 
-## 0.6.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-2-2026-11-09)
+## 0.6.2 (2026-11-09) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-2-2026-11-09)
 
 No breaks. Two fixes and one new warning:
 
@@ -82,7 +82,7 @@ No breaks. Two fixes and one new warning:
 
 **How to verify.** A wayne-cas app signs in, then opens a second page while signed in with no `InvalidConfig` in the log. A raw PHP app shows no `E_USER_WARNING` about `session.use_strict_mode` in its PHP error log after a sign-in.
 
-## 0.6.1 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
+## 0.6.1 (2026-11-08) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-1-2026-11-08)
 
 No breaks. SESAME's routes now point at `SesameController` methods instead of closures, with the same names, URIs and middleware, so `php artisan route:cache` and `php artisan optimize` work in an app that uses SESAME. A Citadel release runs `optimize`, so an app that turned it off for SESAME (Squire's `SQUIRE_ARTISAN_OPTIMIZE=0`) can turn it back on.
 
@@ -90,7 +90,7 @@ No breaks. SESAME's routes now point at `SesameController` methods instead of cl
 
 **How to verify.** `php artisan route:cache` exits 0, `php artisan route:list --name=sesame` lists the routes as `SesameController` actions, and sign-in and sign-out work as before. Then `php artisan route:clear` if you cache routes only at release time.
 
-## 0.6.0 (2026-11-08)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
+## 0.6.0 (2026-11-08) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-6-0-2026-11-08)
 
 **Breaking.** Nothing for an app that keeps its driver: the `saml` driver, OAuth2 token introspection and the logged-out session marker are additions, each off until it is configured. One install-time catch: `composer.json` now conflicts with `onelogin/php-saml` below 4.3.2 and `robrichards/xmlseclibs` below 3.1.5 (the security floor for the SAML libraries), so an app that already has an older copy of either cannot take 0.6 until it updates them.
 
@@ -106,7 +106,7 @@ No breaks. SESAME's routes now point at `SesameController` methods instead of cl
 
 **How to verify.** Sign in and out once with the driver the app uses; both work as before.
 
-## 0.5.0 (2026-11-07)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-5-0-2026-11-07)
+## 0.5.0 (2026-11-07) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-5-0-2026-11-07)
 
 **Breaking.** The `cas` driver now binds each sign-in to the browser that started it: before the redirect to CAS it stores a pending-login marker in the app's session, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF. Two consequences for apps on the `cas` driver:
 
@@ -133,7 +133,7 @@ No breaks. SESAME's routes now point at `SesameController` methods instead of cl
 
 **How to verify.** Sign in through CAS the normal way (the app sends the browser to CAS, the browser returns with the ticket); the sign-in succeeds and the marker is spent. Then deliver a just-issued ticket from a browser profile that never started a sign-in: it is refused with `This sign-in was not started in this browser, or it took too long. Start again from the app.`, and no HTTP call reaches the CAS server. `tests/CasDriverTest.php` covers all of it under the frozen names `testLoginBinding*`.
 
-## 0.4.0 (2026-11-03)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-4-0-2026-11-03)
+## 0.4.0 (2026-11-03) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-4-0-2026-11-03)
 
 **Breaking.** The `gateway` driver now refuses a token whose `typ` header is `at+jwt` or `application/at+jwt`, so an OAuth2 access token cannot be replayed as a gateway assertion. A missing `typ` or `JWT` still works. This is a pre-1.0 minor: apps that pin `^0.3` stay on 0.3.x until they move their constraint to `^0.4`.
 
@@ -156,7 +156,7 @@ composer ci
 
 then sign in through the gateway with a normal assertion (missing `typ` or `JWT`) and confirm a replayed `at+jwt` token is refused.
 
-## 0.3.0 (2026-10-30)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-3-0-2026-10-30)
+## 0.3.0 (2026-10-30) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-3-0-2026-10-30)
 
 **Breaking.** The signed-in user is looked up again on every request when the app's resolver implements the new `RefreshesUser` interface, and a user who no longer exists signs the session out. Before, `Sesame::user()` returned the copy saved at sign-in, so a user whose role was removed kept it until the session ended. The wayne-cas `UserResolver` implements it (a plain find by primary key, never an import). Also fixed in this release: the wayne-cas `WayneAuthenticate` middleware used to send `/login` to itself forever, and resolving SESAME used to build the driver, which broke guests on http, artisan commands, queue workers and tests.
 
@@ -173,7 +173,7 @@ then sign in through the gateway with a normal assertion (missing `typ` or `JWT`
 
 **How to verify.** Sign in, then remove a user's role (or the account) while the session is live; the next request reflects the change, and a deleted user is signed out. `tests/Laravel/SesameGuardTest.php` and `tests/Laravel/ReadOnlyAttributesTest.php` cover the guard and the model shape.
 
-## 0.2.2 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-2-2026-10-29)
+## 0.2.2 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-2-2026-10-29)
 
 **Breaking.** The oidc driver's default roles claim is `wsu_roles`, the name Entra sends. Apps that relied on the old default must set `roles_claim` (and `claims`) to `wsuRoles` to keep the old name.
 
@@ -189,7 +189,7 @@ then sign in through the gateway with a normal assertion (missing `typ` or `JWT`
 
 **How to verify.** Sign in with the `oidc` driver and read `$identity->attributes['wsu_roles']` (or the name you configured); the roles arrive under the claim you named.
 
-## 0.2.1 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-1-2026-10-29)
+## 0.2.1 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-1-2026-10-29)
 
 No breaks in this release: it adds the agent-ready site from Squire's kit, fixes the oauth2 peg on the site, writes project names as words except acronyms, fixes stale capability claims, and shows the oidc driver on the site. Upgrade with:
 
@@ -197,7 +197,7 @@ No breaks in this release: it adds the agent-ready site from Squire's kit, fixes
 composer require waynestate/sesame:^0.2
 ```
 
-## 0.2.0 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-0-2026-10-29)
+## 0.2.0 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-2-0-2026-10-29)
 
 **Breaking.** Raw PHP: `sesame_logout()` is POST-only with a CSRF token. It runs only when the POST body's `sesame_logout_token` matches the session's token (new `sesame_logout_token()`, `Sesame::logoutToken()` and `Sesame::isLogoutToken()`); a GET answers 405 and a bad token 403, and neither touches the session. Apps must change a logout link to a POST form carrying the token. The Laravel `POST /logout` route stays in the `web` group and so under Laravel's CSRF check. Also changed: `ReturnTo` (every driver's login and logout return-to) now requires the service URL's scheme, host and effective port, and refuses a URL with a user name or password; before, the host alone was compared, so `https://app.example.test:8443/` passed for a service on 443. Plain http is accepted only for a localhost or 127.0.0.1 service URL. And `DriverFactory::make()` takes the app session as an optional seventh argument (the oidc driver needs it).
 
@@ -221,7 +221,7 @@ composer require waynestate/sesame:^0.2
 
 **How to verify.** A GET to the logout endpoint answers 405 and leaves the session alone; a POST without the token answers 403; a POST with the token signs out. `tests/ReturnToTest.php` covers the tightened return-to rule.
 
-## 0.1.3 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-3-2026-10-29)
+## 0.1.3 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-3-2026-10-29)
 
 No breaks in this release: the four shared WSU values (`SESAME_CAS_BASE_URL`, `SESAME_GATEWAY_ISSUER`, `SESAME_OAUTH2_ISSUER`, `SESAME_OAUTH2_JWKS_URL`) now resolve through `Waynestate\Sesame\Support\Setting::get()` (the environment wins, and when it is empty the private `waynestate/playbook` package supplies the value, suggested, never required), and a missing routed setting now fails with `Missing required setting SESAME_.... Set it in the environment, or install waynestate/playbook (see the README).` instead of naming the config key. Upgrade with:
 
@@ -229,7 +229,7 @@ No breaks in this release: the four shared WSU values (`SESAME_CAS_BASE_URL`, `S
 composer require waynestate/sesame:^0.1
 ```
 
-## 0.1.2 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-2-2026-10-29)
+## 0.1.2 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-2-2026-10-29)
 
 No breaks in this release: the CAS driver reads `serviceValidate` responses by namespace URI instead of prefix, so a body that binds the `cas:` prefix to a different namespace can no longer be read as a success, while a body that binds another prefix (or none) to the real CAS namespace keeps working. Upgrade with:
 
@@ -237,7 +237,7 @@ No breaks in this release: the CAS driver reads `serviceValidate` responses by n
 composer require waynestate/sesame:^0.1
 ```
 
-## 0.1.1 (2026-10-29)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-1-2026-10-29)
+## 0.1.1 (2026-10-29) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-1-2026-10-29)
 
 **Breaking.** A truthy `slo` (or `single_logout`) config key is now rejected with `InvalidConfig` at boot: the identity provider does not support single logout, so the setting is a mistake to fail on early rather than at the first logout. An app that sets it must remove the key or it will not boot.
 
@@ -254,7 +254,7 @@ composer require waynestate/sesame:^0.1
 
 **How to verify.** Boot the app; it starts without `InvalidConfig`, and a context check fails closed when there is no user or no identity. `tests/Laravel/RequireAuthContextTest.php` covers the context check.
 
-## 0.1.0 (2026-10-27)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-0-2026-10-27)
+## 0.1.0 (2026-10-27) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-1-0-2026-10-27)
 
 First tagged release. There is nothing to upgrade from. Install with:
 
@@ -262,7 +262,7 @@ First tagged release. There is nothing to upgrade from. Install with:
 composer require waynestate/sesame
 ```
 
-## Related[#](https://sesame.apps.wayne.edu/docs/upgrading.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/upgrading.html#related)
 
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): the requirements and the one composer line.
 - [Quick start](https://sesame.apps.wayne.edu/docs/guides/quick-start.html): a first sign-in after you upgrade.

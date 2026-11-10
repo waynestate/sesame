@@ -45,9 +45,9 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html" aria-current="page">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="oauth2-with-entra">oauth2 with Entra<a class="docs-heading-link" aria-label="Link to this section" href="#oauth2-with-entra">#</a></h1>
+      <article class="docs-article"><h1 id="oauth2-with-entra">oauth2 with <span class="docs-heading-tail"><span>Entra</span><a class="docs-heading-link" aria-label="Link to this section" href="#oauth2-with-entra">#</a></span></h1>
 <p>The goal: sign an API in from a JWT bearer token that Microsoft Entra ID (or any other RS256 issuer) has already issued, without a browser round trip. Open sesame, for machines: the lock checks the key against the issuer's own key set, and the door stays yours. Read this page to wire the driver up, then move on to <a href="raw-php.html">raw-php.md</a> to build the facade and start signing in.</p>
-<h2 id="how-the-driver-verifies-a-token">How the driver verifies a token<a class="docs-heading-link" aria-label="Link to this section" href="#how-the-driver-verifies-a-token">#</a></h2>
+<h2 id="how-the-driver-verifies-a-token">How the driver verifies a <span class="docs-heading-tail"><span>token</span><a class="docs-heading-link" aria-label="Link to this section" href="#how-the-driver-verifies-a-token">#</a></span></h2>
 <p>The oauth2 driver signs the user in from a JWT bearer token in the
 <code>Authorization</code> header, verified against the issuer's key set (a JWKS) fetched
 from <code>oauth2.jwks_url</code>. Only RS256 tokens are accepted: a token that claims
@@ -67,7 +67,7 @@ of the token; the token itself is never cached or logged.</p>
 at the tenant's v2.0 endpoints (the <code>issuer</code> and <code>jwks_uri</code> values in the
 tenant's discovery document) and <code>audience</code> at the app's client id. Any other
 RS256 issuer works with the same settings.</p>
-<h2 id="setting-up-the-driver">Setting up the driver<a class="docs-heading-link" aria-label="Link to this section" href="#setting-up-the-driver">#</a></h2>
+<h2 id="setting-up-the-driver">Setting up the <span class="docs-heading-tail"><span>driver</span><a class="docs-heading-link" aria-label="Link to this section" href="#setting-up-the-driver">#</a></span></h2>
 <pre tabindex="0"><code class="language-php">&lt;?php
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ $http = new \GuzzleHttp\Client(['timeout' =&gt; 10, 'connect_timeout' =&gt; 5]);
 $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, new FilesystemAdapter());
 </code></pre>
 <p>Then build the Sesame facade with the driver, as in the <a href="raw-php.html">Raw PHP</a> page above.</p>
-<h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
+<h2 id="config-keys">Config <span class="docs-heading-tail"><span>keys</span><a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -197,7 +197,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, ne
 </table></div>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>Leave <code>oauth2.require_at_jwt</code> off for Entra. Microsoft Entra v2 access tokens are typed <code>JWT</code>, so requiring <code>at+jwt</code> refuses every Entra token. Turn it on only for an identity provider that issues RFC 9068 tokens.</p></aside>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>Leave <code>oauth2.introspection_url</code> unset for ordinary Entra apps: Entra v2 issues JWTs that the driver verifies locally against the JWKS. Set the introspection keys only when your issuer hands out opaque bearer tokens that need an RFC 7662 check.</p></aside>
-<h2 id="what-the-token-must-carry">What the token must carry<a class="docs-heading-link" aria-label="Link to this section" href="#what-the-token-must-carry">#</a></h2>
+<h2 id="what-the-token-must-carry">What the token must <span class="docs-heading-tail"><span>carry</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-the-token-must-carry">#</a></span></h2>
 <p>A JWT must carry an <code>exp</code> claim; a JWT without one is refused. The
 <code>email</code> and <code>name</code> claims become read-only identity attributes, and the
 optional <code>auth_time</code> and <code>amr</code> claims become the identity's MFA facts, for
@@ -206,7 +206,7 @@ optional <code>auth_time</code> and <code>amr</code> claims become the identity'
 <code>oauth2.identity_claim</code> (<code>preferred_username</code> by default) or <code>sub</code>. Its
 <code>iss</code>, <code>aud</code>, <code>exp</code> and <code>nbf</code> claims are checked when present, with the same
 leeway as the JWT path.</p>
-<h2 id="key-set-caching-and-fail-closed-fetches">Key set caching and fail-closed fetches<a class="docs-heading-link" aria-label="Link to this section" href="#key-set-caching-and-fail-closed-fetches">#</a></h2>
+<h2 id="key-set-caching-and-fail-closed-fetches">Key set caching and fail-closed <span class="docs-heading-tail"><span>fetches</span><a class="docs-heading-link" aria-label="Link to this section" href="#key-set-caching-and-fail-closed-fetches">#</a></span></h2>
 <p>The key set is fetched once and kept for <code>oauth2.jwks_cache_ttl_seconds</code>. When
 a token carries a key id the cached set does not know, the provider refetches
 the set once, and at most once a minute, so a rotated key is picked up without
@@ -214,7 +214,7 @@ hammering the issuer. The first fetch does not start that minute, so a key
 rotated just after it is still picked up at once. Everything about the fetch fails closed: an unreachable
 issuer, a non-2xx answer, or an empty or malformed key set all refuse the
 sign-in rather than let it through.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="which-driver.html">Which driver for my app?</a></li>
 <li><a href="driver-oidc.html">The oidc driver (Entra sign-in)</a></li>

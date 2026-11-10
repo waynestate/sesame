@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# The gateway driver[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-gateway-driver)
+# The gateway driver [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-gateway-driver)
 
 This page sets up the `gateway` driver, the recommended path on Citadel: it verifies the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header. Configure the driver below, then read the key rotation steps before you rotate the gateway's signing key.
 
@@ -14,7 +14,7 @@ Note
 
 Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration. Once Drawbridge is live, every app behind it uses this driver and needs no Entra registration of its own.
 
-## How it verifies[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#how-it-verifies)
+## How it verifies [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#how-it-verifies)
 
 The gateway driver signs the user in from a signed JWT assertion that the auth gateway (Drawbridge) puts in one header. It verifies the assertion's signature against the gateway's public key, then checks the issuer, audience and time claims. It never reads a plain identity header: `Remote-User`, `X-Remote-User`, or any spelling of them, because a plain header can come from anywhere on the shared network. And the request must come from a trusted proxy: the direct peer (`REMOTE_ADDR`) must match one of the configured CIDR ranges. A valid assertion from an untrusted peer is still rejected.
 
@@ -22,7 +22,7 @@ The algorithm is pinned from config, so a token that claims a different algorith
 
 Every assertion is single-use. The driver requires a `jti` claim, refuses an assertion that lives longer than `gateway.max_lifetime` seconds, and remembers each `jti` it has seen in a replay guard, so a captured assertion cannot be played back a second time. The guard is a PSR-16 cache: the Laravel adapter wires one up for you, and a raw PHP app passes its own (below).
 
-## Configure the driver[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#configure-the-driver)
+## Configure the driver [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#configure-the-driver)
 
 ```php
 <?php
@@ -55,7 +55,7 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 
 Then build the Sesame facade with the driver, as in the Raw PHP section of the README.
 
-## Config keys[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#config-keys)
+## Config keys [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#config-keys)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -72,17 +72,17 @@ Then build the Sesame facade with the driver, as in the Raw PHP section of the R
 | `gateway.replay_store` | No | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only; raw PHP passes its own PSR-16 cache to the guard). |
 | `gateway.allow_without_replay_guard` | No | `false` | Skip the replay guard entirely. Local development only: a production app must keep replay protection on. |
 
-## Assertion claims[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#assertion-claims)
+## Assertion claims [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#assertion-claims)
 
 The assertion must carry `sub`, `iat`, `exp` and `jti`; the `sub` claim becomes the username. The optional `email`, `name` and `affiliations` claims become read-only identity attributes. The sign-in time on the identity comes from the driver's clock.
 
 The optional `auth_time` and `amr` claims become the identity's MFA facts, for `requireMfa()`. `auth_time` is the epoch seconds of the user's last MFA sign-in; `amr` is the list of methods they used. A missing or malformed `auth_time` leaves the MFA time unset, and a missing or malformed `amr` leaves the method list empty, so a claim the gateway did not verify can never satisfy the check.
 
-## Rotating the gateway's signing key[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#rotating-the-gateway-s-signing-key)
+## Rotating the gateway's signing key [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#rotating-the-gateway-s-signing-key)
 
 The gateway signs with one key at a time and names it in the `kid` header of every assertion. An app may list several public keys at once, so a key rotation needs no coordinated window. The driver verifies each assertion with the key listed under its `kid`; an unknown `kid` is refused, and so is one signed by another listed key under the wrong `kid`. With two or more keys listed, an assertion with no `kid` is refused; with exactly one, it is verified with that key, so a single-key setup keeps working. The algorithm stays pinned from config for every key.
 
-### The key set file[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-key-set-file)
+### The key set file [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-key-set-file)
 
 The easy way to list the keys is the key set file Drawbridge publishes (`bin/drawbridge keys:jwks`): a standard JWKS file that always holds the gateway's current key and its next one. Point `gateway.jwks_file` (or `SESAME_GATEWAY_JWKS_FILE`) at it. Public keys are not secrets, so the file may live in your repository or on a read-only mount.
 
@@ -98,14 +98,14 @@ SESAME reads the file at boot and stops with an `InvalidConfig` error, before an
 - holds any private key material (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth` or `k`); if this happens, treat that private key as exposed;
 - has a key of the wrong type for `gateway.algorithm` (ES256 needs EC P-256, RS256 needs RSA of 2048 bits or more, EdDSA needs OKP Ed25519), or an `alg` or `use` that does not match.
 
-### A rotation, from the app's side[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#a-rotation-from-the-app-s-side)
+### A rotation, from the app's side [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#a-rotation-from-the-app-s-side)
 
 1. The gateway switches to its next key. Your app already trusts it, because it was in the file all along: nothing to do.
 2. Drawbridge publishes a new file (the new current key and a new next key; the retired key is gone). Deploy it, or refresh the mount, when you can. Until then the old file still works.
 
 Drawbridge's [rotation guide](https://drawbridge.apps.wayne.edu/docs/guides/rotating-the-signing-key.html) has the gateway's side and the emergency steps.
 
-### The same keys in PHP config[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-same-keys-in-php-config)
+### The same keys in PHP config [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#the-same-keys-in-php-config)
 
 `gateway.public_keys` takes the same keys as a map. Set one of `public_key`, `public_keys` and `jwks_file`, never two.
 
@@ -121,7 +121,7 @@ Drawbridge's [rotation guide](https://drawbridge.apps.wayne.edu/docs/guides/rota
 
 Two keys on the pegboard, one door: while the old one still hangs there, nobody gets locked out.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html#related)
 
 - [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)
 - [Running off Citadel](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html)

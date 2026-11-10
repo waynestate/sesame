@@ -6,15 +6,15 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# API[#](https://sesame.apps.wayne.edu/docs/reference/api.html#api)
+# API [#](https://sesame.apps.wayne.edu/docs/reference/api.html#api)
 
 The public surface of waynestate/sesame, named exactly as it is in the code under `src/`: the facade, the factory, the value objects, the ports an app implements, and the global functions the raw-PHP path calls. The incantation is a constructor.
 
-## Classes[#](https://sesame.apps.wayne.edu/docs/reference/api.html#classes)
+## Classes [#](https://sesame.apps.wayne.edu/docs/reference/api.html#classes)
 
 Unless noted, everything below is in the `Waynestate\Sesame` namespace.
 
-### Config[#](https://sesame.apps.wayne.edu/docs/reference/api.html#config)
+### Config [#](https://sesame.apps.wayne.edu/docs/reference/api.html#config)
 
 The library's config, read from a plain array. `final readonly class Config`.
 
@@ -24,7 +24,7 @@ public static function fromArray(#[\SensitiveParameter] array $config): self
 
 Every constructor parameter is a public readonly property, in this order: `driver`, `environment`, `fakeUsername`, `fakeAttributes`, `casBaseUrl`, `casServiceUrl`, `casProtocol`, `casRenew`, `casAssumeMfa`, `sessionIdleMinutes`, `sessionAbsoluteMinutes`, `gatewayHeader`, `gatewayAlgorithm`, `gatewayPublicKey`, `gatewayIssuer`, `gatewayAudience`, `gatewayLeewaySeconds`, `gatewayTrustedProxies`, `gatewayMaxLifetimeSeconds`, `gatewayAllowWithoutReplayGuard`, `oauth2Issuer`, `oauth2JwksUrl`, `oauth2Audience`, `oauth2LeewaySeconds`, `oauth2RequiredScopes`, `oauth2RequiredRoles`, `oauth2IdentityClaim`, `oauth2JwksCacheTtlSeconds`, `oauth2RequireAtJwt`, `oidc` (an `?OidcOptions`), `gatewayPublicKeys`, `gatewayJwksFile` and `saml` (a `?SamlOptions`). Keys, defaults and bounds: see [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html).
 
-### DriverFactory[#](https://sesame.apps.wayne.edu/docs/reference/api.html#driverfactory)
+### DriverFactory [#](https://sesame.apps.wayne.edu/docs/reference/api.html#driverfactory)
 
 Build a driver from config. `final class DriverFactory`.
 
@@ -50,7 +50,7 @@ What each argument is for:
 
 A missing dependency is an `InvalidConfig` error that names what to pass, and an unknown `driver` value is one too. The oidc driver also needs league/oauth2-client, and the saml driver onelogin/php-saml (4.3.2 or later), which SESAME suggests but does not require. The driver classes themselves live in `Waynestate\Sesame\Drivers`; see [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html).
 
-### Sesame[#](https://sesame.apps.wayne.edu/docs/reference/api.html#sesame)
+### Sesame [#](https://sesame.apps.wayne.edu/docs/reference/api.html#sesame)
 
 The facade an app talks to. `final class Sesame`. It holds a driver (or a factory for one, built on first use, so checking a session never pays for the driver's construction), the app's user resolver, the app's session and the config, and it runs the one rule the code holds: every driver ends in `findOrImportUser(Identity)`, and the app owns the session. Time is read through a PSR-20 clock, so the session timeouts are testable.
 
@@ -96,7 +96,7 @@ public function safeReturnTo(string $returnTo): string
 
 When a logger is set, sign-in and sign-out events are logged through it: a broken logger never changes what the facade returns or throws, and no ticket, session ID, token, assertion, cookie or header ever reaches the log.
 
-### Identity[#](https://sesame.apps.wayne.edu/docs/reference/api.html#identity)
+### Identity [#](https://sesame.apps.wayne.edu/docs/reference/api.html#identity)
 
 The verified identity a driver hands to the resolver. `final readonly class Identity`; the constructor refuses an empty username with `InvalidArgumentException`.
 
@@ -118,7 +118,7 @@ public function __construct(
 - `authContexts(): array`: the authentication contexts verified for this sign-in, in the order the driver reported them. Empty when no step-up was required.
 - `hasAuthContext(string $id): bool`: whether this sign-in verified the given authentication context: a membership test on the list, never an equality on the whole list.
 
-### LoginStep, Authenticated, Redirect[#](https://sesame.apps.wayne.edu/docs/reference/api.html#loginstep-authenticated-redirect)
+### LoginStep, Authenticated, Redirect [#](https://sesame.apps.wayne.edu/docs/reference/api.html#loginstep-authenticated-redirect)
 
 A login ends in one of two shapes, both `final` and both extending the `abstract class LoginStep`, which is empty on purpose:
 
@@ -140,7 +140,7 @@ final class Redirect extends LoginStep
 
 `Authenticated`: the identity is verified; this is who the user is. `Redirect`: send the user to this URL to continue the login.
 
-### Driver[#](https://sesame.apps.wayne.edu/docs/reference/api.html#driver)
+### Driver [#](https://sesame.apps.wayne.edu/docs/reference/api.html#driver)
 
 One way to verify an identity. A driver knows one protocol and nothing about the app: it turns a request into a `LoginStep`, and the core does the rest. Switching driver is a config change with no code change.
 
@@ -156,7 +156,7 @@ interface Driver
 
 `logoutUrl()` is the identity provider's logout URL, or null when the driver has none; `serviceUrl()` is the configured service URL, or null, and it is the host a logout return-to must stay on.
 
-### UserResolver, RefreshesUser, RemembersReturnTo[#](https://sesame.apps.wayne.edu/docs/reference/api.html#userresolver-refreshesuser-remembersreturnto)
+### UserResolver, RefreshesUser, RemembersReturnTo [#](https://sesame.apps.wayne.edu/docs/reference/api.html#userresolver-refreshesuser-remembersreturnto)
 
 The port the app implements, and the optional extras a resolver or driver can use:
 
@@ -179,7 +179,7 @@ interface RemembersReturnTo
 
 `UserResolver` is the one place every driver ends: turn a verified identity into the app's user, or return null to refuse it. `RefreshesUser` lets the app look the stored user up again on every `user()` call. `RemembersReturnTo` lets a driver remember where to send the user after the sign-in that just completed.
 
-### Session[#](https://sesame.apps.wayne.edu/docs/reference/api.html#session)
+### Session [#](https://sesame.apps.wayne.edu/docs/reference/api.html#session)
 
 The app's session, seen through a port:
 
@@ -196,7 +196,7 @@ interface SessionPort
 
 `Waynestate\Sesame\Session\NativeSession` is the port over the native PHP session. It never starts the request's first session and never sets cookie flags: starting the session is the app's job (`session_start()`), and hardening the session cookie is HELMET's job. It reads and writes `$_SESSION` on a session that is already active, and throws `LogicException` when it is not. Its constructor takes `graceSeconds` (60, the regenerate grace), `logger`, `clock`, `logoutReuseTtlSeconds` (60, the logged-out reuse window) and `checkSessionSettings` (`null`). With `checkSessionSettings` left at `null` it turns `session.use_strict_mode` and `session.use_only_cookies` on while no session is active, and on the first use in a request it raises one `E_USER_WARNING` when the active session runs with either one off, or when its cookie lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` throws `LogicException` on every call instead, and `false` does neither. `invalidate()` is the one operation that ends the session: it clears the data, expires the cookie on the client, and retires the session, so a stolen ID is dead after logout. From 0.7.1 it then starts a fresh, empty session under a new ID it made itself (strict mode kept), so the rest of the request can still use the port: a session signed out for a timeout can store the pending sign-in on its way to CAS. When headers are already sent it leaves the session closed.
 
-### MFA[#](https://sesame.apps.wayne.edu/docs/reference/api.html#mfa)
+### MFA [#](https://sesame.apps.wayne.edu/docs/reference/api.html#mfa)
 
 The one rule that decides whether an identity's MFA is still good. `final class Mfa`:
 
@@ -233,7 +233,7 @@ public function message(): string
 
 `message()` is the human form of the result, for a message or a log line.
 
-### ReturnTo[#](https://sesame.apps.wayne.edu/docs/reference/api.html#returnto)
+### ReturnTo [#](https://sesame.apps.wayne.edu/docs/reference/api.html#returnto)
 
 The one rule for a return-to URL (after login or logout). `final class ReturnTo`:
 
@@ -243,7 +243,7 @@ public static function safe(string $returnTo, ?string $serviceUrl): string
 
 A return-to must be an absolute URL on the same origin as the service URL: the same scheme, the same host and the same effective port (443 for https, 80 for http, when none is written), with no user name or password in it. The scheme must be https; plain http is allowed only for a localhost or 127.0.0.1 service URL, for local development. Anything else sends the user to the service URL instead, so a login or logout can never be turned into an open redirect, not even to another port on the same host. When the driver has no service URL there is nothing to check against, so the return-to is used as-is.
 
-### OidcOptions[#](https://sesame.apps.wayne.edu/docs/reference/api.html#oidcoptions)
+### OidcOptions [#](https://sesame.apps.wayne.edu/docs/reference/api.html#oidcoptions)
 
 `Waynestate\Sesame\Drivers\Oidc\OidcOptions`: the `oidc` config block, validated. `final readonly class OidcOptions`.
 
@@ -257,7 +257,7 @@ public function clientSecret(): string
 
 The keys, their environment variables and their defaults are in the oidc table on the [Configuration page](https://sesame.apps.wayne.edu/docs/reference/configuration.html).
 
-### SamlOptions and SamlDriver[#](https://sesame.apps.wayne.edu/docs/reference/api.html#samloptions-and-samldriver)
+### SamlOptions and SamlDriver [#](https://sesame.apps.wayne.edu/docs/reference/api.html#samloptions-and-samldriver)
 
 `Waynestate\Sesame\Drivers\Saml\SamlOptions`: the `saml` config block, validated at boot (certificates, the key and a metadata file are read from their paths then). `final readonly class SamlOptions`.
 
@@ -282,7 +282,7 @@ public static function assertLibraryInstalled(string $class = self::LIBRARY_CLAS
 
 The keys are in [the saml driver guide](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys).
 
-### Setting[#](https://sesame.apps.wayne.edu/docs/reference/api.html#setting)
+### Setting [#](https://sesame.apps.wayne.edu/docs/reference/api.html#setting)
 
 `Waynestate\Sesame\Support\Setting`: the one lookup for the library's shared settings. The real environment wins (getenv, then $\_ENV, then $\_SERVER); when it has nothing, the private waynestate/playbook package supplies Wayne State's shared values when it is installed. An empty value counts as missing, so a blank variable never shadows the playbook.
 
@@ -294,7 +294,7 @@ public static function env(string $key): ?string
 
 `get()` answers from the environment, then the playbook, else null. `env()` answers from the environment only, and the playbook is never consulted. A key in `ENVIRONMENT_ONLY` never falls back to the playbook, so a shared package can never supply an app's secret.
 
-## Functions[#](https://sesame.apps.wayne.edu/docs/reference/api.html#functions)
+## Functions [#](https://sesame.apps.wayne.edu/docs/reference/api.html#functions)
 
 Plain functions in the global namespace behind a `sesame_` prefix, the same shape as WayneUI's standalone path, because that is what a framework-free application can consume. Each one is guarded with `function_exists`, so two copies of this file can never collide. The app owns the session: start it with `session_start()` before calling anything here, and let HELMET set the cookie flags.
 
@@ -330,7 +330,7 @@ function sesame_saml_metadata(SamlDriver $driver): never
 - `sesame_saml_acs()`: the saml driver's ACS page. Parks the IdP's POST and answers 303 to the login URL, or a plain 400 for a POST it cannot use, then stops the script. Call it on a page that does NOT call `session_start()`: the IdP's cross-site POST carries no `SameSite=Lax` session cookie, and a session started there would replace the user's real one.
 - `sesame_saml_metadata()`: sends the SP metadata as `application/samlmetadata+xml` and stops the script. It needs no session.
 
-## Exceptions[#](https://sesame.apps.wayne.edu/docs/reference/api.html#exceptions)
+## Exceptions [#](https://sesame.apps.wayne.edu/docs/reference/api.html#exceptions)
 
 The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 
@@ -341,14 +341,14 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 - `InvalidConfig`: a config error at boot: a missing or invalid key from `Config::fromArray()`, or a driver missing the dependency `DriverFactory::make()` needs.
 - `FakeDriverInProduction`: the `fake` driver refuses to boot in production.
 
-## Where the rest lives[#](https://sesame.apps.wayne.edu/docs/reference/api.html#where-the-rest-lives)
+## Where the rest lives [#](https://sesame.apps.wayne.edu/docs/reference/api.html#where-the-rest-lives)
 
 - The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `SamlDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html) page.
 - The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`), documented in the [Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html).
 - The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
 - The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
 
-## Related[#](https://sesame.apps.wayne.edu/docs/reference/api.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/reference/api.html#related)
 
 - [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html)
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html)

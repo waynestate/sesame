@@ -45,9 +45,9 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html" aria-current="page">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="drivers">Drivers<a class="docs-heading-link" aria-label="Link to this section" href="#drivers">#</a></h1>
+      <article class="docs-article"><h1 id="drivers"><span class="docs-heading-tail"><span>Drivers</span><a class="docs-heading-link" aria-label="Link to this section" href="#drivers">#</a></span></h1>
 <p>The drivers SESAME can build, their status, and the exact values each one ships with. Pick a driver with <a href="../guides/which-driver.html">Which driver for my app?</a>, then read the matching guide for setup.</p>
-<h2 id="status">Status<a class="docs-heading-link" aria-label="Link to this section" href="#status">#</a></h2>
+<h2 id="status"><span class="docs-heading-tail"><span>Status</span><a class="docs-heading-link" aria-label="Link to this section" href="#status">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -82,7 +82,7 @@
 </tr>
 </tbody>
 </table></div>
-<h2 id="the-factory">The factory<a class="docs-heading-link" aria-label="Link to this section" href="#the-factory">#</a></h2>
+<h2 id="the-factory">The <span class="docs-heading-tail"><span>factory</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-factory">#</a></span></h2>
 <p><code>DriverFactory::make()</code> builds the driver named by the <code>driver</code> config value. Anything else throws <code>InvalidConfig</code> with <code>Unknown driver &quot;&lt;name&gt;&quot;.</code></p>
 <pre tabindex="0"><code class="language-php">public static function make(
     Config $config,
@@ -194,7 +194,7 @@
 </tr>
 </tbody>
 </table></div>
-<h2 id="fake">fake<a class="docs-heading-link" aria-label="Link to this section" href="#fake">#</a></h2>
+<h2 id="fake"><span class="docs-heading-tail"><span>fake</span><a class="docs-heading-link" aria-label="Link to this section" href="#fake">#</a></span></h2>
 <p>A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct outside the allowed development environments: it throws, it never silently falls back. The check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver.</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -227,7 +227,7 @@
 </tbody>
 </table></div>
 <p>The factory builds it from the <code>fakeUsername</code> and <code>fakeAttributes</code> config properties, with the username defaulting to the empty string.</p>
-<h2 id="cas">cas<a class="docs-heading-link" aria-label="Link to this section" href="#cas">#</a></h2>
+<h2 id="cas"><span class="docs-heading-tail"><span>cas</span><a class="docs-heading-link" aria-label="Link to this section" href="#cas">#</a></span></h2>
 <p>CAS 2.0 against Academica by default.</p>
 <ul>
 <li>The service URL is the configured value only. This driver never reads <code>Host</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code> or any other request header to build it, which removes the wayne-cas proto trust and the phpCAS <code>X-Forwarded-Port</code> break in one rule.</li>
@@ -293,7 +293,7 @@
 </tr>
 </tbody>
 </table></div>
-<h2 id="gateway">gateway<a class="docs-heading-link" aria-label="Link to this section" href="#gateway">#</a></h2>
+<h2 id="gateway"><span class="docs-heading-tail"><span>gateway</span><a class="docs-heading-link" aria-label="Link to this section" href="#gateway">#</a></span></h2>
 <p>Signed JWT assertions from the Drawbridge gateway. &quot;Open Sesame&quot;, but only the real magic word gets the door.</p>
 <ul>
 <li>The driver reads one configured header that holds a signed JWT, verifies its signature against the gateway's public key, and checks the issuer, audience and time claims.</li>
@@ -372,7 +372,7 @@
 </tr>
 </tbody>
 </table></div>
-<h2 id="oauth2">oauth2<a class="docs-heading-link" aria-label="Link to this section" href="#oauth2">#</a></h2>
+<h2 id="oauth2"><span class="docs-heading-tail"><span>oauth2</span><a class="docs-heading-link" aria-label="Link to this section" href="#oauth2">#</a></span></h2>
 <p>JWT bearer tokens from an identity provider. &quot;Open Sesame&quot;, where the magic word is a token only the issuer can sign.</p>
 <ul>
 <li>The driver reads the <code>Authorization</code> header (a Bearer token, per RFC 6750), verifies its RS256 signature against a key from the issuer's JWKS, and checks the issuer, audience, time, scope and role claims.</li>
@@ -411,7 +411,7 @@
 </tr>
 </tbody>
 </table></div>
-<h2 id="oidc">oidc<a class="docs-heading-link" aria-label="Link to this section" href="#oidc">#</a></h2>
+<h2 id="oidc"><span class="docs-heading-tail"><span>oidc</span><a class="docs-heading-link" aria-label="Link to this section" href="#oidc">#</a></span></h2>
 <p>Browser sign-in with OpenID Connect, Microsoft Entra ID first. &quot;Open Sesame&quot; said to the right door, then checked at the counter. The driver runs the authorization code flow with PKCE (S256):</p>
 <ol>
 <li>A request without a code is the start. The driver makes a fresh <code>state</code> and <code>nonce</code>, has <code>league/oauth2-client</code> build the authorization URL and the PKCE verifier, keeps all three in the app's session (bound to this browser, single use, expiring), and answers with a <code>Redirect</code> to the identity provider.</li>
@@ -427,7 +427,7 @@
 <li>The driver needs <code>league/oauth2-client</code>, which SESAME suggests but does not require.</li>
 <li>The token request goes through Guzzle (via <code>league/oauth2-client</code>). When the app's PSR-18 client is Guzzle, it is reused for that too, with redirects turned off on each token request; otherwise a Guzzle client is built that does not follow redirects and gives up after ten seconds. Discovery and the key set go through the PSR-18 client.</li>
 </ul>
-<h2 id="saml">saml<a class="docs-heading-link" aria-label="Link to this section" href="#saml">#</a></h2>
+<h2 id="saml"><span class="docs-heading-tail"><span>saml</span><a class="docs-heading-link" aria-label="Link to this section" href="#saml">#</a></span></h2>
 <p>Browser sign-in as a SAML 2.0 service provider, opt-in, for a Shibboleth-style IdP. The same magic words, now with a schema. The driver stands on <code>onelogin/php-saml</code> (strict mode) and runs in three requests:</p>
 <ol>
 <li>A request to the login URL without <code>saml_handle</code> is the start. The driver builds an AuthnRequest (HTTP-Redirect, signed when configured), keeps its ID in the app's session (single use, expiring), and answers with a <code>Redirect</code> to the IdP; a checked <code>return_to</code> rides along as the RelayState.</li>
@@ -444,12 +444,12 @@
 <li>The driver needs <code>onelogin/php-saml</code> 4.3.2 or later (and xmlseclibs 3.1.5 or later), which SESAME suggests but does not require. Older releases are refused at boot and by <code>composer.json</code>'s <code>conflict</code>.</li>
 </ul>
 <p>Setup and every key: <a href="../guides/driver-saml.html">The saml driver</a>.</p>
-<h2 id="what-every-driver-returns">What every driver returns<a class="docs-heading-link" aria-label="Link to this section" href="#what-every-driver-returns">#</a></h2>
+<h2 id="what-every-driver-returns">What every driver <span class="docs-heading-tail"><span>returns</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-every-driver-returns">#</a></span></h2>
 <p>Every driver exposes the same four methods: <code>name()</code>, <code>login()</code>, <code>logoutUrl()</code> and <code>serviceUrl()</code>. <code>login()</code> answers with a <code>Redirect</code> to the identity provider, or with an <code>Authenticated</code> step carrying an <code>Identity</code> (the username, the attributes, the driver name and the sign-in time). The <code>fake</code> driver's <code>logoutUrl()</code> and <code>serviceUrl()</code> return <code>null</code>; the <code>cas</code> driver's return the configured logout URL and service URL.</p>
-<h2 id="walk-around-the-shop">Walk around the shop<a class="docs-heading-link" aria-label="Link to this section" href="#walk-around-the-shop">#</a></h2>
+<h2 id="walk-around-the-shop">Walk around the <span class="docs-heading-tail"><span>shop</span><a class="docs-heading-link" aria-label="Link to this section" href="#walk-around-the-shop">#</a></span></h2>
 <p>The front page's counter, pegboard and duplicator.</p>
 <p><img src="../readme/gallery.jpg" alt="Three cuts of the front page: the hero with SESAME's mark under the shop light; the pegboard 'One blank per protocol', with all six keys cut, fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked opt-in; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234." /></p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="../guides/which-driver.html">Which driver for my app?</a></li>
 <li><a href="../guides/driver-cas.html">The cas driver</a></li>

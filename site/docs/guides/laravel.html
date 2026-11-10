@@ -45,14 +45,14 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html" aria-current="page">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="laravel">Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></h1>
+      <article class="docs-article"><h1 id="laravel"><span class="docs-heading-tail"><span>Laravel</span><a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></span></h1>
 <p>The Laravel adapter is a service provider that binds the core into the container, registers the <code>auth.sesame</code> and <code>wayne.cas</code> middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see <a href="requiring-mfa.html">Requiring MFA</a> and <a href="step-up.html">Step-up (authentication context)</a> for the checks the middleware runs.</p>
-<h2 id="install-and-publish">Install and publish<a class="docs-heading-link" aria-label="Link to this section" href="#install-and-publish">#</a></h2>
+<h2 id="install-and-publish">Install and <span class="docs-heading-tail"><span>publish</span><a class="docs-heading-link" aria-label="Link to this section" href="#install-and-publish">#</a></span></h2>
 <p>The provider is discovered automatically. Publish the config with:</p>
 <pre tabindex="0"><code>php artisan vendor:publish --tag=sesame-config
 </code></pre>
 <p>The app's environment becomes the core's <code>environment</code>, the <code>cas.service_url</code> falls back to the app's <code>/login</code> route when the app has not set one, and the oidc driver's <code>redirect_uri</code> falls back to the app's <code>/login/callback</code> route. For the saml driver, <code>saml.service_url</code>, <code>saml.sp.acs_url</code> and <code>saml.sp.entity_id</code> fall back to the app's <code>/login</code>, <code>/login/saml/acs</code> and <code>/login/saml/metadata</code> routes.</p>
-<h2 id="config">Config<a class="docs-heading-link" aria-label="Link to this section" href="#config">#</a></h2>
+<h2 id="config"><span class="docs-heading-tail"><span>Config</span><a class="docs-heading-link" aria-label="Link to this section" href="#config">#</a></span></h2>
 <p>Config keys (in <code>config/sesame.php</code>):</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -277,7 +277,7 @@
 </tbody>
 </table></div>
 <p>A missing <code>user_resolver</code> fails with an error that names the wayne-cas resolver class. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.</p>
-<h2 id="routes">Routes<a class="docs-heading-link" aria-label="Link to this section" href="#routes">#</a></h2>
+<h2 id="routes"><span class="docs-heading-tail"><span>Routes</span><a class="docs-heading-link" aria-label="Link to this section" href="#routes">#</a></span></h2>
 <p>The routes, when <code>routes</code> is true:</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
@@ -316,7 +316,7 @@
 </tbody>
 </table></div>
 <p>Set <code>SESAME_ROUTES=false</code> when the app defines its own login and logout routes. The <code>auth.sesame</code> middleware still points at the <code>sesame.login</code> route name, so the app's login route must keep that name.</p>
-<h2 id="middleware">Middleware<a class="docs-heading-link" aria-label="Link to this section" href="#middleware">#</a></h2>
+<h2 id="middleware"><span class="docs-heading-tail"><span>Middleware</span><a class="docs-heading-link" aria-label="Link to this section" href="#middleware">#</a></span></h2>
 <p>Protect a route with the <code>auth.sesame</code> middleware:</p>
 <pre tabindex="0"><code class="language-php">Route::get('/dashboard', fn () =&gt; view('dashboard'))-&gt;middleware('auth.sesame');
 </code></pre>
@@ -333,7 +333,7 @@
 </code></pre>
 <p>A request without the context gets a 403, or a JSON 403 with a <code>message</code> for JSON requests. A route that names no context fails closed. See <a href="step-up.html">Step-up (authentication context)</a>.</p>
 <p>The <code>wayne.cas</code> alias is registered against SESAME's <code>WayneAuthenticate</code>, for apps moving off wayne-cas; see <a href="moving-from-wayne-cas.html">Moving from wayne-cas</a>.</p>
-<h2 id="reading-the-user">Reading the user<a class="docs-heading-link" aria-label="Link to this section" href="#reading-the-user">#</a></h2>
+<h2 id="reading-the-user">Reading the <span class="docs-heading-tail"><span>user</span><a class="docs-heading-link" aria-label="Link to this section" href="#reading-the-user">#</a></span></h2>
 <p>The app's user is available through the facade:</p>
 <pre tabindex="0"><code class="language-php">$user = app(\Waynestate\Sesame\Sesame::class)-&gt;user();
 </code></pre>
@@ -364,7 +364,7 @@
 </code></pre>
 <p>and the usual calls work against the SESAME session: <code>auth()-&gt;user()</code>, <code>$request-&gt;user()</code>, <code>Auth::check()</code>, and the <code>auth</code> middleware. The note above applies here too: the guard hands back the stored copy, or the refreshed one when the resolver refreshes. A user that is not an <code>Illuminate\Contracts\Auth\Authenticatable</code> reads as <code>null</code> through the guard; the <code>auth.sesame</code> middleware still sees it, because it checks the SESAME session directly.</p>
 <p><code>auth()-&gt;logout()</code> signs the user out of both sides, the Laravel session and the SESAME session. The identity provider's single sign-on session is left alone.</p>
-<h2 id="http-client-and-caches">HTTP client and caches<a class="docs-heading-link" aria-label="Link to this section" href="#http-client-and-caches">#</a></h2>
+<h2 id="http-client-and-caches">HTTP client and <span class="docs-heading-tail"><span>caches</span><a class="docs-heading-link" aria-label="Link to this section" href="#http-client-and-caches">#</a></span></h2>
 <p>The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's <code>Psr\Http\Client\ClientInterface</code> binding when there is one, Guzzle when it is installed (with redirects off), and nothing when there is neither. Bind a client when the app has neither:</p>
 <pre tabindex="0"><code class="language-php">app()-&gt;singleton(
     Psr\Http\Client\ClientInterface::class,
@@ -372,9 +372,9 @@
 );
 </code></pre>
 <p>The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The adapter wires one up from the app's cache, using the store named by <code>oauth2.jwks_store</code>, or the default store when none is named. The gateway driver's replay guard is wired the same way, from the store named by <code>gateway.replay_store</code>, so a captured assertion cannot be played back a second time.</p>
-<h2 id="logging">Logging<a class="docs-heading-link" aria-label="Link to this section" href="#logging">#</a></h2>
+<h2 id="logging"><span class="docs-heading-tail"><span>Logging</span><a class="docs-heading-link" aria-label="Link to this section" href="#logging">#</a></span></h2>
 <p>The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the authentication events in its normal log channels with no extra wiring: the container's <code>Psr\Log\LoggerInterface</code> binding is used when there is one. Set <code>sesame.log</code> (env <code>SESAME_LOG</code>) to <code>false</code> to turn the events off; the default is <code>true</code>. The events, their context and what is never logged are described in <a href="raw-php.html">Raw PHP</a>, &quot;Logging&quot;.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="quick-start.html">Quick start</a></li>
 <li><a href="which-driver.html">Which driver</a></li>

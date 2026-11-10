@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# The saml driver (SAML 2.0 sign-in)[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#the-saml-driver-saml-2-0-sign-in)
+# The saml driver (SAML 2.0 sign-in) [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#the-saml-driver-saml-2-0-sign-in)
 
 The goal: sign a person into your app through the browser with SAML 2.0, with your app as the service provider (SP) and a Shibboleth-style identity provider (IdP) vouching for them. This page walks through how a sign-in runs, every config key, and what to hand the IdP's administrators; then set the driver up on the [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) or [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html) page.
 
@@ -14,7 +14,7 @@ Note
 
 The saml driver is opt-in. Nothing in it runs unless `SESAME_DRIVER=saml`, and SESAME assumes no IdP: there is no default WSU IdP entity, so you name the IdP's metadata yourself. On Citadel prefer the `gateway` driver behind Drawbridge, and for Entra prefer `oidc`. Reach for SAML when the IdP you must use speaks only SAML.
 
-## What you need[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-you-need)
+## What you need [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-you-need)
 
 Open sesame, in a language with a schema. The saml driver stands on `onelogin/php-saml`, which SESAME suggests but does not require:
 
@@ -31,7 +31,7 @@ You also need:
 - The app's session (SESAME's `SessionPort`), as for `cas` and `oidc`.
 - Optionally an SP key pair, as file paths, for signed AuthnRequests and the certificate in the SP metadata.
 
-## How a sign-in runs[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#how-a-sign-in-runs)
+## How a sign-in runs [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#how-a-sign-in-runs)
 
 A SAML sign-in takes three requests, one more than you might expect.
 
@@ -43,7 +43,7 @@ A SAML sign-in takes three requests, one more than you might expect.
 
 IdP-initiated (unsolicited) responses are refused: a sign-in must start at the app. A Response that answers another browser's request (login CSRF) is refused too, because the pending request lives in this browser's session.
 
-## Identity, attributes and MFA[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#identity-attributes-and-mfa)
+## Identity, attributes and MFA [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#identity-attributes-and-mfa)
 
 `saml.attributes` maps SESAME's names to the SAML attribute names the IdP releases; the first name present wins. The defaults are the eduPerson and inetOrgPerson OIDs a Shibboleth IdP releases, then their friendly names:
 
@@ -59,17 +59,17 @@ The username comes from `saml.username_attribute` (default `accessid`). When the
 
 The AuthnStatement gives the MFA facts. `AuthnInstant` becomes the identity's sign-in time (never invented: without one, the MFA check fails closed). An `AuthnContextClassRef` listed in `saml.mfa_contexts` (the REFEDS MFA profile, `https://refeds.org/profile/mfa`, by default) adds `mfa` to the methods, and the class reference is also the identity's authentication context, so `sesame.context:https://refeds.org/profile/mfa` works. `saml.assume_mfa` counts every sign-in as MFA, for an IdP that enforces MFA for this SP but does not say so.
 
-## Step-up and return-to[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#step-up-and-return-to)
+## Step-up and return-to [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#step-up-and-return-to)
 
 A login request with `step_up=1` sends `ForceAuthn="true"`, so the IdP asks for credentials again. The finish then requires a fresh `AuthnInstant`: not in the future beyond the leeway, not before the sign-in started, and within 300 seconds. In Laravel, `sesame.mfa` with `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
 
 A login request may carry `return_to`. It goes out as the RelayState only when it passes the ReturnTo rule (an absolute https URL with the login URL's scheme, host and port, and no user name or password), and the RelayState that comes back is checked again with the same rule, so it can never be an open redirect.
 
-## Logout[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#logout)
+## Logout [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#logout)
 
 Local only. There is no single logout: SESAME refuses `slo` at boot, so the app session is cleared and the IdP's session lives on (the next sign-in is usually silent).
 
-## Raw PHP[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#raw-php)
+## Raw PHP [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#raw-php)
 
 The ACS is its own page, and it must NOT call `session_start()`.
 
@@ -152,7 +152,7 @@ $user = sesame_login();
 
 A protected page sends a guest to `login.php?return_to=<its own https URL>`, and a page that needs fresh credentials to `login.php?step_up=1`.
 
-## Laravel[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#laravel)
+## Laravel [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#laravel)
 
 ```
 SESAME_DRIVER=saml
@@ -174,7 +174,7 @@ The adapter registers two more routes beside `GET /login`, both outside the `web
 
 It passes the Laravel session and the `sesame.saml.cache_store` cache to the driver. Laravel's default `SameSite=Lax` session cookie is right: the browser drops it on the IdP's POST, which is why the ACS parks the response, and sends it on the 303's GET. `Strict` would drop it on that GET too.
 
-## What to hand the IdP's administrators[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-to-hand-the-idp-s-administrators)
+## What to hand the IdP's administrators [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#what-to-hand-the-idp-s-administrators)
 
 Send them the SP metadata URL (`/login/saml/metadata` in Laravel). It carries the entity ID, the ACS URL with the HTTP-POST binding, `WantAssertionsSigned="true"` and, when set, the SP certificate. Ask them:
 
@@ -183,7 +183,7 @@ Send them the SP metadata URL (`/login/saml/metadata` in Laravel). It carries th
 - to sign with SHA-256 or better; SHA-1 is refused;
 - not to encrypt assertions unless the app has an SP key pair to decrypt them with.
 
-## Config keys[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys)
+## Config keys [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#config-keys)
 
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
@@ -208,7 +208,7 @@ Send them the SP metadata URL (`/login/saml/metadata` in Laravel). It carries th
 | `saml.request_ttl_seconds` | none | `600` | How long a started sign-in may take, 60 to 3600 seconds. |
 | `saml.cache_store` | `SESAME_SAML_CACHE_STORE` | the default store | Laravel only. Must be shared by every web server of the app. |
 
-## Errors[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#errors)
+## Errors [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#errors)
 
 Every refusal is an `AuthenticationFailed` with a short reason in parentheses, never a value from the XML:
 
@@ -227,7 +227,7 @@ Every refusal is an `AuthenticationFailed` with a short reason in parentheses, n
 | `saml.missing_attribute` | The username attribute is missing. |
 | `saml.metadata` | The IdP metadata could not be fetched or used. |
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html#related)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
 - [The saml driver's library choice](https://sesame.apps.wayne.edu/docs/saml-library-choice.html)

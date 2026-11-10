@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Laravel[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#laravel)
+# Laravel [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#laravel)
 
 The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame` and `wayne.cas` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html) and [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html) for the checks the middleware runs.
 
-## Install and publish[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#install-and-publish)
+## Install and publish [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#install-and-publish)
 
 The provider is discovered automatically. Publish the config with:
 
@@ -20,7 +20,7 @@ php artisan vendor:publish --tag=sesame-config
 
 The app's environment becomes the core's `environment`, the `cas.service_url` falls back to the app's `/login` route when the app has not set one, and the oidc driver's `redirect_uri` falls back to the app's `/login/callback` route. For the saml driver, `saml.service_url`, `saml.sp.acs_url` and `saml.sp.entity_id` fall back to the app's `/login`, `/login/saml/acs` and `/login/saml/metadata` routes.
 
-## Config[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#config)
+## Config [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#config)
 
 Config keys (in `config/sesame.php`):
 
@@ -64,7 +64,7 @@ Config keys (in `config/sesame.php`):
 
 A missing `user_resolver` fails with an error that names the wayne-cas resolver class. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.
 
-## Routes[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#routes)
+## Routes [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#routes)
 
 The routes, when `routes` is true:
 
@@ -78,7 +78,7 @@ The routes, when `routes` is true:
 
 Set `SESAME_ROUTES=false` when the app defines its own login and logout routes. The `auth.sesame` middleware still points at the `sesame.login` route name, so the app's login route must keep that name.
 
-## Middleware[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#middleware)
+## Middleware [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#middleware)
 
 Protect a route with the `auth.sesame` middleware:
 
@@ -111,7 +111,7 @@ A request without the context gets a 403, or a JSON 403 with a `message` for JSO
 
 The `wayne.cas` alias is registered against SESAME's `WayneAuthenticate`, for apps moving off wayne-cas; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
 
-## Reading the user[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user)
+## Reading the user [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user)
 
 The app's user is available through the facade:
 
@@ -155,7 +155,7 @@ and the usual calls work against the SESAME session: `auth()->user()`, `$request
 
 `auth()->logout()` signs the user out of both sides, the Laravel session and the SESAME session. The identity provider's single sign-on session is left alone.
 
-## HTTP client and caches[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#http-client-and-caches)
+## HTTP client and caches [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#http-client-and-caches)
 
 The cas and oauth2 drivers need a PSR-18 client. The adapter uses the app's `Psr\Http\Client\ClientInterface` binding when there is one, Guzzle when it is installed (with redirects off), and nothing when there is neither. Bind a client when the app has neither:
 
@@ -168,11 +168,11 @@ app()->singleton(
 
 The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The adapter wires one up from the app's cache, using the store named by `oauth2.jwks_store`, or the default store when none is named. The gateway driver's replay guard is wired the same way, from the store named by `gateway.replay_store`, so a captured assertion cannot be played back a second time.
 
-## Logging[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#logging)
+## Logging [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#logging)
 
 The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the authentication events in its normal log channels with no extra wiring: the container's `Psr\Log\LoggerInterface` binding is used when there is one. Set `sesame.log` (env `SESAME_LOG`) to `false` to turn the events off; the default is `true`. The events, their context and what is never logged are described in [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html), "Logging".
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#related)
 
 - [Quick start](https://sesame.apps.wayne.edu/docs/guides/quick-start.html)
 - [Which driver](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)

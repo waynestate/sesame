@@ -45,13 +45,13 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../docs/saml-library-choice.html" aria-current="page">The saml driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../docs/upgrading.html">Upgrading</a></li><li><a href="../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="the-saml-driver-s-library-choice">The saml driver's library choice<a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-s-library-choice">#</a></h1>
+      <article class="docs-article"><h1 id="the-saml-driver-s-library-choice">The saml driver's library <span class="docs-heading-tail"><span>choice</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-s-library-choice">#</a></span></h1>
 <p>Ali Baba did not forge his own cave door, and SESAME does not write its own
 XML signature checks. This note records which library the <code>saml</code> driver
 stands on, what else was weighed, and why. Data checked on 2026-11-07
 against Packagist (<code>repo.packagist.org/p2/&lt;package&gt;.json</code>) and the Packagist
 security advisory API.</p>
-<h2 id="what-the-driver-needs">What the driver needs<a class="docs-heading-link" aria-label="Link to this section" href="#what-the-driver-needs">#</a></h2>
+<h2 id="what-the-driver-needs">What the driver <span class="docs-heading-tail"><span>needs</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-the-driver-needs">#</a></span></h2>
 <ul>
 <li>A service provider for the Web Browser SSO profile: an AuthnRequest over
 the HTTP-Redirect binding (optionally signed), the Response over
@@ -64,7 +64,7 @@ InResponseTo, the time conditions and the bearer subject confirmation.</li>
 <li>A small dependency tree, a permissive license (SESAME is MIT), PHP 8.3 to
 8.5, and an active maintainer with a record of fixing advisories.</li>
 </ul>
-<h2 id="the-candidates">The candidates<a class="docs-heading-link" aria-label="Link to this section" href="#the-candidates">#</a></h2>
+<h2 id="the-candidates">The <span class="docs-heading-tail"><span>candidates</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-candidates">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -95,7 +95,7 @@ InResponseTo, the time conditions and the bearer subject confirmation.</li>
 </tr>
 </tbody>
 </table></div>
-<h2 id="the-choice-onelogin-php-saml">The choice: onelogin/php-saml<a class="docs-heading-link" aria-label="Link to this section" href="#the-choice-onelogin-php-saml">#</a></h2>
+<h2 id="the-choice-onelogin-php-saml">The choice: <span class="docs-heading-tail"><span>onelogin/php-saml</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-choice-onelogin-php-saml">#</a></span></h2>
 <ul>
 <li><strong>One library, one reading.</strong> php-saml's <code>Response::isValid()</code> does every
 check in the list above in strict mode, against the one parsed document
@@ -115,7 +115,7 @@ which would make SESAME's own PHP support follow theirs.</li>
 <p>simplesamlphp/saml2 is the strongest alternative if SESAME ever needs the
 whole SAML protocol (artifact binding, SOAP, attribute queries); the driver
 needs only Web Browser SSO.</p>
-<h2 id="the-security-floor">The security floor<a class="docs-heading-link" aria-label="Link to this section" href="#the-security-floor">#</a></h2>
+<h2 id="the-security-floor">The security <span class="docs-heading-tail"><span>floor</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-security-floor">#</a></span></h2>
 <p>SESAME refuses php-saml below <strong>4.3.2</strong> and xmlseclibs below <strong>3.1.5</strong>:</p>
 <ul>
 <li>php-saml 4.3.1 fixed CVE-2025-66475 (signature verification through
@@ -137,13 +137,13 @@ the floor, or when <code>composer.json</code> and the driver's constants disagre
 on 4.4 (what the lock file has today) xmlseclibs 4 adds phpseclib 3 and two
 small paragonie packages. The driver's tests pass on both. <code>composer audit</code>
 in CI covers phpseclib's own advisories.</p>
-<h2 id="how-the-dependency-is-kept-optional">How the dependency is kept optional<a class="docs-heading-link" aria-label="Link to this section" href="#how-the-dependency-is-kept-optional">#</a></h2>
+<h2 id="how-the-dependency-is-kept-optional">How the dependency is kept <span class="docs-heading-tail"><span>optional</span><a class="docs-heading-link" aria-label="Link to this section" href="#how-the-dependency-is-kept-optional">#</a></span></h2>
 <p>onelogin/php-saml is in <code>suggest</code> and <code>require-dev</code>, not <code>require</code>, the same
 way SESAME treats league/oauth2-client. Only the <code>saml</code> driver needs it.
 When it is missing, building the driver fails with:</p>
 <pre tabindex="0"><code>The saml driver needs onelogin/php-saml. Install it with: composer require onelogin/php-saml
 </code></pre>
-<h2 id="what-sesame-adds-on-top">What SESAME adds on top<a class="docs-heading-link" aria-label="Link to this section" href="#what-sesame-adds-on-top">#</a></h2>
+<h2 id="what-sesame-adds-on-top">What SESAME adds on <span class="docs-heading-tail"><span>top</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-sesame-adds-on-top">#</a></span></h2>
 <p>php-saml is configured strictly (<code>strict</code>, <code>wantAssertionsSigned</code>,
 <code>wantXMLValidation</code>, <code>requireDestination</code>, <code>destinationStrictlyMatches</code>,
 <code>rejectUnsolicitedResponsesWithInResponseTo</code>, and no RequestedAuthnContext

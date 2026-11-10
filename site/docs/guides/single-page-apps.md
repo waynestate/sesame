@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Single-page apps[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#single-page-apps)
+# Single-page apps [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#single-page-apps)
 
 A single-page app that renders its own signed-in state needs a JSON answer to "who is signed in?". This page is about that answer: where it comes from, what it contains, and how to keep it honest. When you have wired it up, see [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html), which explains the two expiries the answer carries.
 
-## The two endpoints[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#the-two-endpoints)
+## The two endpoints [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#the-two-endpoints)
 
 SESAME answers the question two ways: `sesame_status()` in raw PHP and the `GET /sesame/status` route in Laravel. Both send the session facts with a 200 when someone is signed in, and `{"signedIn":false}` with a 401 when no one is:
 
@@ -37,7 +37,7 @@ and, when signed out:
 
 The times are always UTC. Every answer carries `Cache-Control: no-store`, `Content-Type: application/json; charset=utf-8` and `X-Content-Type-Options: nosniff`, so a browser or proxy never caches who is signed in.
 
-## In raw PHP[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#in-raw-php)
+## In raw PHP [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#in-raw-php)
 
 Put the function at the end of a small endpoint script, after the same bootstrap a protected page uses:
 
@@ -50,31 +50,31 @@ sesame_status();
 
 `sesame_status()` stops the script after the answer, so nothing after it runs in that request. Only GET (and HEAD) ask the question; any other method answers 405 (`Allow: GET, HEAD`) and leaves the session alone.
 
-## In Laravel[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#in-laravel)
+## In Laravel [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#in-laravel)
 
 The route is registered with the login and logout routes (in the `web` group, so the session is available; a GET needs no CSRF token), and `SESAME_ROUTES=false` takes it away with them. The app's SPA reads `/sesame/status` directly.
 
-## With Vue[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#with-vue)
+## With Vue [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#with-vue)
 
 This repo ships a thin Vue adapter for the answer: the [`vue/` folder](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/vue/README.md) gives you `useSesame()` (or `createSesame()` as an app-wide plugin) with reactive `signedIn`, `user` and `expired`, a `refresh()` for real user actions, and a `logout()` that posts the sign-out form. It never polls, for the reason below.
 
-## Read it on page load, not on a timer[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#read-it-on-page-load-not-on-a-timer)
+## Read it on page load, not on a timer [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#read-it-on-page-load-not-on-a-timer)
 
 A poll counts as activity: reading the status moves the session's `last_seen`, so polling on a timer would keep a session alive past the idle timeout. Read it when the app loads and after a sign-in, and let the `idleExpiresAt` and `absoluteExpiresAt` in the answer tell you how long the state can be trusted.
 
-## A 401 from any page means "reload"[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#a-401-from-any-page-means-reload)
+## A 401 from any page means "reload" [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#a-401-from-any-page-means-reload)
 
 A script's request (an XHR, or a `fetch` whose first `Accept` type is JSON) that reaches a page behind `sesame_login()`, the Wayne Auth bridge or the `auth.sesame` middleware with no one signed in gets a 401, never a redirect to the identity provider, which a script could not follow. That includes a session that timed out since the page loaded (2 hours idle, 12 hours absolute). The raw-PHP and bridge answers carry `{"signedIn":false}`, the same body as the status endpoint. Send `Accept: application/json` (or `X-Requested-With: XMLHttpRequest`) from your client so the server can tell, and treat a 401 as "reload the page": the reload goes through the sign-in.
 
-## Adding your own user fields[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#adding-your-own-user-fields)
+## Adding your own user fields [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#adding-your-own-user-fields)
 
 Pass a closure that returns an array of extra fields for the app's user: `sesame_status(fn ($user) => ['name' => $user->name])` in raw PHP, or bind the closure as `sesame.describe_user` in Laravel. Its array fills the answer's `user` field (null without a closure); the session facts stay untouched, and the identity provider's raw attributes are never part of the answer.
 
-## Signing out[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#signing-out)
+## Signing out [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#signing-out)
 
 In raw PHP, nothing more is needed: `sesame_logout()` checks the form's `sesame_logout_token` against the answer's `logoutToken`. In Laravel the `POST /logout` route is in the `web` group, so the layout needs `<meta name="csrf-token" content="{{ csrf_token() }}">` (the Vue adapter's `logout()` reads it and sends it as `_token`; pass `csrfToken` to override).
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/single-page-apps.html#related)
 
 - [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html)
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)

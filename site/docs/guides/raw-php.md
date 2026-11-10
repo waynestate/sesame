@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Raw PHP[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#raw-php)
+# Raw PHP [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#raw-php)
 
 This page shows how a framework-free PHP app boots SESAME, signs the user in, reads the user back, and signs the user out. Start with the boot example, then wire up your protected pages.
 
-## Boot the app[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#boot-the-app)
+## Boot the app [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#boot-the-app)
 
 ```php
 <?php
@@ -62,11 +62,11 @@ sesame($sesame);
 $user = sesame_login();
 ```
 
-## Which key to store[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#which-key-to-store)
+## Which key to store [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#which-key-to-store)
 
 Your `findOrImportUser` looks the person up in the app's own store, so key that store on the driver plus the identity provider's own stable identifier, never on an email or a display name, which can change or be shared between providers. For the cas driver that identifier is the `username` (the Access ID), so the key is `$identity->driver` plus `$identity->username`. Other drivers name their stable identifier differently: the oidc section keys on `iss` plus `sub`, or `tid` plus `oid`, never the username alone.
 
-## Session ownership[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#session-ownership)
+## Session ownership [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#session-ownership)
 
 The app owns the session: start it with `session_start()`, and let HELMET set the cookie flags. SESAME regenerates the session ID on login and stores the user and identity in it, but it never starts a session and never touches a cookie. `sesame_login()` and `sesame_logout()` stop the script after they send their redirect, so nothing after them runs in that request. A protected page reads the user with `sesame_user()`:
 
@@ -84,7 +84,7 @@ Warning
 
 **Set `session.gc_maxlifetime` to at least SESAME's idle timeout.** PHP's default is 1440 seconds (24 minutes), and PHP's garbage collector deletes session data older than that, so a raw-PHP app on the defaults signs people out after 24 quiet minutes, long before SESAME's 120-minute idle timeout. SESAME never starts the session (S2), so it cannot change this for you: set `session.gc_maxlifetime = 7200` (your `session.idle_minutes` times 60) in `php.ini` or the FPM pool, or call `ini_set('session.gc_maxlifetime', '7200')` before `session_start()`. SESAME's timeouts stay the authority; this only stops PHP from ending the session first. Laravel apps set `SESSION_LIFETIME` (minutes) instead.
 
-## The session cookie (name and SameSite)[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#the-session-cookie-name-and-samesite)
+## The session cookie (name and SameSite) [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#the-session-cookie-name-and-samesite)
 
 SESAME never sets a cookie, so two choices belong to the session setup. In raw PHP HELMET makes both for you (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel they are settings in `config/session.php`:
 
@@ -94,7 +94,7 @@ SESAME never sets a cookie, so two choices belong to the session setup. In raw P
 
 On logout, both paths send `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"` so a back button or a shared browser cannot show a signed-in page; `"cookies"` is left out on purpose, because it would clear every cookie on the host and sign the user out of every other app on wayne.edu, not just this one. Single logout is not supported, the identity provider cannot sign the user out of the app's other sessions, so SESAME rejects a truthy `slo` (or `single_logout`) config key at boot.
 
-## Logout[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#logout)
+## Logout [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#logout)
 
 Logout is POST-only, with a CSRF token. `sesame_logout()` runs only for a POST whose body carries the session's `sesame_logout_token`; a GET answers 405 (`Allow: POST`) and a POST without the right token answers 403, and both leave the session alone. So another site cannot sign the user out with an image, a link or a forged form. Put the token in the sign-out form:
 
@@ -112,7 +112,7 @@ sesame_logout('https://app.example.test/');
 
 The token lives in the session, is made on first use and dies with the session at logout. Laravel apps use Laravel's own CSRF token instead: the `POST /logout` route is in the `web` middleware group, so a form needs `@csrf`.
 
-## Helper functions[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#helper-functions)
+## Helper functions [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#helper-functions)
 
 The raw-PHP path is a set of plain functions in the global namespace behind a `sesame_` prefix, each guarded with `function_exists` so two copies of the file can never collide. The app owns the session: start it with `session_start()` before calling anything here, and let HELMET set the cookie flags.
 
@@ -127,7 +127,7 @@ The raw-PHP path is a set of plain functions in the global namespace behind a `s
 | `sesame_logout_token(): string` | The logout CSRF token for this session, for the logout form. The token is hex, so it needs no escaping in HTML. |
 | `sesame_logout(string $returnTo): void` | Log the user out, then send them on. Invalidates the app session, redirects to the identity provider's logout URL when the driver has one, otherwise to the safe return-to, and stops the script. |
 
-## Logging[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#logging)
+## Logging [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#logging)
 
 The facade takes an optional sixth constructor argument: a PSR-3 logger (`Psr\Log\LoggerInterface`). When you pass one, SESAME writes one record per authentication event through it:
 
@@ -143,7 +143,7 @@ Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in 
 
 SESAME never logs tickets, session IDs, tokens or failure messages: a failed login records only the event, the driver and the time. Usernames have every control character replaced with `?` and are cut at 128 characters, so a username cannot forge an extra log line or flood the log. A logger that throws never changes what the facade returns or throws.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#related)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)
 - [WSU values (Playbook)](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html)

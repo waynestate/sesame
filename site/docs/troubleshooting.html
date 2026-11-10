@@ -45,14 +45,14 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html" aria-current="page">Troubleshooting</a></li><li><a href="../docs/upgrading.html">Upgrading</a></li><li><a href="../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="troubleshooting">Troubleshooting<a class="docs-heading-link" aria-label="Link to this section" href="#troubleshooting">#</a></h1>
+      <article class="docs-article"><h1 id="troubleshooting"><span class="docs-heading-tail"><span>Troubleshooting</span><a class="docs-heading-link" aria-label="Link to this section" href="#troubleshooting">#</a></span></h1>
 <p>Open sesame opens the door; this page is for when it does not. Each symptom
 below names the cause the sources give, the fix, and a check you can run. If
 your sign-in still fails after these, start at <a href="guides/quick-start.html">Quick start</a>
 with the <code>fake</code> driver to prove the wiring, then come back with the real
 driver.</p>
-<h2 id="sign-in-fails">Sign-in fails<a class="docs-heading-link" aria-label="Link to this section" href="#sign-in-fails">#</a></h2>
-<h3 id="the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">The oidc driver fails to build: <code>The oidc driver needs league/oauth2-client</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">#</a></h3>
+<h2 id="sign-in-fails">Sign-in <span class="docs-heading-tail"><span>fails</span><a class="docs-heading-link" aria-label="Link to this section" href="#sign-in-fails">#</a></span></h2>
+<h3 id="the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">The oidc driver fails to build: <span class="docs-heading-tail"><code>The oidc driver needs league/oauth2-client</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-oidc-driver-fails-to-build-the-oidc-driver-needs-league-oauth2-client">#</a></span></h3>
 <p><strong>Cause.</strong> The <code>oidc</code> driver stands on <code>league/oauth2-client</code>, which SESAME
 suggests but does not require. Without it, building the driver fails with
 <code>The oidc driver needs league/oauth2-client. Install it with: composer require league/oauth2-client</code>.</p>
@@ -61,7 +61,7 @@ suggests but does not require. Without it, building the driver fails with
 </code></pre>
 <p><strong>Check.</strong> Build the driver again; the error is gone and the sign-in starts.
 The driver's behavior is covered by <code>tests/OidcDriverTest.php</code>.</p>
-<h3 id="the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml">The saml driver fails to build: <code>The saml driver needs onelogin/php-saml</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml">#</a></h3>
+<h3 id="the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml">The saml driver fails to build: <span class="docs-heading-tail"><code>The saml driver needs onelogin/php-saml</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-fails-to-build-the-saml-driver-needs-onelogin-php-saml">#</a></span></h3>
 <p><strong>Cause.</strong> The <code>saml</code> driver stands on <code>onelogin/php-saml</code>, which SESAME
 suggests but does not require, and it refuses php-saml older than 4.3.2 or
 xmlseclibs older than 3.1.5 (both had signature or encryption advisories).</p>
@@ -71,7 +71,7 @@ composer update onelogin/php-saml robrichards/xmlseclibs
 </code></pre>
 <p><strong>Check.</strong> Build the driver again; the error is gone. The floor is covered
 by <code>tests/SamlConfigTest.php</code>.</p>
-<h3 id="a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to">A SAML sign-in fails with <code>saml.handle</code> or <code>saml.in_response_to</code><a class="docs-heading-link" aria-label="Link to this section" href="#a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to">#</a></h3>
+<h3 id="a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to">A SAML sign-in fails with <code>saml.handle</code> or <span class="docs-heading-tail"><code>saml.in_response_to</code><a class="docs-heading-link" aria-label="Link to this section" href="#a-saml-sign-in-fails-with-saml-handle-or-saml-in-response-to">#</a></span></h3>
 <p><strong>Cause.</strong> The finish could not find what the start and the ACS left
 behind. <code>saml.handle</code>: the parked response is gone (more than two minutes,
 used twice, or a cache the web servers do not share). <code>saml.in_response_to</code>:
@@ -84,7 +84,7 @@ never start the session on the ACS page (raw PHP) or put the ACS route in
 the <code>web</code> group (Laravel).</p>
 <p><strong>Check.</strong> A fresh sign-in from the app's login URL completes. The flow is
 covered by <code>tests/SamlDriverTest.php</code> and <code>tests/Laravel/SamlRouteTest.php</code>.</p>
-<h3 id="a-cas-login-loops-back-to-the-cas-login-page">A <code>cas</code> login loops back to the CAS login page<a class="docs-heading-link" aria-label="Link to this section" href="#a-cas-login-loops-back-to-the-cas-login-page">#</a></h3>
+<h3 id="a-cas-login-loops-back-to-the-cas-login-page">A <code>cas</code> login loops back to the CAS login <span class="docs-heading-tail"><span>page</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-cas-login-loops-back-to-the-cas-login-page">#</a></span></h3>
 <p><strong>Cause.</strong> <code>cas.renew</code> is set to <code>true</code> against Academica. Academica does not
 issue a ticket for <code>renew=true</code> and sends the user back to the login page, so
 a <code>renew</code> login loops instead of signing in.</p>
@@ -94,7 +94,7 @@ and the CAS server issues tickets for it.</p>
 <p><strong>Check.</strong> Sign in with the default <code>cas.renew</code>; the ticket completes and the
 user lands on the service URL. <code>tests/CasDriverTest.php</code> covers the cas
 sign-in steps.</p>
-<h3 id="cas-validation-redirects-to-the-login-page-or-attributes-are-missing">CAS validation redirects to the login page, or attributes are missing<a class="docs-heading-link" aria-label="Link to this section" href="#cas-validation-redirects-to-the-login-page-or-attributes-are-missing">#</a></h3>
+<h3 id="cas-validation-redirects-to-the-login-page-or-attributes-are-missing">CAS validation redirects to the login page, or attributes are <span class="docs-heading-tail"><span>missing</span><a class="docs-heading-link" aria-label="Link to this section" href="#cas-validation-redirects-to-the-login-page-or-attributes-are-missing">#</a></span></h3>
 <p><strong>Cause.</strong> <code>cas.protocol</code> is <code>3.0</code> against Academica, which is believed to
 redirect cookieless <code>/p3/serviceValidate</code> calls to the login page. Protocol
 <code>2.0</code> is the default for that reason.</p>
@@ -102,7 +102,7 @@ redirect cookieless <code>/p3/serviceValidate</code> calls to the login page. Pr
 releases attributes on <code>/p3/serviceValidate</code>.</p>
 <p><strong>Check.</strong> Validate a ticket with <code>cas.protocol</code> at <code>2.0</code>; the identity comes
 back with its attributes. <code>tests/CasDriverTest.php</code> covers it.</p>
-<h3 id="a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">A sign-in fails on a hung or slow CAS server, or a client that is set up wrong<a class="docs-heading-link" aria-label="Link to this section" href="#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">#</a></h3>
+<h3 id="a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">A sign-in fails on a hung or slow CAS server, or a client that is set up <span class="docs-heading-tail"><span>wrong</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-sign-in-fails-on-a-hung-or-slow-cas-server-or-a-client-that-is-set-up-wrong">#</a></span></h3>
 <p><strong>Cause.</strong> SESAME treats any non-200 answer (including a redirect) as a failed
 login, and a client exception (no route, a TLS failure, the timeout ran out)
 or a 5xx answer as <code>ProviderUnavailable</code>, a subclass of <code>AuthenticationFailed</code>,
@@ -127,7 +127,7 @@ client exception is proven by tests (S42):</p>
 </code></pre></div>
 <div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre tabindex="0"><code class="language-bash">vendor/bin/phpunit
 </code></pre></div></div>
-<h3 id="a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the user<a class="docs-heading-link" aria-label="Link to this section" href="#a-failed-login-shows-the-cas-failure-code-to-the-user">#</a></h3>
+<h3 id="a-failed-login-shows-the-cas-failure-code-to-the-user">A failed login shows the CAS failure code to the <span class="docs-heading-tail"><span>user</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-failed-login-shows-the-cas-failure-code-to-the-user">#</a></span></h3>
 <p><strong>Cause.</strong> An <code>AuthenticationFailed</code> message can carry the CAS failure code
 (for example <code>INVALID_TICKET</code>), which tells an attacker how the server refused
 the ticket.</p>
@@ -136,7 +136,7 @@ instead.</p>
 <p><strong>Check.</strong> Trigger a failed login with a bad ticket; the log carries the
 message and the page shows the generic line. <code>tests/CasDriverTest.php</code> covers
 the failure path.</p>
-<h3 id="the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">The gateway driver refuses every assertion from an untrusted peer<a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">#</a></h3>
+<h3 id="the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">The gateway driver refuses every assertion from an untrusted <span class="docs-heading-tail"><span>peer</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver-refuses-every-assertion-from-an-untrusted-peer">#</a></span></h3>
 <p><strong>Cause.</strong> The request must come from a trusted proxy: the direct peer
 (<code>REMOTE_ADDR</code>) must match one of the configured CIDR ranges in
 <code>gateway.trusted_proxies</code>. A valid assertion from an untrusted peer is still
@@ -146,7 +146,7 @@ spelling of them) is never read.</p>
 <code>gateway.trusted_proxies</code>, a non-empty array.</p>
 <p><strong>Check.</strong> Send a request through the gateway proxy; the assertion verifies
 and the user signs in. <code>tests/GatewayDriverTest.php</code> covers the trust checks.</p>
-<h3 id="the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">The gateway driver throws <code>InvalidConfig</code> naming a key at boot<a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">#</a></h3>
+<h3 id="the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">The gateway driver throws <code>InvalidConfig</code> naming a key at <span class="docs-heading-tail"><span>boot</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-gateway-driver-throws-invalidconfig-naming-a-key-at-boot">#</a></span></h3>
 <p><strong>Cause.</strong> With the gateway driver, <code>DriverFactory::make()</code> throws
 <code>InvalidConfig</code> naming the key when <code>gateway.public_key</code>, <code>gateway.issuer</code> or
 <code>gateway.audience</code> is null or empty, instead of passing an empty string into
@@ -154,7 +154,7 @@ the driver.</p>
 <p><strong>Fix.</strong> Set the named key. All three are required for the gateway driver,
 along with a non-empty <code>gateway.trusted_proxies</code>.</p>
 <p><strong>Check.</strong> Boot the driver; it builds without <code>InvalidConfig</code>.</p>
-<h3 id="a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">A truthy <code>slo</code> (or <code>single_logout</code>) config key is rejected at boot<a class="docs-heading-link" aria-label="Link to this section" href="#a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">#</a></h3>
+<h3 id="a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">A truthy <code>slo</code> (or <code>single_logout</code>) config key is rejected at <span class="docs-heading-tail"><span>boot</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-truthy-slo-or-single-logout-config-key-is-rejected-at-boot">#</a></span></h3>
 <p><strong>Cause.</strong> Single logout is not supported: the identity provider cannot sign
 the user out of the app's other sessions, so SESAME rejects a truthy <code>slo</code>
 (or <code>single_logout</code>) config key with <code>InvalidConfig</code> at boot, a mistake to
@@ -162,7 +162,7 @@ fail on early rather than at the first logout.</p>
 <p><strong>Fix.</strong> Remove the <code>slo</code> (or <code>single_logout</code>) key from the config.</p>
 <p><strong>Check.</strong> Boot the app; it starts, and a logout clears the app session and
 sends <code>Cache-Control: no-store</code> and <code>Clear-Site-Data: &quot;cache&quot;, &quot;storage&quot;</code>.</p>
-<h3 id="the-fake-driver-refuses-to-boot-in-production">The <code>fake</code> driver refuses to boot in production<a class="docs-heading-link" aria-label="Link to this section" href="#the-fake-driver-refuses-to-boot-in-production">#</a></h3>
+<h3 id="the-fake-driver-refuses-to-boot-in-production">The <code>fake</code> driver refuses to boot in <span class="docs-heading-tail"><span>production</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-fake-driver-refuses-to-boot-in-production">#</a></span></h3>
 <p><strong>Cause.</strong> The <code>fake</code> driver is for local development and tests only; it
 refuses to boot in production.</p>
 <p><strong>Fix.</strong> Use a real driver in production: <code>cas</code> for a Citadel app today,
@@ -170,7 +170,7 @@ refuses to boot in production.</p>
 Citadel. See <a href="guides/which-driver.html">Which driver for my app?</a>.</p>
 <p><strong>Check.</strong> In the local environment the <code>fake</code> driver signs in; in production
 the configured driver does. <code>tests/FakeDriverTest.php</code> covers the refusal.</p>
-<h3 id="the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off">The log has <code>SESAME: the session was started with session.use_strict_mode off</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off">#</a></h3>
+<h3 id="the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off">The log has <span class="docs-heading-tail"><code>SESAME: the session was started with session.use_strict_mode off</code><a class="docs-heading-link" aria-label="Link to this section" href="#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off">#</a></span></h3>
 <p><strong>Cause.</strong> The app started its session with <code>session.use_strict_mode</code> off
 (PHP then accepts any session ID a client sends, so an attacker can plant a
 known one) or <code>session.use_only_cookies</code> off (PHP takes the ID from the URL).
@@ -188,7 +188,7 @@ is active.</p>
 <p><strong>Check.</strong> The warning stops. <code>php -r &quot;echo ini_get('session.use_strict_mode');&quot;</code>
 prints <code>1</code> for the CLI; for the web, the same <code>ini_get()</code> on a page.
 <code>NativeSessionTest</code> covers the settings, the warning and the hard stop.</p>
-<h3 id="the-log-has-sesame-the-session-cookie-is-sent-without-httponly-or-secure-or-samesite">The log has <code>SESAME: the session cookie is sent without HttpOnly</code> (or Secure, or SameSite)<a class="docs-heading-link" aria-label="Link to this section" href="#the-log-has-sesame-the-session-cookie-is-sent-without-httponly-or-secure-or-samesite">#</a></h3>
+<h3 id="the-log-has-sesame-the-session-cookie-is-sent-without-httponly-or-secure-or-samesite">The log has <code>SESAME: the session cookie is sent without HttpOnly</code> (or Secure, or <span class="docs-heading-tail"><span>SameSite)</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-log-has-sesame-the-session-cookie-is-sent-without-httponly-or-secure-or-samesite">#</a></span></h3>
 <p><strong>Cause.</strong> From 0.7.0 <code>NativeSession</code> checks the flags the app's session
 cookie started with. Without <code>HttpOnly</code> a script on the page can read the
 cookie, without <code>Secure</code> it can travel over plain http, and without a <code>Lax</code>
@@ -226,8 +226,8 @@ top-level GET and the SAML driver finishes on a GET after parking its POST.</p>
 <code>php -r &quot;var_export(session_get_cookie_params());&quot;</code> shows <code>httponly</code> true and
 <code>samesite</code> <code>Lax</code> for the CLI; for the web, the same call on a page.
 <code>NativeSessionTest</code> covers the flags, the warning and the hard stop.</p>
-<h2 id="the-session-ends-too-soon-or-looks-wrong">The session ends too soon, or looks wrong<a class="docs-heading-link" aria-label="Link to this section" href="#the-session-ends-too-soon-or-looks-wrong">#</a></h2>
-<h3 id="a-raw-php-app-signs-people-out-after-24-quiet-minutes">A raw-PHP app signs people out after 24 quiet minutes<a class="docs-heading-link" aria-label="Link to this section" href="#a-raw-php-app-signs-people-out-after-24-quiet-minutes">#</a></h3>
+<h2 id="the-session-ends-too-soon-or-looks-wrong">The session ends too soon, or looks <span class="docs-heading-tail"><span>wrong</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-session-ends-too-soon-or-looks-wrong">#</a></span></h2>
+<h3 id="a-raw-php-app-signs-people-out-after-24-quiet-minutes">A raw-PHP app signs people out after 24 quiet <span class="docs-heading-tail"><span>minutes</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-raw-php-app-signs-people-out-after-24-quiet-minutes">#</a></span></h3>
 <p><strong>Cause.</strong> PHP's default <code>session.gc_maxlifetime</code> is 1440 seconds (24
 minutes), and PHP's garbage collector deletes session data older than that, so
 on the defaults a raw-PHP app signs people out after 24 quiet minutes, long
@@ -242,7 +242,7 @@ apps set <code>SESSION_LIFETIME</code> (minutes) instead.</p>
 </code></pre>
 <p>Then sit a signed-in session for more than 24 quiet minutes; it stays signed
 in until the idle timeout (120 minutes by default) drops it.</p>
-<h3 id="the-log-carries-a-sesame-session-anomaly-warning">The log carries a <code>sesame.session_anomaly</code> warning<a class="docs-heading-link" aria-label="Link to this section" href="#the-log-carries-a-sesame-session-anomaly-warning">#</a></h3>
+<h3 id="the-log-carries-a-sesame-session-anomaly-warning">The log carries a <code>sesame.session_anomaly</code> <span class="docs-heading-tail"><span>warning</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-log-carries-a-sesame-session-anomaly-warning">#</a></span></h3>
 <p><strong>Cause.</strong> The session state looks wrong or tampered with: <code>reason</code> is
 <code>missing_timestamps</code> (a user stored without the session's timestamps; the
 session is signed out right after, so the anomaly precedes the
@@ -257,7 +257,7 @@ timeouts and logout of one sign-in together in the log.</p>
 <p><strong>Check.</strong> Grep the log for <code>sesame.session_anomaly</code> and follow the
 <code>session_ref</code> value across the events of that sign-in.
 <code>tests/SesameEventsTest.php</code> covers the events.</p>
-<h3 id="the-session-is-missing-on-the-return-from-the-identity-provider">The session is missing on the return from the identity provider<a class="docs-heading-link" aria-label="Link to this section" href="#the-session-is-missing-on-the-return-from-the-identity-provider">#</a></h3>
+<h3 id="the-session-is-missing-on-the-return-from-the-identity-provider">The session is missing on the return from the identity <span class="docs-heading-tail"><span>provider</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-session-is-missing-on-the-return-from-the-identity-provider">#</a></span></h3>
 <p><strong>Cause.</strong> The session cookie is <code>SameSite=Strict</code>. The identity provider
 sends the browser back to the app with a cross-site top-level <code>GET</code>, and a
 <code>Strict</code> cookie is not sent on that request: it would be missing, so the app
@@ -271,7 +271,7 @@ makes both choices for you (<code>SessionHardening::apply()</code>, called by
 <p><strong>Check.</strong> Sign in end to end; the return request carries the cookie and the
 login completes. A cross-site <code>POST</code> carries no <code>Lax</code> cookie at all, which is
 the defense you want.</p>
-<h3 id="a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the spot<a class="docs-heading-link" aria-label="Link to this section" href="#a-stale-session-is-signed-out-on-the-spot">#</a></h3>
+<h3 id="a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the <span class="docs-heading-tail"><span>spot</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-stale-session-is-signed-out-on-the-spot">#</a></span></h3>
 <p><strong>Cause.</strong> Every signed-in session has two clocks: the idle timeout (default
 <code>session.idle_minutes</code> <code>120</code>) and the absolute lifetime (default
 <code>session.absolute_minutes</code> <code>720</code>). Both are checked on every <code>user()</code> call, so
@@ -284,7 +284,7 @@ for the app, set <code>session.idle_minutes</code> and <code>session.absolute_mi
 Laravel). See <a href="guides/session-timeouts.html">Session timeouts</a>.</p>
 <p><strong>Check.</strong> Read the user with <code>sesame_user()</code> after the quiet time; the
 session is gone and the next <code>sesame_login()</code> starts fresh.</p>
-<h3 id="a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active">A visitor back from a break gets a blank 500: <code>No session is active</code><a class="docs-heading-link" aria-label="Link to this section" href="#a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active">#</a></h3>
+<h3 id="a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active">A visitor back from a break gets a blank 500: <span class="docs-heading-tail"><code>No session is active</code><a class="docs-heading-link" aria-label="Link to this section" href="#a-visitor-back-from-a-break-gets-a-blank-500-no-session-is-active">#</a></span></h3>
 <p><strong>Cause.</strong> SESAME 0.7.0 on the native PHP session (raw PHP, or the Wayne Auth
 bridge). A session past the 2 hour idle timeout or the 12 hour absolute limit
 was signed out and the PHP session closed; the same request then sent the
@@ -301,8 +301,8 @@ old cookie was expired and a reused ID is retired.</p>
 <p><strong>Check.</strong> <code>tests/WayneAuthLegacyAppTest.php</code> ages a real session file past
 each limit and expects the CAS redirect, then the sign-in, then a 401 for an
 XHR.</p>
-<h2 id="config-and-playbook">Config and playbook<a class="docs-heading-link" aria-label="Link to this section" href="#config-and-playbook">#</a></h2>
-<h3 id="boot-fails-missing-required-setting-sesame">Boot fails: <code>Missing required setting SESAME_....</code><a class="docs-heading-link" aria-label="Link to this section" href="#boot-fails-missing-required-setting-sesame">#</a></h3>
+<h2 id="config-and-playbook">Config and <span class="docs-heading-tail"><span>playbook</span><a class="docs-heading-link" aria-label="Link to this section" href="#config-and-playbook">#</a></span></h2>
+<h3 id="boot-fails-missing-required-setting-sesame">Boot fails: <span class="docs-heading-tail"><code>Missing required setting SESAME_....</code><a class="docs-heading-link" aria-label="Link to this section" href="#boot-fails-missing-required-setting-sesame">#</a></span></h3>
 <p><strong>Cause.</strong> The setting is not in the environment and the private
 <code>waynestate/playbook</code> package, which supplies the university's values when the
 environment is empty, is not installed. A missing routed setting fails with
@@ -322,7 +322,7 @@ one counts as unset.</p>
 <p><strong>Check.</strong> Boot the app with the environment empty; it reads the four shared
 values from the playbook and starts. <code>tests/SettingTest.php</code> covers the
 resolution order.</p>
-<h3 id="fetching-the-playbook-answers-404">Fetching the playbook answers 404<a class="docs-heading-link" aria-label="Link to this section" href="#fetching-the-playbook-answers-404">#</a></h3>
+<h3 id="fetching-the-playbook-answers-404">Fetching the playbook answers <span class="docs-heading-tail"><span>404</span><a class="docs-heading-link" aria-label="Link to this section" href="#fetching-the-playbook-answers-404">#</a></span></h3>
 <p><strong>Cause.</strong> Playbook is private on git.wayne.edu.</p>
 <p><strong>Fix.</strong> Ask the Enterprise Applications team for read access. The token is
 your own: <code>read_api</code> for curl, <code>read_repository</code> for clone and Composer.</p>
@@ -336,7 +336,7 @@ read <code>.env.playbook</code> itself.</p>
 <aside class="docs-callout docs-callout--warning" role="note"><p class="docs-callout__label">Warning</p><p>The token in those commands is a secret. Keep it in the environment, never
 in the repository, and remember Composer keeps the git.wayne.edu
 credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry.</p></aside>
-<h3 id="the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">The app still reads wayne-cas names and you expect SESAME behavior<a class="docs-heading-link" aria-label="Link to this section" href="#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">#</a></h3>
+<h3 id="the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">The app still reads wayne-cas names and you expect SESAME <span class="docs-heading-tail"><span>behavior</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior">#</a></span></h3>
 <p><strong>Cause.</strong> The app moved to SESAME through the shim, which keeps the
 wayne-cas names and behavior and says once (in the log) that it is a
 deprecated bridge. For example, <code>use2FA</code> runs a Duo challenge the shim does
@@ -347,7 +347,7 @@ or take the easy way: Booster's <code>cas-to-sesame</code> hop, planned with <co
 <p><strong>Check.</strong> After the move, log in through the pre-production host before you
 ship, and check the session timeout, the Access ID attribute and Duo there.
 <code>tests/Laravel/WayneCasShimTest.php</code> covers the shim.</p>
-<h3 id="a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method">A wayne-cas app signs in, then every page fails with <code>InvalidConfig</code> naming a static <code>find</code> method<a class="docs-heading-link" aria-label="Link to this section" href="#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method">#</a></h3>
+<h3 id="a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method">A wayne-cas app signs in, then every page fails with <code>InvalidConfig</code> naming a static <code>find</code> <span class="docs-heading-tail"><span>method</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method">#</a></span></h3>
 <p><strong>Cause.</strong> SESAME 0.6.1 and earlier: the wayne-cas shim's <code>refreshUser()</code>
 looked for a declared static <code>find</code> method on <code>auth.providers.users.model</code>.
 An Eloquent model reaches <code>find()</code> through its query builder instead of
@@ -359,8 +359,8 @@ point <code>user_resolver</code> back at <code>Waynestate\Sesame\WayneCas\UserRe
 <p><strong>Check.</strong> Sign in, open a second page, and the log has no <code>InvalidConfig</code>.
 <code>tests/Laravel/WayneCasShimTest.php</code> covers an Eloquent model and a plain
 class with a static <code>find</code>.</p>
-<h2 id="build-ci-and-docs">Build, CI and docs<a class="docs-heading-link" aria-label="Link to this section" href="#build-ci-and-docs">#</a></h2>
-<h3 id="composer-ci-fails"><code>composer ci</code> fails<a class="docs-heading-link" aria-label="Link to this section" href="#composer-ci-fails">#</a></h3>
+<h2 id="build-ci-and-docs">Build, CI and <span class="docs-heading-tail"><span>docs</span><a class="docs-heading-link" aria-label="Link to this section" href="#build-ci-and-docs">#</a></span></h2>
+<h3 id="composer-ci-fails"><code>composer ci</code> <span class="docs-heading-tail"><span>fails</span><a class="docs-heading-link" aria-label="Link to this section" href="#composer-ci-fails">#</a></span></h3>
 <p><strong>Cause.</strong> <code>composer ci</code> runs the whole gate: validate through tests, Pint
 and PHPStan, plus the agent-ready and docs checks and the locked-dependency
 audit. The same command runs on GitLab and GitHub, and both pipelines run the
@@ -375,7 +375,7 @@ build.</p>
 </code></pre></div>
 <div class="docs-tabs__panel" data-tab-label="local"><p class="docs-tabs__label">local</p><pre tabindex="0"><code class="language-bash">composer ci
 </code></pre></div></div>
-<h3 id="composer-docs-check-fails-in-ci"><code>composer docs:check</code> fails in CI<a class="docs-heading-link" aria-label="Link to this section" href="#composer-docs-check-fails-in-ci">#</a></h3>
+<h3 id="composer-docs-check-fails-in-ci"><code>composer docs:check</code> fails in <span class="docs-heading-tail"><span>CI</span><a class="docs-heading-link" aria-label="Link to this section" href="#composer-docs-check-fails-in-ci">#</a></span></h3>
 <p><strong>Cause.</strong> The built docs site is stale, or the generated environment
 reference has drifted from the source.</p>
 <p><strong>Fix.</strong> Rebuild the docs site:</p>
@@ -383,7 +383,7 @@ reference has drifted from the source.</p>
 </code></pre>
 <p><strong>Check.</strong> <code>composer docs:check</code> passes again, and the rebuilt pages under
 <code>site/docs/</code> match what you committed.</p>
-<h3 id="no-php-on-the-machine-and-the-suite-will-not-run">No PHP on the machine, and the suite will not run<a class="docs-heading-link" aria-label="Link to this section" href="#no-php-on-the-machine-and-the-suite-will-not-run">#</a></h3>
+<h3 id="no-php-on-the-machine-and-the-suite-will-not-run">No PHP on the machine, and the suite will not <span class="docs-heading-tail"><span>run</span><a class="docs-heading-link" aria-label="Link to this section" href="#no-php-on-the-machine-and-the-suite-will-not-run">#</a></span></h3>
 <p><strong>Cause.</strong> The developer machine has no PHP, so <code>vendor/bin/phpunit</code> cannot
 start.</p>
 <p><strong>Fix.</strong> Docker runs the suite:</p>
@@ -394,7 +394,7 @@ docker run --rm -v &quot;${PWD}:/app&quot; -w /app php:8.5-cli vendor/bin/phpuni
 </code></pre>
 <p><strong>Check.</strong> All three PHP versions pass. How to build, test and release this
 project is in MAINTAINING.md.</p>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="guides/quick-start.html">Quick start</a>: prove the wiring with the <code>fake</code> driver.</li>
 <li><a href="guides/raw-php.html">Raw PHP</a>: the session setup this page assumes.</li>

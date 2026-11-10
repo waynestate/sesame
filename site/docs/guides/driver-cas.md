@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# The cas driver[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#the-cas-driver)
+# The cas driver [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#the-cas-driver)
 
 This page sets up the `cas` driver, which signs a user in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration. Start with the config below, then read the behavior notes for the options you plan to change.
 
@@ -14,7 +14,7 @@ This page sets up the `cas` driver, which signs a user in against a CAS server, 
 
 The duplicator traces the cas key from the front page: five notches, one per sign-in step, and logout at the tip. The cut is the sign-in; the lock is still yours. With reduced motion on, you get the finished key.
 
-## Configure the driver[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#configure-the-driver)
+## Configure the driver [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#configure-the-driver)
 
 The cas driver logs in against a CAS server, CAS 2.0 by default. The base URL is required config with no default, and it must include the path the CAS server lives under. For Academica, which serves CAS under `/cas`, it is `https://academica.aws.wayne.edu/cas`. People still see the familiar `login.wayne.edu` screen: Academica's `/cas/login` sends the browser there to sign in and back with a ticket, and SESAME checks the ticket against Academica.
 
@@ -62,7 +62,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, nu
 
 Then build the Sesame facade with the driver and the same session, as in the Raw PHP section of the README.
 
-## Config keys[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#config-keys)
+## Config keys [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#config-keys)
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
@@ -75,27 +75,27 @@ Then build the Sesame facade with the driver and the same session, as in the Raw
 
 The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-\* headers to build it.
 
-## Protocol[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#protocol)
+## Protocol [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#protocol)
 
 Protocol 2.0 is the default because Academica is believed to redirect cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol` to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
 
-## Renew[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#renew)
+## Renew [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#renew)
 
 Set `cas.renew` to `true` when the app needs a fresh, direct login rather than an existing SSO session. The driver then sends `renew` on the login redirect and on the validation request, and the CAS server refuses a ticket that came from an SSO session with `INVALID_TICKET`. Leave it off against Academica: it does not issue a ticket for `renew=true` and sends the user back to the login page, so a `renew` login loops instead of signing in.
 
-## Sign-in time[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#sign-in-time)
+## Sign-in time [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#sign-in-time)
 
 The sign-in time on the identity comes from the CAS `authenticationDate` attribute when the server sends one. When it is missing, unparseable, or more than five minutes ahead of the driver's clock, the driver uses its own clock instead, so a bad value can never push the sign-in time into the future.
 
 With `cas.protocol` set to `3.0`, a server may also release `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`. The identity reads them as `$identity->isFromNewLogin()` and `$identity->usedLongTermToken()`: `true` or `false` when the server said so (any letter case), and `null` when the attribute is missing or is anything but `true` or `false`. SESAME never guesses, so an app that wants a fresh login for a sensitive action can check `isFromNewLogin() === true` and send the user back through `cas.renew` when it is anything else.
 
-## MFA[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#mfa)
+## MFA [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#mfa)
 
 `cas.assume_mfa` is off by default, and it should stay off unless the CAS server enforces MFA for every sign-in. A successful CAS validation then means MFA happened for the user's current SSO session, and the driver says so on the identity: its `amr` includes `mfa`. Ask your CAS server's owner before turning it on; a server that enforces MFA only sometimes, or only for some users, would make the MFA check pass for sign-ins that never did MFA.
 
 The MFA age still needs a sign-in time, and the driver never invents one: it comes from the CAS `authenticationDate` attribute, and when the server does not send one, the MFA check fails because there is no sign-in time to age.
 
-## Binding the sign-in to the browser[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#binding-the-sign-in-to-the-browser)
+## Binding the sign-in to the browser [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#binding-the-sign-in-to-the-browser)
 
 With `cas.require_pending_login` on (the default), the driver stores a marker in the app's session before it sends the browser to CAS, and a returning ticket is accepted only against a live marker. The marker is single use and lives ten minutes, and the session keeps at most five of them, one per open sign-in tab, newest kept. A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF: an attacker who signs in through CAS for their own account cannot make a victim's browser deliver the attacker's ticket, because the victim's session holds no marker.
 
@@ -105,7 +105,7 @@ Warning
 
 On a failed login, show a generic line, not the exception. An `AuthenticationFailed` message can carry the CAS failure code (for example `INVALID_TICKET`), which tells an attacker how the server refused the ticket. Log the message for operators and show the user one generic line instead.
 
-## When CAS is down[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)
+## When CAS is down [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#when-cas-is-down)
 
 The ticket check is one HTTP call to the CAS server. When that call cannot be made (no route, DNS, TLS), runs past the client's timeout (10 seconds in the example above), or gets a 5xx answer, the driver throws `Waynestate\Sesame\Exception\ProviderUnavailable` with the reason code `cas.unavailable`. It is a subclass of `AuthenticationFailed`, so code that already catches `AuthenticationFailed` keeps working, and nobody is signed in either way. Catch it first to tell the visitor to try again rather than that the sign-in was refused:
 
@@ -131,7 +131,7 @@ try {
 
 The HTTP client's own exception is never chained: it holds the validation URL, and the URL holds the ticket. A 4xx answer is still a plain `AuthenticationFailed` (the server refused the call). Before 0.7.1 the client's exception (for Guzzle, a `ConnectException`) escaped `sesame_login()` as it was, so an app that caught only `AuthenticationFailed` showed a blank 500 while CAS was down. The oauth2, oidc and saml drivers use the same class when their provider cannot be reached (`oauth2.introspection_unavailable`, `oidc.discovery_unavailable`, `oidc.token_exchange`, `saml.metadata`, and `jwks_unavailable` for a key set). Laravel apps can render it from the exception handler the same way.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#related)
 
 - [Running off Citadel](https://sesame.apps.wayne.edu/docs/guides/running-off-citadel.html)
 - [The gateway driver](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html)

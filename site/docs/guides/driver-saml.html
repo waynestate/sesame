@@ -45,10 +45,10 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../../docs/index.html">Overview</a></li><li><a href="../../docs/install.html">Install</a></li><li><a href="../../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../../docs/guides/driver-saml.html" aria-current="page">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../../docs/guides/laravel.html">Laravel</a></li><li><a href="../../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../../docs/reference/drivers.html">Drivers</a></li><li><a href="../../docs/reference/configuration.html">Configuration</a></li><li><a href="../../docs/reference/api.html">API</a></li><li><a href="../../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../../docs/upgrading.html">Upgrading</a></li><li><a href="../../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="the-saml-driver-saml-2-0-sign-in">The saml driver (SAML 2.0 sign-in)<a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-saml-2-0-sign-in">#</a></h1>
+      <article class="docs-article"><h1 id="the-saml-driver-saml-2-0-sign-in">The saml driver (SAML 2.0 <span class="docs-heading-tail"><span>sign-in)</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-saml-driver-saml-2-0-sign-in">#</a></span></h1>
 <p>The goal: sign a person into your app through the browser with SAML 2.0, with your app as the service provider (SP) and a Shibboleth-style identity provider (IdP) vouching for them. This page walks through how a sign-in runs, every config key, and what to hand the IdP's administrators; then set the driver up on the <a href="raw-php.html">Raw PHP</a> or <a href="laravel.html">Laravel</a> page.</p>
 <aside class="docs-callout docs-callout--note" role="note"><p class="docs-callout__label">Note</p><p>The saml driver is opt-in. Nothing in it runs unless <code>SESAME_DRIVER=saml</code>, and SESAME assumes no IdP: there is no default WSU IdP entity, so you name the IdP's metadata yourself. On Citadel prefer the <code>gateway</code> driver behind Drawbridge, and for Entra prefer <code>oidc</code>. Reach for SAML when the IdP you must use speaks only SAML.</p></aside>
-<h2 id="what-you-need">What you need<a class="docs-heading-link" aria-label="Link to this section" href="#what-you-need">#</a></h2>
+<h2 id="what-you-need">What you <span class="docs-heading-tail"><span>need</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-you-need">#</a></span></h2>
 <p>Open sesame, in a language with a schema. The saml driver stands on
 <code>onelogin/php-saml</code>, which SESAME suggests but does not require:</p>
 <pre tabindex="0"><code>composer require onelogin/php-saml
@@ -70,7 +70,7 @@ metadata, and remembers the assertion IDs it has accepted.</li>
 <li>Optionally an SP key pair, as file paths, for signed AuthnRequests and the
 certificate in the SP metadata.</li>
 </ul>
-<h2 id="how-a-sign-in-runs">How a sign-in runs<a class="docs-heading-link" aria-label="Link to this section" href="#how-a-sign-in-runs">#</a></h2>
+<h2 id="how-a-sign-in-runs">How a sign-in <span class="docs-heading-tail"><span>runs</span><a class="docs-heading-link" aria-label="Link to this section" href="#how-a-sign-in-runs">#</a></span></h2>
 <p>A SAML sign-in takes three requests, one more than you might expect.</p>
 <ol>
 <li><strong>The start.</strong> A request to the login URL without <code>saml_handle</code> builds an
@@ -106,7 +106,7 @@ return-to, so the handle never stays in the address bar.</p>
 <p>IdP-initiated (unsolicited) responses are refused: a sign-in must start at
 the app. A Response that answers another browser's request (login CSRF) is
 refused too, because the pending request lives in this browser's session.</p>
-<h2 id="identity-attributes-and-mfa">Identity, attributes and MFA<a class="docs-heading-link" aria-label="Link to this section" href="#identity-attributes-and-mfa">#</a></h2>
+<h2 id="identity-attributes-and-mfa">Identity, attributes and <span class="docs-heading-tail"><span>MFA</span><a class="docs-heading-link" aria-label="Link to this section" href="#identity-attributes-and-mfa">#</a></span></h2>
 <p><code>saml.attributes</code> maps SESAME's names to the SAML attribute names the IdP
 releases; the first name present wins. The defaults are the eduPerson and
 inetOrgPerson OIDs a Shibboleth IdP releases, then their friendly names:</p>
@@ -154,7 +154,7 @@ methods, and the class reference is also the identity's authentication
 context, so <code>sesame.context:https://refeds.org/profile/mfa</code> works.
 <code>saml.assume_mfa</code> counts every sign-in as MFA, for an IdP that enforces MFA
 for this SP but does not say so.</p>
-<h2 id="step-up-and-return-to">Step-up and return-to<a class="docs-heading-link" aria-label="Link to this section" href="#step-up-and-return-to">#</a></h2>
+<h2 id="step-up-and-return-to">Step-up and <span class="docs-heading-tail"><span>return-to</span><a class="docs-heading-link" aria-label="Link to this section" href="#step-up-and-return-to">#</a></span></h2>
 <p>A login request with <code>step_up=1</code> sends <code>ForceAuthn=&quot;true&quot;</code>, so the IdP asks
 for credentials again. The finish then requires a fresh <code>AuthnInstant</code>: not
 in the future beyond the leeway, not before the sign-in started, and within
@@ -165,11 +165,11 @@ when it passes the ReturnTo rule (an absolute https URL with the login URL's
 scheme, host and port, and no user name or password), and the RelayState
 that comes back is checked again with the same rule, so it can never be an
 open redirect.</p>
-<h2 id="logout">Logout<a class="docs-heading-link" aria-label="Link to this section" href="#logout">#</a></h2>
+<h2 id="logout"><span class="docs-heading-tail"><span>Logout</span><a class="docs-heading-link" aria-label="Link to this section" href="#logout">#</a></span></h2>
 <p>Local only. There is no single logout: SESAME refuses <code>slo</code> at boot, so the
 app session is cleared and the IdP's session lives on (the next sign-in is
 usually silent).</p>
-<h2 id="raw-php">Raw PHP<a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></h2>
+<h2 id="raw-php">Raw <span class="docs-heading-tail"><span>PHP</span><a class="docs-heading-link" aria-label="Link to this section" href="#raw-php">#</a></span></h2>
 <p>The ACS is its own page, and it must NOT call <code>session_start()</code>.</p>
 <pre tabindex="0"><code class="language-php">&lt;?php
 // boot-saml.php: shared by the three pages below. No session_start() here.
@@ -242,7 +242,7 @@ $user = sesame_login();
 </code></pre>
 <p>A protected page sends a guest to <code>login.php?return_to=&lt;its own https URL&gt;</code>,
 and a page that needs fresh credentials to <code>login.php?step_up=1</code>.</p>
-<h2 id="laravel">Laravel<a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></h2>
+<h2 id="laravel"><span class="docs-heading-tail"><span>Laravel</span><a class="docs-heading-link" aria-label="Link to this section" href="#laravel">#</a></span></h2>
 <pre tabindex="0"><code>SESAME_DRIVER=saml
 SESAME_SAML_IDP_METADATA_URL=&lt;the IdP's metadata URL&gt;
 # or SESAME_SAML_IDP_METADATA_FILE=/path/to/idp-metadata.xml
@@ -279,7 +279,7 @@ SESAME_SAML_CACHE_STORE=redis
 the driver. Laravel's default <code>SameSite=Lax</code> session cookie is right: the
 browser drops it on the IdP's POST, which is why the ACS parks the response,
 and sends it on the 303's GET. <code>Strict</code> would drop it on that GET too.</p>
-<h2 id="what-to-hand-the-idp-s-administrators">What to hand the IdP's administrators<a class="docs-heading-link" aria-label="Link to this section" href="#what-to-hand-the-idp-s-administrators">#</a></h2>
+<h2 id="what-to-hand-the-idp-s-administrators">What to hand the IdP's <span class="docs-heading-tail"><span>administrators</span><a class="docs-heading-link" aria-label="Link to this section" href="#what-to-hand-the-idp-s-administrators">#</a></span></h2>
 <p>Send them the SP metadata URL (<code>/login/saml/metadata</code> in Laravel). It
 carries the entity ID, the ACS URL with the HTTP-POST binding,
 <code>WantAssertionsSigned=&quot;true&quot;</code> and, when set, the SP certificate. Ask them:</p>
@@ -292,7 +292,7 @@ refuses an unsigned assertion even inside a signed Response;</li>
 <li>not to encrypt assertions unless the app has an SP key pair to decrypt
 them with.</li>
 </ul>
-<h2 id="config-keys">Config keys<a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></h2>
+<h2 id="config-keys">Config <span class="docs-heading-tail"><span>keys</span><a class="docs-heading-link" aria-label="Link to this section" href="#config-keys">#</a></span></h2>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -425,7 +425,7 @@ them with.</li>
 </tr>
 </tbody>
 </table></div>
-<h2 id="errors">Errors<a class="docs-heading-link" aria-label="Link to this section" href="#errors">#</a></h2>
+<h2 id="errors"><span class="docs-heading-tail"><span>Errors</span><a class="docs-heading-link" aria-label="Link to this section" href="#errors">#</a></span></h2>
 <p>Every refusal is an <code>AuthenticationFailed</code> with a short reason in
 parentheses, never a value from the XML:</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
@@ -486,7 +486,7 @@ parentheses, never a value from the XML:</p>
 </tr>
 </tbody>
 </table></div>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="which-driver.html">Which driver for my app?</a></li>
 <li><a href="../saml-library-choice.html">The saml driver's library choice</a></li>

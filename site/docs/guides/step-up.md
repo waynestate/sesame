@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Step-up (authentication context)[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#step-up-authentication-context)
+# Step-up (authentication context) [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#step-up-authentication-context)
 
 Open sesame opens the door; step-up checks the user actually walked through the right one. This page is how a step-up travels from the identity provider onto the identity, how to check it on a protected page, and which parameters a step-up request adds. Next, see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html) for the age check on the same facts.
 
-## What a step-up is[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#what-a-step-up-is)
+## What a step-up is [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#what-a-step-up-is)
 
 When the gateway requires a step-up for a path, it says so in the signed assertion's `acrs` claim, a list of authentication context ids (`c1` through `c99`). The gateway driver reads that claim and keeps only the ids of the right shape; anything else is dropped, and a missing or malformed claim is not an error, it is simply no step-up.
 
@@ -21,7 +21,7 @@ $identity->authContexts();      // list<string>, e.g. ['c1']
 $identity->hasAuthContext('c1'); // bool
 ```
 
-## Checking the context[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#checking-the-context)
+## Checking the context [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#checking-the-context)
 
 In raw PHP, a protected page reads the user and the context proof in one call:
 
@@ -47,13 +47,13 @@ Route::get('/vault', [VaultController::class, 'index'])
 
 A request without the context gets a 403, or a JSON 403 with a `message` for JSON requests. A route that names no context fails closed.
 
-## Asking for a step-up (the oidc driver)[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#asking-for-a-step-up-the-oidc-driver)
+## Asking for a step-up (the oidc driver) [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#asking-for-a-step-up-the-oidc-driver)
 
 With the oidc driver, a login request with `step_up=1` adds the app's configured step-up parameters: `prompt=login` by default, and optionally `max_age`, `acr_values` and `claims`. The request can ask for a step-up but cannot choose what it is; only config feeds those values. The callback then requires a fresh `auth_time`: not in the future (beyond the leeway), not before the sign-in started when `prompt=login` was sent, and within `max_age`, which is 300 seconds when `oidc.step_up.max_age` is not set, so a step-up is never unbounded.
 
 A page that needs fresh credentials sends the user to `login.php?step_up=1` in raw PHP. In Laravel, `sesame.mfa` with `mfa.on_failure=reauth` sends the user to `/login?step_up=1` for you.
 
-### Config keys[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#config-keys)
+### Config keys [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#config-keys)
 
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ A page that needs fresh credentials sends the user to `login.php?step_up=1` in r
 | `oidc.step_up.acr_values` | `SESAME_OIDC_STEP_UP_ACR_VALUES` | none | Sent on a step-up only. |
 | `oidc.step_up.claims` | `SESAME_OIDC_STEP_UP_CLAIMS` | none | A JSON object (for example an `acrs` request for an Entra authentication context), sent on a step-up only. |
 
-## Which drivers report contexts[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#which-drivers-report-contexts)
+## Which drivers report contexts [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#which-drivers-report-contexts)
 
 The gateway and oidc drivers report authentication contexts (the oidc driver from the ID token's `acrs` claim, after a step-up that asked for one through `oidc.step_up.claims`). A cas identity has none, so a cas identity always fails the check.
 
@@ -70,7 +70,7 @@ Note
 
 The `acrs` claim feeds `hasAuthContext()`, while `auth_time` and `amr` feed the MFA check. They are separate facts: a context says the sign-in went through a stronger path, and the MFA facts say when and how.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/step-up.html#related)
 
 - [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html)
 - [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html)

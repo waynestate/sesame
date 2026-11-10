@@ -48,7 +48,7 @@
       <article class="docs-article"><div align="center">
   <a href="../index.html"><img src="readme/hero.jpg" width="100%" alt="SESAME's front page: the headline 'The way in. One lock, any key.' and the composer require command beside a pegboard where cas, gateway and SAML keys hang around SESAME's open-door mark, over a green service counter that reads 'Same door for every key.'"></a>
 </div>
-<h1 id="sesame">SESAME<a class="docs-heading-link" aria-label="Link to this section" href="#sesame">#</a></h1>
+<h1 id="sesame"><span class="docs-heading-tail"><span>SESAME</span><a class="docs-heading-link" aria-label="Link to this section" href="#sesame">#</a></span></h1>
 <p>
   <img src="readme/badges/php.svg" alt="php ^8.3">
   <img src="readme/badges/license.svg" alt="license MIT">
@@ -62,12 +62,12 @@ identity and leaves the session to the app: every driver ends in the same
 place, the app's <code>findOrImportUser(Identity)</code>, and the protocol never holds
 the session. Switching driver is a config change with no code change. Open
 sesame.</p>
-<h2 id="where-the-code-lives">Where the code lives<a class="docs-heading-link" aria-label="Link to this section" href="#where-the-code-lives">#</a></h2>
+<h2 id="where-the-code-lives">Where the code <span class="docs-heading-tail"><span>lives</span><a class="docs-heading-link" aria-label="Link to this section" href="#where-the-code-lives">#</a></span></h2>
 <p>The canonical repository is <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/sesame">enterprise-apps/sesame</a> on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub (<a rel="noopener" href="https://github.com/waynestate/sesame">waynestate/sesame</a>) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.</p>
-<h2 id="install">Install<a class="docs-heading-link" aria-label="Link to this section" href="#install">#</a></h2>
+<h2 id="install"><span class="docs-heading-tail"><span>Install</span><a class="docs-heading-link" aria-label="Link to this section" href="#install">#</a></span></h2>
 <pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
-<h2 id="first-use">First use<a class="docs-heading-link" aria-label="Link to this section" href="#first-use">#</a></h2>
+<h2 id="first-use">First <span class="docs-heading-tail"><span>use</span><a class="docs-heading-link" aria-label="Link to this section" href="#first-use">#</a></span></h2>
 <p>The quickest way to see it work is the <code>fake</code> driver in local development: no
 server to point at, no registration to make.</p>
 <pre tabindex="0"><code class="language-php">&lt;?php
@@ -120,7 +120,7 @@ $user = sesame_login();
 </code></pre>
 <p>Every piece named, and what the app owns and what SESAME does:
 <a href="guides/raw-php.html">Raw PHP</a>.</p>
-<h2 id="pick-your-path">Pick your path<a class="docs-heading-link" aria-label="Link to this section" href="#pick-your-path">#</a></h2>
+<h2 id="pick-your-path">Pick your <span class="docs-heading-tail"><span>path</span><a class="docs-heading-link" aria-label="Link to this section" href="#pick-your-path">#</a></span></h2>
 <ul>
 <li><a href="guides/quick-start.html">Quick start</a>: sign a user in from scratch, one step at a time.</li>
 <li><a href="install.html">Install</a>: what SESAME needs, the composer line, and how to prove it took.</li>

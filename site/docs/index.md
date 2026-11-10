@@ -8,7 +8,7 @@ generator: Squire agent-ready
 
 [![SESAME's front page: the headline 'The way in. One lock, any key.' and the composer require command beside a pegboard where cas, gateway and SAML keys hang around SESAME's open-door mark, over a green service counter that reads 'Same door for every key.'](https://sesame.apps.wayne.edu/docs/readme/hero.jpg)](https://sesame.apps.wayne.edu/index.html)
 
-# SESAME[#](https://sesame.apps.wayne.edu/docs/#sesame)
+# SESAME [#](https://sesame.apps.wayne.edu/docs/#sesame)
 
 ![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc, saml](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
 
@@ -16,17 +16,17 @@ generator: Squire agent-ready
 
 SESAME is Wayne State's protocol-neutral auth library. It returns a verified identity and leaves the session to the app: every driver ends in the same place, the app's `findOrImportUser(Identity)`, and the protocol never holds the session. Switching driver is a config change with no code change. Open sesame.
 
-## Where the code lives[#](https://sesame.apps.wayne.edu/docs/#where-the-code-lives)
+## Where the code lives [#](https://sesame.apps.wayne.edu/docs/#where-the-code-lives)
 
 The canonical repository is [enterprise-apps/sesame](https://git.wayne.edu/enterprise-apps/sesame) on git.wayne.edu; issues and merge requests open there, and tags are made there, by the maintainer, with an approver. GitHub ([waynestate/sesame](https://github.com/waynestate/sesame)) is a read-only push mirror; nobody pushes to it, and Packagist reads from it. CI runs on git.wayne.edu.
 
-## Install[#](https://sesame.apps.wayne.edu/docs/#install)
+## Install [#](https://sesame.apps.wayne.edu/docs/#install)
 
 ```
 composer require waynestate/sesame
 ```
 
-## First use[#](https://sesame.apps.wayne.edu/docs/#first-use)
+## First use [#](https://sesame.apps.wayne.edu/docs/#first-use)
 
 The quickest way to see it work is the `fake` driver in local development: no server to point at, no registration to make.
 
@@ -82,7 +82,7 @@ $user = sesame_login();
 
 Every piece named, and what the app owns and what SESAME does: [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html).
 
-## Pick your path[#](https://sesame.apps.wayne.edu/docs/#pick-your-path)
+## Pick your path [#](https://sesame.apps.wayne.edu/docs/#pick-your-path)
 
 - [Quick start](https://sesame.apps.wayne.edu/docs/guides/quick-start.html): sign a user in from scratch, one step at a time.
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.

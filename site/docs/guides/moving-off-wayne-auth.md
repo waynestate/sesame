@@ -6,7 +6,7 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Moving off Wayne Auth[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#moving-off-wayne-auth)
+# Moving off Wayne Auth [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#moving-off-wayne-auth)
 
 Older WSU PHP apps sign people in through **Wayne Auth**: a small PHP class reads the SSO cookie and checks it with the Wayne Auth service over a socket. Wayne Auth is deprecated. When the service is retired, every app still calling it stops letting anyone in, whatever PHP version it runs. SESAME's Wayne Auth bridge turns that move into a one-line change: the app keeps its `new WayneAuth(...)`, `authenticateSSO()` and `getAccessID()` calls, and they sign people in through CAS instead. Open sesame, say the magic words you already know.
 
@@ -14,7 +14,7 @@ Warning
 
 The bridge is deprecated on arrival. It exists so the move off Wayne Auth is small and provable today; plan the move to SESAME's native calls next (the last section). It says so once per process, as a silenced `E_USER_DEPRECATED` that reaches your error log but never the page.
 
-## Does this fit my app?[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#does-this-fit-my-app)
+## Does this fit my app? [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#does-this-fit-my-app)
 
 The bridge keeps the API of the classic `WayneAuth` class, the one apps copy into `lib/` or next to their pages:
 
@@ -35,7 +35,7 @@ If your app looks like that, read on. Other Wayne Auth shapes need a hand move t
 
 SESAME needs PHP 8.3 or newer. An app on older PHP moves its PHP first ([Booster](https://github.com/waynestate/booster) does that part).
 
-## The one-line swap[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-one-line-swap)
+## The one-line swap [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-one-line-swap)
 
 1. Require SESAME with Composer (`composer require waynestate/sesame guzzlehttp/guzzle`). Guzzle is the HTTP client the cas driver uses to check tickets; any PSR-18 client works if you pass it yourself.
 2. Add the app's SESAME config file, for example `config/sesame.php`:
@@ -75,13 +75,13 @@ The `cas.service_url` is where CAS sends people back: the page that calls `authe
 
 The `cas.base_url` is Academica's CAS server, `https://academica.aws.wayne.edu/cas`. People still see the familiar `login.wayne.edu` screen: Academica sends the browser there to sign in, then back with a ticket. `boot()` reads `base_url` from this array and nowhere else, so it cannot be left out: unlike the Laravel config file, the bridge does not look in the environment or in [Playbook](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html) on its own. To take the address from `SESAME_CAS_BASE_URL` or Playbook, pass `'base_url' => \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')`.
 
-### The session[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
+### The session [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#the-session)
 
 The app owns the session, as everywhere in SESAME: call `session_start()` before the first `authenticateSSO()`. Wayne Auth needed no session because the SSO cookie was the session; CAS needs one to remember who signed in. Most Wayne Auth apps already start one. Turn on strict mode first: without `session.use_strict_mode` PHP accepts any session ID a client sends, and SESAME raises one `E_USER_WARNING` per request until it is on. Call `ini_set('session.use_strict_mode', '1')` before `session_start()`, or let HELMET's `helmet_boot()` do it with the cookie flags ([Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html) has the settings). The cookie flags matter too: from 0.7.0 SESAME also raises one warning per request when the session cookie lacks `HttpOnly`, `Secure` (on https) or `SameSite=Lax`, which PHP's defaults leave off, so add `session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax'])` before `session_start()` if `helmet_boot()` is not there. Also set `session.gc_maxlifetime` to at least the idle timeout.
 
 Legacy apps usually start the session before Composer's autoloader is loaded. That is fine: `boot()` re-reads SESAME's values in the session once the autoloader is there, so nobody looks signed out.
 
-### Options[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#options)
+### Options [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#options)
 
 `boot()` takes a few more arguments, all optional:
 
@@ -96,7 +96,7 @@ Legacy apps usually start the session before Composer's autoloader is loaded. Th
 
 With `on_guest` left at `redirect`, the app's old else branch (the redirect to the Wayne Auth login page) never runs again, so the old login URL in its config stops mattering. With `deny`, point that login URL at a page of your own that calls `sesame_login()`.
 
-## What changes, call by call[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#what-changes-call-by-call)
+## What changes, call by call [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#what-changes-call-by-call)
 
 | Wayne Auth | The bridge |
 | --- | --- |
@@ -116,7 +116,7 @@ With `on_guest` left at `redirect`, the app's old else branch (the redirect to t
 
 Wayne Auth told an app the AccessID and nothing else, so nothing an app read from it is lost. CAS can release more (name, email, groups) as attributes: those arrive in the `Identity` your resolver receives, once you move to the native calls.
 
-## Catch the two sign-in exceptions[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#catch-the-two-sign-in-exceptions)
+## Catch the two sign-in exceptions [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#catch-the-two-sign-in-exceptions)
 
 `authenticateSSO()` throws in two cases, and an uncaught one is a blank 500. Wrap the call where the page makes it, and catch the narrower class first:
 
@@ -149,7 +149,7 @@ Since `ProviderUnavailable` extends `AuthenticationFailed`, a page that catches 
 
 A session that timed out is not an exception: from 0.7.1 the visitor is simply sent through CAS again (or a script gets its 401). An app that added `catch (\LogicException $e)` around `authenticateSSO()` as a stopgap for 0.7.0 can drop it after the upgrade.
 
-## Check it before you ship[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
+## Check it before you ship [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#check-it-before-you-ship)
 
 1. On a laptop, boot with the `fake` driver (`'driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'ab1234']]`): every page should say who is signed in without any CAS server.
 2. On pre-production, with the real `cas` config: open a page in a private window. You should land on the `login.wayne.edu` sign-in screen, come back to the service URL with no `ticket` in the address bar, and see the app signed in as you. Check the AccessID's case against any `authorized_ids` list the app keeps.
@@ -158,7 +158,7 @@ A session that timed out is not an exception: from 0.7.1 the visitor is simply s
 
 SESAME's own tests do the same end to end: a fixture page written the Wayne Auth way signs in through the bridge under PHP's built-in server, with a fake CAS answer (`tests/WayneAuthLegacyAppTest.php`).
 
-## Going native later[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#going-native-later)
+## Going native later [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#going-native-later)
 
 The bridge is three thin calls over SESAME's raw-PHP functions. When you have a quiet afternoon:
 
@@ -171,7 +171,7 @@ The bridge is three thin calls over SESAME's raw-PHP functions. When you have a 
 
 Then delete the config line that calls `boot()`, and the bridge is gone.
 
-## Related[#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html#related)
 
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html)
 - [The cas driver](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html)

@@ -6,11 +6,11 @@ llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
 ---
 
-# Proof[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#proof)
+# Proof [#](https://sesame.apps.wayne.edu/docs/reference/proof.html#proof)
 
 The name does double duty: this is where SESAME proves itself. There are two kinds of proof, the private proof site that exercises the library against real Wayne State applications, and the test suite anyone can run locally.
 
-## Last run[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#last-run)
+## Last run [#](https://sesame.apps.wayne.edu/docs/reference/proof.html#last-run)
 
 | Check | Date | Commit | Result | Duration |
 | --- | --- | --- | --- | --- |
@@ -21,11 +21,11 @@ The name does double duty: this is where SESAME proves itself. There are two kin
 
 The run is on the 0.7.2 fixes, the commit just before the 0.7.2 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
 
-## The proof site[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#the-proof-site)
+## The proof site [#](https://sesame.apps.wayne.edu/docs/reference/proof.html#the-proof-site)
 
 Proof runs against real Wayne State applications on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.
 
-## Tests[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#tests)
+## Tests [#](https://sesame.apps.wayne.edu/docs/reference/proof.html#tests)
 
 Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://git.wayne.edu/enterprise-apps/sesame/-/blob/main/MAINTAINING.md).
 
@@ -44,7 +44,7 @@ Static analysis is PHPStan at level 8 from Pinstripe's strict preset (`vendor/wa
 docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app composer:2 composer ci
 ```
 
-## Related[#](https://sesame.apps.wayne.edu/docs/reference/proof.html#related)
+## Related [#](https://sesame.apps.wayne.edu/docs/reference/proof.html#related)
 
 - [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html)
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html)

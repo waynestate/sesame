@@ -45,16 +45,16 @@
   <nav class="docs-nav docs-nav--sidebar" aria-label="Documentation"><ul class="docs-nav__list"><li class="docs-nav__group"><span class="docs-nav__label">Getting Started</span><ul><li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/install.html">Install</a></li><li><a href="../docs/guides/quick-start.html">Quick start</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Guides</span><ul><li><a href="../docs/guides/which-driver.html">Which driver for my app?</a></li><li><a href="../docs/guides/wsu-values.html">WSU values (Playbook)</a></li><li><a href="../docs/guides/raw-php.html">Raw PHP</a></li><li><a href="../docs/guides/driver-cas.html">The cas driver</a></li><li><a href="../docs/guides/driver-gateway.html">The gateway driver</a></li><li><a href="../docs/guides/driver-oauth2-entra.html">oauth2 with Entra</a></li><li><a href="../docs/guides/driver-oidc.html">The oidc driver (Entra sign-in)</a></li><li><a href="../docs/oidc-library-choice.html">The oidc driver&#039;s library choice</a></li><li><a href="../docs/guides/driver-saml.html">The saml driver (SAML 2.0 sign-in)</a></li><li><a href="../docs/saml-library-choice.html">The saml driver&#039;s library choice</a></li><li><a href="../docs/guides/session-timeouts.html">Session timeouts</a></li><li><a href="../docs/guides/single-page-apps.html">Single-page apps</a></li><li><a href="../docs/guides/requiring-mfa.html">Requiring MFA</a></li><li><a href="../docs/guides/step-up.html">Step-up (authentication context)</a></li><li><a href="../docs/guides/laravel.html">Laravel</a></li><li><a href="../docs/guides/running-off-citadel.html">Running off Citadel</a></li><li><a href="../docs/guides/moving-from-wayne-cas.html">Moving from wayne-cas</a></li><li><a href="../docs/guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a></li><li><a href="../docs/guides/instance-runner.html">Strongly recommended: a git.wayne.edu instance runner</a></li></ul></li><li class="docs-nav__group"><span class="docs-nav__label">Reference</span><ul><li><a href="../docs/reference/drivers.html">Drivers</a></li><li><a href="../docs/reference/configuration.html">Configuration</a></li><li><a href="../docs/reference/api.html">API</a></li><li><a href="../docs/reference/regenerate-grace.html">Regenerate grace (decision)</a></li><li><a href="../docs/reference/proof.html">Proof</a></li></ul></li><li><a href="../docs/troubleshooting.html">Troubleshooting</a></li><li><a href="../docs/upgrading.html" aria-current="page">Upgrading</a></li><li><a href="../docs/changelog.html">Changelog</a></li></ul></nav>
   <div class="docs-content">
     <main id="main">
-      <article class="docs-article"><h1 id="upgrading">Upgrading<a class="docs-heading-link" aria-label="Link to this section" href="#upgrading">#</a></h1>
+      <article class="docs-article"><h1 id="upgrading"><span class="docs-heading-tail"><span>Upgrading</span><a class="docs-heading-link" aria-label="Link to this section" href="#upgrading">#</a></span></h1>
 <p>How to move between SESAME versions. Each section below is one released
 version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.</p>
-<h2 id="0-7-3-2026-11-09">0.7.3 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-3-2026-11-09">#</a></h2>
+<h2 id="0-7-3-2026-11-09">0.7.3 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-3-2026-11-09">#</a></span></h2>
 <p>No breaks, and no library code changes: docs and dev tools only. Upgrade
 with <code>composer update waynestate/sesame</code> (the <code>^0.7</code> constraint already
 takes it).</p>
-<h2 id="0-7-2-2026-11-09">0.7.2 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-2-2026-11-09">#</a></h2>
+<h2 id="0-7-2-2026-11-09">0.7.2 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-2-2026-11-09">#</a></span></h2>
 <p>No breaks, and no code changes: this release fixes the docs' CAS address.
 Check the one setting below, then upgrade with <code>composer update waynestate/sesame</code>.</p>
 <ul>
@@ -69,7 +69,7 @@ whatever Playbook supplies, so check that value too.</li>
 does not read <code>SESAME_CAS_BASE_URL</code> or Playbook on its own. To use them,
 pass <code>'base_url' =&gt; \Waynestate\Sesame\Support\Setting::get('SESAME_CAS_BASE_URL')</code>.</li>
 </ul>
-<h2 id="0-7-1-2026-11-09">0.7.1 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-1-2026-11-09">#</a></h2>
+<h2 id="0-7-1-2026-11-09">0.7.1 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-1-2026-11-09">#</a></span></h2>
 <p>No breaks for an app that follows the docs; three fixes, and two lines some
 apps can delete. Upgrade with <code>composer update waynestate/sesame</code> (the <code>^0.7</code>
 constraint already takes it).</p>
@@ -99,7 +99,7 @@ a <code>catch (ProviderUnavailable $e)</code> before it to answer 503 (see
 caught <code>Psr\Http\Client\ClientExceptionInterface</code> around the sign-in can
 switch that catch to <code>ProviderUnavailable</code>.</li>
 </ul>
-<h2 id="0-7-0-2026-11-09">0.7.0 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></h2>
+<h2 id="0-7-0-2026-11-09">0.7.0 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-7-0-2026-11-09">#</a></span></h2>
 <p>One new check that can need a step, and one that can stop an app that asked
 for hard stops. Laravel apps are not affected: the Laravel adapter uses
 Laravel's session, not <code>NativeSession</code>.</p>
@@ -120,7 +120,7 @@ nothing.</li>
 without those flags now gets a <code>LogicException</code> on every call, the same way
 it already did for strict mode. Set the flags before you deploy 0.7.0.</li>
 </ul>
-<h3 id="session-cookie-warning">Session cookie warning<a class="docs-heading-link" aria-label="Link to this section" href="#session-cookie-warning">#</a></h3>
+<h3 id="session-cookie-warning">Session cookie <span class="docs-heading-tail"><span>warning</span><a class="docs-heading-link" aria-label="Link to this section" href="#session-cookie-warning">#</a></span></h3>
 <p>The warning starts with <code>SESAME: the session cookie is sent without</code> and names
 the missing flags. Which fix you need depends on how the app runs:</p>
 <ul>
@@ -171,7 +171,7 @@ no <code>SESAME: the session cookie is sent without</code> line. In the browser'
 developer tools the session cookie shows <code>HttpOnly</code>, <code>Secure</code> (on https) and
 <code>SameSite=Lax</code>. An app with <code>checkSessionSettings: true</code> signs in without a
 <code>LogicException</code>.</p>
-<h2 id="0-6-3-2026-11-09">0.6.3 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-3-2026-11-09">#</a></h2>
+<h2 id="0-6-3-2026-11-09">0.6.3 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-3-2026-11-09">#</a></span></h2>
 <p>No breaks. One fix:</p>
 <ul>
 <li><strong>The wayne-cas shim works with JSON sessions.</strong> When <code>config/session.php</code>
@@ -188,7 +188,7 @@ allows 0.6.3).</p>
 <p><strong>How to verify.</strong> On a wayne-cas app with JSON sessions, sign in and open a
 second page: <code>Auth::user()</code> is the app's model, not <code>null</code>. Delete that
 account's row and reload: the session is signed out.</p>
-<h2 id="0-6-2-2026-11-09">0.6.2 (2026-11-09)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-2-2026-11-09">#</a></h2>
+<h2 id="0-6-2-2026-11-09">0.6.2 <span class="docs-heading-tail"><span>(2026-11-09)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-2-2026-11-09">#</a></span></h2>
 <p>No breaks. Two fixes and one new warning:</p>
 <ul>
 <li><strong>The wayne-cas shim works with an Eloquent user model.</strong> Its <code>refreshUser()</code>
@@ -219,7 +219,7 @@ allows 0.6.2).</p>
 signed in with no <code>InvalidConfig</code> in the log. A raw PHP app shows no
 <code>E_USER_WARNING</code> about <code>session.use_strict_mode</code> in its PHP error log after a
 sign-in.</p>
-<h2 id="0-6-1-2026-11-08">0.6.1 (2026-11-08)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></h2>
+<h2 id="0-6-1-2026-11-08">0.6.1 <span class="docs-heading-tail"><span>(2026-11-08)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-1-2026-11-08">#</a></span></h2>
 <p>No breaks. SESAME's routes now point at <code>SesameController</code> methods instead of
 closures, with the same names, URIs and middleware, so <code>php artisan route:cache</code>
 and <code>php artisan optimize</code> work in an app that uses SESAME. A Citadel release
@@ -230,7 +230,7 @@ allows 0.6.1).</p>
 <p><strong>How to verify.</strong> <code>php artisan route:cache</code> exits 0, <code>php artisan route:list --name=sesame</code> lists the routes as <code>SesameController</code> actions, and sign-in and
 sign-out work as before. Then <code>php artisan route:clear</code> if you cache routes
 only at release time.</p>
-<h2 id="0-6-0-2026-11-08">0.6.0 (2026-11-08)<a class="docs-heading-link" aria-label="Link to this section" href="#0-6-0-2026-11-08">#</a></h2>
+<h2 id="0-6-0-2026-11-08">0.6.0 <span class="docs-heading-tail"><span>(2026-11-08)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-6-0-2026-11-08">#</a></span></h2>
 <p><strong>Breaking.</strong> Nothing for an app that keeps its driver: the <code>saml</code> driver, OAuth2
 token introspection and the logged-out session marker are additions, each off
 until it is configured. One install-time catch: <code>composer.json</code> now conflicts
@@ -254,7 +254,7 @@ table; introspection for opaque OAuth2 tokens is <code>oauth2.introspection_url<
 </ol>
 <p><strong>How to verify.</strong> Sign in and out once with the driver the app uses; both work
 as before.</p>
-<h2 id="0-5-0-2026-11-07">0.5.0 (2026-11-07)<a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></h2>
+<h2 id="0-5-0-2026-11-07">0.5.0 <span class="docs-heading-tail"><span>(2026-11-07)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-5-0-2026-11-07">#</a></span></h2>
 <p><strong>Breaking.</strong> The <code>cas</code> driver now binds each sign-in to the browser that started it: before the redirect to CAS it stores a pending-login marker in the app's session, and a returning ticket is accepted only against a live marker (single use, ten minutes). A ticket with no live marker is refused before any HTTP call to the CAS server, which blocks login CSRF. Two consequences for apps on the <code>cas</code> driver:</p>
 <ol>
 <li>Apps that build the driver by hand must pass the app's <code>SessionPort</code> as the seventh argument to <code>DriverFactory::make()</code>; without it the driver refuses to start with <code>InvalidConfig</code> unless the binding is switched off. The Laravel adapter passes the app's session itself, so Laravel apps need no code change.</li>
@@ -280,7 +280,7 @@ as before.</p>
 </li>
 </ol>
 <p><strong>How to verify.</strong> Sign in through CAS the normal way (the app sends the browser to CAS, the browser returns with the ticket); the sign-in succeeds and the marker is spent. Then deliver a just-issued ticket from a browser profile that never started a sign-in: it is refused with <code>This sign-in was not started in this browser, or it took too long. Start again from the app.</code>, and no HTTP call reaches the CAS server. <code>tests/CasDriverTest.php</code> covers all of it under the frozen names <code>testLoginBinding*</code>.</p>
-<h2 id="0-4-0-2026-11-03">0.4.0 (2026-11-03)<a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></h2>
+<h2 id="0-4-0-2026-11-03">0.4.0 <span class="docs-heading-tail"><span>(2026-11-03)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-4-0-2026-11-03">#</a></span></h2>
 <p><strong>Breaking.</strong> The <code>gateway</code> driver now refuses a token whose <code>typ</code> header is
 <code>at+jwt</code> or <code>application/at+jwt</code>, so an OAuth2 access token cannot be replayed
 as a gateway assertion. A missing <code>typ</code> or <code>JWT</code> still works. This is a
@@ -315,7 +315,7 @@ to public key for key rotation without a coordinated window.</p>
 </code></pre>
 <p>then sign in through the gateway with a normal assertion (missing <code>typ</code> or
 <code>JWT</code>) and confirm a replayed <code>at+jwt</code> token is refused.</p>
-<h2 id="0-3-0-2026-10-30">0.3.0 (2026-10-30)<a class="docs-heading-link" aria-label="Link to this section" href="#0-3-0-2026-10-30">#</a></h2>
+<h2 id="0-3-0-2026-10-30">0.3.0 <span class="docs-heading-tail"><span>(2026-10-30)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-3-0-2026-10-30">#</a></span></h2>
 <p><strong>Breaking.</strong> The signed-in user is looked up again on every request when the
 app's resolver implements the new <code>RefreshesUser</code> interface, and a user who
 no longer exists signs the session out. Before, <code>Sesame::user()</code> returned the
@@ -351,7 +351,7 @@ the session is live; the next request reflects the change, and a deleted user
 is signed out. <code>tests/Laravel/SesameGuardTest.php</code> and
 <code>tests/Laravel/ReadOnlyAttributesTest.php</code> cover the guard and the model
 shape.</p>
-<h2 id="0-2-2-2026-10-29">0.2.2 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-2-2026-10-29">#</a></h2>
+<h2 id="0-2-2-2026-10-29">0.2.2 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-2-2026-10-29">#</a></span></h2>
 <p><strong>Breaking.</strong> The oidc driver's default roles claim is <code>wsu_roles</code>, the name
 Entra sends. Apps that relied on the old default must set <code>roles_claim</code> (and
 <code>claims</code>) to <code>wsuRoles</code> to keep the old name.</p>
@@ -372,14 +372,14 @@ the same for <code>oidc.claims</code> (env <code>SESAME_OIDC_CLAIMS</code>).</p>
 <p><strong>How to verify.</strong> Sign in with the <code>oidc</code> driver and read
 <code>$identity-&gt;attributes['wsu_roles']</code> (or the name you configured); the roles
 arrive under the claim you named.</p>
-<h2 id="0-2-1-2026-10-29">0.2.1 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-1-2026-10-29">#</a></h2>
+<h2 id="0-2-1-2026-10-29">0.2.1 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-1-2026-10-29">#</a></span></h2>
 <p>No breaks in this release: it adds the agent-ready site from Squire's kit,
 fixes the oauth2 peg on the site, writes project names as words except
 acronyms, fixes stale capability claims, and shows the oidc driver on the
 site. Upgrade with:</p>
 <pre tabindex="0"><code>composer require waynestate/sesame:^0.2
 </code></pre>
-<h2 id="0-2-0-2026-10-29">0.2.0 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-2-0-2026-10-29">#</a></h2>
+<h2 id="0-2-0-2026-10-29">0.2.0 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-2-0-2026-10-29">#</a></span></h2>
 <p><strong>Breaking.</strong> Raw PHP: <code>sesame_logout()</code> is POST-only with a CSRF token. It
 runs only when the POST body's <code>sesame_logout_token</code> matches the session's
 token (new <code>sesame_logout_token()</code>, <code>Sesame::logoutToken()</code> and
@@ -422,7 +422,7 @@ argument to <code>DriverFactory::make()</code>, and install
 <p><strong>How to verify.</strong> A GET to the logout endpoint answers 405 and leaves the
 session alone; a POST without the token answers 403; a POST with the token
 signs out. <code>tests/ReturnToTest.php</code> covers the tightened return-to rule.</p>
-<h2 id="0-1-3-2026-10-29">0.1.3 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-3-2026-10-29">#</a></h2>
+<h2 id="0-1-3-2026-10-29">0.1.3 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-3-2026-10-29">#</a></span></h2>
 <p>No breaks in this release: the four shared WSU values
 (<code>SESAME_CAS_BASE_URL</code>, <code>SESAME_GATEWAY_ISSUER</code>, <code>SESAME_OAUTH2_ISSUER</code>,
 <code>SESAME_OAUTH2_JWKS_URL</code>) now resolve through
@@ -433,7 +433,7 @@ suggested, never required), and a missing routed setting now fails with
 Upgrade with:</p>
 <pre tabindex="0"><code>composer require waynestate/sesame:^0.1
 </code></pre>
-<h2 id="0-1-2-2026-10-29">0.1.2 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-2-2026-10-29">#</a></h2>
+<h2 id="0-1-2-2026-10-29">0.1.2 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-2-2026-10-29">#</a></span></h2>
 <p>No breaks in this release: the CAS driver reads <code>serviceValidate</code> responses by
 namespace URI instead of prefix, so a body that binds the <code>cas:</code> prefix to a
 different namespace can no longer be read as a success, while a body that
@@ -441,7 +441,7 @@ binds another prefix (or none) to the real CAS namespace keeps working.
 Upgrade with:</p>
 <pre tabindex="0"><code>composer require waynestate/sesame:^0.1
 </code></pre>
-<h2 id="0-1-1-2026-10-29">0.1.1 (2026-10-29)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-1-2026-10-29">#</a></h2>
+<h2 id="0-1-1-2026-10-29">0.1.1 <span class="docs-heading-tail"><span>(2026-10-29)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-1-2026-10-29">#</a></span></h2>
 <p><strong>Breaking.</strong> A truthy <code>slo</code> (or <code>single_logout</code>) config key is now rejected
 with <code>InvalidConfig</code> at boot: the identity provider does not support single
 logout, so the setting is a mistake to fail on early rather than at the first
@@ -469,11 +469,11 @@ middleware, <code>Identity::hasAuthContext(string $id)</code>), <code>cas.assume
 <p><strong>How to verify.</strong> Boot the app; it starts without <code>InvalidConfig</code>, and a
 context check fails closed when there is no user or no identity.
 <code>tests/Laravel/RequireAuthContextTest.php</code> covers the context check.</p>
-<h2 id="0-1-0-2026-10-27">0.1.0 (2026-10-27)<a class="docs-heading-link" aria-label="Link to this section" href="#0-1-0-2026-10-27">#</a></h2>
+<h2 id="0-1-0-2026-10-27">0.1.0 <span class="docs-heading-tail"><span>(2026-10-27)</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-1-0-2026-10-27">#</a></span></h2>
 <p>First tagged release. There is nothing to upgrade from. Install with:</p>
 <pre tabindex="0"><code>composer require waynestate/sesame
 </code></pre>
-<h2 id="related">Related<a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></h2>
+<h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="install.html">Install</a>: the requirements and the one composer line.</li>
 <li><a href="guides/quick-start.html">Quick start</a>: a first sign-in after you upgrade.</li>
