@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-09
+
+- Docs: the upgrading guide has a 0.7.3 section (no breaks, no library code changes), and the docs index and BEST_PRACTICES name release 0.7.3.
 - Docs: Parity joins the party. The README cast, the instance runner page's cast and the front page's key ring carry Parity next to Squire, with its spirit-level mark: the stack's new tool that runs Citadel on your computer (its PHP image, its proxy and MySQL 5.6), where a local copy signs in with SESAME's fake driver. 0.1.0 is coming and it has no site yet, so its tag links nowhere. One more key on the ring, and this one is level.
 - Changed: refreshed version mentions. The README and the moving-from-wayne-cas guide say Booster 1.14.0 and later write `waynestate/sesame:^0.7` (they said `^0.6`, which Booster 1.12.0 and 1.13.0 wrote; apps those hopped take the 0.7.0 upgrading step). The dev tools require Pinstripe ^0.3 (lock 0.3.0, was ^0.1.4 at 0.1.4), which bans `var_dump()`: the one in `tests/OidcDriverTest.php`, which proves a dump never shows the client secret, carries a reasoned `pinstripe.banned.varDump` ignore. Open sesame: the doors now match the keys.
 

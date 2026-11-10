@@ -1624,7 +1624,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.7.2
+Keys cut while you wait · `waynestate/sesame` 0.7.3
 
 ## SESAME
 
@@ -1967,6 +1967,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\][#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+### \[0.7.3\] - 2026-11-09[#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-3-2026-11-09)
+
+- Docs: the upgrading guide has a 0.7.3 section (no breaks, no library code changes), and the docs index and BEST_PRACTICES name release 0.7.3.
 - Docs: Parity joins the party. The README cast, the instance runner page's cast and the front page's key ring carry Parity next to Squire, with its spirit-level mark: the stack's new tool that runs Citadel on your computer (its PHP image, its proxy and MySQL 5.6), where a local copy signs in with SESAME's fake driver. 0.1.0 is coming and it has no site yet, so its tag links nowhere. One more key on the ring, and this one is level.
 - Changed: refreshed version mentions. The README and the moving-from-wayne-cas guide say Booster 1.14.0 and later write `waynestate/sesame:^0.7` (they said `^0.6`, which Booster 1.12.0 and 1.13.0 wrote; apps those hopped take the 0.7.0 upgrading step). The dev tools require Pinstripe ^0.3 (lock 0.3.0, was ^0.1.4 at 0.1.4), which bans `var_dump()`: the one in `tests/OidcDriverTest.php`, which proves a dump never shows the client secret, carries a reasoned `pinstripe.banned.varDump` ignore. Open sesame: the doors now match the keys.
 
@@ -4249,7 +4252,7 @@ Every piece named, and what the app owns and what SESAME does: [Raw PHP](https:/
 - [Install](https://sesame.apps.wayne.edu/docs/install.html): what SESAME needs, the composer line, and how to prove it took.
 - [Reference](https://sesame.apps.wayne.edu/docs/reference/drivers.html): the drivers, the configuration, the API, and the proof.
 
-Status: version 0.7.2, MIT license. The changelog's top heading is \[Unreleased\].
+Status: version 0.7.3, MIT license. The changelog's top heading is \[Unreleased\].
 
 Agents: read [llms.txt](https://sesame.apps.wayne.edu/llms.txt) first; it maps these docs for language models.
 
@@ -5688,6 +5691,10 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading[#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.7.3 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-3-2026-11-09)
+
+No breaks, and no library code changes: docs and dev tools only. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
 
 ### 0.7.2 (2026-11-09)[#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-2-2026-11-09)
 
