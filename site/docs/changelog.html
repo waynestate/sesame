@@ -52,6 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
+<li>Changed: the deploy layer requires PROCTOR ^0.12 (locked 0.12.0, was ^0.11): two new warning-only checks, nothing breaks.</li>
 <li>Changed: the deploy kit is Squire 0.10.7 (was 0.10.6): it ships a <code>.gitattributes</code> that pins line endings, so the deploy layer clears PROCTOR's line-ending warnings.</li>
 <li>Changed: the docs, agent-ready and deploy kits are Squire 0.10.6 (was 0.10.5): the docs builder and agent-ready generator see every file on Docker Desktop mounts.</li>
 <li>Site: <code>assets/stack-env.js</code> knows Parity, so a pre-production page links Parity's pre-production site and a dev page links its local <code>site/</code> folder. Until now Parity, of all parts, was the one link that ignored its environment.</li>
