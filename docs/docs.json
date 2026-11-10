@@ -348,6 +348,10 @@
                     "Log sign-in and sign-out events through the app's PSR-3 logger",
                     "`true`"
                 ],
+                "SESAME_METRICS_ENABLED": [
+                    "Count every finished sign-in as `sesame_logins_total` (by driver and outcome) in HELMET's metrics store, or the app's `Prometheus\\Storage\\Adapter` binding, so it shows on HELMET's `/metrics`",
+                    "`false`"
+                ],
                 "SESAME_USER_RESOLVER": [
                     "The class that turns a verified identity into the app's user; it must implement `Waynestate\\Sesame\\UserResolver`",
                     "none"

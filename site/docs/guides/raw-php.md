@@ -143,6 +143,12 @@ Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in 
 
 SESAME never logs tickets, session IDs, tokens or failure messages: a failed login records only the event, the driver and the time. Usernames have every control character replaced with `?` and are cut at 128 characters, so a username cannot forge an extra log line or flood the log. A logger that throws never changes what the facade returns or throws.
 
+With the sign-in counter on, one more event can appear: `sesame.metrics_failed` (`warning`), when a count could not be written. It carries `event`, `driver` and `at`, plus `reason` when the cause is SESAME's own setup; the store's own error is never logged.
+
+## Metrics [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#metrics)
+
+The facade takes an optional seventh constructor argument, a `LoginMetrics`. `PrometheusLoginMetrics` counts every finished sign-in as `sesame_logins_total{driver, outcome}` in a promphp store; on the store HELMET's request metrics use, it shows on HELMET's `/metrics`. Off by default. The setup, the labels and the queries are in [Counting sign-ins](https://sesame.apps.wayne.edu/docs/guides/metrics.html).
+
 ## Related [#](https://sesame.apps.wayne.edu/docs/guides/raw-php.html#related)
 
 - [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html)

@@ -83,6 +83,10 @@
                     "path": "guides/laravel"
                 },
                 {
+                    "title": "Counting sign-ins (metrics)",
+                    "path": "guides/metrics"
+                },
+                {
                     "title": "Running off Citadel",
                     "path": "guides/running-off-citadel"
                 },

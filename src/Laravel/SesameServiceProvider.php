@@ -17,6 +17,8 @@ use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\ServiceProvider;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Prometheus\CollectorRegistry;
+use Prometheus\Storage\Adapter;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -28,7 +30,11 @@ use Waynestate\Sesame\DriverFactory;
 use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Helmet\Metrics\MetricsStorage;
 use Waynestate\Sesame\Laravel\Http\SesameController;
+use Waynestate\Sesame\Metrics\LoginMetrics;
+use Waynestate\Sesame\Metrics\PrometheusLoginMetrics;
+use Waynestate\Sesame\Metrics\UnavailableLoginMetrics;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\UserResolver;
 
@@ -108,6 +114,7 @@ class SesameServiceProvider extends ServiceProvider
                 $this->coreConfig($app),
                 $this->clock($app),
                 $this->logger($app),
+                $this->loginMetrics($app),
             );
         });
     }
@@ -271,6 +278,51 @@ class SesameServiceProvider extends ServiceProvider
         }
 
         return null;
+    }
+
+    /**
+     * The sign-in counter (ADR-0011), when sesame.metrics.enabled is on.
+     *
+     * The store is the app's Prometheus\Storage\Adapter binding when there
+     * is one, else the store HELMET's request metrics use (helmet.metrics),
+     * so sesame_logins_total shows up on HELMET's /metrics without a route
+     * of SESAME's own. The store is built on the first sign-in, not here:
+     * a request that signs nobody in never opens it. When there is no
+     * store, or promphp is not installed, the first sign-in logs
+     * `sesame.metrics_failed` with the reason, and signs the user in anyway.
+     */
+    private function loginMetrics(Application $app): ?LoginMetrics
+    {
+        $config = $app->make(Repository::class);
+
+        if (! filter_var($config->get('sesame.metrics.enabled', false), FILTER_VALIDATE_BOOL)) {
+            return null;
+        }
+
+        if (! class_exists(CollectorRegistry::class)) {
+            return new UnavailableLoginMetrics('SESAME_METRICS_ENABLED is on, but promphp/prometheus_client_php is not installed: install HELMET (which requires it) or the library itself.');
+        }
+
+        return new PrometheusLoginMetrics(static function () use ($app, $config): ?Adapter {
+            if ($app->bound(Adapter::class)) {
+                return $app->make(Adapter::class);
+            }
+
+            $helmet = (array) $config->get('helmet.metrics', []);
+            $storage = $helmet['storage'] ?? null;
+
+            if (! class_exists(MetricsStorage::class)
+                || ! filter_var($helmet['enabled'] ?? false, FILTER_VALIDATE_BOOL)
+                || ! is_string($storage)) {
+                return null;
+            }
+
+            return MetricsStorage::create(
+                $storage,
+                is_string($helmet['redis_url'] ?? null) ? $helmet['redis_url'] : null,
+                is_string($helmet['sqlite_path'] ?? null) ? $helmet['sqlite_path'] : null,
+            );
+        });
     }
 
     /**

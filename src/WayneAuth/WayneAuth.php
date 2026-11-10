@@ -18,6 +18,7 @@ use Waynestate\Sesame\Exception\AuthenticationFailed;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Metrics\LoginMetrics;
 use Waynestate\Sesame\Redirect;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
@@ -154,6 +155,10 @@ class WayneAuth
      * @param UserResolver|null $resolver The app's resolver; by default the
      *        user is the verified username, which is all Wayne Auth gave.
      * @param array<string, mixed> $options The bridge options above.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger for the
+     *        sign-in and sign-out events.
+     * @param LoginMetrics|null $metrics Optional sign-in counter, for
+     *        example a PrometheusLoginMetrics on HELMET's metrics store.
      *
      * @throws InvalidConfig When the config or an option is not valid, or
      *         no PSR-18 client can be found.
@@ -168,6 +173,7 @@ class WayneAuth
         ?UserResolver $resolver = null,
         array $options = [],
         ?LoggerInterface $logger = null,
+        ?LoginMetrics $metrics = null,
     ): Sesame {
         $config = $config instanceof Config ? $config : Config::fromArray($config);
 
@@ -188,6 +194,7 @@ class WayneAuth
             $config,
             null,
             $logger,
+            $metrics,
         );
 
         self::$defaults = [

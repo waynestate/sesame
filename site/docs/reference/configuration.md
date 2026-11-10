@@ -72,6 +72,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_GATEWAY_REPLAY_STORE | The cache store used jtis are kept in, so a captured assertion cannot be replayed | none (the app's default cache store) | config/sesame.php |
 | SESAME_GATEWAY_TRUSTED_PROXIES | Comma-separated CIDR ranges (or single IPs) the gateway proxy sits behind; the request must come from one of them | none | config/sesame.php |
 | SESAME_LOG | Log sign-in and sign-out events through the app's PSR-3 logger | `true` | config/sesame.php |
+| SESAME_METRICS_ENABLED | Count every finished sign-in as `sesame_logins_total` (by driver and outcome) in HELMET's metrics store, or the app's `Prometheus\Storage\Adapter` binding, so it shows on HELMET's `/metrics` | `false` | config/sesame.php |
 | SESAME_MFA_MAX_AGE | How long a verified MFA sign-in stays good, in seconds | `28800` (eight hours) | config/sesame.php |
 | SESAME_MFA_ON_FAILURE | What the `sesame.mfa` middleware does when the check fails: `deny` answers 403, `reauth` sends the user back to the login route | `deny` | config/sesame.php |
 | SESAME_OAUTH2_AUDIENCE | The audience claim the token must carry (for Entra, the app's client id) | none | config/sesame.php |

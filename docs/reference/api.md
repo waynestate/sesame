@@ -59,6 +59,7 @@ public function __construct(
     private readonly Config $config,
     ?ClockInterface $clock = null,
     private readonly ?LoggerInterface $logger = null,
+    private readonly ?LoginMetrics $metrics = null,
 )
 ```
 
@@ -92,6 +93,26 @@ public function safeReturnTo(string $returnTo): string
 - `LOGOUT_TOKEN_FIELD`: the form field the raw-PHP logout reads its CSRF token from. `LOGOUT_TOKEN_KEY`: the session key that holds the logout CSRF token.
 
 When a logger is set, sign-in and sign-out events are logged through it: a broken logger never changes what the facade returns or throws, and no ticket, session ID, token, assertion, cookie or header ever reaches the log.
+
+When a `LoginMetrics` is set, `login()` counts every sign-in that finishes (not a `Redirect`): `success`, `refused` (the resolver returned null), `failed` (an `AuthenticationFailed`) or `unavailable` (a `ProviderUnavailable`), labelled with the configured driver. A counter that throws never changes what `login()` returns or throws; the failure is logged as `sesame.metrics_failed`.
+
+### LoginMetrics and PrometheusLoginMetrics
+
+`Waynestate\Sesame\Metrics\LoginMetrics` is the interface the facade counts sign-ins on, with the outcome constants `SUCCESS`, `FAILED`, `REFUSED`, `UNAVAILABLE` and the list `OUTCOMES`:
+
+```php
+public function login(string $driver, string $outcome): void
+```
+
+`final class PrometheusLoginMetrics` implements it on a promphp store (`promphp/prometheus_client_php`, which HELMET requires). It writes the counter `sesame_logins_total{driver, outcome}`; a driver outside `PrometheusLoginMetrics::DRIVERS` and an outcome outside `OUTCOMES` are counted as `other`.
+
+```php
+public function __construct(Prometheus\Storage\Adapter|Closure $storage)
+public static function driverLabel(string $driver): string
+public static function outcomeLabel(string $outcome): string
+```
+
+A `Closure` is a factory for the store, called on the first count and kept; a factory that returns null (HELMET's `MetricsStorage::create()` does when its store is off) throws `InvalidConfig` on that count. See [Counting sign-ins](../guides/metrics.md).
 
 ### Identity
 

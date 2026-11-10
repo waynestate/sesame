@@ -11,6 +11,9 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\Exception\AuthenticationFailed;
+use Waynestate\Sesame\Exception\InvalidConfig;
+use Waynestate\Sesame\Exception\ProviderUnavailable;
+use Waynestate\Sesame\Metrics\LoginMetrics;
 
 /**
  * The facade an app talks to.
@@ -37,6 +40,10 @@ final class Sesame
      * @param LoggerInterface|null $logger Optional PSR-3 logger. When given,
      *        sign-in and sign-out events are logged through it; a logger
      *        that throws never changes what the facade returns or throws.
+     * @param LoginMetrics|null $metrics Optional sign-in counter (ADR-0011).
+     *        When given, every finished sign-in is counted by driver and
+     *        outcome; a counter that throws never changes the sign-in, and
+     *        the failure is logged as `sesame.metrics_failed`.
      */
     public function __construct(
         Driver|Closure $driver,
@@ -45,6 +52,7 @@ final class Sesame
         private readonly Config $config,
         ?ClockInterface $clock = null,
         private readonly ?LoggerInterface $logger = null,
+        private readonly ?LoginMetrics $metrics = null,
     ) {
         $this->driverFactory = $driver;
         $this->clock = $clock ?? new SystemClock();
@@ -95,6 +103,7 @@ final class Sesame
                 'driver' => $this->config->driver,
                 'at' => $this->now(),
             ]);
+            $this->count($failure instanceof ProviderUnavailable ? LoginMetrics::UNAVAILABLE : LoginMetrics::FAILED);
 
             throw $failure;
         }
@@ -112,6 +121,7 @@ final class Sesame
                 'username' => self::safeUsername($step->identity->username),
                 'at' => $this->now(),
             ]);
+            $this->count(LoginMetrics::REFUSED);
 
             return null;
         }
@@ -148,6 +158,7 @@ final class Sesame
             'at' => $this->now(),
             'session_ref' => $sessionRef,
         ]);
+        $this->count(LoginMetrics::SUCCESS);
 
         return $user;
     }
@@ -593,6 +604,39 @@ final class Sesame
         }
 
         $this->log('warning', 'sesame.session_anomaly', $context);
+    }
+
+    /**
+     * Count one finished sign-in on the optional metrics counter.
+     *
+     * Best effort, like the logger: a store that is down or misconfigured
+     * never changes what login() returns or throws. The failure is logged
+     * once per sign-in as `sesame.metrics_failed`, with the event, the
+     * driver and the time; the store's own message is left out (it can
+     * carry a Redis URL with its password), except for SESAME's own
+     * config message, which says what to turn on.
+     */
+    private function count(string $outcome): void
+    {
+        if ($this->metrics === null) {
+            return;
+        }
+
+        try {
+            $this->metrics->login($this->config->driver, $outcome);
+        } catch (\Throwable $e) {
+            $context = [
+                'event' => 'metrics_failed',
+                'driver' => $this->config->driver,
+                'at' => $this->now(),
+            ];
+
+            if ($e instanceof InvalidConfig) {
+                $context['reason'] = $e->getMessage();
+            }
+
+            $this->log('warning', 'sesame.metrics_failed', $context);
+        }
     }
 
     /**

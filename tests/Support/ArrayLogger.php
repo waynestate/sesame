@@ -35,6 +35,40 @@ final class ArrayLogger extends AbstractLogger
             'context' => $context,
         ]);
     }
+
+    /**
+     * The records with the given message, as a plain list.
+     *
+     * @return list<array{level: string, message: string, context: array<string, mixed>}>
+     */
+    public function withMessage(string $message): array
+    {
+        $found = [];
+
+        for ($i = 0, $n = count($this->records); $i < $n; $i++) {
+            if ($this->records[$i]['message'] === $message) {
+                $found[] = $this->records[$i];
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Every message logged, in order.
+     *
+     * @return list<string>
+     */
+    public function messages(): array
+    {
+        $messages = [];
+
+        for ($i = 0, $n = count($this->records); $i < $n; $i++) {
+            $messages[] = $this->records[$i]['message'];
+        }
+
+        return $messages;
+    }
 }
 
 /**

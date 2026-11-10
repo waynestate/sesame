@@ -438,6 +438,43 @@ control character replaced with `?` and are cut at 128 characters, so a
 username cannot forge an extra log line or flood the log. A logger that
 throws never changes what the facade returns or throws.
 
+One more event appears only when the sign-in counter below is on:
+`sesame.metrics_failed` (`warning`), when a count could not be written. It
+carries `event`, `driver` and `at`, plus `reason` when the cause is SESAME's
+own setup; the store's own error is never logged.
+
+### Counting sign-ins (metrics)
+
+The facade takes an optional seventh constructor argument: a
+`Waynestate\Sesame\Metrics\LoginMetrics`. SESAME ships one,
+`PrometheusLoginMetrics`, which counts every finished sign-in as
+`sesame_logins_total{driver, outcome}` (`success`, `failed`, `refused` or
+`unavailable`) in a [promphp](https://github.com/PromPHP/prometheus_client_php)
+store. Give it the store HELMET's request metrics use and the counter shows
+up on [HELMET's `/metrics`](https://helmet.apps.wayne.edu/docs/guides/metrics.html),
+behind HELMET's token; SESAME serves no endpoint of its own:
+
+```php
+use Waynestate\Helmet\Metrics\MetricsStorage;
+use Waynestate\Sesame\Metrics\PrometheusLoginMetrics;
+
+$helmet = \Waynestate\Helmet\helmet_metrics_env();
+$metrics = new PrometheusLoginMetrics(static fn () => MetricsStorage::create(
+    $helmet['storage'] ?? null,
+    $helmet['redis_url'] ?? null,
+    $helmet['sqlite_path'] ?? null,
+));
+
+sesame(new Sesame($driver, $resolver, $session, $config, null, $logger, $metrics));
+```
+
+The store is opened on the first sign-in, never on a request that signs
+nobody in. No label carries a username, an IP or a session ID, and a store
+that breaks never changes a sign-in. Off by default: without the argument
+nothing is counted. `unavailable` is the outcome to alert on, since it means
+the identity provider is down for this app. More in
+[Counting sign-ins](docs/guides/metrics.md).
+
 ## Drivers
 
 | Driver | Status |
@@ -1404,6 +1441,16 @@ the container's `Psr\Log\LoggerInterface` binding is used when there is one.
 Set `sesame.log` (env `SESAME_LOG`) to `false` to turn the events off; the
 default is `true`. The events, their context and what is never logged are
 described in "Raw PHP", "Logging".
+
+### Metrics
+
+Set `sesame.metrics.enabled` (env `SESAME_METRICS_ENABLED`) to `true` and the
+adapter counts every finished sign-in as `sesame_logins_total`, by driver and
+outcome. It writes to the app's `Prometheus\Storage\Adapter` binding when
+there is one, else to the store HELMET's request metrics use, so turn those on
+too (`HELMET_METRICS_ENABLED=true` and `HELMET_METRICS_STORAGE`) and the
+counter shows on HELMET's `/metrics`. Off by default. See
+[Counting sign-ins](docs/guides/metrics.md).
 
 ## Running off Citadel
 

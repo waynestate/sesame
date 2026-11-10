@@ -357,6 +357,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Metrics
+    |--------------------------------------------------------------------------
+    |
+    | When true, every finished sign-in is counted as sesame_logins_total,
+    | labelled by driver and outcome (success, failed, refused, unavailable)
+    | only. SESAME serves no endpoint: the counter goes into the app's
+    | Prometheus\Storage\Adapter binding when there is one, else into the
+    | store HELMET's request metrics use (helmet.metrics, HELMET 1.0 or
+    | later), so it shows up on HELMET's /metrics. Off by default.
+    |
+    */
+
+    'metrics' => [
+        'enabled' => env('SESAME_METRICS_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | User resolver
     |--------------------------------------------------------------------------
     |

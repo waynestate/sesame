@@ -169,6 +169,10 @@ The oauth2 driver also keeps its fetched key set in a PSR-16 cache. The adapter 
 
 The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the authentication events in its normal log channels with no extra wiring: the container's `Psr\Log\LoggerInterface` binding is used when there is one. Set `sesame.log` (env `SESAME_LOG`) to `false` to turn the events off; the default is `true`. The events, their context and what is never logged are described in [Raw PHP](raw-php.md), "Logging".
 
+## Metrics
+
+Set `sesame.metrics.enabled` (env `SESAME_METRICS_ENABLED`) to `true` and the adapter counts every finished sign-in as `sesame_logins_total`, by driver and outcome. It writes to the app's `Prometheus\Storage\Adapter` binding when there is one, else to the store HELMET's request metrics use, so turn those on too (`HELMET_METRICS_ENABLED=true` and `HELMET_METRICS_STORAGE`) and the counter shows on HELMET's `/metrics`. The store is opened on the first sign-in of a request, never before. Off by default. See [Counting sign-ins](metrics.md).
+
 ## Related
 
 - [Quick start](quick-start.md)

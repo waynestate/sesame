@@ -38,6 +38,8 @@
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
+        "promphp/prometheus_client_php": "^2.15",
+        "waynestate/helmet": "^1.4",
         "waynestate/pinstripe": "^0.3"
     },
     "conflict": {
@@ -49,6 +51,7 @@
         "laravel/framework": "For the Laravel adapter",
         "league/oauth2-client": "Required by the oidc driver (browser sign-in to Entra): the authorization code flow with PKCE and the token request",
         "onelogin/php-saml": "Required by the saml driver (a SAML 2.0 service provider for a Shibboleth-style IdP): ^4.3.2",
+        "promphp/prometheus_client_php": "Required by the sign-in counter (sesame_logins_total); HELMET already requires it",
         "symfony/http-client": "A PSR-18 client for the cas, oauth2 and oidc drivers",
         "waynestate/playbook": "WSU's shared values (CAS, Entra, gateway); private, git.wayne.edu"
     },

@@ -295,6 +295,28 @@ timeouts and logout of one sign-in together in the log.
 `session_ref` value across the events of that sign-in.
 `tests/SesameEventsTest.php` covers the events.
 
+### The log carries `sesame.metrics_failed`, or `/metrics` shows no `sesame_logins_total`
+
+**Cause.** The sign-in counter is on but could not write its count. With a
+`reason` in the context, SESAME's own setup is the cause: there is no store
+(HELMET's request metrics are off, or `HELMET_METRICS_STORAGE` is unset, and
+the app binds no `Prometheus\Storage\Adapter`), or promphp is not installed.
+Without a `reason`, the store itself failed (APCu missing, Redis down, the
+SQLite file not writable); its message is left out on purpose, because it can
+carry a Redis URL with its password. The sign-in itself went through either
+way.
+
+**Fix.** Turn on HELMET's request metrics with a store
+(`HELMET_METRICS_ENABLED=true`, `HELMET_METRICS_STORAGE=apcu`, `redis` or
+`sqlite`), or bind your own `Prometheus\Storage\Adapter`. When HELMET's own
+request metrics are failing too, HELMET logs `metrics_storage_unusable` with
+the store's error and its `/metrics` shows `helmet_metrics_storage_up 0`.
+
+**Check.** Sign in once and scrape `/metrics` with HELMET's token:
+`sesame_logins_total{driver="...",outcome="success"}` is there.
+`tests/Laravel/LoginMetricsTest.php` covers the wiring, HELMET's SQLite store
+included. See [Counting sign-ins](guides/metrics.md).
+
 ### The session is missing on the return from the identity provider
 
 **Cause.** The session cookie is `SameSite=Strict`. The identity provider
