@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Deploy kit refreshed to Squire 0.10.5.
+
 ## [0.7.3] - 2026-11-09
 
 - Docs: the upgrading guide has a 0.7.3 section (no breaks, no library code changes), and the docs index and BEST_PRACTICES name release 0.7.3.
