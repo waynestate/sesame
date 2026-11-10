@@ -333,10 +333,10 @@ How the stack holds it: `Enforced`. `Mfa::satisfied()` fails closed on a missing
 Risks in the current code:
 - Done: the immediate delete at login is gone (S43): `NativeSession::regenerate()` marks the old session with a "destroyed at" time and the new ID and keeps it for a 60 second grace, so a user on a bad network does not lose the login; a use of the old ID after the grace is rejected and logged as `sesame.session_anomaly`. Proven by `NativeSessionTest` (S43).
 - Done: the login binding to the browser is built (S18): `PendingLogin` keeps single-use markers in the app session, and `CasDriver::login()` refuses a ticket with no live marker before any HTTP call, unless `cas.require_pending_login` is false. Proven by `CasDriverTest` (S18).
-- Repo: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5.
-- `README.md`: Docker commands cover 8.3 and newer.
+- Done: `.gitlab-ci.yml` runs the tests on PHP 8.3, 8.4 and 8.5.
+- Done: the `README.md` Docker commands cover PHP 8.3, 8.4 and 8.5.
 - Done: the destroy time stamp and grace period at login are implemented in `NativeSession` (S43); `graceSeconds: 0` restores the immediate delete.
-- README client example: add no-redirect and TLS-verify settings (S42).
+- Done: the README client example sets `allow_redirects` to false and `verify` to true (S42).
 
 Missing practices:
 - Single logout, which needs the ticket stored with the session. Moot against Academica, which never sends it; apps rely on their own session lifetime (S5).
