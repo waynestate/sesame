@@ -193,7 +193,10 @@ Why: a silent default points real users at a server the app owner never chose.
 Sources: none specific. This is a project rule from the stack's auth design and the scaffold design.
 How the stack holds it: `Enforced`. `Config::fromArray()` throws `InvalidConfig` on a missing or empty value (`src/Config.php:135-420, 427-469`). Tests in `ConfigTest`.
 
-## 5. Drivers still to build
+## 5. Drivers
+
+What ships today: `fake` (local development and tests only; it refuses to boot in production), `cas` (CAS 2.0 against Academica by default), `gateway` (a signed JWT assertion from the auth gateway, the recommended path for apps on Citadel once Drawbridge is live), `saml` (opt-in SAML 2.0 service provider), `oauth2` (an RS256 JWT bearer token, APIs only) and `oidc` (browser sign-in with OpenID Connect). The practices below cover the drivers that verify tokens or parse signed data.
+Planned: none.
 
 ### S30. The `gateway` driver accepts only a signed assertion
 Never read a bare identity header. Verify a signature from the gateway, and do not use the sender's IP as proof. Read one configured header that holds a signed token. Never read `Remote-User`, `X-Remote-User`, `HTTP_REMOTE_USER` or any underscore variant.
@@ -311,11 +314,11 @@ Why: `authenticatedAt` is when SESAME saw the response, not when the person sign
 Sources: [CAS Protocol 3.0 (`authenticationDate`)](https://apereo.github.io/cas/development/protocol/CAS-Protocol-Specification.html), [PSR-20 Clock](https://www.php-fig.org/psr/psr-20/) (defines `ClockInterface::now()` returning a `DateTimeImmutable`; I could not read its status on that page).
 How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from the attributes and uses it as the `authenticatedAt` when it is present and parseable; otherwise it falls back to the driver's clock. Time is read through a PSR-20 clock (injected, defaulting to the system clock), and a value more than five minutes ahead of the clock is treated as bad and ignored.
 
-### S48. Pin shared CI components to a commit
-Include pipeline components by commit SHA, never `~latest`.
+### S48. Pin shared CI components to a release tag
+Include pipeline components by release tag, and record the commit SHA beside it in a comment, never `~latest`.
 Why: a moving component can change what your pipeline runs, or what it skips, with no change in your repo. GitLab says components are used at your own risk.
-Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (commit SHA is the preferred pin; "Avoid using `latest`").
-How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.5.0`, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (a rule across the stack), so a pin bump is one readable version across every repo; the apps Sourdough generates pin the release commit SHA. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
+Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (it prefers a commit SHA pin and says "Avoid using `latest`; the stack pins the release tag with the SHA recorded beside it, because published stack tags are never moved).
+How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its four Preflight components at one release tag, `@0.5.0`, with the tag's commit SHA recorded in a comment beside the include, and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (a rule across the stack), so a pin bump is one readable version across every repo, and the SHA comment records exactly what ran. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
 
 ## 8. MFA
 
@@ -414,7 +417,7 @@ Corrected:
 - S26: the first pass cited ASVS V6.3.8, which is about account enumeration. Replaced with V16.5.1.
 - S3: the first pass allowed `SameSite=Strict`. Changed to `Lax`, with the reason (S41).
 - S19: the first pass said no document names the CAS login-age attributes. The CAS 3.0 spec names `authenticationDate`, `isFromNewLogin` and `longTermAuthenticationRequestTokenUsed`.
-- S38, S39 and the gap list: the first pass said the repo has no `.gitlab-ci.yml`. It has one (Preflight components pinned to a commit).
+- S38, S39 and the gap list: the first pass said the repo has no `.gitlab-ci.yml`. It has one (Preflight components pinned to a release tag, with the commit SHA recorded beside it).
 - S39: the Docker matrix now includes PHP 8.5, and CI runs 8.3, 8.4 and 8.5 through Preflight.
 - S43 (new) records that the PHP manual itself advises a grace period over `session_regenerate_id(true)`, which the first pass left as an open trade-off.
 

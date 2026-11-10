@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Deploy kit refreshed to Squire 0.10.5.
+- Docs: BEST_PRACTICES lists the drivers SESAME ships and states one pinning rule.
 
 ## [0.7.3] - 2026-11-09
 
