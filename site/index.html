@@ -485,18 +485,48 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
         <p class="rules__more"><a href="https://github.com/waynestate/sesame/blob/main/BEST_PRACTICES.md">Every practice, with its sources</a></p>
       </div>
 
-      <aside class="hours" aria-labelledby="hours-title">
-        <span class="hours__string" aria-hidden="true"></span>
-        <div class="hours__card">
-          <h3 id="hours-title">Hours</h3>
-          <dl class="hours__list">
-            <div><dt>Idle</dt><dd>120 min</dd></div>
-            <div><dt>Absolute</dt><dd>720 min</dd></div>
-            <div><dt>MFA good for</dt><dd>8 h</dd></div>
-          </dl>
-          <p class="hours__note">SESAME checks both session clocks each time <code>user()</code> is called. A stale session finds the door locked.</p>
-        </div>
-      </aside>
+      <div class="rules__side">
+        <aside class="hours" aria-labelledby="hours-title">
+          <span class="hours__string" aria-hidden="true"></span>
+          <div class="hours__card">
+            <h3 id="hours-title">Hours</h3>
+            <dl class="hours__list">
+              <div><dt>Idle</dt><dd>120 min</dd></div>
+              <div><dt>Absolute</dt><dd>720 min</dd></div>
+              <div><dt>MFA good for</dt><dd>8 h</dd></div>
+            </dl>
+            <p class="hours__note">SESAME checks both session clocks each time <code>user()</code> is called. A stale session finds the door locked.</p>
+          </div>
+        </aside>
+
+        <!-- The door tally: shops count who comes in with a hand counter. The
+             wheels roll up once when the card is seen (motion only); the
+             plunger is a real button that counts one more. The digits are
+             decorative; the sr-only line says the count. -->
+        <aside class="tally" aria-labelledby="tally-title" data-tally>
+          <div class="tally__card">
+            <h3 id="tally-title">Door count</h3>
+            <div class="tally__body">
+              <button type="button" class="tally__plunger" data-tally-click aria-describedby="tally-said"><span class="wsu-sr-only">Count one more sign-in</span></button>
+              <span class="tally__window" aria-hidden="true">
+                <span class="tally__wheel"><span class="tally__strip" style="--d: 0">0123456789</span></span>
+                <span class="tally__wheel"><span class="tally__strip" style="--d: 4">0123456789</span></span>
+                <span class="tally__wheel"><span class="tally__strip" style="--d: 2">0123456789</span></span>
+                <span class="tally__wheel"><span class="tally__strip" style="--d: 7">0123456789</span></span>
+              </span>
+              <span class="tally__ring" aria-hidden="true"></span>
+            </div>
+            <p class="wsu-sr-only" id="tally-said" data-tally-said>The counter reads 427.</p>
+            <ul class="tally__tags" aria-label="Outcomes it counts">
+              <li class="tally__tag tally__tag--success">success</li>
+              <li class="tally__tag tally__tag--failed">failed</li>
+              <li class="tally__tag tally__tag--refused">refused</li>
+              <li class="tally__tag tally__tag--unavailable">unavailable</li>
+            </ul>
+            <p class="tally__note">Turn it on and SESAME counts each sign-in as <code>sesame_logins_total</code>, by driver and outcome, on HELMET's <code>/metrics</code>. It tallies turns of the key, never whose hand. <a href="docs/guides/metrics.html">Counting sign-ins</a></p>
+          </div>
+        </aside>
+      </div>
     </div>
   </section>
 

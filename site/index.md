@@ -295,6 +295,17 @@ Posted by the door
 
 SESAME checks both session clocks each time `user()` is called. A stale session finds the door locked.
 
+### Door count
+
+The counter reads 427.
+
+- success
+- failed
+- refused
+- unavailable
+
+Turn it on and SESAME counts each sign-in as `sesame_logins_total`, by driver and outcome, on HELMET's `/metrics`. It tallies turns of the key, never whose hand. [Counting sign-ins](https://sesame.apps.wayne.edu/docs/guides/metrics.html)
+
 Cross-reference
 
 ## Re-key from wayne-cas

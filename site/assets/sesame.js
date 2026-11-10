@@ -8,7 +8,7 @@
    still work then; they just skip the walk to the door.
 
    Sections: 1. setup  2. toast  3. copy  4. the lock  5. the duplicator
-             6. reveals  7. the bell and the magic words
+             6. reveals  7. the door tally  8. the bell and the magic words
    ========================================================================== */
 (function () {
   "use strict";
@@ -233,7 +233,7 @@
 
   /* ------------------------------------------------------------- 6. reveals */
   if (motionOn() && "IntersectionObserver" in window) {
-    var groups = [".ticket", ".rules li", ".ring__tag", ".hand__stop", ".testbench", ".xref", ".hours", ".install"];
+    var groups = [".ticket", ".rules li", ".ring__tag", ".hand__stop", ".testbench", ".xref", ".hours", ".tally", ".install"];
     var targets = [];
     groups.forEach(function (sel) {
       $$(sel).forEach(function (node, n) {
@@ -255,7 +255,45 @@
     }
   }
 
-  /* --------------------------------------- 7. the bell and the magic words */
+  /* ------------------------------------------------------- 7. the door tally */
+  // Shops count who comes through with a hand counter. SESAME does too, when
+  // asked: by driver and outcome, never by name. Four wheels, so it rolls over
+  // at 10,000 like the real thing (rate() would forgive it; Grafana would not).
+  var tally = $("[data-tally]");
+  var plunger = tally ? $("[data-tally-click]", tally) : null;
+  if (tally && plunger) {
+    var strips = $$(".tally__strip", tally);
+    var said = $("[data-tally-said]", tally);
+    var count = strips.reduce(function (n, s) {
+      return n * 10 + (parseInt(s.style.getPropertyValue("--d"), 10) || 0);
+    }, 0);
+    var CLICKS = [
+      "Click. {n} through the door. No names on the tally.",
+      "Click. Counted by driver and outcome. Never by face.",
+      "Click. {n}. HELMET's /metrics will hear about this one.",
+      "Click. A turn of the key, not whose hand turned it."
+    ];
+    var clickN = 0;
+    plunger.addEventListener("click", function () {
+      count = (count + 1) % 10000;
+      var digits = ("000" + count).slice(-4);
+      strips.forEach(function (s, n) { s.style.setProperty("--d", digits.charAt(n)); });
+      if (said) said.textContent = "The counter reads " + count + ".";
+      tally.classList.add("is-counting");
+      if (motionOn()) {
+        [[plunger, "is-pressed"], [tally, "is-jolted"]].forEach(function (p) {
+          p[0].classList.remove(p[1]);
+          void p[0].offsetWidth;
+          p[0].classList.add(p[1]);
+        });
+      }
+      toast(count === 0
+        ? "Click. Rolled over to 0000. Four wheels was always optimistic."
+        : CLICKS[clickN++ % CLICKS.length].replace("{n}", count.toLocaleString("en-US")));
+    });
+  }
+
+  /* --------------------------------------- 8. the bell and the magic words */
   var bell = $("[data-bell]");
   var DINGS = [
     "Ding. Be right with you.",

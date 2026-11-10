@@ -491,6 +491,10 @@ ships in [`docs/grafana/sesame.json`](docs/grafana/sesame.json). More in
 <summary><b>Walk around the shop</b>: the front page's counter, pegboard and duplicator</summary>
 <br>
 <div align="center"><img src="docs/readme/gallery.jpg" width="100%" alt="Three cuts of the front page: the hero with SESAME's mark under the shop light; the pegboard 'One blank per protocol', with all six keys cut, fake marked local only, cas, gateway, oauth2 and oidc marked now, and saml marked opt-in; and the duplicator 'Swap the blank. Keep the door.', which re-keys an app from cas to gateway and opens the door for ab1234."></div>
+<sub>Under the shop rules hangs the door count, a nickel hand tally: its wheels roll up to the count when you reach it,
+and its plunger is a button that counts one more. It stands for the opt-in sign-in counter (see
+<a href="docs/guides/metrics.md">Counting sign-ins</a>), which tallies turns of the key by driver and outcome, never
+whose hand. With reduced motion on, the wheels are already there.</sub>
 </details>
 
 ## The cas driver
