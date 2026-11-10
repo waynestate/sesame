@@ -16,7 +16,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 | --- | --- |
 | `fake` | Now. Local development and tests only. Refuses to boot in production. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
-| `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released (0.4.0) but has no production gateway yet, so a Citadel app uses `cas` today. |
+| `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
 | `oauth2` | Now. A JWT bearer token verified against the issuer's key set (JWKS), RS256 only. Microsoft Entra ID first. APIs only. |
 | `oidc` | Now. Browser sign-in with OpenID Connect (code flow with PKCE), Microsoft Entra ID first. Needs its own Entra registration per app; for apps off Citadel and APIs. Needs `league/oauth2-client`. |

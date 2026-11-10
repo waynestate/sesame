@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the README names the a11y checker's tag as 0.5.0, the one CI pins (it said 0.4.0), and the drivers reference no longer names an old Drawbridge version.
+
 ## \[0.7.4\] - 2026-11-10 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-4-2026-11-10)
 
 - Docs: the README's `gateway` row no longer names an old Drawbridge version.
