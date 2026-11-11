@@ -18,7 +18,7 @@ final class A11yCheckerPinTest extends TestCase
     private const ROOT = __DIR__ . '/..';
 
     /** The Preflight tag the a11y component runs at in .gitlab-ci.yml. */
-    private const PREFLIGHT_TAG = '0.5.0';
+    private const PREFLIGHT_TAG = '0.8.0';
 
     /** SHA-256 of templates/a11y/check.mjs at that tag, LF line endings. */
     private const CHECKER_SHA256 = '2b814c18fb90186d96a4f05ed4fb75bec5074e3344502995e80c25a27a69286a';
