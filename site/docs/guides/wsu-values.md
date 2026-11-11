@@ -23,51 +23,57 @@ Set them in the environment, as with every other setting. When the environment i
 
 The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these four from the environment alone.
 
-## Get the Playbook [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#get-the-playbook)
+## Get Playbook with your own GitLab token [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#get-playbook-with-your-own-gitlab-token)
 
-Get it through Composer, fetch the values into a `.env.playbook` file, or clone the repository.
+The repository is private, so every path below authenticates with a personal access token of your own. Pick the one that fits:
 
 ### Composer [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#composer)
 
-Add the repository to your `composer.json`:
+Point Composer at the instance in your `composer.json`:
 
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "https://git.wayne.edu/enterprise-apps/playbook.git" }
+        {
+            "type": "vcs",
+            "url": "https://git.wayne.edu/enterprise-apps/playbook.git"
+        }
     ]
 }
 ```
 
-then require it:
+Then require the package:
 
-```bash
+```sh
 composer require waynestate/playbook
 ```
 
-Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry, so later installs do not ask again.
+The credential goes in `auth.json` (a `gitlab-token` entry for git.wayne.edu), never in the repository.
 
-### Fetch the values [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#fetch-the-values)
+### Fetch the values file directly [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#fetch-the-values-file-directly)
 
-**curl (Linux, macOS).**
-
-```bash
-curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -o .env.playbook
+```sh
+curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" \
+    -o .env.playbook
 ```
-
-**PowerShell (Windows).**
 
 ```powershell
-Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -OutFile .env.playbook
+Invoke-WebRequest `
+    -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } `
+    -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" `
+    -OutFile .env.playbook
 ```
 
-### A clone [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#a-clone)
+A fetched `.env.playbook` is plain `KEY=value` lines to copy into the app's `.env`.
 
-When the app keeps its private dependencies by hand:
+### Clone [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#clone)
 
-```bash
+```sh
 git clone https://git.wayne.edu/enterprise-apps/playbook.git
 ```
+
+The token is your own: `read_api` for curl, `read_repository` for clone and Composer; keep it out of the repo. Playbook is private, so on a 404 ask the Enterprise Applications team for read access.
 
 ## Use the values [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#use-the-values)
 

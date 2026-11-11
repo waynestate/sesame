@@ -2085,6 +2085,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: `src/Support/Setting.php` and the shared part of the WSU values guide now come from Playbook's `bin/setting-sync.php`, and `composer setting:check` (part of `composer ci`) fails when either drifts (D-097).
 - CI pins Preflight 0.8.0.
 - Changed: the cas driver accepts a plain `http://localhost` or `http://127.0.0.1` service URL (`cas.service_url`) and CAS server address (`cas.base_url`) when the app environment is local, so a developer can sign in through CAS on their own machine without a TLS proxy (D-089). Local is the fake driver's list (`local`, `development`, `dev`, `testing`, `test`, now shared as `Waynestate\Sesame\Drivers\LocalEnvironments`); `DriverFactory::make()` passes the config's `environment` (in Laravel, `APP_ENV`) as `CasDriver`'s new last constructor argument, which defaults to `production`. Every other environment refuses those addresses with the same `must be an absolute https:// URL` error as before, and http to any other host, `[::1]` and a URL with a user name or password stay refused everywhere. The 0.6 upgrade note's "plain http is accepted only for a localhost or 127.0.0.1 service URL" was true of `ReturnTo` only; it now holds for the cas driver too, in a local environment.
 - Added: an opt-in sign-in counter (ADR-0011, metrics speak Prometheus). `Sesame` takes an optional seventh argument, a `Waynestate\Sesame\Metrics\LoginMetrics`, and `login()` counts every sign-in that finishes as `success`, `failed`, `refused` or `unavailable` (the identity provider was down), labelled by driver; a trip to the provider is not counted. `PrometheusLoginMetrics` writes `sesame_logins_total{driver, outcome}` into a promphp store, so on the store HELMET's request metrics use it shows on HELMET's `/metrics` behind HELMET's token; SESAME serves no endpoint. Labels are bounded (anything else is `other`), and no label carries a username, IP or session ID. The Laravel adapter turns it on with `SESAME_METRICS_ENABLED=true` (off by default) and counts into the app's `Prometheus\Storage\Adapter` binding, else HELMET's `helmet.metrics` store, opened on the first sign-in only; `WayneAuth::boot()` takes the counter as a new last argument. A counter that fails never changes a sign-in: it logs one `sesame.metrics_failed` warning, with a `reason` only when SESAME's own setup is the cause, never the store's error. New guide: Counting sign-ins (metrics). Nothing changes for an app that does not turn it on.
@@ -4404,51 +4405,57 @@ Set them in the environment, as with every other setting. When the environment i
 
 The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these four from the environment alone.
 
-### Get the Playbook [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#get-the-playbook)
+### Get Playbook with your own GitLab token [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#get-playbook-with-your-own-gitlab-token)
 
-Get it through Composer, fetch the values into a `.env.playbook` file, or clone the repository.
+The repository is private, so every path below authenticates with a personal access token of your own. Pick the one that fits:
 
 #### Composer [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#composer)
 
-Add the repository to your `composer.json`:
+Point Composer at the instance in your `composer.json`:
 
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "https://git.wayne.edu/enterprise-apps/playbook.git" }
+        {
+            "type": "vcs",
+            "url": "https://git.wayne.edu/enterprise-apps/playbook.git"
+        }
     ]
 }
 ```
 
-then require it:
+Then require the package:
 
-```bash
+```sh
 composer require waynestate/playbook
 ```
 
-Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry, so later installs do not ask again.
+The credential goes in `auth.json` (a `gitlab-token` entry for git.wayne.edu), never in the repository.
 
-#### Fetch the values [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#fetch-the-values)
+#### Fetch the values file directly [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#fetch-the-values-file-directly)
 
-**curl (Linux, macOS).**
-
-```bash
-curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -o .env.playbook
+```sh
+curl --fail -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" \
+    -o .env.playbook
 ```
-
-**PowerShell (Windows).**
 
 ```powershell
-Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" -OutFile .env.playbook
+Invoke-WebRequest `
+    -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } `
+    -Uri "https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main" `
+    -OutFile .env.playbook
 ```
 
-#### A clone [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#a-clone)
+A fetched `.env.playbook` is plain `KEY=value` lines to copy into the app's `.env`.
 
-When the app keeps its private dependencies by hand:
+#### Clone [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#clone)
 
-```bash
+```sh
 git clone https://git.wayne.edu/enterprise-apps/playbook.git
 ```
+
+The token is your own: `read_api` for curl, `read_repository` for clone and Composer; keep it out of the repo. Playbook is private, so on a 404 ask the Enterprise Applications team for read access.
 
 ### Use the values [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#use-the-values)
 

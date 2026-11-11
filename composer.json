@@ -91,6 +91,7 @@
             "@test",
             "@lint",
             "@analyse",
+            "@setting:check",
             "@site:agent-ready-check",
             "@docs:check",
             "@composer audit --locked"
@@ -98,10 +99,12 @@
         "site:agent-ready": "php bin/agent-ready.php",
         "site:agent-ready-check": "php bin/agent-ready.php --check",
         "docs": "php bin/docs-site.php",
-        "docs:check": "php bin/docs-site.php --check"
+        "docs:check": "php bin/docs-site.php --check",
+        "setting:check": "php bin/setting-sync.php --check"
     },
     "scripts-descriptions": {
-        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, check the agent-ready files, check the docs site, and audit the locked dependencies.",
+        "ci": "Run every CI check: validate the manifest, run the tests, lint with Pint, analyse with PHPStan, check the setting sync, check the agent-ready files, check the docs site, and audit the locked dependencies.",
+        "setting:check": "Fail when src/Support/Setting.php, the shared part of docs/guides/wsu-values.md, or setting-sync.json drifts from Playbook's bin/setting-sync.php.",
         "site:agent-ready": "Rewrite the Markdown twins, llms.txt, llms-full.txt, robots.txt and sitemap.xml in site/ (Squire's agent-ready kit).",
         "site:agent-ready-check": "Fail when the agent-ready files are stale, a page lacks its Markdown link, a prompt drifts from the docs, or the kit was edited here.",
         "docs": "Build the docs site from docs/ into site/docs/ (Squire's docs builder): render the pages, fill the generated environment reference, and stamp the current version.",

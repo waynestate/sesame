@@ -81,31 +81,45 @@
 </table></div>
 <p>Set them in the environment, as with every other setting. When the environment is empty, the private <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/playbook">waynestate/playbook</a> package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset.</p>
 <p>The playbook is never required. It sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone.</p>
-<h2 id="get-the-playbook">Get the <span class="docs-heading-tail"><span>Playbook</span><a class="docs-heading-link" aria-label="Link to this section" href="#get-the-playbook">#</a></span></h2>
-<p>Get it through Composer, fetch the values into a <code>.env.playbook</code> file, or clone the repository.</p>
+<!-- playbook:wsu-values:begin -->
+<h2 id="get-playbook-with-your-own-gitlab-token">Get Playbook with your own GitLab <span class="docs-heading-tail"><span>token</span><a class="docs-heading-link" aria-label="Link to this section" href="#get-playbook-with-your-own-gitlab-token">#</a></span></h2>
+<p>The repository is private, so every path below authenticates with a personal
+access token of your own. Pick the one that fits:</p>
 <h3 id="composer"><span class="docs-heading-tail"><span>Composer</span><a class="docs-heading-link" aria-label="Link to this section" href="#composer">#</a></span></h3>
-<p>Add the repository to your <code>composer.json</code>:</p>
+<p>Point Composer at the instance in your <code>composer.json</code>:</p>
 <pre tabindex="0"><code class="language-json">{
     &quot;repositories&quot;: [
-        { &quot;type&quot;: &quot;vcs&quot;, &quot;url&quot;: &quot;https://git.wayne.edu/enterprise-apps/playbook.git&quot; }
+        {
+            &quot;type&quot;: &quot;vcs&quot;,
+            &quot;url&quot;: &quot;https://git.wayne.edu/enterprise-apps/playbook.git&quot;
+        }
     ]
 }
 </code></pre>
-<p>then require it:</p>
-<pre tabindex="0"><code class="language-bash">composer require waynestate/playbook
+<p>Then require the package:</p>
+<pre tabindex="0"><code class="language-sh">composer require waynestate/playbook
 </code></pre>
-<p>Composer keeps the git.wayne.edu credentials it asks for in <code>auth.json</code> as an <code>http-basic</code> entry, so later installs do not ask again.</p>
-<h3 id="fetch-the-values">Fetch the <span class="docs-heading-tail"><span>values</span><a class="docs-heading-link" aria-label="Link to this section" href="#fetch-the-values">#</a></span></h3>
-<p><strong>curl (Linux, macOS).</strong></p>
-<pre tabindex="0"><code class="language-bash">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -o .env.playbook
+<p>The credential goes in <code>auth.json</code> (a <code>gitlab-token</code> entry for git.wayne.edu),
+never in the repository.</p>
+<h3 id="fetch-the-values-file-directly">Fetch the values file <span class="docs-heading-tail"><span>directly</span><a class="docs-heading-link" aria-label="Link to this section" href="#fetch-the-values-file-directly">#</a></span></h3>
+<pre tabindex="0"><code class="language-sh">curl --fail -H &quot;PRIVATE-TOKEN: $GITLAB_TOKEN&quot; \
+    &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; \
+    -o .env.playbook
 </code></pre>
-<p><strong>PowerShell (Windows).</strong></p>
-<pre tabindex="0"><code class="language-powershell">Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; -OutFile .env.playbook
+<pre tabindex="0"><code class="language-powershell">Invoke-WebRequest `
+    -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } `
+    -Uri &quot;https://git.wayne.edu/api/v4/projects/enterprise-apps%2Fplaybook/repository/files/playbook.env/raw?ref=main&quot; `
+    -OutFile .env.playbook
 </code></pre>
-<h3 id="a-clone">A <span class="docs-heading-tail"><span>clone</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-clone">#</a></span></h3>
-<p>When the app keeps its private dependencies by hand:</p>
-<pre tabindex="0"><code class="language-bash">git clone https://git.wayne.edu/enterprise-apps/playbook.git
+<p>A fetched <code>.env.playbook</code> is plain <code>KEY=value</code> lines to copy into the app's
+<code>.env</code>.</p>
+<h3 id="clone"><span class="docs-heading-tail"><span>Clone</span><a class="docs-heading-link" aria-label="Link to this section" href="#clone">#</a></span></h3>
+<pre tabindex="0"><code class="language-sh">git clone https://git.wayne.edu/enterprise-apps/playbook.git
 </code></pre>
+<p>The token is your own: <code>read_api</code> for curl, <code>read_repository</code> for clone and
+Composer; keep it out of the repo. Playbook is private, so on a 404 ask the
+Enterprise Applications team for read access.</p>
+<!-- playbook:wsu-values:end -->
 <h2 id="use-the-values">Use the <span class="docs-heading-tail"><span>values</span><a class="docs-heading-link" aria-label="Link to this section" href="#use-the-values">#</a></span></h2>
 <p>A fetched <code>.env.playbook</code> is plain <code>KEY=value</code> lines: copy the ones you need into your app's <code>.env</code> (or your Citadel environment). SESAME does not read <code>.env.playbook</code> itself.</p>
 <p>The token is your own: <code>read_api</code> for curl, <code>read_repository</code> for clone and Composer.</p>
@@ -124,7 +138,7 @@ $baseUrl = Setting::get('SESAME_CAS_BASE_URL'); // env, then playbook, else null
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/which-driver.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Which driver for my app?</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/raw-php.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Raw PHP</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#get-the-playbook">Get the Playbook</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#composer">Composer</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fetch-the-values">Fetch the values</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#a-clone">A clone</a></li><li class="docs-toc__item"><a href="#use-the-values">Use the values</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#get-playbook-with-your-own-gitlab-token">Get Playbook with your own GitLab token</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#composer">Composer</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#fetch-the-values-file-directly">Fetch the values file directly</a></li><li class="docs-toc__item docs-toc__item--sub"><a href="#clone">Clone</a></li><li class="docs-toc__item"><a href="#use-the-values">Use the values</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.4</span></span>

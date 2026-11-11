@@ -1,0 +1,9 @@
+{
+    "environment_only": [
+        "SESAME_OIDC_CLIENT_SECRET"
+    ],
+    "namespace": "Waynestate\\Sesame\\Support",
+    "section_sha256": "f565bee6921391c658cd552575f11cef7c47c772d2f8a5975099891d0982642a",
+    "setting_sha256": "808b3497384a8f763e6aae9a9a7de86deede76bf7e23877119c1e71233cac1eb",
+    "tool_sha256": "c384ef34ebeff91f29f4230b3c2f92f2cccd109914b302fba0bda510136bbb32"
+}
