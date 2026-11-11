@@ -95,9 +95,9 @@ and the CAS server issues tickets for it.</p>
 user lands on the service URL. <code>tests/CasDriverTest.php</code> covers the cas
 sign-in steps.</p>
 <h3 id="cas-validation-redirects-to-the-login-page-or-attributes-are-missing">CAS validation redirects to the login page, or attributes are <span class="docs-heading-tail"><span>missing</span><a class="docs-heading-link" aria-label="Link to this section" href="#cas-validation-redirects-to-the-login-page-or-attributes-are-missing">#</a></span></h3>
-<p><strong>Cause.</strong> <code>cas.protocol</code> is <code>3.0</code> against Academica, which is believed to
-redirect cookieless <code>/p3/serviceValidate</code> calls to the login page. Protocol
-<code>2.0</code> is the default for that reason.</p>
+<p><strong>Cause.</strong> <code>cas.protocol</code> is <code>3.0</code> against Academica, which answers a
+CAS 3.0 <code>/p3/serviceValidate</code> call with an <code>HTTP 302</code> to the login page.
+Protocol <code>2.0</code> is the default for that reason.</p>
 <p><strong>Fix.</strong> Keep <code>cas.protocol</code> at <code>2.0</code>. Set it to <code>3.0</code> only when a CAS server
 releases attributes on <code>/p3/serviceValidate</code>.</p>
 <p><strong>Check.</strong> Validate a ticket with <code>cas.protocol</code> at <code>2.0</code>; the identity comes

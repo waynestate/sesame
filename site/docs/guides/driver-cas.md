@@ -77,7 +77,9 @@ The service URL is the configured value only: the driver never reads the request
 
 ## Protocol [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#protocol)
 
-Protocol 2.0 is the default because Academica is believed to redirect cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol` to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
+Academica speaks CAS 2.0 only. A CAS 3.0 `/p3/serviceValidate` call comes back as `HTTP 302` to the login page, so SESAME defaults to protocol 2.0 and you should not set `cas.protocol` to `3.0` for Academica. Set `cas.protocol` to `3.0` when a CAS server releases attributes on `/p3/serviceValidate`.
+
+**Academica gives an AccessID, not a name.** A CAS 2.0 validation through Academica returns only the username (the AccessID); `cn`, `mail` and the other attributes are not released, so `Identity::attribute('cn')` is `null`. An app that wants a display name looks the person up in the directory (LDAP is the app's choice and needs `ext-ldap` at runtime; SESAME ships no directory helper) and falls back to the username when it cannot. The starter templates' `UserResolver` already falls back to the username when `cn` is absent.
 
 ## Renew [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#renew)
 

@@ -55,7 +55,7 @@ composer update onelogin/php-saml robrichards/xmlseclibs
 
 ### CAS validation redirects to the login page, or attributes are missing [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#cas-validation-redirects-to-the-login-page-or-attributes-are-missing)
 
-**Cause.** `cas.protocol` is `3.0` against Academica, which is believed to redirect cookieless `/p3/serviceValidate` calls to the login page. Protocol `2.0` is the default for that reason.
+**Cause.** `cas.protocol` is `3.0` against Academica, which answers a CAS 3.0 `/p3/serviceValidate` call with an `HTTP 302` to the login page. Protocol `2.0` is the default for that reason.
 
 **Fix.** Keep `cas.protocol` at `2.0`. Set it to `3.0` only when a CAS server releases attributes on `/p3/serviceValidate`.
 
