@@ -61,35 +61,35 @@
 <tbody>
 <tr>
 <td>Test suite (PHPUnit) on PHP 8.3.36</td>
-<td>2026-11-09</td>
-<td>8062938</td>
-<td>pass, 863 tests, 2517 assertions</td>
-<td>3.0 s</td>
+<td>2026-11-11</td>
+<td>85bdbf0</td>
+<td>pass, 926 tests, 3075 assertions</td>
+<td>3.6 s</td>
 </tr>
 <tr>
 <td>Test suite (PHPUnit) on PHP 8.4.27</td>
-<td>2026-11-09</td>
-<td>8062938</td>
-<td>pass, 863 tests, 2517 assertions</td>
-<td>3.1 s</td>
+<td>2026-11-11</td>
+<td>85bdbf0</td>
+<td>pass, 926 tests, 3075 assertions</td>
+<td>3.2 s</td>
 </tr>
 <tr>
 <td>Test suite (PHPUnit) on PHP 8.5.12</td>
-<td>2026-11-09</td>
-<td>8062938</td>
-<td>pass, 863 tests, 2517 assertions</td>
-<td>3.1 s</td>
+<td>2026-11-11</td>
+<td>85bdbf0</td>
+<td>pass, 926 tests, 3075 assertions</td>
+<td>3.3 s</td>
 </tr>
 <tr>
 <td>composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12</td>
-<td>2026-11-09</td>
-<td>8062938</td>
-<td>pass, all seven steps (tests: 863, 2517 assertions; PHPStan: no errors; audit: no advisories)</td>
-<td>10 s, after a composer install from a warm cache</td>
+<td>2026-11-11</td>
+<td>85bdbf0</td>
+<td>pass, all seven steps (tests: 926, 3075 assertions; PHPStan: no errors; audit: no advisories)</td>
+<td>12 s, after a composer install from a warm cache</td>
 </tr>
 </tbody>
 </table></div>
-<p>The run is on the 0.7.2 fixes, the commit just before the 0.7.2 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.</p>
+<p>The run is on the Unreleased work after 0.7.4: <code>php artisan sesame:check</code>, its front-page bench, and the <code>SameSite=Strict</code> warning in <code>NativeSession</code>. The commit that records it changes this page and its built copy only. The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.</p>
 <h2 id="the-proof-site">The proof <span class="docs-heading-tail"><span>site</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-proof-site">#</a></span></h2>
 <p>Proof runs against real Wayne State applications on a private site, <a rel="noopener" href="https://proof.apps.wayne.edu/sesame/">proof.apps.wayne.edu/sesame</a>, behind a Wayne State employee sign-in. It is the place to check the library end to end, against the real services, before anything ships.</p>
 <h2 id="tests"><span class="docs-heading-tail"><span>Tests</span><a class="docs-heading-link" aria-label="Link to this section" href="#tests">#</a></span></h2>

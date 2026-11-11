@@ -11,12 +11,12 @@ The name does double duty: this is where SESAME proves itself. There are two kin
 
 | Check | Date | Commit | Result | Duration |
 |---|---|---|---|---|
-| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.0 s |
-| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.1 s |
-| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-09 | 8062938 | pass, 863 tests, 2517 assertions | 3.1 s |
-| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-09 | 8062938 | pass, all seven steps (tests: 863, 2517 assertions; PHPStan: no errors; audit: no advisories) | 10 s, after a composer install from a warm cache |
+| Test suite (PHPUnit) on PHP 8.3.36 | 2026-11-11 | 85bdbf0 | pass, 926 tests, 3075 assertions | 3.6 s |
+| Test suite (PHPUnit) on PHP 8.4.27 | 2026-11-11 | 85bdbf0 | pass, 926 tests, 3075 assertions | 3.2 s |
+| Test suite (PHPUnit) on PHP 8.5.12 | 2026-11-11 | 85bdbf0 | pass, 926 tests, 3075 assertions | 3.3 s |
+| composer ci, the whole gate (validate, tests, Pint, PHPStan, agent-ready check, docs check, audit), Composer 2.11.1 on PHP 8.5.12 | 2026-11-11 | 85bdbf0 | pass, all seven steps (tests: 926, 3075 assertions; PHPStan: no errors; audit: no advisories) | 12 s, after a composer install from a warm cache |
 
-The run is on the 0.7.2 fixes, the commit just before the 0.7.2 release commit (which changes docs only). The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
+The run is on the Unreleased work after 0.7.4: `php artisan sesame:check`, its front-page bench, and the `SameSite=Strict` warning in `NativeSession`. The commit that records it changes this page and its built copy only. The durations are from Docker Desktop on Windows with the repo copied into a Docker volume, so file access is fast. To refresh it, rerun the Docker commands further down on the commit you want to record and update this table with the new date, sha and results. The private proof site was not run here: it needs a Wayne State employee sign-in and the real services.
 
 ## The proof site
 
