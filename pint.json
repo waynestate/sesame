@@ -5,6 +5,7 @@
     ],
     "notPath": [
         "bin/agent-ready.php",
-        "bin/docs-site.php"
+        "bin/docs-site.php",
+        "bin/setting-sync.php"
     ]
 }
