@@ -294,7 +294,9 @@ settings in `config/session.php`:
   missing, so the app would see no session on the return request and any login
   binding (S18) would fail for every user. `Lax` is what HELMET sets and what
   Laravel does by default. `NativeSession` warns about a missing or `None`
-  value, but it lets `Strict` through, so that mistake is yours to avoid. A cross-site `POST` carries no `Lax` cookie at all,
+  value, but it lets `Strict` through, so in raw PHP that mistake is yours to
+  avoid; in Laravel, `php artisan sesame:check` fails on it before a deploy
+  does. A cross-site `POST` carries no `Lax` cookie at all,
   which is the defense you want; that is why the `saml` driver's ACS parks
   the IdP's POST without a session and sends the browser back to the login
   URL with a 303, where the `Lax` cookie is sent again (S35).
@@ -1342,6 +1344,17 @@ Config keys (in `config/sesame.php`):
 | `routes` | `SESAME_ROUTES` | `true` | Register the login, logout and status routes. |
 | `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
+
+**Check before a deploy.** SESAME rides on the app's own session in Laravel,
+so a wrong `config/session.php` breaks sign-in without an error. Run
+`php artisan sesame:check` in the deploy job: it prints one `[OK]`, `[WARN]`
+or `[FAIL]` line each for the driver, the user resolver, the session driver,
+HttpOnly, SameSite (`Strict` fails), Secure (`false` fails in production) and
+the session lifetime against SESAME's idle timeout, and exits `1` on any
+failure (`--strict` fails on warnings too). It reads config only: no sign-in,
+no call to the identity provider, no URL or secret in the output. Think of it
+as the locksmith's visit before opening day. The table of what each line
+checks is in the Laravel guide, "Check before a deploy".
 
 The routes, when `routes` is true:
 

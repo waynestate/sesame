@@ -333,7 +333,9 @@ makes both choices for you (`SessionHardening::apply()`, called by
 
 **Check.** Sign in end to end; the return request carries the cookie and the
 login completes. A cross-site `POST` carries no `Lax` cookie at all, which is
-the defense you want.
+the defense you want. In Laravel, `php artisan sesame:check` fails on
+`SameSite=Strict` and on the `array` session driver (which loses the session
+the same way), so a deploy job can catch both before users do.
 
 ### A stale session is signed out on the spot
 

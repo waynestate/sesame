@@ -31,6 +31,7 @@ use Waynestate\Sesame\Drivers\Psr16ReplayGuard;
 use Waynestate\Sesame\Drivers\ReplayGuard;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Helmet\Metrics\MetricsStorage;
+use Waynestate\Sesame\Laravel\Console\CheckCommand;
 use Waynestate\Sesame\Laravel\Http\SesameController;
 use Waynestate\Sesame\Metrics\LoginMetrics;
 use Waynestate\Sesame\Metrics\PrometheusLoginMetrics;
@@ -124,6 +125,10 @@ class SesameServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../../config/sesame.php' => $this->app->configPath('sesame.php'),
         ], 'sesame-config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([CheckCommand::class]);
+        }
 
         // The sesame guard driver: auth.driver = "sesame" gives the app's
         // guards a view of the SESAME session. It holds no rules of its own;

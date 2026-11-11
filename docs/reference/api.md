@@ -363,7 +363,7 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 ## Where the rest lives
 
 - The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `SamlDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](drivers.md) page.
-- The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`), documented in the [Laravel guide](../guides/laravel.md).
+- The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`, and the `sesame:check` command, `Console\CheckCommand`), documented in the [Laravel guide](../guides/laravel.md).
 - The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](../guides/moving-from-wayne-cas.md).
 - The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](../guides/moving-off-wayne-auth.md).
 

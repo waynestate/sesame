@@ -194,7 +194,7 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 
 **Fix.** Keep the cookie `SameSite=Lax`, never `Strict`. In raw PHP HELMET makes both choices for you (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel the default is `Lax`, and the settings are `SESSION_COOKIE=__Host-wsu-session`, `SESSION_SECURE_COOKIE=true`, `SESSION_PATH=/` with `SESSION_DOMAIN` empty in `config/session.php`.
 
-**Check.** Sign in end to end; the return request carries the cookie and the login completes. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want.
+**Check.** Sign in end to end; the return request carries the cookie and the login completes. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want. In Laravel, `php artisan sesame:check` fails on `SameSite=Strict` and on the `array` session driver (which loses the session the same way), so a deploy job can catch both before users do.
 
 ### A stale session is signed out on the spot [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-stale-session-is-signed-out-on-the-spot)
 

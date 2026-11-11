@@ -173,6 +173,35 @@ The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the
 
 Set `sesame.metrics.enabled` (env `SESAME_METRICS_ENABLED`) to `true` and the adapter counts every finished sign-in as `sesame_logins_total`, by driver and outcome. It writes to the app's `Prometheus\Storage\Adapter` binding when there is one, else to the store HELMET's request metrics use, so turn those on too (`HELMET_METRICS_ENABLED=true` and `HELMET_METRICS_STORAGE`) and the counter shows on HELMET's `/metrics`. The store is opened on the first sign-in of a request, never before. Off by default. See [Counting sign-ins](metrics.md).
 
+## Check before a deploy
+
+In Laravel, SESAME rides on the app's own session, so `config/session.php` decides whether sign-in works at all. `php artisan sesame:check` reads those settings and SESAME's own, prints one line for each, and exits `1` when anything fails, so a deploy job can run it first:
+
+```
+$ php artisan sesame:check
+[OK] Driver: cas is configured.
+[OK] User resolver: set.
+[OK] Session driver: file.
+[OK] Session cookie: HttpOnly.
+[FAIL] Session cookie: SameSite=Strict drops the cookie on the identity provider's return, so every sign-in fails; use lax.
+[OK] Session cookie: Secure.
+[OK] Session lifetime: 120 minutes, SESAME's idle timeout is 120.
+
+6 ok, 0 warnings, 1 failure.
+```
+
+| Line | OK | WARN | FAIL |
+|---|---|---|---|
+| Driver | the driver builds from `config/sesame.php` | | it does not (the line gives the reason; the fake driver outside local, development and testing is one) |
+| User resolver | `sesame.user_resolver` names a class that implements `Waynestate\Sesame\UserResolver` | | it is empty, or names something else |
+| Session driver | `file`, `database`, `redis` or any other store | `cookie` (the whole session lives in the browser) | `array` (the session ends with the request, so a sign-in never sticks) |
+| HttpOnly | `session.http_only` is `true` | | anything else |
+| SameSite | `lax` | `none`, or no value | `strict` (the identity provider's return is a cross-site `GET`, which drops a `Strict` cookie) |
+| Secure | `true` | unset (it follows each request's scheme), or `false` outside production | `false` in production |
+| Session lifetime | `session.lifetime` is at least `sesame.session.idle_minutes`, or the session ends when the browser closes | Laravel drops a quiet session before SESAME's idle timeout would | |
+
+Warnings exit `0`; `--strict` makes them fail too. The command only reads config and builds the driver: it never signs anyone in, calls the identity provider or prints a URL, key or secret (a URL an error quotes back reads `(a URL)`), so it is safe in CI logs. Run it with the deploy's real environment: on the command line there is no request, so the cas driver's return URL comes from `APP_URL`, and an `http://` (or missing) `APP_URL` fails the Driver line just as it would fail the first sign-in. A raw PHP app has no command; `NativeSession` checks HttpOnly, Secure and SameSite at run time and warns once per request, but it lets `Strict` through (see [Raw PHP](raw-php.md)).
+
 ## Related
 
 - [Quick start](quick-start.md)

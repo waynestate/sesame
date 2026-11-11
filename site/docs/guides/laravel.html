@@ -376,6 +376,74 @@
 <p>The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the authentication events in its normal log channels with no extra wiring: the container's <code>Psr\Log\LoggerInterface</code> binding is used when there is one. Set <code>sesame.log</code> (env <code>SESAME_LOG</code>) to <code>false</code> to turn the events off; the default is <code>true</code>. The events, their context and what is never logged are described in <a href="raw-php.html">Raw PHP</a>, &quot;Logging&quot;.</p>
 <h2 id="metrics"><span class="docs-heading-tail"><span>Metrics</span><a class="docs-heading-link" aria-label="Link to this section" href="#metrics">#</a></span></h2>
 <p>Set <code>sesame.metrics.enabled</code> (env <code>SESAME_METRICS_ENABLED</code>) to <code>true</code> and the adapter counts every finished sign-in as <code>sesame_logins_total</code>, by driver and outcome. It writes to the app's <code>Prometheus\Storage\Adapter</code> binding when there is one, else to the store HELMET's request metrics use, so turn those on too (<code>HELMET_METRICS_ENABLED=true</code> and <code>HELMET_METRICS_STORAGE</code>) and the counter shows on HELMET's <code>/metrics</code>. The store is opened on the first sign-in of a request, never before. Off by default. See <a href="metrics.html">Counting sign-ins</a>.</p>
+<h2 id="check-before-a-deploy">Check before a <span class="docs-heading-tail"><span>deploy</span><a class="docs-heading-link" aria-label="Link to this section" href="#check-before-a-deploy">#</a></span></h2>
+<p>In Laravel, SESAME rides on the app's own session, so <code>config/session.php</code> decides whether sign-in works at all. <code>php artisan sesame:check</code> reads those settings and SESAME's own, prints one line for each, and exits <code>1</code> when anything fails, so a deploy job can run it first:</p>
+<pre tabindex="0"><code>$ php artisan sesame:check
+[OK] Driver: cas is configured.
+[OK] User resolver: set.
+[OK] Session driver: file.
+[OK] Session cookie: HttpOnly.
+[FAIL] Session cookie: SameSite=Strict drops the cookie on the identity provider's return, so every sign-in fails; use lax.
+[OK] Session cookie: Secure.
+[OK] Session lifetime: 120 minutes, SESAME's idle timeout is 120.
+
+6 ok, 0 warnings, 1 failure.
+</code></pre>
+<div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Line</th>
+<th>OK</th>
+<th>WARN</th>
+<th>FAIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Driver</td>
+<td>the driver builds from <code>config/sesame.php</code></td>
+<td></td>
+<td>it does not (the line gives the reason; the fake driver outside local, development and testing is one)</td>
+</tr>
+<tr>
+<td>User resolver</td>
+<td><code>sesame.user_resolver</code> names a class that implements <code>Waynestate\Sesame\UserResolver</code></td>
+<td></td>
+<td>it is empty, or names something else</td>
+</tr>
+<tr>
+<td>Session driver</td>
+<td><code>file</code>, <code>database</code>, <code>redis</code> or any other store</td>
+<td><code>cookie</code> (the whole session lives in the browser)</td>
+<td><code>array</code> (the session ends with the request, so a sign-in never sticks)</td>
+</tr>
+<tr>
+<td>HttpOnly</td>
+<td><code>session.http_only</code> is <code>true</code></td>
+<td></td>
+<td>anything else</td>
+</tr>
+<tr>
+<td>SameSite</td>
+<td><code>lax</code></td>
+<td><code>none</code>, or no value</td>
+<td><code>strict</code> (the identity provider's return is a cross-site <code>GET</code>, which drops a <code>Strict</code> cookie)</td>
+</tr>
+<tr>
+<td>Secure</td>
+<td><code>true</code></td>
+<td>unset (it follows each request's scheme), or <code>false</code> outside production</td>
+<td><code>false</code> in production</td>
+</tr>
+<tr>
+<td>Session lifetime</td>
+<td><code>session.lifetime</code> is at least <code>sesame.session.idle_minutes</code>, or the session ends when the browser closes</td>
+<td>Laravel drops a quiet session before SESAME's idle timeout would</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>Warnings exit <code>0</code>; <code>--strict</code> makes them fail too. The command only reads config and builds the driver: it never signs anyone in, calls the identity provider or prints a URL, key or secret (a URL an error quotes back reads <code>(a URL)</code>), so it is safe in CI logs. Run it with the deploy's real environment: on the command line there is no request, so the cas driver's return URL comes from <code>APP_URL</code>, and an <code>http://</code> (or missing) <code>APP_URL</code> fails the Driver line just as it would fail the first sign-in. A raw PHP app has no command; <code>NativeSession</code> checks HttpOnly, Secure and SameSite at run time and warns once per request, but it lets <code>Strict</code> through (see <a href="raw-php.html">Raw PHP</a>).</p>
 <h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>
 <ul>
 <li><a href="quick-start.html">Quick start</a></li>
@@ -389,7 +457,7 @@
     </main>
     <nav class="docs-pager" aria-label="Pages"><a class="docs-pager__link" href="../../docs/guides/step-up.html"><span class="docs-pager__dir">Previous</span><span class="docs-pager__title">Step-up (authentication context)</span></a><a class="docs-pager__link docs-pager__link--next" href="../../docs/guides/metrics.html"><span class="docs-pager__dir">Next</span><span class="docs-pager__title">Counting sign-ins (metrics)</span></a></nav>
   </div>
-  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install-and-publish">Install and publish</a></li><li class="docs-toc__item"><a href="#config">Config</a></li><li class="docs-toc__item"><a href="#routes">Routes</a></li><li class="docs-toc__item"><a href="#middleware">Middleware</a></li><li class="docs-toc__item"><a href="#reading-the-user">Reading the user</a></li><li class="docs-toc__item"><a href="#http-client-and-caches">HTTP client and caches</a></li><li class="docs-toc__item"><a href="#logging">Logging</a></li><li class="docs-toc__item"><a href="#metrics">Metrics</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
+  <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install-and-publish">Install and publish</a></li><li class="docs-toc__item"><a href="#config">Config</a></li><li class="docs-toc__item"><a href="#routes">Routes</a></li><li class="docs-toc__item"><a href="#middleware">Middleware</a></li><li class="docs-toc__item"><a href="#reading-the-user">Reading the user</a></li><li class="docs-toc__item"><a href="#http-client-and-caches">HTTP client and caches</a></li><li class="docs-toc__item"><a href="#logging">Logging</a></li><li class="docs-toc__item"><a href="#metrics">Metrics</a></li><li class="docs-toc__item"><a href="#check-before-a-deploy">Check before a deploy</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
   <span>Documents SESAME <span data-docs-version>0.7.4</span></span>

@@ -321,7 +321,7 @@ function sesame_saml_metadata(SamlDriver $driver): never
 <h2 id="where-the-rest-lives">Where the rest <span class="docs-heading-tail"><span>lives</span><a class="docs-heading-link" aria-label="Link to this section" href="#where-the-rest-lives">#</a></span></h2>
 <ul>
 <li>The driver implementations: <code>Waynestate\Sesame\Drivers</code> (<code>CasDriver</code>, <code>FakeDriver</code>, <code>GatewayDriver</code>, <code>OAuth2Driver</code>, <code>OidcDriver</code>, <code>SamlDriver</code>, <code>ReplayGuard</code>, <code>Psr16ReplayGuard</code>), documented on the <a href="drivers.html">Drivers</a> page.</li>
-<li>The Laravel adapter: <code>Waynestate\Sesame\Laravel</code> (<code>SesameServiceProvider</code>, <code>SesameGuard</code>, <code>Authenticate</code>, <code>RequireMfa</code>, <code>RequireAuthContext</code>, <code>LaravelSession</code>, <code>LaravelPsr16Cache</code>), documented in the <a href="../guides/laravel.html">Laravel guide</a>.</li>
+<li>The Laravel adapter: <code>Waynestate\Sesame\Laravel</code> (<code>SesameServiceProvider</code>, <code>SesameGuard</code>, <code>Authenticate</code>, <code>RequireMfa</code>, <code>RequireAuthContext</code>, <code>LaravelSession</code>, <code>LaravelPsr16Cache</code>, and the <code>sesame:check</code> command, <code>Console\CheckCommand</code>), documented in the <a href="../guides/laravel.html">Laravel guide</a>.</li>
 <li>The wayne-cas compatibility layer: <code>Waynestate\Sesame\WayneCas</code>, documented in <a href="../guides/moving-from-wayne-cas.html">Moving from wayne-cas</a>.</li>
 <li>The Wayne Auth bridge: <code>Waynestate\Sesame\WayneAuth\WayneAuth</code> (deprecated on arrival), documented in <a href="../guides/moving-off-wayne-auth.html">Moving off Wayne Auth</a>.</li>
 </ul>

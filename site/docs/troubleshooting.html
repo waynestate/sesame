@@ -288,7 +288,9 @@ makes both choices for you (<code>SessionHardening::apply()</code>, called by
 <code>SESSION_PATH=/</code> with <code>SESSION_DOMAIN</code> empty in <code>config/session.php</code>.</p>
 <p><strong>Check.</strong> Sign in end to end; the return request carries the cookie and the
 login completes. A cross-site <code>POST</code> carries no <code>Lax</code> cookie at all, which is
-the defense you want.</p>
+the defense you want. In Laravel, <code>php artisan sesame:check</code> fails on
+<code>SameSite=Strict</code> and on the <code>array</code> session driver (which loses the session
+the same way), so a deploy job can catch both before users do.</p>
 <h3 id="a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the <span class="docs-heading-tail"><span>spot</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-stale-session-is-signed-out-on-the-spot">#</a></span></h3>
 <p><strong>Cause.</strong> Every signed-in session has two clocks: the idle timeout (default
 <code>session.idle_minutes</code> <code>120</code>) and the absolute lifetime (default
