@@ -62,7 +62,7 @@ assertions.
 
 | Setting | Config key | Meaning |
 |---|---|---|
-| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL. |
+| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
 | `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
@@ -547,14 +547,22 @@ Config keys:
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
-| `cas.service_url` | Yes | none | Where the server sends the user back to. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL (`http://localhost` only in a local environment), including the path the CAS server lives under (for Academica, `/cas`). |
+| `cas.service_url` | Yes | none | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 | `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
 
 The service URL is the configured value only: the driver never reads the
 request's Host or X-Forwarded-* headers to build it.
+
+Both addresses must be https, with one exception for a developer's own machine:
+when the app environment is local (`local`, `development`, `dev`, `testing` or
+`test`, the same list the fake driver checks), plain `http://localhost` and
+`http://127.0.0.1` are accepted too. In any other environment, production
+included, they are refused with the same `must be an absolute https:// URL`
+error as before. In Laravel the environment is `APP_ENV`; in raw PHP it is the
+`environment` config key.
 
 Protocol 2.0 is the default because Academica is believed to redirect
 cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol`
@@ -1295,8 +1303,8 @@ Config keys (in `config/sesame.php`):
 | Key | Env | Default | Meaning |
 |---|---|---|---|
 | `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in "The oidc driver (Entra sign-in)", the saml keys in "The saml driver (SAML 2.0 sign-in)". |
-| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
-| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
+| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
+| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
@@ -2078,6 +2086,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
 - CI pins Preflight 0.8.0.
+- Changed: the cas driver accepts a plain `http://localhost` or `http://127.0.0.1` service URL (`cas.service_url`) and CAS server address (`cas.base_url`) when the app environment is local, so a developer can sign in through CAS on their own machine without a TLS proxy (D-089). Local is the fake driver's list (`local`, `development`, `dev`, `testing`, `test`, now shared as `Waynestate\Sesame\Drivers\LocalEnvironments`); `DriverFactory::make()` passes the config's `environment` (in Laravel, `APP_ENV`) as `CasDriver`'s new last constructor argument, which defaults to `production`. Every other environment refuses those addresses with the same `must be an absolute https:// URL` error as before, and http to any other host, `[::1]` and a URL with a user name or password stay refused everywhere. The 0.6 upgrade note's "plain http is accepted only for a localhost or 127.0.0.1 service URL" was true of `ReturnTo` only; it now holds for the cas driver too, in a local environment.
 - Added: an opt-in sign-in counter (ADR-0011, metrics speak Prometheus). `Sesame` takes an optional seventh argument, a `Waynestate\Sesame\Metrics\LoginMetrics`, and `login()` counts every sign-in that finishes as `success`, `failed`, `refused` or `unavailable` (the identity provider was down), labelled by driver; a trip to the provider is not counted. `PrometheusLoginMetrics` writes `sesame_logins_total{driver, outcome}` into a promphp store, so on the store HELMET's request metrics use it shows on HELMET's `/metrics` behind HELMET's token; SESAME serves no endpoint. Labels are bounded (anything else is `other`), and no label carries a username, IP or session ID. The Laravel adapter turns it on with `SESAME_METRICS_ENABLED=true` (off by default) and counts into the app's `Prometheus\Storage\Adapter` binding, else HELMET's `helmet.metrics` store, opened on the first sign-in only; `WayneAuth::boot()` takes the counter as a new last argument. A counter that fails never changes a sign-in: it logs one `sesame.metrics_failed` warning, with a `reason` only when SESAME's own setup is the cause, never the store's error. New guide: Counting sign-ins (metrics). Nothing changes for an app that does not turn it on.
 - Added: a Grafana dashboard for the sign-in counter, `docs/grafana/sesame.json` ("SESAME sign-ins", import it like HELMET's fleet dashboard): sign-ins, success rate, identity provider outages (red above zero) and refusals, per minute by outcome and by driver, outages by app, the failed share by driver, and a table by app. Checked against a local Prometheus and Grafana with two simulated apps counting through SESAME into HELMET's store; `GrafanaDashboardTest` keeps every query on `sesame_logins_total`, the `job` and `instance` variables and the outcomes SESAME counts.
 - Changed: dev dependencies add HELMET ^1.4 (locked 1.4.1) and promphp ^2.15 (locked 2.15.1), so the metrics tests count into HELMET's real SQLite store and render its `/metrics`; `promphp/prometheus_client_php` is suggested for the counter. No runtime dependency changes.
@@ -2403,14 +2412,16 @@ Then build the Sesame facade with the driver and the same session, as in the Raw
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
-| `cas.service_url` | Yes | none | Where the server sends the user back to. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL (`http://localhost` only in a local environment), including the path the CAS server lives under (for Academica, `/cas`). |
+| `cas.service_url` | Yes | none | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 | `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
 | `cas.require_pending_login` | No | `true` | Bind each sign-in to the browser that started it (blocks login CSRF). Off only for an app that must accept a ticket for a login it did not start, a link from the CAS login page. |
 
 The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-\* headers to build it.
+
+Both addresses must be https, with one exception for a developer's own machine: when the app environment is local (`local`, `development`, `dev`, `testing` or `test`, the same list the fake driver checks), plain `http://localhost` and `http://127.0.0.1` are accepted too. In any other environment, production included, they are refused with the same `must be an absolute https:// URL` error as before. In Laravel the environment is `APP_ENV`; in raw PHP it is the `environment` config key.
 
 ### Protocol [#](https://sesame.apps.wayne.edu/docs/guides/driver-cas.html#protocol)
 
@@ -3178,8 +3189,8 @@ Config keys (in `config/sesame.php`):
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
 | `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html), the saml keys in [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html). |
-| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
-| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
+| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
+| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
@@ -4383,7 +4394,7 @@ Open sesame, minus the incantation. Four settings carry Wayne State's shared val
 
 | Setting | Config key | Meaning |
 | --- | --- | --- |
-| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL. |
+| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
 | `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
@@ -5070,11 +5081,11 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | Variable | Meaning | Default | Read in |
 | --- | --- | --- | --- |
 | SESAME_CAS_ASSUME_MFA | Count a successful validation as an MFA sign-in; on only when the CAS server enforces MFA for every sign-in | `false` | config/sesame.php |
-| SESAME_CAS_BASE_URL | The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is `/cas`) | none (Playbook supplies the WSU value) | config/sesame.php |
+| SESAME_CAS_BASE_URL | The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is `/cas`); https, or `http://localhost` in a local environment | none (Playbook supplies the WSU value) | config/sesame.php |
 | SESAME_CAS_PROTOCOL | The CAS protocol version; set `3.0` when the server releases attributes on `/p3/serviceValidate` | `2.0` | config/sesame.php |
 | SESAME_CAS_RENEW | Send `renew=true`; leave off against Academica, which issues no ticket for it | `false` | config/sesame.php |
 | SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
-| SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them | none (the app's `/login` route) | config/sesame.php |
+| SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them; https, or `http://localhost` or `http://127.0.0.1` in a local environment | none (the app's `/login` route) | config/sesame.php |
 | SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc`, `saml` (opt-in) or `fake` | `cas` | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |
 | SESAME_GATEWAY_ALGORITHM | The assertion's signature algorithm (`ES256`, `RS256` or `EdDSA`) | `ES256` | config/sesame.php |
@@ -5162,7 +5173,7 @@ Four settings carry Wayne State's shared values: where the CAS server lives, and
 
 | Setting | Config key | Meaning |
 | --- | --- | --- |
-| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL. |
+| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
 | `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
@@ -5214,8 +5225,8 @@ Danger
 
 | Key | Required | Default | Meaning |
 | --- | --- | --- | --- |
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
-| `cas.service_url` | Yes | none | Where the server sends the user back to. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL (`http://localhost` only in a local environment), including the path the CAS server lives under (for Academica, `/cas`). |
+| `cas.service_url` | Yes | none | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 | `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
@@ -5399,7 +5410,7 @@ CAS 2.0 against Academica by default.
 | Value | Exact |
 | --- | --- |
 | Protocol | `2.0` by default; only `2.0` or `3.0` are accepted |
-| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs |
+| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (the fake driver's list) |
 | Ticket | An `ST-` service ticket, at most 256 characters (`^ST-[A-Za-z0-9._\-]{1,253}$`) |
 | Validation path | `/serviceValidate` for 2.0, `/p3/serviceValidate` for 3.0 |
 | Login query | `service=` always; `renew=true` when `renew` is on |

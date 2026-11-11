@@ -95,14 +95,20 @@ final class CasDriver implements Driver
         ?ClockInterface $clock = null,
         ?SessionPort $session = null,
         bool $requirePendingLogin = true,
+        string $environment = 'production',
     ) {
-        $this->base = self::absoluteHttps($baseUrl, 'cas.base_url');
+        // Plain http to localhost or 127.0.0.1 is for a developer's own
+        // machine, so it is accepted only in a local environment (the fake
+        // driver's allowlist). Leaving the environment out means production.
+        $local = LocalEnvironments::isLocal($environment);
+
+        $this->base = self::absoluteHttps($baseUrl, 'cas.base_url', $local);
 
         if (str_ends_with($this->base, '/')) {
             $this->base = substr($this->base, 0, -1);
         }
 
-        self::absoluteHttps($serviceUrl, 'cas.service_url');
+        self::absoluteHttps($serviceUrl, 'cas.service_url', $local);
 
         if (! in_array($protocol, ['3.0', '2.0'], true)) {
             throw new InvalidConfig(sprintf(
@@ -448,14 +454,22 @@ final class CasDriver implements Driver
 
     /**
      * The URL must be an absolute https:// URL with a host and no credentials.
+     *
+     * In a local environment, http://localhost and http://127.0.0.1 pass too.
+     * Everywhere else they get the same refusal as any other plain http URL.
      */
-    private static function absoluteHttps(string $url, string $key): string
+    private static function absoluteHttps(string $url, string $key, bool $local): string
     {
         $parts = parse_url($url);
+        $scheme = is_array($parts) ? ($parts['scheme'] ?? '') : '';
+        $host = is_array($parts) ? strtolower($parts['host'] ?? '') : '';
+        $localHttp = $local
+            && $scheme === 'http'
+            && in_array($host, ['localhost', '127.0.0.1'], true);
 
         if ($parts === false
-            || ($parts['scheme'] ?? null) !== 'https'
-            || ($parts['host'] ?? '') === ''
+            || ($scheme !== 'https' && ! $localHttp)
+            || $host === ''
             || array_key_exists('user', $parts)
             || array_key_exists('pass', $parts)
         ) {

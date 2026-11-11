@@ -11,7 +11,7 @@ Open sesame, minus the incantation. Four settings carry Wayne State's shared val
 
 | Setting | Config key | Meaning |
 |---|---|---|
-| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL. |
+| `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
 | `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |

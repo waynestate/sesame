@@ -118,7 +118,7 @@
 </tr>
 <tr>
 <td>SESAME_CAS_BASE_URL</td>
-<td>The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is <code>/cas</code>)</td>
+<td>The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is <code>/cas</code>); https, or <code>http://localhost</code> in a local environment</td>
 <td>none (Playbook supplies the WSU value)</td>
 <td>config/sesame.php</td>
 </tr>
@@ -142,7 +142,7 @@
 </tr>
 <tr>
 <td>SESAME_CAS_SERVICE_URL</td>
-<td>The URL the CAS server sends the user back to after verifying them</td>
+<td>The URL the CAS server sends the user back to after verifying them; https, or <code>http://localhost</code> or <code>http://127.0.0.1</code> in a local environment</td>
 <td>none (the app's <code>/login</code> route)</td>
 <td>config/sesame.php</td>
 </tr>
@@ -643,7 +643,7 @@
 <tr>
 <td><code>SESAME_CAS_BASE_URL</code></td>
 <td><code>cas.base_url</code></td>
-<td>The CAS server, an absolute https:// URL.</td>
+<td>The CAS server, an absolute https:// URL (<code>http://localhost</code> or <code>http://127.0.0.1</code> only in a local environment).</td>
 </tr>
 <tr>
 <td><code>SESAME_GATEWAY_ISSUER</code></td>
@@ -744,13 +744,13 @@ SESAME_OIDC_POST_LOGOUT_REDIRECT_URI=https://app.example.test/
 <td><code>cas.base_url</code></td>
 <td>Yes</td>
 <td>none</td>
-<td>The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, <code>/cas</code>).</td>
+<td>The CAS server, an absolute https:// URL (<code>http://localhost</code> only in a local environment), including the path the CAS server lives under (for Academica, <code>/cas</code>).</td>
 </tr>
 <tr>
 <td><code>cas.service_url</code></td>
 <td>Yes</td>
 <td>none</td>
-<td>Where the server sends the user back to.</td>
+<td>Where the server sends the user back to: an absolute https:// URL, or <code>http://localhost</code> or <code>http://127.0.0.1</code> in a local environment.</td>
 </tr>
 <tr>
 <td><code>cas.protocol</code></td>

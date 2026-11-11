@@ -87,7 +87,7 @@ CAS 2.0 against Academica by default.
 | Value | Exact |
 |---|---|
 | Protocol | `2.0` by default; only `2.0` or `3.0` are accepted |
-| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs |
+| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (the fake driver's list) |
 | Ticket | An `ST-` service ticket, at most 256 characters (`^ST-[A-Za-z0-9._\-]{1,253}$`) |
 | Validation path | `/serviceValidate` for 2.0, `/p3/serviceValidate` for 3.0 |
 | Login query | `service=` always; `renew=true` when `renew` is on |

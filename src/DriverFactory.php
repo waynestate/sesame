@@ -84,6 +84,7 @@ final class DriverFactory
                 $clock,
                 $session,
                 $config->casRequirePendingLogin,
+                $config->environment,
             ),
             'gateway' => new GatewayDriver(
                 $config->gatewayHeader ?? 'X-Sesame-Assertion',

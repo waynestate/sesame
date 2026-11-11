@@ -27,8 +27,8 @@ Config keys (in `config/sesame.php`):
 | Key | Env | Default | Meaning |
 | --- | --- | --- | --- |
 | `driver` | `SESAME_DRIVER` | `cas` | `cas`, `gateway`, `oauth2`, `oidc`, `saml` or `fake`. The oidc keys are in [The oidc driver](https://sesame.apps.wayne.edu/docs/guides/driver-oidc.html), the saml keys in [The saml driver](https://sesame.apps.wayne.edu/docs/guides/driver-saml.html). |
-| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL. |
-| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to. |
+| `cas.base_url` | `SESAME_CAS_BASE_URL` | none | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
+| `cas.service_url` | `SESAME_CAS_SERVICE_URL` | the app's `/login` route | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |

@@ -63,14 +63,16 @@ Then build the Sesame facade with the driver and the same session, as in the Raw
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, `/cas`). |
-| `cas.service_url` | Yes | none | Where the server sends the user back to. |
+| `cas.base_url` | Yes | none | The CAS server, an absolute https:// URL (`http://localhost` only in a local environment), including the path the CAS server lives under (for Academica, `/cas`). |
+| `cas.service_url` | Yes | none | Where the server sends the user back to: an absolute https:// URL, or `http://localhost` or `http://127.0.0.1` in a local environment. |
 | `cas.protocol` | No | `2.0` | `3.0` or `2.0`. |
 | `cas.renew` | No | `false` | Send `renew` on login and validation, so the CAS server requires a fresh, direct login. |
 | `cas.assume_mfa` | No | `false` | A successful validation counts as an MFA sign-in: the identity's `amr` includes `mfa`. On only when the CAS server enforces MFA for every sign-in. |
 | `cas.require_pending_login` | No | `true` | Bind each sign-in to the browser that started it (blocks login CSRF). Off only for an app that must accept a ticket for a login it did not start, a link from the CAS login page. |
 
 The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-* headers to build it.
+
+Both addresses must be https, with one exception for a developer's own machine: when the app environment is local (`local`, `development`, `dev`, `testing` or `test`, the same list the fake driver checks), plain `http://localhost` and `http://127.0.0.1` are accepted too. In any other environment, production included, they are refused with the same `must be an absolute https:// URL` error as before. In Laravel the environment is `APP_ENV`; in raw PHP it is the `environment` config key.
 
 ## Protocol
 

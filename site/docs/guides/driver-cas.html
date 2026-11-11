@@ -107,13 +107,13 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, nu
 <td><code>cas.base_url</code></td>
 <td>Yes</td>
 <td>none</td>
-<td>The CAS server, an absolute https:// URL, including the path the CAS server lives under (for Academica, <code>/cas</code>).</td>
+<td>The CAS server, an absolute https:// URL (<code>http://localhost</code> only in a local environment), including the path the CAS server lives under (for Academica, <code>/cas</code>).</td>
 </tr>
 <tr>
 <td><code>cas.service_url</code></td>
 <td>Yes</td>
 <td>none</td>
-<td>Where the server sends the user back to.</td>
+<td>Where the server sends the user back to: an absolute https:// URL, or <code>http://localhost</code> or <code>http://127.0.0.1</code> in a local environment.</td>
 </tr>
 <tr>
 <td><code>cas.protocol</code></td>
@@ -142,6 +142,7 @@ $driver = DriverFactory::make($config, $http, new Psr17Factory(), null, null, nu
 </tbody>
 </table></div>
 <p>The service URL is the configured value only: the driver never reads the request's Host or X-Forwarded-* headers to build it.</p>
+<p>Both addresses must be https, with one exception for a developer's own machine: when the app environment is local (<code>local</code>, <code>development</code>, <code>dev</code>, <code>testing</code> or <code>test</code>, the same list the fake driver checks), plain <code>http://localhost</code> and <code>http://127.0.0.1</code> are accepted too. In any other environment, production included, they are refused with the same <code>must be an absolute https:// URL</code> error as before. In Laravel the environment is <code>APP_ENV</code>; in raw PHP it is the <code>environment</code> config key.</p>
 <h2 id="protocol"><span class="docs-heading-tail"><span>Protocol</span><a class="docs-heading-link" aria-label="Link to this section" href="#protocol">#</a></span></h2>
 <p>Academica speaks CAS 2.0 only. A CAS 3.0 <code>/p3/serviceValidate</code> call comes back as <code>HTTP 302</code> to the login page, so SESAME defaults to protocol 2.0 and you should not set <code>cas.protocol</code> to <code>3.0</code> for Academica. Set <code>cas.protocol</code> to <code>3.0</code> when a CAS server releases attributes on <code>/p3/serviceValidate</code>.</p>
 <p><strong>Academica gives an AccessID, not a name.</strong> A CAS 2.0 validation through Academica returns only the username (the AccessID); <code>cn</code>, <code>mail</code> and the other attributes are not released, so <code>Identity::attribute('cn')</code> is <code>null</code>. An app that wants a display name looks the person up in the directory (LDAP is the app's choice and needs <code>ext-ldap</code> at runtime; SESAME ships no directory helper) and falls back to the username when it cannot. The starter templates' <code>UserResolver</code> already falls back to the username when <code>cn</code> is absent.</p>

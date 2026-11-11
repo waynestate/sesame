@@ -17,11 +17,11 @@
                     "`cas`"
                 ],
                 "SESAME_CAS_BASE_URL": [
-                    "The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is `/cas`)",
+                    "The CAS server's base URL (no trailing slash, including the path the server lives under; Academica is `/cas`); https, or `http://localhost` in a local environment",
                     "none (Playbook supplies the WSU value)"
                 ],
                 "SESAME_CAS_SERVICE_URL": [
-                    "The URL the CAS server sends the user back to after verifying them",
+                    "The URL the CAS server sends the user back to after verifying them; https, or `http://localhost` or `http://127.0.0.1` in a local environment",
                     "none (the app's `/login` route)"
                 ],
                 "SESAME_CAS_PROTOCOL": [
