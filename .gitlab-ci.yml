@@ -24,6 +24,11 @@ include:
       site_dir: site
       pages: ["**/*.html"]
       wcag_tags: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]
+  # Secret scanning: Gitleaks over the checked-out tree through Preflight's
+  # component. A finding fails the pipeline; --redact keeps the value out of the log.
+  - component: $CI_SERVER_FQDN/enterprise-apps/preflight/secret-detection@0.8.0
+    inputs:
+      image: "zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
 
 # Dependency caching: images already come through the Dependency Proxy, and
 # every job that installs packages extends a cache under a fixed key, not a

@@ -51,7 +51,11 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
 
 ## CI
 
-- **GitLab:** Preflight's `php-test` (PHP 8.3, 8.4, 8.5) and `composer-audit` components, plus a `composer-ci` job.
+- **GitLab:** Preflight's `php-test` (the test matrix on PHP 8.3, 8.4, 8.5), `composer-audit` (the dependency
+  audit), `proctor` (PROCTOR checks `deploy/` against CREED's policy), `a11y` (axe-core over every page of
+  `site/`) and `secret-detection` (Gitleaks over the checked-out tree) components, all pinned to Preflight 0.8.0,
+  plus SESAME's own `wayneui-copies` (installs the deploy layer and runs PROCTOR on the repo), `composer-ci`
+  (runs `composer ci`) and `vue` (the Vue adapter's tests and type check) jobs.
 - **GitHub:** `.github/workflows/ci.yml` calls Preflight's reusable workflow with `composer ci`.
 - Green means `composer ci` passed on all three PHP versions on both.
 
