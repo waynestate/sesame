@@ -324,7 +324,7 @@ php artisan sesame:check
 
 7 ok, 0 warnings, 0 failures. exit 0
 
-`--strict` fails on warnings too. Raw PHP apps hear from `NativeSession` instead, once per request, when the cookie lacks HttpOnly, Secure or SameSite. [Check before a deploy, in the Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html#check-before-a-deploy)
+`--strict` fails on warnings too. Raw PHP apps hear from `NativeSession` instead, once per request, when the cookie lacks HttpOnly, Secure or a Lax SameSite, and a Strict one is named as the reason sign-in fails. [Check before a deploy, in the Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html#check-before-a-deploy)
 
 Cross-reference
 

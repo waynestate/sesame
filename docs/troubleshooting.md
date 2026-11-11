@@ -213,7 +213,8 @@ prints `1` for the CLI; for the web, the same `ini_get()` on a page.
 **Cause.** From 0.7.0 `NativeSession` checks the flags the app's session
 cookie started with. Without `HttpOnly` a script on the page can read the
 cookie, without `Secure` it can travel over plain http, and without a `Lax`
-or `Strict` `SameSite` other sites can make the browser send it. PHP's own
+`SameSite` other sites can make the browser send it (a `Strict` one has its
+own entry below). PHP's own
 defaults leave `HttpOnly` off and `SameSite` empty, and Squire's kit
 `php.ini` left `SameSite` empty before Squire 0.10.2, so an app that never
 set them sees this warning once per request. `Secure` is named only on an
@@ -333,7 +334,10 @@ makes both choices for you (`SessionHardening::apply()`, called by
 
 **Check.** Sign in end to end; the return request carries the cookie and the
 login completes. A cross-site `POST` carries no `Lax` cookie at all, which is
-the defense you want. In Laravel, `php artisan sesame:check` fails on
+the defense you want. In raw PHP, `NativeSession` warns once per request with
+`SESAME: the session cookie is SameSite=Strict, so the browser leaves it off
+the identity provider's return and every sign-in fails.` In Laravel,
+`php artisan sesame:check` fails on
 `SameSite=Strict` and on the `array` session driver (which loses the session
 the same way), so a deploy job can catch both before users do.
 

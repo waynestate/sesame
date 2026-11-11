@@ -1113,9 +1113,107 @@ PHP;
         $empty = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => '']);
         self::assertCount(1, $empty['warnings'], 'An empty SameSite warns too.');
         self::assertStringContainsString('SameSite', $empty['warnings'][0]);
+    }
 
+    public function testSameSiteStrictWarnsThatSignInFails(): void
+    {
         $strict = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => 'Strict']);
-        self::assertSame([], $strict['warnings'], 'Strict is a Lax-or-Strict value, so no warning.');
+        self::assertSame('jdoe', $strict['user'], 'The session keeps working: a warning, not a stop.');
+        self::assertCount(1, $strict['warnings'], 'Strict leaves the cookie off the return from the identity provider, so it warns.');
+        self::assertStringContainsString('SameSite=Strict', $strict['warnings'][0]);
+        self::assertStringContainsString('every sign-in fails', $strict['warnings'][0]);
+        self::assertStringContainsString("session_set_cookie_params(['samesite' => 'Lax'])", $strict['warnings'][0], 'The warning carries the fix.');
+        self::assertStringNotContainsString('HttpOnly', $strict['warnings'][0], 'Nothing is missing, so no flag is named as missing.');
+
+        $lower = $this->cookieFlagCase(['httponly' => true, 'secure' => true, 'samesite' => 'strict']);
+        self::assertCount(1, $lower['warnings'], 'The value is compared without case.');
+    }
+
+    public function testSameSiteStrictWithAMissingFlagNamesBoth(): void
+    {
+        $both = $this->cookieFlagCase(['httponly' => false, 'secure' => true, 'samesite' => 'Strict']);
+        self::assertCount(1, $both['warnings'], 'Still one warning per request.');
+        self::assertStringContainsString('without HttpOnly', $both['warnings'][0]);
+        self::assertStringEndsWith('SameSite=Strict also makes every sign-in fail; use Lax.', $both['warnings'][0]);
+    }
+
+    public function testSameSiteStrictWithCheckSessionSettingsTrueThrows(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-strict-throw-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_STRICT_THROW');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$session = new NativeSession(checkSessionSettings: true);
+$messages = [];
+foreach (['get', 'get'] as $call) {
+    try {
+        $session->get('user');
+        $messages[] = null;
+    } catch (LogicException $e) {
+        $messages[] = $e->getMessage();
+    }
+}
+
+echo json_encode(['messages' => $messages, 'user' => $_SESSION['user']]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertCount(2, $result['messages']);
+
+        foreach ($result['messages'] as $message) {
+            self::assertIsString($message, 'With checkSessionSettings: true every call is refused, not only the first.');
+            self::assertStringContainsString('SameSite=Strict', $message);
+        }
+
+        self::assertSame('jdoe', $result['user'], 'A refused get() must not change the session.');
+    }
+
+    public function testSameSiteStrictWithCheckSessionSettingsFalseIsSilent(): void
+    {
+        $body = <<<'PHP'
+use Waynestate\Sesame\Session\NativeSession;
+
+$savePath = sys_get_temp_dir().'/sesame-cookie-strict-silent-'.getmypid();
+if (! is_dir($savePath)) {
+    mkdir($savePath);
+}
+session_save_path($savePath);
+session_name('SESAME_COOKIE_STRICT_SILENT');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict']);
+session_start();
+$_SESSION['user'] = 'jdoe';
+
+$warnings = [];
+set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+    $warnings[] = $message;
+
+    return true;
+}, E_USER_WARNING);
+
+$session = new NativeSession(checkSessionSettings: false);
+$user = $session->get('user');
+
+echo json_encode(['user' => $user, 'warnings' => $warnings]);
+PHP;
+
+        $output = $this->runChildPhp($this->childScript($body));
+        $result = json_decode($output, true);
+
+        self::assertIsArray($result, 'Child output was not JSON: ' . $output);
+        self::assertSame('jdoe', $result['user'], 'checkSessionSettings: false still serves the session.');
+        self::assertSame([], $result['warnings'], 'checkSessionSettings: false raises no Strict warning.');
     }
 
     public function testHardenedCookieGivesNoWarning(): void

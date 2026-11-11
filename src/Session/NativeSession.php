@@ -60,9 +60,9 @@ use Waynestate\Sesame\SessionPort;
  * keeps working. `checkSessionSettings: true` turns that warning into a
  * `LogicException` on every call; `false` turns the settings and the
  * warning off. HELMET's `helmet_boot()` and Squire's php.ini set both.
- * The session cookie's HttpOnly, Secure (on https) and SameSite (Lax or
- * Strict) flags are checked the same way, warned once per request, never
- * set.
+ * The session cookie's HttpOnly, Secure (on https) and SameSite (Lax;
+ * Strict is named as the reason sign-in fails) flags are checked the same
+ * way, warned once per request, never set.
  */
 final class NativeSession implements SessionPort
 {
@@ -81,10 +81,10 @@ final class NativeSession implements SessionPort
      * @param bool|null $checkSessionSettings null (the default) turns the
      *        safe settings on when it can and warns once when the app's
      *        session was started without them, or when its cookie lacks
-     *        HttpOnly, Secure (on https) or a Lax or Strict SameSite (the
-     *        cookie flags are only checked, never set); true also turns the
-     *        safe settings on and throws instead of warning; false does
-     *        neither.
+     *        HttpOnly, Secure (on https) or a Lax SameSite (a Strict one is
+     *        named as the reason sign-in fails; the cookie flags are only
+     *        checked, never set); true also turns the safe settings on and
+     *        throws instead of warning; false does neither.
      */
     public function __construct(
         private readonly int $graceSeconds = 60,
@@ -334,6 +334,12 @@ final class NativeSession implements SessionPort
      * from the active session's cookie params, so the check sees what
      * session_start() used. Secure is named only on an https request,
      * where a missing flag actually matters.
+     *
+     * A Strict SameSite is named too, the other way round: it is not
+     * missing, it is too much. The identity provider sends the browser back
+     * with a cross-site top-level GET, which leaves a Strict cookie behind,
+     * so the app sees no session on the return and every sign-in fails (S41).
+     * A lock so safe nobody gets in is a wall.
      */
     private function checkCookieFlags(): void
     {
@@ -347,6 +353,7 @@ final class NativeSession implements SessionPort
             || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 
         $sameSite = strtolower($params['samesite']);
+        $strict = $sameSite === 'strict';
         $missingHttpOnly = ! $params['httponly'];
         $missingSecure = ! $params['secure'] && $https;
         $missingSameSite = $sameSite !== 'lax' && $sameSite !== 'strict';
@@ -361,6 +368,14 @@ final class NativeSession implements SessionPort
         ));
 
         if ($names === []) {
+            if (! $strict) {
+                return;
+            }
+
+            $this->speakUpAboutTheCookie(
+                'SESAME: the session cookie is SameSite=Strict, so the browser leaves it off the identity provider\'s return and every sign-in fails. Set it to Lax before session_start(): session_set_cookie_params([\'samesite\' => \'Lax\']); (or call helmet_boot()).',
+            );
+
             return;
         }
 
@@ -382,6 +397,19 @@ final class NativeSession implements SessionPort
             $reason,
         );
 
+        if ($strict) {
+            $message .= ' SameSite=Strict also makes every sign-in fail; use Lax.';
+        }
+
+        $this->speakUpAboutTheCookie($message);
+    }
+
+    /**
+     * Deliver a cookie-flag message: a LogicException on every call with
+     * checkSessionSettings: true, else one E_USER_WARNING per request.
+     */
+    private function speakUpAboutTheCookie(string $message): void
+    {
         if ($this->checkSessionSettings === true) {
             throw new LogicException($message);
         }

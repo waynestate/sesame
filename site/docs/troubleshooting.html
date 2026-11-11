@@ -192,7 +192,8 @@ prints <code>1</code> for the CLI; for the web, the same <code>ini_get()</code> 
 <p><strong>Cause.</strong> From 0.7.0 <code>NativeSession</code> checks the flags the app's session
 cookie started with. Without <code>HttpOnly</code> a script on the page can read the
 cookie, without <code>Secure</code> it can travel over plain http, and without a <code>Lax</code>
-or <code>Strict</code> <code>SameSite</code> other sites can make the browser send it. PHP's own
+<code>SameSite</code> other sites can make the browser send it (a <code>Strict</code> one has its
+own entry below). PHP's own
 defaults leave <code>HttpOnly</code> off and <code>SameSite</code> empty, and Squire's kit
 <code>php.ini</code> left <code>SameSite</code> empty before Squire 0.10.2, so an app that never
 set them sees this warning once per request. <code>Secure</code> is named only on an
@@ -288,7 +289,9 @@ makes both choices for you (<code>SessionHardening::apply()</code>, called by
 <code>SESSION_PATH=/</code> with <code>SESSION_DOMAIN</code> empty in <code>config/session.php</code>.</p>
 <p><strong>Check.</strong> Sign in end to end; the return request carries the cookie and the
 login completes. A cross-site <code>POST</code> carries no <code>Lax</code> cookie at all, which is
-the defense you want. In Laravel, <code>php artisan sesame:check</code> fails on
+the defense you want. In raw PHP, <code>NativeSession</code> warns once per request with
+<code>SESAME: the session cookie is SameSite=Strict, so the browser leaves it off the identity provider's return and every sign-in fails.</code> In Laravel,
+<code>php artisan sesame:check</code> fails on
 <code>SameSite=Strict</code> and on the <code>array</code> session driver (which loses the session
 the same way), so a deploy job can catch both before users do.</p>
 <h3 id="a-stale-session-is-signed-out-on-the-spot">A stale session is signed out on the <span class="docs-heading-tail"><span>spot</span><a class="docs-heading-link" aria-label="Link to this section" href="#a-stale-session-is-signed-out-on-the-spot">#</a></span></h3>

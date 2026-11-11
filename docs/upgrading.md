@@ -81,9 +81,10 @@ Laravel's session, not `NativeSession`.
 - **`NativeSession` (raw PHP, and the Wayne Auth bridge) checks the session
   cookie's flags.** When the active session's cookie lacks `HttpOnly`, lacks
   `Secure` on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`),
-  or has a `SameSite` other than `Lax` or `Strict`, the first use in a request
-  raises one `E_USER_WARNING` that names the missing flags and the fix, and
-  the session keeps working. SESAME still never sets a flag itself. PHP's own
+  or has a `SameSite` other than `Lax`, the first use in a request raises one
+  `E_USER_WARNING` that names the missing flags and the fix, and the session
+  keeps working. From the next release a `Strict` value is named too,
+  with the reason: it makes every sign-in fail. SESAME still never sets a flag itself. PHP's own
   defaults trip it (`session.cookie_httponly` off, `session.cookie_samesite`
   empty), and so does Squire's kit `php.ini` before Squire 0.10.2, which set
   `HttpOnly` and `Secure` but left `SameSite` empty. An app that calls HELMET's
@@ -134,7 +135,7 @@ parks its cross-site POST and finishes the sign-in on the GET that follows.
    and `session.cookie_samesite = Lax` in a `php.ini` or FPM pool you control.
    Keep `Lax`, not `Strict`: the identity provider sends the browser back with
    a cross-site navigation, and a `Strict` cookie is not sent on it, so every
-   sign-in would fail. SESAME lets `Strict` through, so it will not warn you.
+   sign-in would fail. `NativeSession` warns about `Strict` too, and says so.
 3. To stay quiet without fixing the flags (not recommended), pass
    `checkSessionSettings: false`; it also turns off the strict mode settings
    and their warning.

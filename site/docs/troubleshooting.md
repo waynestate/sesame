@@ -140,7 +140,7 @@ vendor/bin/phpunit
 
 ### The log has `SESAME: the session cookie is sent without HttpOnly` (or Secure, or SameSite) [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-has-sesame-the-session-cookie-is-sent-without-httponly-or-secure-or-samesite)
 
-**Cause.** From 0.7.0 `NativeSession` checks the flags the app's session cookie started with. Without `HttpOnly` a script on the page can read the cookie, without `Secure` it can travel over plain http, and without a `Lax` or `Strict` `SameSite` other sites can make the browser send it. PHP's own defaults leave `HttpOnly` off and `SameSite` empty, and Squire's kit `php.ini` left `SameSite` empty before Squire 0.10.2, so an app that never set them sees this warning once per request. `Secure` is named only on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`). SESAME never sets the flags itself; with `checkSessionSettings: true` it throws `LogicException` instead of warning. The full text, with all three missing, is:
+**Cause.** From 0.7.0 `NativeSession` checks the flags the app's session cookie started with. Without `HttpOnly` a script on the page can read the cookie, without `Secure` it can travel over plain http, and without a `Lax` `SameSite` other sites can make the browser send it (a `Strict` one has its own entry below). PHP's own defaults leave `HttpOnly` off and `SameSite` empty, and Squire's kit `php.ini` left `SameSite` empty before Squire 0.10.2, so an app that never set them sees this warning once per request. `Secure` is named only on an https request (`HTTPS` set, or `X-Forwarded-Proto: https`). SESAME never sets the flags itself; with `checkSessionSettings: true` it throws `LogicException` instead of warning. The full text, with all three missing, is:
 
 ```text
 SESAME: the session cookie is sent without HttpOnly, Secure and SameSite, so it is easier to steal or misuse. Set them before session_start(): session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax']); (or call helmet_boot()).
@@ -194,7 +194,7 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 
 **Fix.** Keep the cookie `SameSite=Lax`, never `Strict`. In raw PHP HELMET makes both choices for you (`SessionHardening::apply()`, called by `helmet_boot()`); in Laravel the default is `Lax`, and the settings are `SESSION_COOKIE=__Host-wsu-session`, `SESSION_SECURE_COOKIE=true`, `SESSION_PATH=/` with `SESSION_DOMAIN` empty in `config/session.php`.
 
-**Check.** Sign in end to end; the return request carries the cookie and the login completes. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want. In Laravel, `php artisan sesame:check` fails on `SameSite=Strict` and on the `array` session driver (which loses the session the same way), so a deploy job can catch both before users do.
+**Check.** Sign in end to end; the return request carries the cookie and the login completes. A cross-site `POST` carries no `Lax` cookie at all, which is the defense you want. In raw PHP, `NativeSession` warns once per request with `SESAME: the session cookie is SameSite=Strict, so the browser leaves it off the identity provider's return and every sign-in fails.` In Laravel, `php artisan sesame:check` fails on `SameSite=Strict` and on the `array` session driver (which loses the session the same way), so a deploy job can catch both before users do.
 
 ### A stale session is signed out on the spot [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-stale-session-is-signed-out-on-the-spot)
 

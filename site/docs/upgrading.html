@@ -112,9 +112,10 @@ Laravel's session, not <code>NativeSession</code>.</p>
 <li><strong><code>NativeSession</code> (raw PHP, and the Wayne Auth bridge) checks the session
 cookie's flags.</strong> When the active session's cookie lacks <code>HttpOnly</code>, lacks
 <code>Secure</code> on an https request (<code>HTTPS</code> set, or <code>X-Forwarded-Proto: https</code>),
-or has a <code>SameSite</code> other than <code>Lax</code> or <code>Strict</code>, the first use in a request
-raises one <code>E_USER_WARNING</code> that names the missing flags and the fix, and
-the session keeps working. SESAME still never sets a flag itself. PHP's own
+or has a <code>SameSite</code> other than <code>Lax</code>, the first use in a request raises one
+<code>E_USER_WARNING</code> that names the missing flags and the fix, and the session
+keeps working. From the next release a <code>Strict</code> value is named too,
+with the reason: it makes every sign-in fail. SESAME still never sets a flag itself. PHP's own
 defaults trip it (<code>session.cookie_httponly</code> off, <code>session.cookie_samesite</code>
 empty), and so does Squire's kit <code>php.ini</code> before Squire 0.10.2, which set
 <code>HttpOnly</code> and <code>Secure</code> but left <code>SameSite</code> empty. An app that calls HELMET's
@@ -166,7 +167,7 @@ app says, or set <code>session.cookie_httponly = 1</code>, <code>session.cookie_
 and <code>session.cookie_samesite = Lax</code> in a <code>php.ini</code> or FPM pool you control.
 Keep <code>Lax</code>, not <code>Strict</code>: the identity provider sends the browser back with
 a cross-site navigation, and a <code>Strict</code> cookie is not sent on it, so every
-sign-in would fail. SESAME lets <code>Strict</code> through, so it will not warn you.</li>
+sign-in would fail. <code>NativeSession</code> warns about <code>Strict</code> too, and says so.</li>
 <li>To stay quiet without fixing the flags (not recommended), pass
 <code>checkSessionSettings: false</code>; it also turns off the strict mode settings
 and their warning.</li>

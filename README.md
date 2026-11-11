@@ -241,8 +241,10 @@ both.
 but from 0.7.0 `NativeSession` looks at the ones your session started with.
 When the session cookie lacks `HttpOnly`, lacks `Secure` on an https request
 (`HTTPS` set, or `X-Forwarded-Proto: https`), or has a `SameSite` other than
-`Lax` or `Strict`, the first use in the request raises one `E_USER_WARNING`
-naming the missing flags and the fix, and the session keeps working. PHP's own
+`Lax`, the first use in the request raises one `E_USER_WARNING` naming the
+missing flags and the fix, and the session keeps working. A `Strict` cookie
+gets its own sentence, because it is the one setting that looks safer and
+breaks every sign-in (see S41 below). PHP's own
 defaults trip it (`HttpOnly` off and no `SameSite`), and so did Squire's kit
 `php.ini` before Squire 0.10.2 (it now sets `session.cookie_samesite = Lax`;
 run `squire update`). Where the host's `php.ini` decides, the fix is the
@@ -293,10 +295,9 @@ settings in `config/session.php`:
   cookie is not sent on that request: it would be
   missing, so the app would see no session on the return request and any login
   binding (S18) would fail for every user. `Lax` is what HELMET sets and what
-  Laravel does by default. `NativeSession` warns about a missing or `None`
-  value, but it lets `Strict` through, so in raw PHP that mistake is yours to
-  avoid; in Laravel, `php artisan sesame:check` fails on it before a deploy
-  does. A cross-site `POST` carries no `Lax` cookie at all,
+  Laravel does by default. `NativeSession` warns about a missing, `None` or
+  `Strict` value (and the `Strict` warning says why sign-in fails); in
+  Laravel, `php artisan sesame:check` fails on it before a deploy does. A cross-site `POST` carries no `Lax` cookie at all,
   which is the defense you want; that is why the `saml` driver's ACS parks
   the IdP's POST without a session and sends the browser back to the login
   URL with a 303, where the `Lax` cookie is sent again (S35).
@@ -1158,7 +1159,7 @@ spot the first time anything asks who is signed in.
 | `session.idle_minutes` | `120` | Drop the session after this much quiet time (2 hours by default). |
 | `session.absolute_minutes` | `720` | End the session this long after sign-in, even if it is still active (12 hours by default). |
 | `logoutReuseTtlSeconds` | `60` | The window in which a reused logged-out session ID is logged as an anomaly, in seconds. A `new NativeSession()` option, not a config key; `0` makes `invalidate()` destroy the session outright instead of leaving the logout marker. |
-| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode`, `session.use_only_cookies` and the session cookie's flags. A `new NativeSession()` option, not a config key. `null` turns both settings on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off, or with a cookie that lacks `HttpOnly`, `Secure` (on https) or a `Lax` or `Strict` `SameSite`; `true` also turns the settings on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. SESAME never sets a cookie flag. |
+| `checkSessionSettings` | `null` | How a native session treats `session.use_strict_mode`, `session.use_only_cookies` and the session cookie's flags. A `new NativeSession()` option, not a config key. `null` turns both settings on whenever no session is active and warns once per request (`E_USER_WARNING`) when the app started its session with either one off, or with a cookie that lacks `HttpOnly`, `Secure` (on https) or a `Lax` `SameSite` (a `Strict` one is named as the reason sign-in fails); `true` also turns the settings on but throws `LogicException` on every call instead of warning; `false` leaves the settings alone and stays quiet. SESAME never sets a cookie flag. |
 
 On login the session stores the sign-in time and the last activity time, and
 `user()` refreshes the last activity time on every call that finds a live
