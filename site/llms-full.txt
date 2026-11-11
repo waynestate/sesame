@@ -1643,6 +1643,21 @@ two catches and the checks to run before shipping, is
 
 Proof runs against real Wayne State applications are on a private site, [proof.apps.wayne.edu/sesame](https://proof.apps.wayne.edu/sesame/), behind a Wayne State employee sign-in.
 
+### Run it locally
+
+SESAME is a library, so the app you can run is its front page: the raw-PHP layer in `deploy/`, served the way
+Citadel serves it. Use [Parity](https://git.wayne.edu/enterprise-apps/parity) (a separate install):
+
+```sh
+cd deploy
+parity init --from-squire   # once: reads the Squire kit and writes parity.json
+parity up                   # Citadel's PHP image, proxy and MySQL 5.6, on the printed address
+parity check                # the same checks, against the running copy
+parity down
+```
+
+The library's own tests are under Tests below.
+
 ### Tests
 
 Maintainers: how to build, test and release this project, and where its data comes from, is in [MAINTAINING.md](https://github.com/waynestate/sesame/blob/HEAD/MAINTAINING.md).
