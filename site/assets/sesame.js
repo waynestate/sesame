@@ -9,6 +9,7 @@
 
    Sections: 1. setup  2. toast  3. copy  4. the lock  5. the duplicator
              6. reveals  7. the door tally  8. the bell and the magic words
+             9. the lock inspection (php artisan sesame:check)
    ========================================================================== */
 (function () {
   "use strict";
@@ -326,4 +327,113 @@
       }
     }
   });
+
+  /* ------------------------------------------------- 9. the lock inspection */
+  // The same rules and the same words as php artisan sesame:check
+  // (src/Laravel/Console/CheckCommand.php), for a production app on the cas
+  // driver. Only the four switches on the plate change; the other lines are
+  // what a sound app gets. FrontPageCheckTest keeps these texts honest.
+  var bench = $("[data-inspect]");
+  var plate = bench ? $("[data-inspect-plate]", bench) : null;
+  var slip = bench ? $(".slip", bench) : null;
+  if (bench && plate && slip) {
+    var linesEl = $("[data-inspect-lines]", bench);
+    var sumEl = $("[data-inspect-sum]", bench);
+    var exitEl = $("[data-inspect-exit]", bench);
+    var stampEl = $("[data-inspect-stamp]", bench);
+    var saidEl = $("[data-inspect-said]", bench);
+    var STAMPS = { ok: "Cleared to open", warn: "Open, with notes", fail: "Do not open" };
+
+    var inspect = function (s) {
+      var driver = s.driver === "array"
+        ? ["fail", "Session driver: array ends every session with the request, so a sign-in never sticks."]
+        : s.driver === "cookie"
+          ? ["warn", "Session driver: cookie keeps the whole session in the browser; prefer file, database or redis."]
+          : ["ok", "Session driver: " + s.driver + "."];
+      var sameSite = s.same_site === "strict"
+        ? ["fail", "Session cookie: SameSite=Strict drops the cookie on the identity provider's return, so every sign-in fails; use lax."]
+        : s.same_site === "none"
+          ? ["warn", "Session cookie: SameSite=None sends the cookie on cross-site requests; use lax."]
+          : ["ok", "Session cookie: SameSite=Lax."];
+      var secure = s.secure === "null"
+        ? ["warn", "Session cookie: Secure follows each request's scheme; set SESSION_SECURE_COOKIE=true on an https app."]
+        : s.secure === "false"
+          ? ["fail", "Session cookie: session.secure is false in production; set SESSION_SECURE_COOKIE=true."]
+          : ["ok", "Session cookie: Secure."];
+      var lifetime = s.lifetime === "30"
+        ? ["warn", "Session lifetime: Laravel drops a quiet session after 30 minutes, before SESAME's 120 minute idle timeout."]
+        : ["ok", "Session lifetime: 120 minutes, SESAME's idle timeout is 120."];
+      return [
+        ["ok", "Driver: cas is configured."],
+        ["ok", "User resolver: set."],
+        driver,
+        ["ok", "Session cookie: HttpOnly."],
+        sameSite,
+        secure,
+        lifetime
+      ];
+    };
+
+    var read = function () {
+      var s = {};
+      ["same_site", "secure", "driver", "lifetime"].forEach(function (name) {
+        var on = plate.querySelector("input[name='" + name + "']:checked");
+        s[name] = on ? on.value : "";
+      });
+      return s;
+    };
+
+    var last = inspect(read());
+    var print = function (said) {
+      var lines = inspect(read());
+      var n = { ok: 0, warn: 0, fail: 0 };
+      linesEl.textContent = "";
+      lines.forEach(function (line, i) {
+        n[line[0]] += 1;
+        var li = document.createElement("li");
+        li.setAttribute("data-v", line[0]);
+        li.style.setProperty("--n", String(i));
+        if (last[i][1] !== line[1]) li.className = "is-changed";
+        var v = document.createElement("span");
+        v.className = "slip__v";
+        v.textContent = "[" + line[0].toUpperCase() + "]";
+        var t = document.createElement("span");
+        t.textContent = line[1];
+        li.append(v, " ", t);
+        linesEl.append(li);
+      });
+      last = lines;
+      var verdict = n.fail ? "fail" : n.warn ? "warn" : "ok";
+      var sum = n.ok + " ok, " + n.warn + (n.warn === 1 ? " warning, " : " warnings, ") +
+        n.fail + (n.fail === 1 ? " failure." : " failures.");
+      sumEl.textContent = sum;
+      exitEl.textContent = "exit " + (n.fail ? 1 : 0);
+      stampEl.setAttribute("data-v", verdict);
+      stampEl.textContent = STAMPS[verdict];
+      if (said && saidEl) {
+        saidEl.textContent = "Reprinted: " + sum + " Exit code " + (n.fail ? 1 : 0) + ". " + STAMPS[verdict] + ".";
+      }
+      if (motionOn()) {
+        slip.classList.remove("is-printing", "is-jolted", "is-waiting");
+        void slip.offsetWidth;
+        slip.classList.add("is-printing");
+        if (verdict === "fail") slip.classList.add("is-jolted");
+      }
+    };
+
+    plate.hidden = false;
+    plate.addEventListener("change", function () { print(true); });
+
+    // With motion on, the slip feeds out once when the bench comes into view.
+    if (motionOn() && "IntersectionObserver" in window) {
+      slip.classList.add("is-waiting");
+      var slipSeen = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          slipSeen.disconnect();
+          print(false);
+        }
+      }, { threshold: 0.35 });
+      slipSeen.observe(slip);
+    }
+  }
 })();

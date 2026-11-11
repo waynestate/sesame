@@ -47,6 +47,7 @@
       <a href="#duplicator">Duplicator</a>
       <a href="#start">Doorways</a>
       <a href="#rules">Rules</a>
+      <a href="#check">Check</a>
       <a href="#wayne-cas">wayne-cas</a>
       <a href="#agents">Agents</a>
       <a href="#ring">Key ring</a>
@@ -527,6 +528,77 @@ Output: the parts table (wayne-cas part, file and line, SESAME part), the plan a
           </div>
         </aside>
       </div>
+    </div>
+  </section>
+
+  <!-- ========================================================== inspection -->
+  <!-- php artisan sesame:check, on the bench. The slip below is the real
+       output for a sound app (the same texts the command prints); the switch
+       plate is hidden until the script runs, then every switch reprints the
+       slip. A locksmith checks the lock before the shop opens, not after the
+       first customer is stuck on the step. -->
+  <section class="section section--check" id="check" aria-labelledby="check-title" data-inspect>
+    <div class="wrap">
+      <div class="head head--light">
+        <p class="kicker kicker--gold">Before opening day</p>
+        <h2 id="check-title">Check the lock</h2>
+        <p>In Laravel, SESAME rides on your app's own session, so <code>config/session.php</code> decides whether the door works. One <code>SameSite=Strict</code> and nobody gets in. <code>php artisan sesame:check</code> reads those settings and SESAME's own, prints one line for each, and exits 1 on any failure, so CI can run it before a deploy.</p>
+      </div>
+
+      <div class="inspect">
+        <form class="plate" data-inspect-plate hidden aria-labelledby="plate-title">
+          <span class="screw screw--tl" aria-hidden="true"></span><span class="screw screw--tr" aria-hidden="true"></span>
+          <span class="screw screw--bl" aria-hidden="true"></span><span class="screw screw--br" aria-hidden="true"></span>
+          <h3 class="plate__title" id="plate-title">Try a bad setting</h3>
+          <p class="plate__note">A production app on the cas driver. Flip a switch and the slip reprints.</p>
+          <fieldset class="switch">
+            <legend><code>session.same_site</code></legend>
+            <label><input type="radio" name="same_site" value="lax" checked><span>lax</span></label>
+            <label><input type="radio" name="same_site" value="strict"><span>strict</span></label>
+            <label><input type="radio" name="same_site" value="none"><span>none</span></label>
+          </fieldset>
+          <fieldset class="switch">
+            <legend><code>session.secure</code></legend>
+            <label><input type="radio" name="secure" value="true" checked><span>true</span></label>
+            <label><input type="radio" name="secure" value="null"><span>unset</span></label>
+            <label><input type="radio" name="secure" value="false"><span>false</span></label>
+          </fieldset>
+          <fieldset class="switch">
+            <legend><code>session.driver</code></legend>
+            <label><input type="radio" name="driver" value="file" checked><span>file</span></label>
+            <label><input type="radio" name="driver" value="cookie"><span>cookie</span></label>
+            <label><input type="radio" name="driver" value="array"><span>array</span></label>
+          </fieldset>
+          <fieldset class="switch">
+            <legend><code>session.lifetime</code></legend>
+            <label><input type="radio" name="lifetime" value="120" checked><span>120</span></label>
+            <label><input type="radio" name="lifetime" value="30"><span>30</span></label>
+          </fieldset>
+        </form>
+
+        <figure class="slip" aria-labelledby="slip-title">
+          <figcaption class="slip__head">
+            <span class="slip__shop" aria-hidden="true">SESAME · Lock inspection</span>
+            <span class="slip__cmd" id="slip-title"><span class="t-dim" aria-hidden="true">$ </span>php artisan sesame:check</span>
+          </figcaption>
+          <ol class="slip__lines" data-inspect-lines>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Driver: cas is configured.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>User resolver: set.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Session driver: file.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Session cookie: HttpOnly.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Session cookie: SameSite=Lax.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Session cookie: Secure.</span></li>
+            <li data-v="ok"><span class="slip__v">[OK]</span> <span>Session lifetime: 120 minutes, SESAME's idle timeout is 120.</span></li>
+          </ol>
+          <div class="slip__foot">
+            <p class="slip__sum"><span data-inspect-sum>7 ok, 0 warnings, 0 failures.</span> <span class="slip__exit" data-inspect-exit>exit 0</span></p>
+            <span class="slip__stamp" data-inspect-stamp data-v="ok" aria-hidden="true">Cleared to open</span>
+          </div>
+        </figure>
+        <p class="wsu-sr-only" role="status" data-inspect-said></p>
+      </div>
+
+      <p class="inspect__more"><code>--strict</code> fails on warnings too. Raw PHP apps hear from <code>NativeSession</code> instead, once per request, when the cookie lacks HttpOnly, Secure or SameSite. <a href="docs/guides/laravel.html#check-before-a-deploy">Check before a deploy, in the Laravel guide</a></p>
     </div>
   </section>
 

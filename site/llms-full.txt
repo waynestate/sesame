@@ -1985,6 +1985,26 @@ The counter reads 427.
 
 Turn it on and SESAME counts each sign-in as `sesame_logins_total`, by driver and outcome, on HELMET's `/metrics`. It tallies turns of the key, never whose hand. [Counting sign-ins](https://sesame.apps.wayne.edu/docs/guides/metrics.html)
 
+Before opening day
+
+### Check the lock
+
+In Laravel, SESAME rides on your app's own session, so `config/session.php` decides whether the door works. One `SameSite=Strict` and nobody gets in. `php artisan sesame:check` reads those settings and SESAME's own, prints one line for each, and exits 1 on any failure, so CI can run it before a deploy.
+
+php artisan sesame:check
+
+1. \[OK\] Driver: cas is configured.
+2. \[OK\] User resolver: set.
+3. \[OK\] Session driver: file.
+4. \[OK\] Session cookie: HttpOnly.
+5. \[OK\] Session cookie: SameSite=Lax.
+6. \[OK\] Session cookie: Secure.
+7. \[OK\] Session lifetime: 120 minutes, SESAME's idle timeout is 120.
+
+7 ok, 0 warnings, 0 failures. exit 0
+
+`--strict` fails on warnings too. Raw PHP apps hear from `NativeSession` instead, once per request, when the cookie lacks HttpOnly, Secure or SameSite. [Check before a deploy, in the Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html#check-before-a-deploy)
+
 Cross-reference
 
 ### Re-key from wayne-cas
@@ -2049,6 +2069,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Site: the front page hangs a "Door count" card under the shop hours, a nickel hand tally for the sign-in counter. Its four wheels roll up to the count when the card comes into view, the plunger is a real button that counts one more (with a toast, and a screen reader line that says the count), and the outcome tags wear the Grafana dashboard's colors. It links the Counting sign-ins guide. With reduced motion on, the wheels show the count and nothing moves.
 - Docs: "SESAME never touches a cookie" said more than BEST_PRACTICES S2 promises. The front page's first shop rule, its planning prompt, the README and the raw PHP guide now say what holds: SESAME never opens the session and never sets a cookie flag, and the only session cookies it causes are the new ID at login and the expired one at logout, both with the app's own cookie params.
 - Added: `php artisan sesame:check`, a pre-deploy check for Laravel apps (BEST_PRACTICES S3, S41). In Laravel SESAME rides on the app's own session, and until now nothing read `config/session.php`, so a `SameSite=Strict` cookie failed every sign-in without an error. The command prints one `[OK]`, `[WARN]` or `[FAIL]` line each for the driver (built from config, never used), the user resolver, the session driver (`array` fails, `cookie` warns), HttpOnly, SameSite (`strict` fails, `none` or no value warns), Secure (`false` fails in production, warns elsewhere; unset warns) and the session lifetime against SESAME's idle timeout, then a count, and exits 1 on any failure; `--strict` fails on warnings too. It prints no URL, key or secret. New section in the Laravel guide: Check before a deploy.
+- Site: the front page has a "Check the lock" bench for `sesame:check`. A nickel switch plate flips `same_site`, `secure`, the session driver and the lifetime of a production app on the cas driver, and a till slip reprints the command's lines, its count and exit code, with a rubber stamp ("Cleared to open", "Open, with notes" or "Do not open"). The slip feeds out once when it comes into view; a screen reader hears each reprint. Without JavaScript the slip shows a sound app and the plate stays hidden; with reduced motion on, the slip reprints and nothing moves. `FrontPageCheckTest` runs the real command for every switch position and fails if the page prints a line the command does not.
 
 ### \[0.7.4\] - 2026-11-10 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-4-2026-11-10)
 

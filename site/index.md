@@ -306,6 +306,26 @@ The counter reads 427.
 
 Turn it on and SESAME counts each sign-in as `sesame_logins_total`, by driver and outcome, on HELMET's `/metrics`. It tallies turns of the key, never whose hand. [Counting sign-ins](https://sesame.apps.wayne.edu/docs/guides/metrics.html)
 
+Before opening day
+
+## Check the lock
+
+In Laravel, SESAME rides on your app's own session, so `config/session.php` decides whether the door works. One `SameSite=Strict` and nobody gets in. `php artisan sesame:check` reads those settings and SESAME's own, prints one line for each, and exits 1 on any failure, so CI can run it before a deploy.
+
+php artisan sesame:check
+
+1. \[OK\] Driver: cas is configured.
+2. \[OK\] User resolver: set.
+3. \[OK\] Session driver: file.
+4. \[OK\] Session cookie: HttpOnly.
+5. \[OK\] Session cookie: SameSite=Lax.
+6. \[OK\] Session cookie: Secure.
+7. \[OK\] Session lifetime: 120 minutes, SESAME's idle timeout is 120.
+
+7 ok, 0 warnings, 0 failures. exit 0
+
+`--strict` fails on warnings too. Raw PHP apps hear from `NativeSession` instead, once per request, when the cookie lacks HttpOnly, Secure or SameSite. [Check before a deploy, in the Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html#check-before-a-deploy)
+
 Cross-reference
 
 ## Re-key from wayne-cas
