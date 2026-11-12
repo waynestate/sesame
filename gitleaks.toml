@@ -1,0 +1,44 @@
+title = "SESAME gitleaks config"
+
+# Built-in rules stay on (extend.useDefault); the allowlists below only narrow
+# the documented test fixtures and sample tokens in this repo. No rule is
+# turned off, and nothing outside these exact paths and lines is allowed.
+
+[extend]
+useDefault = true
+
+# Preflight's secret-detection component ships a default config whose only
+# allowlist skips dependency trees. Setting config_path replaces that default,
+# so the dependency allowlist is carried over here verbatim.
+[[allowlists]]
+description = "Third-party dependency code, carried over from Preflight's default config because config_path replaces it."
+paths = ['''(^|/)vendor/''', '''(^|/)node_modules/''']
+
+# Documented TEST ONLY SAML fixture keys (tests/fixtures/saml/README.md).
+# Exact file paths only, and only the private-key rule: a real key committed
+# anywhere else, or any other rule in these two files, still fails the pipeline.
+[[allowlists]]
+description = "TEST ONLY SAML fixture keys, documented in tests/fixtures/saml/README.md. Never trusted, never loaded into an app."
+targetRules = ["private-key"]
+paths = [
+  '''^tests/fixtures/saml/idp-test-only\.key$''',
+  '''^tests/fixtures/saml/sp-test-only\.key$''',
+]
+
+# Sample logoutToken values in the docs examples, the generated site copies,
+# and the Vue signed-in status fixture. condition = AND means the exact file
+# path and a logoutToken JSON line must both match; any other line in these
+# files, and any logoutToken line anywhere else, still fails the pipeline.
+[[allowlists]]
+description = "Sample logoutToken JSON lines in documentation examples, the generated site copies, and the signed-in status fixture. Both the exact file path and the logoutToken line must match."
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+regexes = ['''"logoutToken"\s*:''']
+paths = [
+  '''^README\.md$''',
+  '''^docs/guides/single-page-apps\.md$''',
+  '''^site/docs/guides/single-page-apps\.md$''',
+  '''^site/llms-full\.txt$''',
+  '''^vue/tests/fixtures/status-signed-in\.json$''',
+]
