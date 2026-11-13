@@ -15,7 +15,7 @@ include:
     inputs:
       working_dir: deploy
       proctor_command: vendor/bin/proctor check --format=codequality
-      image: "php:8.4-cli-trixie@sha256:9cf851bc2c1b37c3e59dfd677a3c3e56d485af5a47c93f629424bb039eafcb69"
+      image: "php:8.5-cli-trixie@sha256:9236fd373d3bcda0659cf94838a744bd79791419292958963f8c6b34a0071554"
   # Accessibility: Preflight's a11y component serves site/ and checks every page with axe-core 4.14.0, light and
   # dark, at 320 and 1280 px, plus WCAG 1.4.10 reflow, at WCAG 2.2 AA. Its Playwright image comes from
   # mcr.microsoft.com, which the Dependency Proxy does not front, so it takes no image_prefix.
