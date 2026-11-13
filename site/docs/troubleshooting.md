@@ -280,7 +280,7 @@ The token in those commands is a secret. Keep it in the environment, never in th
 
 ### `composer ci` fails [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#composer-ci-fails)
 
-**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
+**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. CI on git.wayne.edu runs the same command: seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit).
 
 **Fix.** Read the failing step; static analysis is PHPStan at level 8 from Pinstripe's strict preset, where a call to a deprecated method fails the build.
 

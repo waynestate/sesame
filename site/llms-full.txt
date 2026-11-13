@@ -15,9 +15,7 @@ Source: https://github.com/waynestate/sesame/blob/HEAD/README.md
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no
 key ever gets to keep the door.
 
-Checks: `composer ci` (the same command runs on GitLab and GitHub). Both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
-
-Our CI is the same script on both sides, so when it fails, nobody gets to blame the other platform.
+Checks: `composer ci` (the same command CI runs on git.wayne.edu): seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit).
 
 SESAME is Wayne State's protocol-neutral auth library. It returns a verified
 identity and leaves the session to the app: every driver ends in the same
@@ -2085,6 +2083,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Removed: the GitHub Actions workflow; CI runs on git.wayne.edu only (the GitHub copy is a mirror).
 - Changed: `src/Support/Setting.php` and the shared part of the WSU values guide now come from Playbook's `bin/setting-sync.php`, and `composer setting:check` (part of `composer ci`) fails when either drifts (D-097).
 - Changed: CI pins Preflight 0.9.0 (every GitLab component include and the GitHub reusable workflow at the 0.9.0 tag commit), and `tools/a11y/check.mjs` is recopied from that tag (its `pages` list now takes `""` for the site root). The Gitleaks config is back to `.gitleaks.toml`, the name Gitleaks itself uses, because 0.9.0's `config_path` accepts a leading dot; `gitleaks.toml` is gone.
 - Changed: the cas driver accepts a plain `http://localhost` or `http://127.0.0.1` service URL (`cas.service_url`) and CAS server address (`cas.base_url`) when the app environment is local, so a developer can sign in through CAS on their own machine without a TLS proxy (D-089). Local is the fake driver's list (`local`, `development`, `dev`, `testing`, `test`, now shared as `Waynestate\Sesame\Drivers\LocalEnvironments`); `DriverFactory::make()` passes the config's `environment` (in Laravel, `APP_ENV`) as `CasDriver`'s new last constructor argument, which defaults to `production`. Every other environment refuses those addresses with the same `must be an absolute https:// URL` error as before, and http to any other host, `[::1]` and a URL with a user name or password stay refused everywhere. The 0.6 upgrade note's "plain http is accepted only for a localhost or 127.0.0.1 service URL" was true of `ReturnTo` only; it now holds for the cas driver too, in a local environment.
@@ -4485,7 +4484,7 @@ Source: https://sesame.apps.wayne.edu/docs/
 
 ## SESAME [#](https://sesame.apps.wayne.edu/docs/#sesame)
 
-![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc, saml](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg) [GitHub CI](https://github.com/waynestate/sesame/actions/workflows/ci.yml)
+![php ^8.3](https://sesame.apps.wayne.edu/docs/readme/badges/php.svg) ![license MIT](https://sesame.apps.wayne.edu/docs/readme/badges/license.svg) ![drivers: fake, cas, gateway, oauth2, oidc, saml](https://sesame.apps.wayne.edu/docs/readme/badges/drivers.svg)
 
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no key ever gets to keep the door.
 
@@ -5970,7 +5969,7 @@ The token in those commands is a secret. Keep it in the environment, never in th
 
 #### `composer ci` fails [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#composer-ci-fails)
 
-**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. The same command runs on GitLab and GitHub, and both pipelines run the same seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit), so a green build means the same thing on both sides.
+**Cause.** `composer ci` runs the whole gate: validate through tests, Pint and PHPStan, plus the agent-ready and docs checks and the locked-dependency audit. CI on git.wayne.edu runs the same command: seven checks (manifest, tests, Pint, PHPStan, the agent-ready pages, the docs build, audit).
 
 **Fix.** Read the failing step; static analysis is PHPStan at level 8 from Pinstripe's strict preset, where a call to a deprecated method fails the build.
 

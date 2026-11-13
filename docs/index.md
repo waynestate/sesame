@@ -13,7 +13,6 @@ description: Wayne State's protocol-neutral auth library: it returns a verified 
   <img src="readme/badges/php.svg" alt="php ^8.3">
   <img src="readme/badges/license.svg" alt="license MIT">
   <img src="readme/badges/drivers.svg" alt="drivers: fake, cas, gateway, oauth2, oidc, saml">
-  <a href="https://github.com/waynestate/sesame/actions/workflows/ci.yml"><img src="https://github.com/waynestate/sesame/actions/workflows/ci.yml/badge.svg" alt="GitHub CI"></a>
 </p>
 
 **The way in. One lock, any key.** Single Entry, Sessions App-Managed Everywhere: keys cut while you wait, and no

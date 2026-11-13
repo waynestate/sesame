@@ -58,8 +58,7 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
   (runs `composer ci`) and `vue` (the Vue adapter's tests and type check) jobs. The Gitleaks allowlist lives in
   `.gitleaks.toml` and is limited to the documented test fixtures and sample tokens by exact path and rule; a new
   fixture key or sample token is added there by exact path, never by loosening a rule.
-- **GitHub:** `.github/workflows/ci.yml` calls Preflight's reusable workflow with `composer ci`.
-- Green means `composer ci` passed on all three PHP versions on both.
+- Green means `composer ci` passed on all three PHP versions.
 
 ## Where its settings come from
 
@@ -83,7 +82,7 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
 
 1. Move the lines under `## [Unreleased]` in `CHANGELOG.md` (Keep a Changelog) to a new `## [X.Y.Z] - YYYY-MM-DD`
    heading. (0.1.0 predates the heading convention, so it has none.)
-2. `composer ci` green locally, then on both pipelines for that commit.
+2. `composer ci` green locally, then on the git.wayne.edu pipeline for that commit.
 3. Run a secrets scan of the history and check that nothing internal (server names, people, IDs) is in the tree.
 4. Tag `X.Y.Z` (no `v`) on git.wayne.edu. The mirror carries the tag to GitHub, and Packagist picks it up from there.
 5. A release needs a maintainer's approval, and a security-relevant change deserves a second reviewer. Never move or
