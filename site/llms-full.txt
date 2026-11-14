@@ -1686,7 +1686,7 @@ docker run --rm -v "${PWD}:/app" -v stack-composer-cache:/tmp/cache -w /app comp
 ```
 
 The committed site gets checked in a real browser too: Preflight's own a11y
-checker, vendored at the CI tag (0.5.0) and pinned by a test, run in Docker
+checker, vendored at the CI tag (0.9.0) and pinned by a test, run in Docker
 through Playwright, so no host browser is needed. It looks at every page under
 site/, in light and dark at 320 and 1280 px, with the WCAG 1.4.10 reflow check:
 
@@ -2083,6 +2083,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed: the dev dependency Pinstripe is `^0.4` (was `^0.3`, which does not allow 0.4.0); 0.4.0 adds two opt-in Rector presets and changes no rule this repo uses.
 - Changed: the deploy kit is Squire 0.11.1 (was 0.10.7): the release script fetches PROCTOR when `--no-dev` left it out and installs the frontend from a `yarn.lock`, the HAProxy pin is current, the fallback base follows the app's PHP line, and the parity scripts carry the deprecation note.
 - Changed: `deploy/` requires PROCTOR `^0.16`, whose `ci-pipelines` check no longer asks for a GitHub workflow (D-069); `^0.15` failed the `wayneui-copies` job.
 
