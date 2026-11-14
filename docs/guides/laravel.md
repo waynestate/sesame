@@ -5,7 +5,7 @@ description: The Laravel adapter binds the core into the container, registers th
 
 # Laravel
 
-The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame` and `wayne.cas` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](requiring-mfa.md) and [Step-up (authentication context)](step-up.md) for the checks the middleware runs.
+The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame`, `sesame.mfa` and `sesame.context` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](requiring-mfa.md) and [Step-up (authentication context)](step-up.md) for the checks the middleware runs.
 
 ## Install and publish
 
@@ -106,7 +106,7 @@ Route::get('/vault', [VaultController::class, 'index'])
 
 A request without the context gets a 403, or a JSON 403 with a `message` for JSON requests. A route that names no context fails closed. See [Step-up (authentication context)](step-up.md).
 
-The `wayne.cas` alias is registered against SESAME's `WayneAuthenticate`, for apps moving off wayne-cas; see [Moving from wayne-cas](moving-from-wayne-cas.md).
+An app moving off wayne-cas follows [Moving from wayne-cas](moving-from-wayne-cas.md).
 
 ## Reading the user
 
@@ -116,7 +116,7 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. The wayne-cas shim (`\Waynestate\Sesame\WayneCas\UserResolver`) does the same job but is deprecated, and goes away in 0.8.0; see [Moving from wayne-cas](moving-from-wayne-cas.md). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. An app moving off wayne-cas points `user_resolver` at it as well; see [Moving from wayne-cas](moving-from-wayne-cas.md). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
 
 On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. `ModelUserResolver` looks the array up through the model itself, so an app on it needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 

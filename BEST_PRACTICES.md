@@ -269,10 +269,10 @@ Sources: none specific. The PHP manual notes that session settings change betwee
 How the stack holds it: `Checked`. `.gitlab-ci.yml` passes `php_versions: ["8.3", "8.4", "8.5"]` to the Preflight `php-test` component, so every supported PHP from the floor up runs the tests on each push. Earlier passes said the versions were not visible in this repo; they are now.
 
 ### S40. Compatibility shims must not bring back old weaknesses
-The wayne-cas shim (`src/WayneCas/`) maps old method names onto the core. They must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
+Compatibility layers that map old wayne-cas method names onto the core must not restore unencoded tickets, forwarded-header trust or sessions with no logout.
 Why: the old clients have these faults, and a shim that copies behavior copies the faults.
 Sources: [ASVS 5.0 V6.8](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x15-V6-Authentication.md).
-How the stack holds it: `Enforced`. The shims are built as thin adapters with no rules of their own: `WayneAuthenticate` checks the SESAME session and sends guests to `sesame.login`, and `UserResolver` maps the verified username onto the app's model, throwing `AuthorizationException` when there is no user (`src/WayneCas/WayneAuthenticate.php:32-53`, `src/WayneCas/UserResolver.php:25-42`). The shim contains no ticket handling, no forwarded-header trust and no logout of its own, so the old weaknesses cannot come back through it: sign-in still ends in the enforced drivers, and sign-out is the CSRF-guarded `sesame_logout()`. Tests: `WayneCasShimTest::testItFindsTheUserThroughTheModel:53`, `WayneCasShimTest::testItThrowsWhenTheModelHasNoUser:61`, `WayneCasShimTest::testItAnswersAnAjaxGuestWith403:90` and `ReadOnlyAttributesTest::testWritesToReadOnlyAttributesAreRefused:20`.
+How the stack holds it: `Enforced`. 0.8.0 removed the wayne-cas shim, so no compatibility layer carries old behavior: there is no ticket handling, no forwarded-header trust and no logout of its own, and sign-in ends in the enforced drivers while sign-out is the CSRF-guarded `sesame_logout()`. `ModelUserResolver` maps the verified username onto the app's model with no rules of its own, throwing `AuthorizationException` when there is no user.
 
 ## 7. Added in the second pass (2026-10-27)
 
