@@ -55,6 +55,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <li>Changed: the dev dependency Pinstripe is <code>^0.4</code> (was <code>^0.3</code>, which does not allow 0.4.0); 0.4.0 adds two opt-in Rector presets and changes no rule this repo uses.</li>
 <li>Changed: the deploy kit is Squire 0.11.1 (was 0.10.7): the release script fetches PROCTOR when <code>--no-dev</code> left it out and installs the frontend from a <code>yarn.lock</code>, the HAProxy pin is current, the fallback base follows the app's PHP line, and the parity scripts carry the deprecation note.</li>
 <li>Changed: <code>deploy/</code> requires PROCTOR <code>^0.16</code>, whose <code>ci-pipelines</code> check no longer asks for a GitHub workflow (D-069); <code>^0.15</code> failed the <code>wayneui-copies</code> job.</li>
+<li>Docs: BEST_PRACTICES names the deploy kit this repo runs, Squire 0.11.1 (it said 0.10.5). Content only.</li>
 </ul>
 <h2 id="0-8-0-2026-11-14">[0.8.0] - <span class="docs-heading-tail"><span>2026-11-14</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-8-0-2026-11-14">#</a></span></h2>
 <ul>
