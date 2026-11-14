@@ -61,7 +61,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 - [SESAME in a raw PHP app](https://sesame.apps.wayne.edu/#prompt-raw-php): Sets up the config, the driver and a user resolver by hand, on your app's own session, with a logout that only accepts a POST. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
 - [SESAME in a Laravel app with Blade](https://sesame.apps.wayne.edu/#prompt-laravel-blade): Publishes the config, writes a user resolver, puts auth.sesame on your routes and adds a sign-out form with a CSRF token. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
 - [SESAME in a Laravel app with Inertia and Vue](https://sesame.apps.wayne.edu/#prompt-laravel-inertia): Uses the same adapter. Routes are guarded on the server, and Vue gets only the user fields it needs as a prop. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
-- [Move a Laravel app from wayne-cas to SESAME](https://sesame.apps.wayne.edu/#prompt-wayne-cas): The shim keeps the old names, so most of the move is the mapping table. The agent lists every wayne-cas part before it swaps one. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
+- [Move a Laravel app from wayne-cas to SESAME](https://sesame.apps.wayne.edu/#prompt-wayne-cas): No shim since 0.8.0: the old names go, SESAME's own come in, and the mapping table says which is which. The agent lists every wayne-cas part before it swaps one. The prompt itself is in https://sesame.apps.wayne.edu/index.md.
 
 ## Source
 
