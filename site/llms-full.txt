@@ -2083,6 +2083,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Added: `Waynestate\Sesame\Laravel\ModelUserResolver`, SESAME's own user resolver for a model with a static `findOrImportUser`: it finds the user through `auth.providers.users.model` with the verified username as the access ID, throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, anything else passed through). The wayne-cas shim's `UserResolver` now wraps it and keeps its messages word for word, and the missing `sesame.user_resolver` error names `ModelUserResolver`. An app moving off the shim sets `user_resolver` to it, swaps the `wayne.cas` middleware for `auth.sesame`, drops `implements WayneCasable` from the model, and copies the `ReadOnlyAttributes` trait into the app; see the new "Leaving the shim" section of the Moving from wayne-cas guide.
+- Deprecated: the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias; 0.8.0 removes both. Move to `\Waynestate\Sesame\Laravel\ModelUserResolver` and `auth.sesame` before then ("Leaving the shim" in the Moving from wayne-cas guide).
 - Removed: the GitHub Actions workflow; CI runs on git.wayne.edu only (the GitHub copy is a mirror).
 - Changed: `src/Support/Setting.php` and the shared part of the WSU values guide now come from Playbook's `bin/setting-sync.php`, and `composer setting:check` (part of `composer ci`) fails when either drifts (D-097).
 - Changed: CI pins Preflight 0.9.0 (every GitLab component include and the GitHub reusable workflow at the 0.9.0 tag commit), and `tools/a11y/check.mjs` is recopied from that tag (its `pages` list now takes `""` for the site root). The Gitleaks config is back to `.gitleaks.toml`, the name Gitleaks itself uses, because 0.9.0's `config_path` accepts a leading dot; `gitleaks.toml` is gone.
@@ -3222,9 +3224,9 @@ Config keys (in `config/sesame.php`):
 | `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
 | `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
-| `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
+| `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. For a model with a static `findOrImportUser`, use the ready-made `\Waynestate\Sesame\Laravel\ModelUserResolver`. |
 
-A missing `user_resolver` fails with an error that names the wayne-cas resolver class. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.
+A missing `user_resolver` fails with an error that names `ModelUserResolver`, the ready-made resolver for a model with a static `findOrImportUser`. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.
 
 ### Routes [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#routes)
 
@@ -3281,9 +3283,9 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. The wayne-cas shim already implements it, looking the user up through `auth.providers.users.model` (an Eloquent model works as it is from 0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas app needs no resolver of its own); a resolver that does not implement it keeps handing back the stored copy, as it always has.
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. The wayne-cas shim (`\Waynestate\Sesame\WayneCas\UserResolver`) does the same job but is deprecated, and goes away in 0.8.0; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
 
-On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. The wayne-cas shim looks the array up through the model itself, so a wayne-cas app needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
+On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. `ModelUserResolver` looks the array up through the model itself, so an app on it needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
 ```php
 public function refreshUser(mixed $user): mixed
@@ -3584,6 +3586,16 @@ The service URL. wayne-cas built the service URL from the current request. SESAM
 #### `use2FA` [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#use2fa)
 
 `use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry. When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning once and leaves the 2FA to the app.
+
+### Leaving the shim [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim)
+
+The shim is deprecated, and 0.8.0 removes the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` alias. To leave the shim before then:
+
+1. **`config/sesame.php`.** Make `user_resolver` `\Waynestate\Sesame\Laravel\ModelUserResolver::class`. It does exactly what the shim did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser`, and it looks the stored user up again on every request.
+2. **Routes.** Swap the middleware from `'wayne.cas'` to `'auth.sesame'`. Two differences: a guest gets a redirect to the login route (a JSON request a 401) instead of the 403 wayne-cas returned, and `auth.sesame` belongs on the app's route groups, not the global `web` group, because it does not let the `sesame.*` routes through.
+3. **The model.** Keep its static `findOrImportUser`, and drop `implements WayneCasable`.
+4. **`ReadOnlyAttributes`.** An app that uses the `ReadOnlyAttributes` trait copies it into the app (for example `app/Models/Concerns/ReadOnlyAttributes.php`, with the namespace changed) before taking 0.8.0, which removes it with the rest of the namespace.
+5. **Verify.** Sign in, and the log no longer carries the deprecation line.
 
 ### What Booster leaves for you [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#what-booster-leaves-for-you)
 
@@ -6031,6 +6043,19 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.7.5 (2026-11-14) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-5-2026-11-14)
+
+**Added.** A native user resolver, `Waynestate\Sesame\Laravel\ModelUserResolver`, that does exactly what the wayne-cas shim's `UserResolver` did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser` (the verified username as the access ID), throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model is looked up through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, and anything else passes through). An app that was on the shim needs no resolver code of its own: set `user_resolver` to `ModelUserResolver::class` and it behaves as before, minus the deprecation line. The shim now wraps the new class instead of carrying the logic itself, and the missing `sesame.user_resolver` error names `ModelUserResolver`.
+
+**Deprecated.** The `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias. 0.8.0 removes both, so take the way out now if you can: see [Leaving the shim](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim). An app that stays on the shim works unchanged in 0.7.x.
+
+**Steps.**
+
+1. `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
+2. To leave the shim: set `user_resolver` in `config/sesame.php` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, swap `'wayne.cas'` for `'auth.sesame'` on the app's route groups, drop `implements WayneCasable` from the user model (it keeps its static `findOrImportUser`), and copy the `ReadOnlyAttributes` trait into the app if it uses it.
+
+**How to verify.** Sign in, and the log no longer carries the deprecation line (`wayne-cas compatibility is deprecated`). Guests get a redirect to the login route, or a 401 for a JSON request, instead of the shim's 403.
 
 ### 0.7.4 (2026-11-10) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-4-2026-11-10)
 

@@ -94,6 +94,16 @@ The service URL. wayne-cas built the service URL from the current request. SESAM
 
 `use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry. When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning once and leaves the 2FA to the app.
 
+## Leaving the shim [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim)
+
+The shim is deprecated, and 0.8.0 removes the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` alias. To leave the shim before then:
+
+1. **`config/sesame.php`.** Make `user_resolver` `\Waynestate\Sesame\Laravel\ModelUserResolver::class`. It does exactly what the shim did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser`, and it looks the stored user up again on every request.
+2. **Routes.** Swap the middleware from `'wayne.cas'` to `'auth.sesame'`. Two differences: a guest gets a redirect to the login route (a JSON request a 401) instead of the 403 wayne-cas returned, and `auth.sesame` belongs on the app's route groups, not the global `web` group, because it does not let the `sesame.*` routes through.
+3. **The model.** Keep its static `findOrImportUser`, and drop `implements WayneCasable`.
+4. **`ReadOnlyAttributes`.** An app that uses the `ReadOnlyAttributes` trait copies it into the app (for example `app/Models/Concerns/ReadOnlyAttributes.php`, with the namespace changed) before taking 0.8.0, which removes it with the rest of the namespace.
+5. **Verify.** Sign in, and the log no longer carries the deprecation line.
+
 ## What Booster leaves for you [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#what-booster-leaves-for-you)
 
 - Duo 2FA is not carried. If the app had `use2FA` enabled, re-enable two-factor in the app itself, and drop the `DUO_HOSTNAME`, `DUO_IKEY`, `DUO_SKEY` and `DUO_AKEY` settings: they do nothing under SESAME.

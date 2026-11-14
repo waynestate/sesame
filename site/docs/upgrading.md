@@ -10,6 +10,19 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.7.5 (2026-11-14) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-5-2026-11-14)
+
+**Added.** A native user resolver, `Waynestate\Sesame\Laravel\ModelUserResolver`, that does exactly what the wayne-cas shim's `UserResolver` did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser` (the verified username as the access ID), throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model is looked up through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, and anything else passes through). An app that was on the shim needs no resolver code of its own: set `user_resolver` to `ModelUserResolver::class` and it behaves as before, minus the deprecation line. The shim now wraps the new class instead of carrying the logic itself, and the missing `sesame.user_resolver` error names `ModelUserResolver`.
+
+**Deprecated.** The `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias. 0.8.0 removes both, so take the way out now if you can: see [Leaving the shim](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim). An app that stays on the shim works unchanged in 0.7.x.
+
+**Steps.**
+
+1. `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
+2. To leave the shim: set `user_resolver` in `config/sesame.php` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, swap `'wayne.cas'` for `'auth.sesame'` on the app's route groups, drop `implements WayneCasable` from the user model (it keeps its static `findOrImportUser`), and copy the `ReadOnlyAttributes` trait into the app if it uses it.
+
+**How to verify.** Sign in, and the log no longer carries the deprecation line (`wayne-cas compatibility is deprecated`). Guests get a redirect to the login route, or a 401 for a JSON request, instead of the shim's 403.
+
 ## 0.7.4 (2026-11-10) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-4-2026-11-10)
 
 No breaks, and no library code changes: docs, the front page and the deploy layer (PROCTOR ^0.15, Squire 0.10.7) only. Upgrade with `composer update waynestate/sesame` (the `^0.7` constraint already takes it).
