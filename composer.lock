@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a8aa66d550de91ece5771781477b973",
+    "content-hash": "29b5195eff76eeb1619ab0535b056333",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -10677,16 +10677,16 @@
         },
         {
             "name": "waynestate/pinstripe",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waynestate/pinstripe.git",
-                "reference": "46963d88a179ddeaa899c39a04616267ca9527d3"
+                "reference": "8572c46f2dc0f627664c05ea3412ad7fedf2196c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/46963d88a179ddeaa899c39a04616267ca9527d3",
-                "reference": "46963d88a179ddeaa899c39a04616267ca9527d3",
+                "url": "https://api.github.com/repos/waynestate/pinstripe/zipball/8572c46f2dc0f627664c05ea3412ad7fedf2196c",
+                "reference": "8572c46f2dc0f627664c05ea3412ad7fedf2196c",
                 "shasum": ""
             },
             "require": {
@@ -10708,7 +10708,7 @@
             },
             "suggest": {
                 "larastan/larastan": "^3.13 (Laravel apps: include phpstan/laravel.neon)",
-                "rector/rector": "^2.8 (apps: use rector/base.php from your rector.php)"
+                "rector/rector": "^2.8 (apps: use rector/base.php from your rector.php, rector/strict-types.php to declare strict types file by file, and rector/levels.php to climb one rule level at a time)"
             },
             "bin": [
                 "bin/pinstripe-baseline"
@@ -10728,14 +10728,14 @@
             "license": [
                 "MIT"
             ],
-            "description": "The coding standard for the Wayne State app stack: shared Pint and PHPStan presets.",
+            "description": "The coding standard for the Wayne State app stack: shared Pint, PHPStan and Rector presets, and banned calls.",
             "homepage": "https://pinstripe.apps.wayne.edu/",
             "support": {
                 "issues": "https://git.wayne.edu/enterprise-apps/pinstripe/-/issues",
                 "source": "https://github.com/waynestate/pinstripe"
             },
-            "time": "2026-11-09T05:15:21+00:00",
-            "published-time": "2026-11-09T21:53:38+00:00"
+            "time": "2026-11-11T12:38:31+00:00",
+            "published-time": "2026-11-11T23:28:29+00:00"
         }
     ],
     "aliases": [],
