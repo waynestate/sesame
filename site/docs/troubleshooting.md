@@ -260,21 +260,21 @@ Warning
 
 The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
 
-### The app still reads wayne-cas names and you expect SESAME behavior [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior)
+### After updating to 0.8, a class in `Waynestate\Sesame\WayneCas` is not found, or the `wayne.cas` middleware is unknown [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#after-updating-to-0-8-a-class-in-waynestate-sesame-waynecas-is-not-found-or-the-wayne-cas-middleware-is-unknown)
 
-**Cause.** The app moved to SESAME through the shim, which keeps the wayne-cas names and behavior and says once (in the log) that it is a deprecated bridge. For example, `use2FA` runs a Duo challenge the shim does not carry: when the app still has `wayne-cas.use2FA` switched on, the shim logs a warning once and leaves the 2FA to the app.
+**Cause.** SESAME 0.8.0 removed the wayne-cas shim: the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias are gone.
 
-**Fix.** Follow the mapping in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html), or take the easy way: Booster's `cas-to-sesame` hop, planned with `--sesame`.
+**Fix.** Take the steps in [Leaving the shim](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim) while the app is still on 0.7.x, or let Booster's `cas-to-sesame` hop do it.
 
-**Check.** After the move, log in through the pre-production host before you ship, and check the session timeout, the Access ID attribute and Duo there. `tests/Laravel/WayneCasShimTest.php` covers the shim.
+**Check.** Sign in through the pre-production host and check the session timeout, the Access ID attribute and Duo there.
 
 ### A wayne-cas app signs in, then every page fails with `InvalidConfig` naming a static `find` method [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method)
 
 **Cause.** SESAME 0.6.1 and earlier: the wayne-cas shim's `refreshUser()` looked for a declared static `find` method on `auth.providers.users.model`. An Eloquent model reaches `find()` through its query builder instead of declaring it, so the check failed on every signed-in request.
 
-**Fix.** `composer update waynestate/sesame` to 0.6.2 or later. The shim looks an Eloquent model up through `query()->find()` now. If the app worked around the error with its own resolver subclass or `refreshUser()`, delete it and point `user_resolver` back at `Waynestate\Sesame\WayneCas\UserResolver`.
+**Fix.** `composer update waynestate/sesame` to 0.6.2 or later: from 0.6.2 the shim looked an Eloquent model up through `query()->find()`. On 0.8, point `user_resolver` at `\Waynestate\Sesame\Laravel\ModelUserResolver::class`.
 
-**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/WayneCasShimTest.php` covers an Eloquent model and a plain class with a static `find`.
+**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/ModelUserResolverTest.php` covers an Eloquent model and a plain class with a static `find`.
 
 ## Build, CI and docs [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#build-ci-and-docs)
 
@@ -331,6 +331,6 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html): the session setup this page assumes.
 - [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html): the adapter's config keys and routes.
 - [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html): the two clocks every session runs on.
-- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html): the shim and the Booster hop.
+- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html): the Booster hop and the steps by hand.
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html): every `SESAME_*` setting, including the generated environment reference.
 - [Upgrading](https://sesame.apps.wayne.edu/docs/upgrading.html): what changed between the versions.

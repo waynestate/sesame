@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Removed: the wayne-cas shim. The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes`, `Deprecation`) and the `wayne.cas` middleware alias are gone, as 0.7.5 announced. An app still on them sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, swaps `wayne.cas` for `auth.sesame`, drops `implements WayneCasable`, and keeps its own copy of the `ReadOnlyAttributes` trait ("Leaving the shim" in the Moving from wayne-cas guide). Booster's `cas-to-sesame` hop does all four.
+
 ## [0.7.5] - 2026-11-14
 
 - Added: `Waynestate\Sesame\Laravel\ModelUserResolver`, SESAME's own user resolver for a model with a static `findOrImportUser`: it finds the user through `auth.providers.users.model` with the verified username as the access ID, throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, anything else passed through). The wayne-cas shim's `UserResolver` now wraps it and keeps its messages word for word, and the missing `sesame.user_resolver` error names `ModelUserResolver`. An app moving off the shim sets `user_resolver` to it, swaps the `wayne.cas` middleware for `auth.sesame`, drops `implements WayneCasable` from the model, and copies the `ReadOnlyAttributes` trait into the app; see the new "Leaving the shim" section of the Moving from wayne-cas guide.

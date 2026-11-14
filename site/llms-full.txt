@@ -1285,10 +1285,10 @@ fails the check.
 ### Laravel
 
 The Laravel adapter is a service provider that binds the core into the
-container, registers the `auth.sesame` and `wayne.cas` middleware aliases,
-and, unless the app has taken the routes over, registers the login, logout
-and status routes. It holds no rules of its own: every rule lives in the
-core.
+container, registers the `auth.sesame`, `sesame.mfa` and `sesame.context`
+middleware aliases, and, unless the app has taken the routes over, registers
+the login, logout and status routes. It holds no rules of its own: every rule
+lives in the core.
 
 The provider is discovered automatically. Publish the config with:
 
@@ -1398,11 +1398,10 @@ back from its own store on every request, so a change made after the sign-in
 (a removed role, a deleted account) shows up from the next request on, the
 resolver also implements `Waynestate\Sesame\RefreshesUser`: its
 `refreshUser($user)` runs on every request, and a `null` answer signs the
-session out. The wayne-cas shim already implements it, looking the user up
-through `auth.providers.users.model` (an Eloquent model works as it is from
-0.6.2 on, and with JSON session serialization from 0.6.3 on, so a wayne-cas
-app needs no resolver of its own); a resolver that
-does not implement it keeps handing back the stored copy, as it always has.
+session out. `ModelUserResolver` implements it, looking the user up through
+`auth.providers.users.model` (an Eloquent model works as it is); a resolver
+that does not implement it keeps handing back the stored copy, as it always
+has.
 
 The same user is available through Laravel's own auth, because the provider
 registers a `sesame` guard driver. Point a guard in `config/auth.php` at it:
@@ -1503,14 +1502,14 @@ first. What the hop does:
 - Writes `config/sesame.php` from the app's `config/wayne-cas.php` when the
   old `root` is a plain string (the old root becomes the fallback for
   `cas.base_url`), or from SESAME's published defaults when the app has no
-  wayne-cas config at all. `user_resolver` defaults to the compat resolver.
+  wayne-cas config at all. `user_resolver` defaults to
+  `\Waynestate\Sesame\Laravel\ModelUserResolver::class`.
 - Moves the CAS middleware off the global `web` group and onto the app's web
-  routes, with the `wayne.cas` alias registered against SESAME's
-  `WayneAuthenticate`.
+  routes, with the `auth.sesame` middleware.
 - Points the web guard at the `sesame` driver and the users provider at
   `eloquent`, adding a model key when the provider has none.
-- Rewrites user models that use `WayneCasable` as a trait to
-  `implements WayneCasable` plus `use ReadOnlyAttributes`.
+- Rewrites user models so they keep their static `findOrImportUser` and use
+  the app's own copy of the `ReadOnlyAttributes` trait.
 - Swaps the Composer requirement to `waynestate/sesame:^0.7` (SESAME is on
   Packagist, so no extra repository is needed) and drops the `wayne-cas`
   package, any `wayne-cas` path entry and its VCS repository entries.
@@ -1529,26 +1528,33 @@ file.
 
 #### By hand
 
-The shim keeps the wayne-cas names and behavior, and it says once (in the
-log) that it is a deprecated bridge.
+SESAME 0.8.0 has no compatibility layer, so the app moves straight to
+SESAME's own names. The full guide is
+[Moving from wayne-cas](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/moving-from-wayne-cas.md); the
+`ReadOnlyAttributes` trait source is in its
+[The ReadOnlyAttributes trait](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/moving-from-wayne-cas.md#the-readonlyattributes-trait)
+section.
 
 The mapping:
 
-| wayne-cas | SESAME |
+| wayne-cas | SESAME 0.8.0 |
 |---|---|
 | `wayne-cas.root` | `sesame.cas.base_url` |
 | `auth.providers.users.model` | `auth.providers.users.model` (unchanged) |
-| `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
-| `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
+| the model's `WayneCasable` trait | the model keeps its static `findOrImportUser`; `config/sesame.php` sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class` |
+| the model's read-only attributes | the app's own copy of the `ReadOnlyAttributes` trait (`app/Models/Concerns/ReadOnlyAttributes.php`) |
+| `WayneAuthenticate` middleware | `auth.sesame` on the app's route groups (a guest gets a redirect to the login route, a JSON request a 401, not wayne-cas's 403) |
 | `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame`, or `app(Sesame::class)->user()` |
-| `use2FA` | not supported; the shim logs a warning when it is on |
+| `use2FA` | not carried; require MFA with the `sesame.mfa` middleware or leave it to Duo at the IdP |
 
 The model. wayne-cas found the user through the model's static
-`findOrImportUser`, with the verified username as the access ID. The shim
-keeps that, and the model keeps its wayne-cas shape:
+`findOrImportUser`, with the verified username as the access ID. The model
+keeps that method:
 
 ```php
-class User extends Model implements WayneCasable
+use App\Models\Concerns\ReadOnlyAttributes;
+
+class User extends Model
 {
     use Notifiable, ReadOnlyAttributes;
 
@@ -1566,32 +1572,18 @@ class User extends Model implements WayneCasable
 }
 ```
 
-The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from
-protected to public, keeping its `$persistedAttributes` parameter. The
-interface and the trait share that signature, so a model that satisfies one
-satisfies both.
+`ModelUserResolver` looks the signed-in user up again on every request (a
+plain find by primary key, never an import), so a deleted account stays
+deleted. The `ReadOnlyAttributes` trait is the app's own copy now: the
+source to paste is in the guide's [The ReadOnlyAttributes
+trait](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/moving-from-wayne-cas.md#the-readonlyattributes-trait)
+section.
 
-The shim also looks the signed-in user up again on every request (a plain
-find by primary key, never an import). Take SESAME 0.6.3 or later for this:
-from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no
-`refreshUser()` of your own, and from 0.6.3 that holds when
-`config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier every signed-in request
-failed with `InvalidConfig`, because the refresh asked for a declared static
-`find` method; an app that wrote its own resolver to get around that can
-delete it and set `user_resolver` back to
-`Waynestate\Sesame\WayneCas\UserResolver`.
-
-The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the
-`Waynestate\Sesame\WayneCas` namespace.
-
-The middleware. wayne-cas's `WayneAuthenticate` middleware is kept as the
-`wayne.cas` alias. It checks the SESAME session instead of the Laravel auth
-guard, and it sends unauthenticated users to the `sesame.login` route. The
-AJAX 403 is kept, because wayne-cas returned it. It is safe in the global
-`web` group (it lets the `sesame.login`, `sesame.callback` and
-`sesame.logout` routes straight through), though putting it on the app's
-routes is still the recommended setup; an app that takes the routes over
-with `sesame.routes = false` must keep those names or exclude its routes.
+The middleware. Protect the app's route groups with `auth.sesame`. A guest
+gets a redirect to the login route, a JSON request a 401. It belongs on the
+app's route groups, not the global `web` group, because it does not let the
+`sesame.*` routes through; an app that takes the routes over with
+`sesame.routes = false` must keep those names or exclude its routes.
 
 The guard. wayne-cas apps that read the user through `auth()->user()` can
 keep that call: point the app's guard at the `sesame` driver (see "Laravel")
@@ -1603,9 +1595,15 @@ The service URL. wayne-cas built the service URL from the current request.
 SESAME takes `sesame.cas.service_url` from config; the Laravel adapter
 defaults it to the app's `/login` route when it is not set.
 
-`use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry.
-When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning
-once and leaves the 2FA to the app.
+`use2FA`. wayne-cas's `use2FA` runs a Duo challenge that SESAME does not
+carry. Require MFA on the routes that need it with the `sesame.mfa`
+middleware, or leave 2FA to Duo at the identity provider. Drop the
+`DUO_HOSTNAME`, `DUO_IKEY`, `DUO_SKEY` and `DUO_AKEY` settings: they do
+nothing under SESAME.
+
+An app still on 0.7.x takes the steps in the guide's [Leaving the
+shim](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/moving-from-wayne-cas.md#leaving-the-shim) section before
+`composer update` to 0.8.
 
 #### What Booster leaves for you
 
@@ -1615,7 +1613,7 @@ once and leaves the 2FA to the app.
 - Log in through the pre-production host before you ship, and check the
   session timeout, the Access ID attribute and Duo there.
 - `auth()->user()` now comes from SESAME's guard and is reloaded every
-  request (the compat resolver looks the user up again through
+  request (`ModelUserResolver` looks the user up again through
   `auth.providers.users.model`), so check that signed-in pages and any Gate
   or policy checks still work.
 
@@ -2084,6 +2082,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+- Removed: the wayne-cas shim. The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes`, `Deprecation`) and the `wayne.cas` middleware alias are gone, as 0.7.5 announced. An app still on them sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, swaps `wayne.cas` for `auth.sesame`, drops `implements WayneCasable`, and keeps its own copy of the `ReadOnlyAttributes` trait ("Leaving the shim" in the Moving from wayne-cas guide). Booster's `cas-to-sesame` hop does all four.
 
 ### \[0.7.5\] - 2026-11-14 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-5-2026-11-14)
 
@@ -3176,7 +3176,7 @@ Source: https://sesame.apps.wayne.edu/docs/guides/laravel.html
 
 ## Laravel [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#laravel)
 
-The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame` and `wayne.cas` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html) and [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html) for the checks the middleware runs.
+The Laravel adapter is a service provider that binds the core into the container, registers the `auth.sesame`, `sesame.mfa` and `sesame.context` middleware aliases, and, unless the app has taken the routes over, registers the login and logout routes. It holds no rules of its own: every rule lives in the core. This page is how to wire it into an app and read the signed-in user back; next, see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html) and [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html) for the checks the middleware runs.
 
 ### Install and publish [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#install-and-publish)
 
@@ -3277,7 +3277,7 @@ Route::get('/vault', [VaultController::class, 'index'])
 
 A request without the context gets a 403, or a JSON 403 with a `message` for JSON requests. A route that names no context fails closed. See [Step-up (authentication context)](https://sesame.apps.wayne.edu/docs/guides/step-up.html).
 
-The `wayne.cas` alias is registered against SESAME's `WayneAuthenticate`, for apps moving off wayne-cas; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
+An app moving off wayne-cas follows [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
 
 ### Reading the user [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#reading-the-user)
 
@@ -3287,7 +3287,7 @@ The app's user is available through the facade:
 $user = app(\Waynestate\Sesame\Sesame::class)->user();
 ```
 
-SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. The wayne-cas shim (`\Waynestate\Sesame\WayneCas\UserResolver`) does the same job but is deprecated, and goes away in 0.8.0; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
+SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. An app moving off wayne-cas points `user_resolver` at it as well; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
 
 On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. `ModelUserResolver` looks the array up through the model itself, so an app on it needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
@@ -3515,10 +3515,10 @@ Still on the older Wayne Auth SSO cookie (`new WayneAuth(...)`, `authenticateSSO
 
 Booster plans the hop with `--sesame`, and leaves it out with a warning when the plan ends below PHP 8.3, which SESAME needs. It lands just before the hop from Laravel 10 to 11, and while PHP is still below 8.3 the PHP hops go first. What the hop does:
 
-- Writes `config/sesame.php` from the app's `config/wayne-cas.php` when the old `root` is a plain string (the old root becomes the fallback for `cas.base_url`), or from SESAME's published defaults when the app has no wayne-cas config at all. `user_resolver` defaults to the compat resolver.
-- Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `wayne.cas` alias registered against SESAME's `WayneAuthenticate`.
+- Writes `config/sesame.php` from the app's `config/wayne-cas.php` when the old `root` is a plain string (the old root becomes the fallback for `cas.base_url`), or from SESAME's published defaults when the app has no wayne-cas config at all. `user_resolver` defaults to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`.
+- Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `auth.sesame` middleware.
 - Points the web guard at the `sesame` driver and the users provider at `eloquent`, adding a model key when the provider has none.
-- Rewrites user models that use `WayneCasable` as a trait to `implements WayneCasable` plus `use ReadOnlyAttributes`.
+- Rewrites user models so they keep their static `findOrImportUser` and use the app's own copy of the `ReadOnlyAttributes` trait.
 - Swaps the Composer requirement to `waynestate/sesame:^0.7` (SESAME is on Packagist, so no extra repository is needed; Booster 1.14.0 and later write `^0.7`. Booster 1.12.0 and 1.13.0 wrote `^0.6`, so an app they hopped takes the [0.7.0 step](https://sesame.apps.wayne.edu/docs/upgrading.html) to move to `^0.7`, and an app hopped by an earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0 and 0.7.0 steps) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
@@ -3529,29 +3529,30 @@ It never runs app code: the old files are read with conservative patterns, and a
 
 ### By hand [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#by-hand)
 
-Warning
-
-The shim keeps the wayne-cas names and behavior, and it says once (in the log) that it is a deprecated bridge.
+SESAME 0.8.0 has no compatibility layer, so the app moves straight to SESAME's own names.
 
 #### The mapping [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-mapping)
 
 The mapping:
 
-| wayne-cas | SESAME |
+| wayne-cas | SESAME 0.8.0 |
 | --- | --- |
 | `wayne-cas.root` | `sesame.cas.base_url` |
 | `auth.providers.users.model` | `auth.providers.users.model` (unchanged) |
-| `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
-| `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
+| the model's `WayneCasable` trait | the model keeps its static `findOrImportUser`; `config/sesame.php` sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class` |
+| the model's read-only attributes | the app's own copy of the `ReadOnlyAttributes` trait (`app/Models/Concerns/ReadOnlyAttributes.php`) |
+| `WayneAuthenticate` middleware | `auth.sesame` on the app's route groups (a guest gets a redirect to the login route, a JSON request a 401, not wayne-cas's 403) |
 | `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame`, or `app(Sesame::class)->user()` |
-| `use2FA` | not supported; the shim logs a warning when it is on |
+| `use2FA` | not carried; require MFA with the `sesame.mfa` middleware or leave it to Duo at the IdP |
 
 #### The model [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-model)
 
-The model. wayne-cas found the user through the model's static `findOrImportUser`, with the verified username as the access ID. The shim keeps that, and the model keeps its wayne-cas shape:
+The model. wayne-cas found the user through the model's static `findOrImportUser`, with the verified username as the access ID. The model keeps that method, and `config/sesame.php` points `user_resolver` at `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, which finds the user through it:
 
 ```php
-class User extends Model implements WayneCasable
+use App\Models\Concerns\ReadOnlyAttributes;
+
+class User extends Model
 {
     use Notifiable, ReadOnlyAttributes;
 
@@ -3569,19 +3570,17 @@ class User extends Model implements WayneCasable
 }
 ```
 
-The one change a wayne-cas model needs: `getReadOnlyAttributes` goes from protected to public, keeping its `$persistedAttributes` parameter. The interface and the trait share that signature, so a model that satisfies one satisfies both.
+The read-only attributes come from the app's own copy of the trait, in `app/Models/Concerns/ReadOnlyAttributes.php` ([The ReadOnlyAttributes trait](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-readonlyattributes-trait) below). `getReadOnlyAttributes` is public, keeping its `$persistedAttributes` parameter.
 
-The shim also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). Take SESAME 0.6.3 or later for this: from 0.6.2 an Eloquent model works as it is, with no resolver subclass and no `refreshUser()` of your own, and from 0.6.3 that holds when `config/session.php` sets `'serialization' => 'json'` too. On 0.6.1 and earlier the refresh asked for a declared static `find` method, which Eloquent models do not have, and every signed-in request failed with `InvalidConfig`; an app that wrote its own resolver to get around that can delete it and set `user_resolver` back to `Waynestate\Sesame\WayneCas\UserResolver`.
-
-The `WayneCasable` interface and the `ReadOnlyAttributes` trait are in the `Waynestate\Sesame\WayneCas` namespace.
+`ModelUserResolver` also looks the signed-in user up again on every request (a plain find by primary key, never an import, so a deleted account stays deleted). An Eloquent model works as it is, with or without JSON session serialization, so the app needs no resolver of its own.
 
 #### The middleware [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-middleware)
 
-The middleware. wayne-cas's `WayneAuthenticate` middleware is kept as the `wayne.cas` alias. It checks the SESAME session instead of the Laravel auth guard, and it sends unauthenticated users to the `sesame.login` route. The AJAX 403 is kept, because wayne-cas returned it. It is safe in the global `web` group (it lets the `sesame.login`, `sesame.callback` and `sesame.logout` routes straight through), though putting it on the app's routes is still the recommended setup; an app that takes the routes over with `sesame.routes = false` must keep those names or exclude its routes.
+The middleware. Protect the app's route groups with the `auth.sesame` middleware. It checks the SESAME session instead of the Laravel auth guard, and it sends unauthenticated users to the `sesame.login` route: a guest gets a redirect to the login route, and a JSON request gets a 401 (wayne-cas returned a 403). It belongs on the app's route groups, not the global `web` group, because it does not let the `sesame.login`, `sesame.callback` and `sesame.logout` routes through; an app that takes the routes over with `sesame.routes = false` must keep those names or exclude its routes.
 
 #### The guard [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-guard)
 
-The guard. wayne-cas apps that read the user through `auth()->user()` can keep that call: point the app's guard at the `sesame` driver (see [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html)) and `auth()->user()`, `Auth::check()` and `auth()->logout()` all work against the SESAME session. Without the guard, the equivalent is `app(Sesame::class)->user()`.
+The guard. Apps that read the user through `auth()->user()` keep that call: point the app's guard at the `sesame` driver (see [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html)) and `auth()->user()`, `Auth::check()` and `auth()->logout()` all work against the SESAME session. Without the guard, the equivalent is `app(Sesame::class)->user()`.
 
 #### The service URL [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-service-url)
 
@@ -3589,23 +3588,161 @@ The service URL. wayne-cas built the service URL from the current request. SESAM
 
 #### `use2FA` [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#use2fa)
 
-`use2FA`. wayne-cas's `use2FA` runs a Duo challenge the shim does not carry. When the app still has `wayne-cas.use2FA` switched on, the shim logs a warning once and leaves the 2FA to the app.
+`use2FA`. wayne-cas's `use2FA` runs a Duo challenge that SESAME does not carry. Require MFA on the routes that need it with the `sesame.mfa` middleware (see [Requiring MFA](https://sesame.apps.wayne.edu/docs/guides/requiring-mfa.html)), or leave 2FA to Duo at the identity provider. Drop the `DUO_HOSTNAME`, `DUO_IKEY`, `DUO_SKEY` and `DUO_AKEY` settings: they do nothing under SESAME.
 
-### Leaving the shim [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim)
+### Leaving the shim (apps on 0.7.x) [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim-apps-on-0-7-x)
 
-The shim is deprecated, and 0.8.0 removes the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` alias. To leave the shim before then:
+SESAME 0.8.0 has removed the shim: the `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes` and `Deprecation`) and the `wayne.cas` middleware alias are gone. An app still on the shim does these steps while it is on 0.7.x, before `composer update` to 0.8.0:
 
 1. **`config/sesame.php`.** Make `user_resolver` `\Waynestate\Sesame\Laravel\ModelUserResolver::class`. It does exactly what the shim did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser`, and it looks the stored user up again on every request.
 2. **Routes.** Swap the middleware from `'wayne.cas'` to `'auth.sesame'`. Two differences: a guest gets a redirect to the login route (a JSON request a 401) instead of the 403 wayne-cas returned, and `auth.sesame` belongs on the app's route groups, not the global `web` group, because it does not let the `sesame.*` routes through.
-3. **The model.** Keep its static `findOrImportUser`, and drop `implements WayneCasable`.
-4. **`ReadOnlyAttributes`.** An app that uses the `ReadOnlyAttributes` trait copies it into the app (for example `app/Models/Concerns/ReadOnlyAttributes.php`, with the namespace changed) before taking 0.8.0, which removes it with the rest of the namespace.
+3. **The model.** Keep its static `findOrImportUser`, and drop the old `WayneCasable` interface from the class declaration.
+4. **`ReadOnlyAttributes`.** An app that uses the `ReadOnlyAttributes` trait copies it from [The ReadOnlyAttributes trait](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-readonlyattributes-trait) below into the app (for example `app/Models/Concerns/ReadOnlyAttributes.php`) before taking 0.8.0, which removes it with the rest of the namespace.
 5. **Verify.** Sign in, and the log no longer carries the deprecation line.
+
+### The ReadOnlyAttributes trait [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#the-readonlyattributes-trait)
+
+SESAME 0.8.0 no longer ships the `ReadOnlyAttributes` trait, so an app keeps this copy of it.
+
+```php
+<?php
+
+namespace App\Models\Concerns;
+
+use Illuminate\Database\Eloquent\Builder;
+
+/**
+ * Class ReadOnlyAttributes
+ * @package App\Models\Concerns
+ *
+ * This trait manages the "extra" attributes that the User model will have, typically fields retrieved
+ * from the Banner database that are immutable.  To use this trait, you must implement the
+ * abstract method `getReadOnlyAttributes` which should return a key=>value pair array of attributes and
+ * attributeValues that will be set as read-only on the model.  How you determine the readOnly attributes
+ * is entirely up to you.
+ */
+trait ReadOnlyAttributes
+{
+    /** @var array<int, string> */
+    private $readOnlyAttributes = [];
+
+    /**
+     * Get an array of attribute => attributeValue pairs that will be read-only for the Eloquent model.
+     * Attributes can be native to the model (i.e. part of the database table).
+     *
+     * The same signature the WayneCasable interface declares, so a model
+     * that implements the interface and uses this trait satisfies both.
+     *
+     * @param array<string, mixed> $persistedAttributes
+     * @return array<string, mixed>
+     */
+    abstract public function getReadOnlyAttributes($persistedAttributes = []): array;
+
+    /**
+     * Get the attributes that have been changed since last sync.
+     * We exclude the read-only attributes so they won't trigger a database call if changed.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDirty()
+    {
+        $dirty = [];
+
+        $attributes = array_filter($this->attributes, function ($key) {
+            return ! in_array($key, (array) $this->readOnlyAttributes, true); // @phpstan-ignore cast.useless (defensive cast: the property is written through an untyped setter)
+        }, ARRAY_FILTER_USE_KEY);
+
+        foreach ($attributes as $key => $value) {
+            if (! array_key_exists($key, $this->original)) {
+                $dirty[$key] = $value;
+            } elseif ($value !== $this->original[$key]) {
+                if ((method_exists($this, 'originalIsNumericallyEquivalent') && ! $this->originalIsNumericallyEquivalent($key))
+                    || (method_exists($this, 'originalIsEquivalent') && ! $this->originalIsEquivalent($key))) { // @phpstan-ignore function.alreadyNarrowedType (guard kept for older Laravel versions without originalIsEquivalent)
+                    $dirty[$key] = $value;
+                }
+            }
+        }
+
+        return $dirty;
+    }
+
+    /**
+     * @param Builder<static> $query
+     * @param array<string, mixed> $attributes
+     * @return void
+     */
+    protected function insertAndSetId(Builder $query, $attributes)
+    {
+        // We exclude the read-only attributes so they aren't persisted
+        $attributes = array_diff($attributes, $this->readOnlyAttributes);
+
+        // Then we let the parent method do all the hard work
+        parent::insertAndSetId($query, $attributes);
+
+        // parent::insertAndSetId() has just set the newly generated key on the
+        // instance. Carry it into $attributes, because setRawAttributes(..., true)
+        // below replaces the whole attribute set and would otherwise discard it,
+        // leaving the model with a null key immediately after save().
+        //
+        // This is latent for the usage the README documents, where the access ID
+        // is the primary key and is assigned before save, so it is already in
+        // $attributes. It bites whenever the key is generated by the database,
+        // which is the ordinary Eloquent case.
+        $attributes[$this->getKeyName()] = $this->getKey();
+
+        // Now we refresh the read-only attributes and values
+        $readOnlyAttributes = $this->getReadOnlyAttributes($attributes);
+
+        // merge them with the native attributes
+        $attributes = array_merge($attributes, $readOnlyAttributes);
+
+        // set them on the instance
+        $this->setRawAttributes($attributes, true);
+
+        // and finally register the read-only attributes to prevent persistence in future database calls
+        $this->setReadOnlyAttributes(array_keys($readOnlyAttributes));
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     * @param string|\UnitEnum|null $connection
+     * @return static
+     */
+    public function newFromBuilder($attributes = [], $connection = null)
+    {
+        // Here we grab the attribute => attributeValue pairs the developer defines for this model
+        $readOnlyAttributes = $this->getReadOnlyAttributes((array) $attributes); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
+
+        // merge them with the native attributes
+        $attributes = array_merge((array) $attributes, $readOnlyAttributes); // @phpstan-ignore cast.useless (defensive cast: the parameter is untyped at runtime)
+
+        // let the parent method do the work of hydrating an instance with them
+        $model = parent::newFromBuilder($attributes, $connection);
+
+        // and finally register the read-only attributes to prevent persistence in future database calls
+        $model->setReadOnlyAttributes(array_keys($readOnlyAttributes));
+
+        // oh yeah, we also have to return the freshly hydrated model. duh!
+        return $model;
+    }
+
+    /**
+     * @param array<int, string> $readOnlyAttributes
+     * @return void
+     */
+    public function setReadOnlyAttributes($readOnlyAttributes)
+    {
+        $this->readOnlyAttributes = $readOnlyAttributes;
+    }
+
+}
+```
 
 ### What Booster leaves for you [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#what-booster-leaves-for-you)
 
 - Duo 2FA is not carried. If the app had `use2FA` enabled, re-enable two-factor in the app itself, and drop the `DUO_HOSTNAME`, `DUO_IKEY`, `DUO_SKEY` and `DUO_AKEY` settings: they do nothing under SESAME.
 - Log in through the pre-production host before you ship, and check the session timeout, the Access ID attribute and Duo there.
-- `auth()->user()` now comes from SESAME's guard and is reloaded every request (the compat resolver looks the user up again through `auth.providers.users.model`), so check that signed-in pages and any Gate or policy checks still work.
+- `auth()->user()` now comes from SESAME's guard and is reloaded every request (`ModelUserResolver` looks the user up again through `auth.providers.users.model`), so check that signed-in pages and any Gate or policy checks still work.
 
 ### Related [#](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#related)
 
@@ -5041,7 +5178,7 @@ The exceptions an app meets, in `Waynestate\Sesame\Exception`:
 
 - The driver implementations: `Waynestate\Sesame\Drivers` (`CasDriver`, `FakeDriver`, `GatewayDriver`, `OAuth2Driver`, `OidcDriver`, `SamlDriver`, `ReplayGuard`, `Psr16ReplayGuard`), documented on the [Drivers](https://sesame.apps.wayne.edu/docs/reference/drivers.html) page.
 - The Laravel adapter: `Waynestate\Sesame\Laravel` (`SesameServiceProvider`, `SesameGuard`, `Authenticate`, `RequireMfa`, `RequireAuthContext`, `LaravelSession`, `LaravelPsr16Cache`, and the `sesame:check` command, `Console\CheckCommand`), documented in the [Laravel guide](https://sesame.apps.wayne.edu/docs/guides/laravel.html).
-- The wayne-cas compatibility layer: `Waynestate\Sesame\WayneCas`, documented in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
+- Moving off wayne-cas: SESAME 0.8.0 has no compatibility layer; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html).
 - The Wayne Auth bridge: `Waynestate\Sesame\WayneAuth\WayneAuth` (deprecated on arrival), documented in [Moving off Wayne Auth](https://sesame.apps.wayne.edu/docs/guides/moving-off-wayne-auth.html).
 
 ### Related [#](https://sesame.apps.wayne.edu/docs/reference/api.html#related)
@@ -5965,21 +6102,21 @@ Warning
 
 The token in those commands is a secret. Keep it in the environment, never in the repository, and remember Composer keeps the git.wayne.edu credentials it asks for in `auth.json` as an `http-basic` entry.
 
-#### The app still reads wayne-cas names and you expect SESAME behavior [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-app-still-reads-wayne-cas-names-and-you-expect-sesame-behavior)
+#### After updating to 0.8, a class in `Waynestate\Sesame\WayneCas` is not found, or the `wayne.cas` middleware is unknown [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#after-updating-to-0-8-a-class-in-waynestate-sesame-waynecas-is-not-found-or-the-wayne-cas-middleware-is-unknown)
 
-**Cause.** The app moved to SESAME through the shim, which keeps the wayne-cas names and behavior and says once (in the log) that it is a deprecated bridge. For example, `use2FA` runs a Duo challenge the shim does not carry: when the app still has `wayne-cas.use2FA` switched on, the shim logs a warning once and leaves the 2FA to the app.
+**Cause.** SESAME 0.8.0 removed the wayne-cas shim: the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias are gone.
 
-**Fix.** Follow the mapping in [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html), or take the easy way: Booster's `cas-to-sesame` hop, planned with `--sesame`.
+**Fix.** Take the steps in [Leaving the shim](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim) while the app is still on 0.7.x, or let Booster's `cas-to-sesame` hop do it.
 
-**Check.** After the move, log in through the pre-production host before you ship, and check the session timeout, the Access ID attribute and Duo there. `tests/Laravel/WayneCasShimTest.php` covers the shim.
+**Check.** Sign in through the pre-production host and check the session timeout, the Access ID attribute and Duo there.
 
 #### A wayne-cas app signs in, then every page fails with `InvalidConfig` naming a static `find` method [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#a-wayne-cas-app-signs-in-then-every-page-fails-with-invalidconfig-naming-a-static-find-method)
 
 **Cause.** SESAME 0.6.1 and earlier: the wayne-cas shim's `refreshUser()` looked for a declared static `find` method on `auth.providers.users.model`. An Eloquent model reaches `find()` through its query builder instead of declaring it, so the check failed on every signed-in request.
 
-**Fix.** `composer update waynestate/sesame` to 0.6.2 or later. The shim looks an Eloquent model up through `query()->find()` now. If the app worked around the error with its own resolver subclass or `refreshUser()`, delete it and point `user_resolver` back at `Waynestate\Sesame\WayneCas\UserResolver`.
+**Fix.** `composer update waynestate/sesame` to 0.6.2 or later: from 0.6.2 the shim looked an Eloquent model up through `query()->find()`. On 0.8, point `user_resolver` at `\Waynestate\Sesame\Laravel\ModelUserResolver::class`.
 
-**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/WayneCasShimTest.php` covers an Eloquent model and a plain class with a static `find`.
+**Check.** Sign in, open a second page, and the log has no `InvalidConfig`. `tests/Laravel/ModelUserResolverTest.php` covers an Eloquent model and a plain class with a static `find`.
 
 ### Build, CI and docs [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#build-ci-and-docs)
 
@@ -6036,7 +6173,7 @@ docker run --rm -v "${PWD}:/app" -w /app php:8.5-cli vendor/bin/phpunit
 - [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html): the session setup this page assumes.
 - [Laravel](https://sesame.apps.wayne.edu/docs/guides/laravel.html): the adapter's config keys and routes.
 - [Session timeouts](https://sesame.apps.wayne.edu/docs/guides/session-timeouts.html): the two clocks every session runs on.
-- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html): the shim and the Booster hop.
+- [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html): the Booster hop and the steps by hand.
 - [Configuration](https://sesame.apps.wayne.edu/docs/reference/configuration.html): every `SESAME_*` setting, including the generated environment reference.
 - [Upgrading](https://sesame.apps.wayne.edu/docs/upgrading.html): what changed between the versions.
 
@@ -6047,6 +6184,17 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.8.0 (unreleased) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-8-0-unreleased)
+
+**Removed.** The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes` and `Deprecation`) and the `wayne.cas` middleware alias. An app that never used the shim has nothing to change but the constraint.
+
+**Steps.**
+
+1. Leave the shim first while the app is still on 0.7.5, by the steps in [Leaving the shim](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html#leaving-the-shim), or let Booster's `cas-to-sesame` hop do it.
+2. `composer require waynestate/sesame:^0.8`: the `^0.7` constraint does not take 0.8.0.
+
+**How to verify.** Sign in, and `grep -rn "WayneCas\|wayne.cas" app bootstrap config routes` prints nothing.
 
 ### 0.7.5 (2026-11-14) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-7-5-2026-11-14)
 
