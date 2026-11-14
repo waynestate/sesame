@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.7.5\] - 2026-11-14 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-5-2026-11-14)
+
 - Added: `Waynestate\Sesame\Laravel\ModelUserResolver`, SESAME's own user resolver for a model with a static `findOrImportUser`: it finds the user through `auth.providers.users.model` with the verified username as the access ID, throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, anything else passed through). The wayne-cas shim's `UserResolver` now wraps it and keeps its messages word for word, and the missing `sesame.user_resolver` error names `ModelUserResolver`. An app moving off the shim sets `user_resolver` to it, swaps the `wayne.cas` middleware for `auth.sesame`, drops `implements WayneCasable` from the model, and copies the `ReadOnlyAttributes` trait into the app; see the new "Leaving the shim" section of the Moving from wayne-cas guide.
 - Deprecated: the `Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias; 0.8.0 removes both. Move to `\Waynestate\Sesame\Laravel\ModelUserResolver` and `auth.sesame` before then ("Leaving the shim" in the Moving from wayne-cas guide).
 - Removed: the GitHub Actions workflow; CI runs on git.wayne.edu only (the GitHub copy is a mirror).

@@ -9,7 +9,7 @@ Each practice has a short statement, one sentence of why, the sources, and how t
 - `Documented`: written down only.
 - `Not yet`: a gap.
 
-The tags describe the repo as it stands on 2026-11-10 (release 0.7.4). The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
+The tags describe the repo as it stands on 2026-11-14 (release 0.7.5). The `fake`, `cas`, `gateway`, `oauth2` and `oidc` drivers exist, and the opt-in `saml` driver joined them on 2026-11-07 (S34, S35 and S47 are tagged by what it runs).
 
 ## 1. Sessions
 
