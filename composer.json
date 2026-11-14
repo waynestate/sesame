@@ -40,7 +40,7 @@
         "phpunit/phpunit": "^11.5",
         "promphp/prometheus_client_php": "^2.15",
         "waynestate/helmet": "^1.4",
-        "waynestate/pinstripe": "^0.3"
+        "waynestate/pinstripe": "^0.4"
     },
     "conflict": {
         "onelogin/php-saml": "<4.3.2",
