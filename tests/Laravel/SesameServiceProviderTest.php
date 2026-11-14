@@ -81,7 +81,7 @@ final class SesameServiceProviderTest extends LaravelTestCase
 
         $this->expectException(InvalidConfig::class);
         $this->expectExceptionMessage(
-            'Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user (wayne-cas apps: \Waynestate\Sesame\WayneCas\UserResolver::class).',
+            'Set sesame.user_resolver to the class that resolves a verified identity to the app\'s user (a model with a static findOrImportUser: \Waynestate\Sesame\Laravel\ModelUserResolver::class).',
         );
 
         $app->make(UserResolver::class);
