@@ -10,7 +10,7 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
-## 0.8.0 (unreleased)
+## 0.8.0 (2026-11-14)
 
 **Removed.** The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes` and `Deprecation`) and the `wayne.cas` middleware alias. An app that never used the shim has nothing to change but the constraint.
 

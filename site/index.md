@@ -8,7 +8,7 @@ generator: Squire agent-ready
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.7.5
+Keys cut while you wait · `waynestate/sesame` 0.8.0
 
 # SESAME
 

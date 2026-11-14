@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.8.0\] - 2026-11-14 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-8-0-2026-11-14)
+
 - Removed: the wayne-cas shim. The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes`, `Deprecation`) and the `wayne.cas` middleware alias are gone, as 0.7.5 announced. An app still on them sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class`, swaps `wayne.cas` for `auth.sesame`, drops `implements WayneCasable`, and keeps its own copy of the `ReadOnlyAttributes` trait ("Leaving the shim" in the Moving from wayne-cas guide). Booster's `cas-to-sesame` hop does all four.
 
 ## \[0.7.5\] - 2026-11-14 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-7-5-2026-11-14)
