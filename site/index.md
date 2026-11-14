@@ -136,7 +136,7 @@ Read first:
 - ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame, and list_stack_rules for the auth chapter. If it is not connected, say so and work from the pages. How to add it: https://advisor.apps.wayne.edu/llms.txt
 
 Task:
-1. Say which kind of app this is: raw PHP, Laravel with Blade, or Laravel with Inertia and Vue. If it uses wayne-cas today, say so: SESAME has a shim for that.
+1. Say which kind of app this is: raw PHP, Laravel with Blade, or Laravel with Inertia and Vue. If it uses wayne-cas today, say so: it moves straight to SESAME's own names, and Booster's cas-to-sesame hop does most of that.
 2. Pick the driver: cas for browser sign-in against Academica, oidc for Entra sign-in, oauth2 for an API that takes bearer tokens, saml only when the app must use a SAML 2.0 IdP, gateway only behind the auth gateway. Say why.
 3. List the settings that driver needs and where each value comes from: the environment, or the Playbook.
 4. Write the plan as numbered steps, starting with `composer require waynestate/sesame`. Change nothing yet.
@@ -243,27 +243,28 @@ Output: the diff, the .env.example lines, then your questions.
 
 ### Move a Laravel app from wayne-cas to SESAME
 
-The shim keeps the old names, so most of the move is the mapping table. The agent lists every wayne-cas part before it swaps one.
+No shim since 0.8.0: the old names go, SESAME's own come in, and the mapping table says which is which. The agent lists every wayne-cas part before it swaps one.
 
 A prompt for your coding agent. Copy it as it stands:
 
 ```text
-You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. SESAME ships a wayne-cas shim that keeps the old names and behavior and logs once that it is a deprecated bridge.
+You are a coding agent moving a Laravel app at Wayne State University from wayne-cas to SESAME, the auth library of WELD, the Wayne State application stack. From 0.8.0 SESAME has no wayne-cas shim: the app moves straight to SESAME's own names.
 
 Read first:
-- https://sesame.apps.wayne.edu/llms.txt, then the README's Moving from wayne-cas section and its mapping table.
+- https://sesame.apps.wayne.edu/llms.txt, then the README's Moving from wayne-cas section, its mapping table, and the ReadOnlyAttributes trait the Moving from wayne-cas guide prints.
 - This app's composer.json, config/wayne-cas.php if there is one, the User model, the routes and middleware that use WayneAuthenticate, and every call to auth()->login().
 - ADVISOR, the stack's MCP server, if it is connected: read_project_docs for sesame. If it is not connected, say so and work from the pages.
 
 Task:
 1. List every wayne-cas part the app uses, with the file and line, and the SESAME part that replaces it from the mapping table.
-2. Plan the move: install with `composer require waynestate/sesame`, set sesame.cas.base_url from wayne-cas.root, make the User model implement WayneCasable with the ReadOnlyAttributes trait, and swap the middleware for the wayne.cas alias.
-3. Say whether the app turns use2FA on. The shim does not carry it; it logs a warning and leaves 2FA to the app. Ask me what should replace it.
+2. Plan the move. Say whether Booster's cas-to-sesame hop fits this app (it lands on the native names) or the move goes by hand. Either way the plan ends with: install with `composer require waynestate/sesame:^0.8`, set sesame.cas.base_url from wayne-cas.root, set user_resolver in config/sesame.php to \Waynestate\Sesame\Laravel\ModelUserResolver::class, drop WayneCasable from the User model, copy the ReadOnlyAttributes trait from the guide to app/Models/Concerns/ReadOnlyAttributes.php when the model used it, and put auth.sesame on the app's route groups where WayneAuthenticate or a wayne.cas alias was.
+3. Say whether the app turns use2FA on. SESAME does not carry it: the app can require MFA with sesame.mfa, or leave 2FA to Duo at the IdP. Ask me which.
 4. Change nothing yet.
 
 Constraints:
-- Keep the model's static findOrImportUser: the shim finds the user the way wayne-cas did.
-- Require waynestate/sesame 0.6.2 or later. From 0.6.2 the shim looks an Eloquent User up again on every request by itself, so write no resolver subclass or custom refreshUser() for that.
+- Keep the model's static findOrImportUser: ModelUserResolver calls it at sign-in, the way wayne-cas did.
+- Require waynestate/sesame ^0.8. It has no Waynestate\Sesame\WayneCas namespace and no wayne.cas alias, so nothing may still name either. ModelUserResolver looks an Eloquent User up again on every request by itself, so write no resolver subclass or custom refreshUser() for that.
+- auth.sesame sends a guest to the login route and answers JSON with a 401, not a 403. Say if a test or a client expects the old answer.
 - Remove wayne-cas only after the app signs in through SESAME, never in the same step.
 - Ask me before you guess, and before you touch anything that deploys.
 
@@ -330,7 +331,7 @@ Cross-reference
 
 ## Re-key from wayne-cas
 
-Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas names and behavior, so this table is most of the work. The shim logs once that it's a deprecated bridge. It doesn't carry `use2FA`, so that part stays with your app. From 0.6.2 it also looks an Eloquent user up again on every request with no resolver of your own, so a removed role or a deleted account shows up on the next click.
+Moving a Laravel app off wayne-cas? Since 0.8.0 there's no shim to lean on: the old lock is gone, and the app moves straight to SESAME's own names, so this table is the work. Booster's `cas-to-sesame` hop does most of it for you; by hand, it starts with `composer require waynestate/sesame:^0.8`. Your model keeps its `findOrImportUser`, and `ModelUserResolver` looks an Eloquent user up again on every request, so a removed role or a deleted account shows up on the next click.
 
 **wayne-cas names and the SESAME names that replace them**
 
@@ -338,10 +339,11 @@ Moving a Laravel app off wayne-cas? SESAME ships a shim that keeps the wayne-cas
 | --- | --- |
 | `wayne-cas.root` | `sesame.cas.base_url` |
 | `auth.providers.users.model` | `auth.providers.users.model`, unchanged |
-| `WayneCasable` trait | `implements WayneCasable` + `use ReadOnlyAttributes` |
-| `WayneAuthenticate` middleware | the `wayne.cas` middleware alias |
-| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame` |
-| `use2FA` | not carried; the shim logs a warning once when it's on |
+| the model's `WayneCasable` trait | the model keeps its static `findOrImportUser`; `config/sesame.php` sets `user_resolver` to `\Waynestate\Sesame\Laravel\ModelUserResolver::class` |
+| read-only attributes | your app's own copy of the `ReadOnlyAttributes` trait in `app/Models/Concerns/ReadOnlyAttributes.php`, printed in the [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html) guide |
+| `WayneAuthenticate` middleware | `auth.sesame` on the app's route groups (a guest goes to login; JSON gets a 401, not a 403) |
+| `auth()->user()` through the `wayneCas` guard | `auth()->user()` with the guard pointed at `sesame`, or `app(Sesame::class)->user()` |
+| `use2FA` | not carried; require MFA with `sesame.mfa`, or leave 2FA to Duo at the IdP |
 
 On the key ring
 
