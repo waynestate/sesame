@@ -51,6 +51,9 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
+<ul>
+<li>Changed: <code>deploy/</code> requires PROCTOR <code>^0.16</code>, whose <code>ci-pipelines</code> check no longer asks for a GitHub workflow (D-069); <code>^0.15</code> failed the <code>wayneui-copies</code> job.</li>
+</ul>
 <h2 id="0-8-0-2026-11-14">[0.8.0] - <span class="docs-heading-tail"><span>2026-11-14</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-8-0-2026-11-14">#</a></span></h2>
 <ul>
 <li>Removed: the wayne-cas shim. The <code>Waynestate\Sesame\WayneCas</code> namespace (<code>UserResolver</code>, <code>WayneAuthenticate</code>, <code>WayneCasable</code>, <code>ReadOnlyAttributes</code>, <code>Deprecation</code>) and the <code>wayne.cas</code> middleware alias are gone, as 0.7.5 announced. An app still on them sets <code>user_resolver</code> to <code>\Waynestate\Sesame\Laravel\ModelUserResolver::class</code>, swaps <code>wayne.cas</code> for <code>auth.sesame</code>, drops <code>implements WayneCasable</code>, and keeps its own copy of the <code>ReadOnlyAttributes</code> trait (&quot;Leaving the shim&quot; in the Moving from wayne-cas guide). Booster's <code>cas-to-sesame</code> hop does all four.</li>
