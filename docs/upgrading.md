@@ -10,6 +10,17 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.8.0 (unreleased)
+
+**Removed.** The `Waynestate\Sesame\WayneCas` namespace (`UserResolver`, `WayneAuthenticate`, `WayneCasable`, `ReadOnlyAttributes` and `Deprecation`) and the `wayne.cas` middleware alias. An app that never used the shim has nothing to change but the constraint.
+
+**Steps.**
+
+1. Leave the shim first while the app is still on 0.7.5, by the steps in [Leaving the shim](guides/moving-from-wayne-cas.md#leaving-the-shim), or let Booster's `cas-to-sesame` hop do it.
+2. `composer require waynestate/sesame:^0.8`: the `^0.7` constraint does not take 0.8.0.
+
+**How to verify.** Sign in, and `grep -rn "WayneCas\|wayne.cas" app bootstrap config routes` prints nothing.
+
 ## 0.7.5 (2026-11-14)
 
 **Added.** A native user resolver, `Waynestate\Sesame\Laravel\ModelUserResolver`, that does exactly what the wayne-cas shim's `UserResolver` did: it finds the user through `auth.providers.users.model` via its static `findOrImportUser` (the verified username as the access ID), throws `AuthorizationException` when the model has no user, and implements `RefreshesUser` (an Eloquent model is looked up through `query()->find()`, any other class through a static `find()`, a JSON session's array by its primary key, and anything else passes through). An app that was on the shim needs no resolver code of its own: set `user_resolver` to `ModelUserResolver::class` and it behaves as before, minus the deprecation line. The shim now wraps the new class instead of carrying the logic itself, and the missing `sesame.user_resolver` error names `ModelUserResolver`.

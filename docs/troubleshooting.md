@@ -435,20 +435,18 @@ Invoke-WebRequest -Headers @{ 'PRIVATE-TOKEN' = $env:GITLAB_TOKEN } -Uri "https:
 > in the repository, and remember Composer keeps the git.wayne.edu
 > credentials it asks for in `auth.json` as an `http-basic` entry.
 
-### The app still reads wayne-cas names and you expect SESAME behavior
+### After updating to 0.8, a class in `Waynestate\Sesame\WayneCas` is not found, or the `wayne.cas` middleware is unknown
 
-**Cause.** The app moved to SESAME through the shim, which keeps the
-wayne-cas names and behavior and says once (in the log) that it is a
-deprecated bridge. For example, `use2FA` runs a Duo challenge the shim does
-not carry: when the app still has `wayne-cas.use2FA` switched on, the shim
-logs a warning once and leaves the 2FA to the app.
+**Cause.** SESAME 0.8.0 removed the wayne-cas shim: the
+`Waynestate\Sesame\WayneCas` namespace and the `wayne.cas` middleware alias
+are gone.
 
-**Fix.** Follow the mapping in [Moving from wayne-cas](guides/moving-from-wayne-cas.md),
-or take the easy way: Booster's `cas-to-sesame` hop, planned with `--sesame`.
+**Fix.** Take the steps in
+[Leaving the shim](guides/moving-from-wayne-cas.md#leaving-the-shim) while
+the app is still on 0.7.x, or let Booster's `cas-to-sesame` hop do it.
 
-**Check.** After the move, log in through the pre-production host before you
-ship, and check the session timeout, the Access ID attribute and Duo there.
-`tests/Laravel/WayneCasShimTest.php` covers the shim.
+**Check.** Sign in through the pre-production host and check the session
+timeout, the Access ID attribute and Duo there.
 
 ### A wayne-cas app signs in, then every page fails with `InvalidConfig` naming a static `find` method
 
@@ -457,14 +455,13 @@ looked for a declared static `find` method on `auth.providers.users.model`.
 An Eloquent model reaches `find()` through its query builder instead of
 declaring it, so the check failed on every signed-in request.
 
-**Fix.** `composer update waynestate/sesame` to 0.6.2 or later. The shim looks
-an Eloquent model up through `query()->find()` now. If the app worked around
-the error with its own resolver subclass or `refreshUser()`, delete it and
-point `user_resolver` back at `Waynestate\Sesame\WayneCas\UserResolver`.
+**Fix.** `composer update waynestate/sesame` to 0.6.2 or later: from 0.6.2
+the shim looked an Eloquent model up through `query()->find()`. On 0.8, point
+`user_resolver` at `\Waynestate\Sesame\Laravel\ModelUserResolver::class`.
 
 **Check.** Sign in, open a second page, and the log has no `InvalidConfig`.
-`tests/Laravel/WayneCasShimTest.php` covers an Eloquent model and a plain
-class with a static `find`.
+`tests/Laravel/ModelUserResolverTest.php` covers an Eloquent model and a
+plain class with a static `find`.
 
 ## Build, CI and docs
 
@@ -526,6 +523,6 @@ project is in MAINTAINING.md.
 - [Raw PHP](guides/raw-php.md): the session setup this page assumes.
 - [Laravel](guides/laravel.md): the adapter's config keys and routes.
 - [Session timeouts](guides/session-timeouts.md): the two clocks every session runs on.
-- [Moving from wayne-cas](guides/moving-from-wayne-cas.md): the shim and the Booster hop.
+- [Moving from wayne-cas](guides/moving-from-wayne-cas.md): the Booster hop and the steps by hand.
 - [Configuration](reference/configuration.md): every `SESAME_*` setting, including the generated environment reference.
 - [Upgrading](upgrading.md): what changed between the versions.
