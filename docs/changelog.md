@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: the deploy kit is Squire 0.11.1 (was 0.10.7): the release script fetches PROCTOR when `--no-dev` left it out and installs the frontend from a `yarn.lock`, the HAProxy pin is current, the fallback base follows the app's PHP line, and the parity scripts carry the deprecation note.
 - Changed: `deploy/` requires PROCTOR `^0.16`, whose `ci-pipelines` check no longer asks for a GitHub workflow (D-069); `^0.15` failed the `wayneui-copies` job.
 
 ## [0.8.0] - 2026-11-14
