@@ -44,9 +44,9 @@ use Waynestate\Sesame\UserResolver;
  *
  * It binds the core's collaborators (the driver, the app's user resolver,
  * the session and the config) into the container, registers the sesame guard
- * driver, the auth.sesame and wayne.cas middleware aliases, and, unless the
- * app has taken the routes over, registers the login and logout routes. It
- * holds no rules of its own: every rule lives in the core.
+ * driver, the auth.sesame, sesame.mfa and sesame.context middleware aliases,
+ * and, unless the app has taken the routes over, registers the login and
+ * logout routes. It holds no rules of its own: every rule lives in the core.
  */
 class SesameServiceProvider extends ServiceProvider
 {
@@ -163,7 +163,6 @@ class SesameServiceProvider extends ServiceProvider
         $router->aliasMiddleware('auth.sesame', Authenticate::class);
         $router->aliasMiddleware('sesame.mfa', RequireMfa::class);
         $router->aliasMiddleware('sesame.context', RequireAuthContext::class);
-        $router->aliasMiddleware('wayne.cas', \Waynestate\Sesame\WayneCas\WayneAuthenticate::class);
 
         if ((bool) $this->app->make(Repository::class)->get('sesame.routes', true)) {
             $this->routes();

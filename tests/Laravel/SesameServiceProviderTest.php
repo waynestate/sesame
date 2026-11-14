@@ -59,7 +59,8 @@ final class SesameServiceProviderTest extends LaravelTestCase
 
         self::assertArrayHasKey('auth.sesame', $aliases);
         self::assertArrayHasKey('sesame.mfa', $aliases);
-        self::assertArrayHasKey('wayne.cas', $aliases);
+        self::assertArrayHasKey('sesame.context', $aliases);
+        self::assertArrayNotHasKey('wayne.cas', $aliases);
     }
 
     public function testItBindsTheContainer(): void
@@ -72,9 +73,9 @@ final class SesameServiceProviderTest extends LaravelTestCase
         self::assertInstanceOf(LaravelSession::class, $app->make(LaravelSession::class));
     }
 
-    public function testTheMissingResolverErrorNamesTheWayneCasResolver(): void
+    public function testTheMissingResolverErrorNamesTheModelResolver(): void
     {
-        // A wayne-cas app moving to SESAME gets told which class to set.
+        // An app gets told which class to set.
         $app = $this->app;
         self::assertNotNull($app);
         $app['config']->set('sesame.user_resolver', null);

@@ -10,25 +10,22 @@ use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Waynestate\Sesame\Exception\InvalidConfig;
 use Waynestate\Sesame\Identity;
+use Waynestate\Sesame\Laravel\ModelUserResolver;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Tests\Laravel\Support\NullUser;
 use Waynestate\Sesame\Tests\Laravel\Support\RecordingUser;
-use Waynestate\Sesame\WayneCas\Deprecation;
-use Waynestate\Sesame\WayneCas\UserResolver;
 
 /**
- * The wayne-cas compatibility shim.
+ * SESAME's own user resolver.
  *
- * It finds the user the way wayne-cas did (the model's static
- * findOrImportUser, with the verified username as the access ID), throws the
- * same AuthorizationException when there is no user, and says once that it is
- * a deprecated bridge.
+ * It finds the user through the model named in auth.providers.users.model
+ * (the model's static findOrImportUser, with the verified username as the
+ * access ID) and throws an AuthorizationException when there is no user.
  */
-final class WayneCasShimTest extends LaravelTestCase
+final class ModelUserResolverTest extends LaravelTestCase
 {
     protected function defineEnvironment($app): void
     {
@@ -41,7 +38,6 @@ final class WayneCasShimTest extends LaravelTestCase
     {
         parent::setUp();
 
-        Deprecation::reset();
         RecordingUser::reset();
     }
 
@@ -52,7 +48,7 @@ final class WayneCasShimTest extends LaravelTestCase
 
     public function testItFindsTheUserThroughTheModel(): void
     {
-        $user = (new UserResolver())->findOrImportUser($this->identity());
+        $user = (new ModelUserResolver())->findOrImportUser($this->identity());
 
         self::assertSame('the-imported-user', $user);
         self::assertSame(['jdoe'], RecordingUser::$calls);
@@ -64,7 +60,7 @@ final class WayneCasShimTest extends LaravelTestCase
 
         $this->expectException(AuthorizationException::class);
 
-        (new UserResolver())->findOrImportUser($this->identity());
+        (new ModelUserResolver())->findOrImportUser($this->identity());
     }
 
     public function testItThrowsWhenTheModelIsNotConfigured(): void
@@ -73,39 +69,7 @@ final class WayneCasShimTest extends LaravelTestCase
 
         $this->expectException(InvalidConfig::class);
 
-        (new UserResolver())->findOrImportUser($this->identity());
-    }
-
-    public function testItLogsTheDeprecationOnce(): void
-    {
-        Log::partialMock()->shouldReceive('warning')->once()->with(Deprecation::MESSAGE);
-
-        $resolver = new UserResolver();
-        $user = $resolver->findOrImportUser($this->identity());
-        $resolver->findOrImportUser($this->identity());
-
-        self::assertSame('the-imported-user', $user);
-    }
-
-    public function testItAnswersAnAjaxGuestWith403(): void
-    {
-        $app = $this->app;
-        self::assertNotNull($app);
-        $app['router']->get('/wp', fn() => 'ok')->middleware(['web', 'wayne.cas']);
-
-        $this->get('/wp', ['X-Requested-With' => 'XMLHttpRequest'])->assertStatus(403);
-    }
-
-    public function testItLetsSesamesOwnRoutesThroughWhenInTheWebGroup(): void
-    {
-        // The way wayne-cas apps mount it: in the global web group. A guest
-        // on /login must reach the login route, not be sent back to /login
-        // by the middleware that guards the group.
-        $app = $this->app;
-        self::assertNotNull($app);
-        $app['router']->pushMiddlewareToGroup('web', 'wayne.cas');
-
-        $this->get('/login')->assertRedirect('/');
+        (new ModelUserResolver())->findOrImportUser($this->identity());
     }
 
     public function testItRefreshesAnEloquentUserThroughTheQuery(): void
@@ -115,7 +79,7 @@ final class WayneCasShimTest extends LaravelTestCase
         config()->set('auth.providers.users.model', EloquentCasUser::class);
         DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
 
-        $refreshed = (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+        $refreshed = (new ModelUserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
 
         self::assertInstanceOf(EloquentCasUser::class, $refreshed);
         self::assertSame('jdoe', $refreshed->getKey());
@@ -129,7 +93,7 @@ final class WayneCasShimTest extends LaravelTestCase
         config()->set('auth.providers.users.model', EloquentCasUser::class);
         DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
 
-        $resolver = new UserResolver();
+        $resolver = new ModelUserResolver();
         self::assertInstanceOf(EloquentCasUser::class, $resolver->refreshUser(new EloquentCasUser(['id' => 'jdoe'])));
 
         DB::table('cas_users')->where('id', 'jdoe')->delete();
@@ -141,7 +105,7 @@ final class WayneCasShimTest extends LaravelTestCase
     {
         config()->set('auth.providers.users.model', StaticFindUser::class);
 
-        $refreshed = (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+        $refreshed = (new ModelUserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
 
         self::assertSame('jdoe', $refreshed);
     }
@@ -151,10 +115,10 @@ final class WayneCasShimTest extends LaravelTestCase
         config()->set('auth.providers.users.model', NullUser::class);
 
         try {
-            (new UserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
+            (new ModelUserResolver())->refreshUser(new EloquentCasUser(['id' => 'jdoe']));
             self::fail('Expected an InvalidConfig.');
         } catch (InvalidConfig $e) {
-            self::assertSame('The wayne-cas shim needs auth.providers.users.model to be an Eloquent model or a class with a static find method.', $e->getMessage());
+            self::assertSame('The SESAME model resolver needs auth.providers.users.model to be an Eloquent model or a class with a static find method.', $e->getMessage());
         }
     }
 
@@ -165,7 +129,7 @@ final class WayneCasShimTest extends LaravelTestCase
         config()->set('auth.providers.users.model', EloquentCasUser::class);
         DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'John Doe']);
 
-        $refreshed = (new UserResolver())->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']);
+        $refreshed = (new ModelUserResolver())->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']);
 
         self::assertInstanceOf(EloquentCasUser::class, $refreshed);
         self::assertSame('jdoe', $refreshed->getKey());
@@ -179,7 +143,7 @@ final class WayneCasShimTest extends LaravelTestCase
         config()->set('auth.providers.users.model', EloquentCasUser::class);
         DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
 
-        $resolver = new UserResolver();
+        $resolver = new ModelUserResolver();
         self::assertInstanceOf(EloquentCasUser::class, $resolver->refreshUser(['id' => 'jdoe', 'username' => 'Jane Doe']));
 
         DB::table('cas_users')->where('id', 'jdoe')->delete();
@@ -193,7 +157,7 @@ final class WayneCasShimTest extends LaravelTestCase
 
         config()->set('auth.providers.users.model', EloquentCasUser::class);
 
-        self::assertNull((new UserResolver())->refreshUser(['username' => 'x']));
+        self::assertNull((new ModelUserResolver())->refreshUser(['username' => 'x']));
         self::assertSame([], RecordingUser::$calls);
     }
 
@@ -203,10 +167,10 @@ final class WayneCasShimTest extends LaravelTestCase
 
         $array = ['id' => 'jdoe', 'username' => 'Jane Doe'];
 
-        self::assertSame($array, (new UserResolver())->refreshUser($array));
+        self::assertSame($array, (new ModelUserResolver())->refreshUser($array));
     }
 
-    public function testAJsonSessionArrayUserSignsInThroughTheShim(): void
+    public function testAJsonSessionArrayUserSignsInThroughTheResolver(): void
     {
         $app = $this->app;
         self::assertNotNull($app);
@@ -215,7 +179,7 @@ final class WayneCasShimTest extends LaravelTestCase
 
         config()->set('auth.providers.users.model', EloquentCasUser::class);
         config()->set('auth.guards.web.driver', 'sesame');
-        config()->set('sesame.user_resolver', UserResolver::class);
+        config()->set('sesame.user_resolver', ModelUserResolver::class);
 
         DB::table('cas_users')->insert(['id' => 'jdoe', 'username' => 'Jane Doe']);
 
@@ -239,9 +203,9 @@ final class WayneCasShimTest extends LaravelTestCase
 }
 
 /**
- * A small Eloquent user for the wayne-cas shim tests.
+ * A small Eloquent user for the model resolver tests.
  *
- * It is keyed by the string access ID, the way wayne-cas users are, and it
+ * It is keyed by the string access ID, the way the app's users are, and it
  * implements Authenticatable like the app's user model, so the sesame guard
  * can hand it back. The cas_users table is created by the test on the
  * testbench sqlite connection.
@@ -266,10 +230,10 @@ class EloquentCasUser extends \Illuminate\Database\Eloquent\Model implements \Il
 
 /**
  * A stand-in for a user model with a static find() method, for the
- * wayne-cas shim tests.
+ * model resolver tests.
  *
- * It is not an Eloquent model, so the shim must take the static find() path
- * when it refreshes.
+ * It is not an Eloquent model, so the resolver must take the static find()
+ * path when it refreshes.
  */
 class StaticFindUser
 {
