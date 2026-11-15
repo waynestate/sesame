@@ -1510,13 +1510,14 @@ first. What the hop does:
   `eloquent`, adding a model key when the provider has none.
 - Rewrites user models so they keep their static `findOrImportUser` and use
   the app's own copy of the `ReadOnlyAttributes` trait.
-- Swaps the Composer requirement to `waynestate/sesame:^0.7` (SESAME is on
+- Swaps the Composer requirement to `waynestate/sesame:^0.8` (SESAME is on
   Packagist, so no extra repository is needed) and drops the `wayne-cas`
   package, any `wayne-cas` path entry and its VCS repository entries.
-  Booster 1.14.0 and later write `^0.7`. Booster 1.12.0 and 1.13.0 wrote
-  `^0.6`, so an app they hopped takes the 0.7.0 step in the
-  [upgrading guide](https://github.com/waynestate/sesame/blob/HEAD/docs/upgrading.md) to move to `^0.7`; an app hopped by an
-  earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0 and 0.7.0 steps.
+  Booster 1.19.0 and later write `^0.8`. Booster 1.14.0 to 1.18.0 wrote
+  `^0.7`, so an app they hopped takes the 0.8.0 step in the
+  [upgrading guide](https://github.com/waynestate/sesame/blob/HEAD/docs/upgrading.md) to move to `^0.8`; Booster 1.12.0 and
+  1.13.0 wrote `^0.6`, so take the 0.7.0 and 0.8.0 steps; an app hopped by an
+  earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0, 0.7.0 and 0.8.0 steps.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config
   keys any more; while anything still does, the file stays and a manual note
   names the readers.
@@ -2083,6 +2084,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the README and the wayne-cas guide say Booster 1.19.0's hop writes `^0.8` (they said `^0.7`, what Booster 1.14.0 to 1.18.0 wrote), and which upgrade steps an app hopped by an older Booster takes. Content only.
 - Fixed: the a11y script comments name Preflight 0.9.0, the tag tests/A11yCheckerPinTest.php pins, where they still said 0.4.0. Comments only.
 - Changed: the dev dependency Pinstripe is `^0.4` (was `^0.3`, which does not allow 0.4.0); 0.4.0 adds two opt-in Rector presets and changes no rule this repo uses.
 - Changed: the deploy kit is Squire 0.11.1 (was 0.10.7): the release script fetches PROCTOR when `--no-dev` left it out and installs the frontend from a `yarn.lock`, the HAProxy pin is current, the fallback base follows the app's PHP line, and the parity scripts carry the deprecation note.
@@ -3527,7 +3529,7 @@ Booster plans the hop with `--sesame`, and leaves it out with a warning when the
 - Moves the CAS middleware off the global `web` group and onto the app's web routes, with the `auth.sesame` middleware.
 - Points the web guard at the `sesame` driver and the users provider at `eloquent`, adding a model key when the provider has none.
 - Rewrites user models so they keep their static `findOrImportUser` and use the app's own copy of the `ReadOnlyAttributes` trait.
-- Swaps the Composer requirement to `waynestate/sesame:^0.7` (SESAME is on Packagist, so no extra repository is needed; Booster 1.14.0 and later write `^0.7`. Booster 1.12.0 and 1.13.0 wrote `^0.6`, so an app they hopped takes the [0.7.0 step](https://sesame.apps.wayne.edu/docs/upgrading.html) to move to `^0.7`, and an app hopped by an earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0 and 0.7.0 steps) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
+- Swaps the Composer requirement to `waynestate/sesame:^0.8` (SESAME is on Packagist, so no extra repository is needed; Booster 1.19.0 and later write `^0.8`. Booster 1.14.0 to 1.18.0 wrote `^0.7`, so an app they hopped takes the [0.8.0 step](https://sesame.apps.wayne.edu/docs/upgrading.html) to move to `^0.8`; Booster 1.12.0 and 1.13.0 wrote `^0.6`, so take the 0.7.0 and 0.8.0 steps, and an app hopped by an earlier Booster got `^0.4`, so take the 0.5.0, 0.6.0, 0.7.0 and 0.8.0 steps) and drops the `wayne-cas` package, any `wayne-cas` path entry and its VCS repository entries.
 - Removes `config/wayne-cas.php` when nothing in the app reads its config keys any more; while anything still does, the file stays and a manual note names the readers.
 - Flags the dead `DUO_*` settings in example env files.
 
