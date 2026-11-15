@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: the README and the wayne-cas guide say Booster 1.19.0's hop writes `^0.8` (they said `^0.7`, what Booster 1.14.0 to 1.18.0 wrote), and which upgrade steps an app hopped by an older Booster takes. Content only.
 - Fixed: the a11y script comments name Preflight 0.9.0, the tag tests/A11yCheckerPinTest.php pins, where they still said 0.4.0. Comments only.
 - Changed: the dev dependency Pinstripe is `^0.4` (was `^0.3`, which does not allow 0.4.0); 0.4.0 adds two opt-in Rector presets and changes no rule this repo uses.
 - Changed: the deploy kit is Squire 0.11.1 (was 0.10.7): the release script fetches PROCTOR when `--no-dev` left it out and installs the frontend from a `yarn.lock`, the HAProxy pin is current, the fallback base follows the app's PHP line, and the parity scripts carry the deprecation note.
