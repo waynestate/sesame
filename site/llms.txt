@@ -24,6 +24,7 @@ Every page below is Markdown. The HTML pages send the same Markdown to a client 
 
 - [SESAME: The way in.](https://sesame.apps.wayne.edu/index.md): SESAME is Wayne State's sign-in library for PHP. It checks who someone is through CAS, OpenID Connect, SAML, an OAuth2 token or the Drawbridge gateway, and hands your app a verified identity. Your app keeps its own session. It works in raw PHP, Laravel with Blade, and Laravel with Inertia and Vue.
 - [Changelog | SESAME docs](https://sesame.apps.wayne.edu/docs/changelog.md): All notable changes to this project.
+- [CakePHP | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/cakephp.md): The CakePHP 5 adapter plugs SESAME into cakephp/authentication 3.x: one session port, one authenticator, and the app's own login and logout actions.
 - [The cas driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-cas.md): Sign in against a CAS server, CAS 2.0 against Academica by default, with no per-app Entra registration.
 - [The gateway driver | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-gateway.md): The recommended path on Citadel: verify the signed JWT assertion the Drawbridge gateway sends in one header, never a bare identity header.
 - [oauth2 with Entra | SESAME docs](https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.md): Sign in from a JWT bearer token verified against the issuer's key set, or from an opaque token through RFC 7662 introspection, Microsoft Entra ID first, APIs only.

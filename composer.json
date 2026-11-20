@@ -29,6 +29,7 @@
         "symfony/http-foundation": "^6.4 || ^7.4"
     },
     "require-dev": {
+        "cakephp/authentication": "^3.0",
         "guzzlehttp/guzzle": "^7.9 || ^8.0",
         "laravel/pint": "^1.32",
         "league/commonmark": "^2.10",
@@ -47,6 +48,7 @@
         "robrichards/xmlseclibs": "<3.1.5"
     },
     "suggest": {
+        "cakephp/authentication": "For the CakePHP 5 adapter (^3.0)",
         "guzzlehttp/guzzle": "A PSR-18 client for the cas, oauth2 and oidc drivers",
         "laravel/framework": "For the Laravel adapter",
         "league/oauth2-client": "Required by the oidc driver (browser sign-in to Entra): the authorization code flow with PKCE and the token request",
