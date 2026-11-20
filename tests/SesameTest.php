@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace Waynestate\Sesame\Tests;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Waynestate\Sesame\Authenticated;
 use Waynestate\Sesame\Config;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\MfaResult;
 use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\RevocationStore;
+use Waynestate\Sesame\Revocation\InMemoryRevocationStore;
 use Waynestate\Sesame\Sesame;
+use Waynestate\Sesame\Tests\Support\ArrayLogger;
 use Waynestate\Sesame\Tests\Support\EventLog;
 use Waynestate\Sesame\Tests\Support\FakeClock;
 use Waynestate\Sesame\Tests\Support\RecordingDriver;
@@ -43,6 +48,32 @@ final class SesameTest extends TestCase
             'fakeUsername' => 'jdoe',
             ...$overrides,
         ]);
+    }
+
+    /**
+     * A facade over the recording driver with its own session and the given
+     * clock, optionally wired to the given revocation store.
+     *
+     * @return array{0: Sesame, 1: RecordingSession}
+     */
+    private function appWithStore(FakeClock $clock, ?RevocationStore $store): array
+    {
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+
+        return [
+            new Sesame(
+                new RecordingDriver(new Authenticated($this->identity()), null, $log),
+                new RecordingResolver(),
+                $session,
+                $this->config(),
+                $clock,
+                null,
+                null,
+                $store,
+            ),
+            $session,
+        ];
     }
 
     public function testLoginRegeneratesBeforeItStores(): void
@@ -443,6 +474,172 @@ final class SesameTest extends TestCase
         );
 
         self::assertNull($sesame->logout('http://app.local/'));
+    }
+
+    public function testLoggingOutOfOneAppEndsTheOtherAppsSessionThroughTheSharedStore(): void
+    {
+        // Two apps on one domain, each with its own session, sharing one
+        // revocation store: logging out of one ends the other's session too.
+        $clock = new FakeClock();
+        $store = new InMemoryRevocationStore();
+        [$appA, $sessionA] = $this->appWithStore($clock, $store);
+        [$appB, $sessionB] = $this->appWithStore($clock, $store);
+        $request = new ServerRequest('GET', 'http://app.local/login');
+
+        self::assertSame('the-user', $appA->login($request));
+        self::assertSame('the-user', $appB->login($request));
+        $signedInAt = $clock->now()->getTimestamp();
+
+        $appA->logout('http://app.local/');
+
+        self::assertNull($appA->user());
+        self::assertSame([], $sessionA->store);
+        self::assertSame($signedInAt, $store->revokedBefore('jdoe'), 'The logout records the cutoff for the username.');
+        self::assertNull($appB->user(), 'B signed in before the cutoff, so B is signed out on its next request.');
+        self::assertSame([], $sessionB->store, 'B\'s session is cleared.');
+
+        // A sign-in after the cutoff is untouched.
+        $clock->advance(60);
+        self::assertSame('the-user', $appB->login($request));
+        self::assertSame('the-user', $appB->user());
+    }
+
+    public function testWithoutAStoreALogoutLeavesTheOtherAppSignedIn(): void
+    {
+        $clock = new FakeClock();
+        [$appA] = $this->appWithStore($clock, null);
+        [$appB] = $this->appWithStore($clock, null);
+        $request = new ServerRequest('GET', 'http://app.local/login');
+
+        self::assertSame('the-user', $appA->login($request));
+        self::assertSame('the-user', $appB->login($request));
+
+        $appA->logout('http://app.local/');
+
+        self::assertNull($appA->user());
+        self::assertSame('the-user', $appB->user(), 'Without a shared store, A\'s logout touches only A\'s session.');
+    }
+
+    public function testATimeoutSignOutWritesNoCutoff(): void
+    {
+        // Timeouts end only the session that timed out: they must not write
+        // a cutoff, or a quiet user would be signed out of every app.
+        $clock = new FakeClock();
+        $store = new InMemoryRevocationStore();
+        [$appA] = $this->appWithStore($clock, $store);
+        [$appB] = $this->appWithStore($clock, $store);
+        $request = new ServerRequest('GET', 'http://app.local/login');
+
+        self::assertSame('the-user', $appA->login($request));
+        self::assertSame('the-user', $appB->login($request));
+
+        // B stays active while A goes quiet past the 120-minute idle timeout.
+        $clock->advance(60 * 60);
+        self::assertSame('the-user', $appB->user());
+        $clock->advance(61 * 60);
+
+        self::assertNull($appA->user(), 'A has been idle for 121 minutes, past the timeout.');
+        self::assertNull($store->revokedBefore('jdoe'), 'The timeout wrote no cutoff.');
+        self::assertSame('the-user', $appB->user(), 'B was seen 61 minutes ago and is still within the timeout.');
+    }
+
+    public function testSignOutLocalWritesACutoffLikeLogoutDoes(): void
+    {
+        $clock = new FakeClock();
+        $store = new InMemoryRevocationStore();
+        [$appA] = $this->appWithStore($clock, $store);
+        [$appB] = $this->appWithStore($clock, $store);
+        $request = new ServerRequest('GET', 'http://app.local/login');
+
+        self::assertSame('the-user', $appA->login($request));
+        self::assertSame('the-user', $appB->login($request));
+
+        $appA->signOutLocal();
+
+        self::assertSame($clock->now()->getTimestamp(), $store->revokedBefore('jdoe'));
+        self::assertNull($appB->user());
+    }
+
+    public function testAThrowingStoreDoesNotBreakLogout(): void
+    {
+        // A store that throws must never change what logout() returns or
+        // throws: the failure is logged once, without the store's message.
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $store = new class implements RevocationStore {
+            public function revokeBefore(string $username, int $at): void
+            {
+                throw new RuntimeException('cache down: password=hunter2');
+            }
+
+            public function revokedBefore(string $username): ?int
+            {
+                throw new RuntimeException('cache down: password=hunter2');
+            }
+        };
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), 'http://idp.local/logout', $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+            null,
+            $store,
+        );
+
+        self::assertSame('the-user', $sesame->login(new ServerRequest('GET', 'http://app.local/login')));
+
+        self::assertSame('http://idp.local/logout', $sesame->logout('http://app.local/'));
+        self::assertNull($sesame->user());
+
+        $failures = $logger->withMessage('sesame.revocation_failed');
+        self::assertCount(1, $failures);
+        self::assertSame('warning', $failures[0]['level']);
+        self::assertSame([
+            'event' => 'revocation_failed',
+            'driver' => 'fake',
+            'at' => $clock->now()->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM),
+        ], $failures[0]['context']);
+        self::assertStringNotContainsString('hunter2', json_encode($logger->records), 'The store\'s message never reaches the log.');
+    }
+
+    public function testAThrowingStoreDoesNotBreakTheUserCheck(): void
+    {
+        // A store whose read throws counts as no cutoff: the session stays
+        // signed in, and the failure is logged once.
+        $clock = new FakeClock();
+        $logger = new ArrayLogger();
+        $store = new class implements RevocationStore {
+            public function revokeBefore(string $username, int $at): void
+            {
+                throw new RuntimeException('cache down: password=hunter2');
+            }
+
+            public function revokedBefore(string $username): ?int
+            {
+                throw new RuntimeException('cache down: password=hunter2');
+            }
+        };
+        $log = new EventLog();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            new RecordingSession($log),
+            $this->config(),
+            $clock,
+            $logger,
+            null,
+            $store,
+        );
+
+        self::assertSame('the-user', $sesame->login(new ServerRequest('GET', 'http://app.local/login')));
+        self::assertSame('the-user', $sesame->user(), 'A failed read counts as no cutoff.');
+
+        self::assertCount(1, $logger->withMessage('sesame.revocation_failed'));
+        self::assertStringNotContainsString('hunter2', json_encode($logger->records), 'The store\'s message never reaches the log.');
     }
 
     public function testCheckingTheSessionNeverBuildsTheDriver(): void

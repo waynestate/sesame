@@ -44,6 +44,14 @@ final class Sesame
      *        When given, every finished sign-in is counted by driver and
      *        outcome; a counter that throws never changes the sign-in, and
      *        the failure is logged as `sesame.metrics_failed`.
+     * @param RevocationStore|null $revocations Optional shared sign-out
+     *        cutoff (Booster ADR-0024). When given, a logout records a
+     *        cutoff for the user's username, and user() signs out any
+     *        session signed in at or before the latest cutoff, so a logout
+     *        in one app ends the user's sessions in the other apps that
+     *        share the store; a store that throws never changes what the
+     *        facade returns or throws, and the failure is logged as
+     *        `sesame.revocation_failed`.
      */
     public function __construct(
         Driver|Closure $driver,
@@ -53,6 +61,7 @@ final class Sesame
         ?ClockInterface $clock = null,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?LoginMetrics $metrics = null,
+        private readonly ?RevocationStore $revocations = null,
     ) {
         $this->driverFactory = $driver;
         $this->clock = $clock ?? new SystemClock();
@@ -200,7 +209,11 @@ final class Sesame
      * in from the next request on. A session whose state looks wrong or
      * tampered with (missing timestamps, a session reference that is not
      * the 16-character lowercase hex value login() stores) is logged as a
-     * `sesame.session_anomaly` warning when a logger is set.
+     * `sesame.session_anomaly` warning when a logger is set. When a shared
+     * sign-out store is set, a session signed in at or before the user's
+     * latest cutoff is signed out on the spot (reason `revoked`), so a
+     * logout in another app sharing the store ends this session too; a
+     * sign-in after the cutoff is untouched.
      *
      * @return mixed
      */
@@ -223,6 +236,24 @@ final class Sesame
             $this->signOut('no_timestamps');
 
             return null;
+        }
+
+        if ($this->revocations !== null) {
+            $identity = $this->session->get('sesame.identity');
+
+            if ($identity instanceof Identity) {
+                $cutoff = $this->revokedBefore($this->revocations, $identity->username);
+
+                if ($cutoff !== null && $cutoff >= $signedInAt) {
+                    // Another app sharing this store signed the user out
+                    // after this session was made, so this session is dead
+                    // from here on; a sign-in after the cutoff is
+                    // untouched.
+                    $this->signOut('revoked');
+
+                    return null;
+                }
+            }
         }
 
         if ($this->logger !== null) {
@@ -513,23 +544,38 @@ final class Sesame
      * sign-out carries it, so the events of one sign-in stay together in
      * the log; a reference that is not a 16-character lowercase hex string
      * is ignored, so a tampered session cannot inject log text.
+     *
+     * A real logout (reason `logout`) also records the shared sign-out
+     * cutoff for the user's username in the revocation store, when one is
+     * set, so the other apps sharing the store sign the user out too; the
+     * timeouts and the anomalies end only this session and write no cutoff.
      */
     private function signOut(string $reason): void
     {
         // The log wants the driver and the username from the stored
-        // identity, so it is read before it is forgotten; without a
-        // logger the session is never touched beyond the sign-out itself.
+        // identity, and the revocation store wants the username, so both
+        // are read before they are forgotten; without a logger and a store
+        // the session is never touched beyond the sign-out itself.
         $user = null;
         $identity = null;
         $sessionRef = null;
 
-        if ($this->logger !== null) {
+        if ($this->logger !== null || $this->revocations !== null) {
             $user = $this->session->get('sesame.user');
             $identity = $this->session->get('sesame.identity');
+        }
+
+        if ($this->logger !== null) {
             // The ref is read before the session is cleared; only a
             // 16-character lowercase hex value made by login() is trusted,
             // so a tampered session cannot inject text into the log.
             $sessionRef = $this->validSessionRef($this->session->get('sesame.session_ref'));
+        }
+
+        // Only a real logout writes the cutoff, and only when the session
+        // still holds the identity the cutoff is keyed by.
+        if ($reason === 'logout' && $this->revocations !== null && $identity instanceof Identity) {
+            $this->revoke($this->revocations, $identity->username);
         }
 
         $this->session->forget('sesame.user');
@@ -637,6 +683,58 @@ final class Sesame
 
             $this->log('warning', 'sesame.metrics_failed', $context);
         }
+    }
+
+    /**
+     * The shared sign-out cutoff for $username, or null when there is none.
+     *
+     * Best effort, like the metrics counter: a store that throws counts as
+     * no cutoff, so a broken cache can never change what user() returns,
+     * and the failure is logged once as `sesame.revocation_failed` when a
+     * logger is set.
+     */
+    private function revokedBefore(RevocationStore $store, string $username): ?int
+    {
+        try {
+            return $store->revokedBefore($username);
+        } catch (\Throwable) {
+            $this->logRevocationFailure();
+
+            return null;
+        }
+    }
+
+    /**
+     * Record the shared sign-out cutoff for $username, now.
+     *
+     * Best effort, like the metrics counter: a store that throws is
+     * swallowed, so a broken cache can never change what logout() returns
+     * or throws, and the failure is logged once as
+     * `sesame.revocation_failed` when a logger is set.
+     */
+    private function revoke(RevocationStore $store, string $username): void
+    {
+        try {
+            $store->revokeBefore($username, $this->clock->now()->getTimestamp());
+        } catch (\Throwable) {
+            $this->logRevocationFailure();
+        }
+    }
+
+    /**
+     * Log one failed revocation-store operation as a warning.
+     *
+     * The context carries only the event, the driver and the time: the
+     * store's own message is left out (it can carry a cache URL with its
+     * password), and nothing is written when there is no logger.
+     */
+    private function logRevocationFailure(): void
+    {
+        $this->log('warning', 'sesame.revocation_failed', [
+            'event' => 'revocation_failed',
+            'driver' => $this->config->driver,
+            'at' => $this->now(),
+        ]);
     }
 
     /**
