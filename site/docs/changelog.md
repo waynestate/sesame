@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Added: `FileRevocationStore`, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache.
+- Added: the Laravel adapter passes a `RevocationStore` to SESAME: the app's own binding, or a `FileRevocationStore` on `SESAME_REVOCATION_PATH` (`SESAME_REVOCATION_TTL`, default 30 days). Without either, nothing changes.
+- Added: `SESAME_ROUTE_PREFIX` puts the login, logout and status routes under a prefix (`/_laravel/login`), for Booster's Laravel strangler, where the old half owns `/login`. The route names stay, and the cas, oidc and saml URLs default to the prefixed routes.
+- Added: `WayneAuth::boot()` takes an optional `RevocationStore`, so a bridged app shares a logout too.
+
 ## \[0.9.0\] - 2026-11-19 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-9-0-2026-11-19)
 
 - Added: CakePHP 5 adapter (`CakeSession`, `SesameAuthenticator` for cakephp/authentication 3), so CakePHP apps sign in through SESAME.

@@ -263,10 +263,22 @@
 <td>Register the login and logout routes.</td>
 </tr>
 <tr>
-<td><code>log</code></td>
-<td><code>SESAME_LOG</code></td>
-<td><code>true</code></td>
-<td>Log the sign-in and sign-out events through the app's PSR-3 logger. Set to <code>false</code> to turn them off.</td>
+<td><code>route_prefix</code></td>
+<td><code>SESAME_ROUTE_PREFIX</code></td>
+<td>empty</td>
+<td>A path prefix for those routes, such as <code>_laravel</code> (<code>/_laravel/login</code>), for an app whose other half still owns <code>/login</code> (Booster's Laravel strangler). The route names stay the same, and the cas <code>service_url</code>, the oidc <code>redirect_uri</code> and the saml URLs default to the prefixed routes.</td>
+</tr>
+<tr>
+<td><code>revocation.path</code></td>
+<td><code>SESAME_REVOCATION_PATH</code></td>
+<td>empty</td>
+<td>A directory this app shares with another app on the same disk. A logout in either one writes a cutoff there, and both sign out any session made at or before it (<code>FileRevocationStore</code>). An app that binds its own <code>Waynestate\Sesame\RevocationStore</code> uses that instead.</td>
+</tr>
+<tr>
+<td><code>revocation.ttl_seconds</code></td>
+<td><code>SESAME_REVOCATION_TTL</code></td>
+<td><code>2592000</code></td>
+<td>How long a cutoff is kept, in seconds: at least the absolute session lifetime.</td>
 </tr>
 <tr>
 <td><code>user_resolver</code></td>
@@ -377,7 +389,7 @@
 <h2 id="metrics"><span class="docs-heading-tail"><span>Metrics</span><a class="docs-heading-link" aria-label="Link to this section" href="#metrics">#</a></span></h2>
 <p>Set <code>sesame.metrics.enabled</code> (env <code>SESAME_METRICS_ENABLED</code>) to <code>true</code> and the adapter counts every finished sign-in as <code>sesame_logins_total</code>, by driver and outcome. It writes to the app's <code>Prometheus\Storage\Adapter</code> binding when there is one, else to the store HELMET's request metrics use, so turn those on too (<code>HELMET_METRICS_ENABLED=true</code> and <code>HELMET_METRICS_STORAGE</code>) and the counter shows on HELMET's <code>/metrics</code>. The store is opened on the first sign-in of a request, never before. Off by default. See <a href="metrics.html">Counting sign-ins</a>.</p>
 <h2 id="shared-logout-across-two-apps">Shared logout across two <span class="docs-heading-tail"><span>apps</span><a class="docs-heading-link" aria-label="Link to this section" href="#shared-logout-across-two-apps">#</a></span></h2>
-<p>Pass the same <code>RevocationStore</code> to both halves of a strangler and logging out of one ends the user's sessions in both; the rule and the two stores are described in <a href="raw-php.html">Raw PHP</a>, &quot;Shared logout across two apps&quot;. The adapter does not wire a store from <code>config/sesame.php</code> yet: until it does, register your own <code>Sesame</code> singleton in the app's service provider — the adapter's binding, with the store added as the final constructor argument — and give both apps a store over the same PSR-16 cache.</p>
+<p>Pass the same <code>RevocationStore</code> to both halves of a strangler and logging out of one ends the user's sessions in both; the rule and the stores are described in <a href="raw-php.html">Raw PHP</a>, &quot;Shared logout across two apps&quot;. The adapter wires the store for you: bind your own <code>Waynestate\Sesame\RevocationStore</code> in a service provider (for example a <code>Psr16RevocationStore</code> over a cache both apps reach), or set <code>SESAME_REVOCATION_PATH</code> to a directory both apps can write, and the adapter passes a <code>FileRevocationStore</code> on it to SESAME. A bound store wins over the path. For Booster's strangler, where the old half still owns <code>/login</code>, set <code>SESAME_ROUTE_PREFIX=_laravel</code> too: the Laravel half signs in at <code>/_laravel/login</code> and logs out at <code>POST /_laravel/logout</code>.</p>
 <h2 id="check-before-a-deploy">Check before a <span class="docs-heading-tail"><span>deploy</span><a class="docs-heading-link" aria-label="Link to this section" href="#check-before-a-deploy">#</a></span></h2>
 <p>In Laravel, SESAME rides on the app's own session, so <code>config/session.php</code> decides whether sign-in works at all. <code>php artisan sesame:check</code> reads those settings and SESAME's own, prints one line for each, and exits <code>1</code> when anything fails, so a deploy job can run it first:</p>
 <pre tabindex="0"><code>$ php artisan sesame:check

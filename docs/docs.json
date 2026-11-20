@@ -344,6 +344,18 @@
                     "Register GET `/login`, POST `/logout`, (for oidc) GET `/login/callback` and (for saml) POST `/login/saml/acs` and GET `/login/saml/metadata`; false keeps the routes in the app's own route file",
                     "`true`"
                 ],
+                "SESAME_ROUTE_PREFIX": [
+                    "A path prefix for those routes, such as `_laravel` (`/_laravel/login`), for an app whose other half still owns `/login` (Booster's Laravel strangler); the route names stay, and the cas, oidc and saml URLs default to the prefixed routes",
+                    "empty (no prefix)"
+                ],
+                "SESAME_REVOCATION_PATH": [
+                    "A directory shared with another app on the same disk: a logout in either writes a cutoff there and both sign out any session made at or before it (`FileRevocationStore`); a bound `RevocationStore` wins",
+                    "empty (no shared sign-out)"
+                ],
+                "SESAME_REVOCATION_TTL": [
+                    "How long a shared sign-out cutoff is kept, in seconds; at least the absolute session lifetime",
+                    "`2592000` (30 days)"
+                ],
                 "SESAME_LOG": [
                     "Log sign-in and sign-out events through the app's PSR-3 logger",
                     "`true`"

@@ -110,7 +110,10 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_OIDC_TOKEN_ENDPOINT | Override the token endpoint from the discovery document | none (from discovery) | config/sesame.php |
 | SESAME_OIDC_USERNAME_CLAIM | The ID token claim the username comes from | `accessid` | config/sesame.php |
 | SESAME_OIDC_USERNAME_FALLBACK | Use the `preferred_username` prefix when the username claim is missing; off because preferred_username is user-changeable | `false` | config/sesame.php |
+| SESAME_REVOCATION_PATH | A directory shared with another app on the same disk: a logout in either writes a cutoff there and both sign out any session made at or before it (`FileRevocationStore`); a bound `RevocationStore` wins | empty (no shared sign-out) | config/sesame.php |
+| SESAME_REVOCATION_TTL | How long a shared sign-out cutoff is kept, in seconds; at least the absolute session lifetime | `2592000` (30 days) | config/sesame.php |
 | SESAME_ROUTES | Register GET `/login`, POST `/logout`, (for oidc) GET `/login/callback` and (for saml) POST `/login/saml/acs` and GET `/login/saml/metadata`; false keeps the routes in the app's own route file | `true` | config/sesame.php |
+| SESAME_ROUTE_PREFIX | A path prefix for those routes, such as `_laravel` (`/_laravel/login`), for an app whose other half still owns `/login` (Booster's Laravel strangler); the route names stay, and the cas, oidc and saml URLs default to the prefixed routes | empty (no prefix) | config/sesame.php |
 | SESAME_SAML_ASSUME_MFA | Count every SAML sign-in as MFA; on only when the IdP enforces MFA for this SP | `false` | config/sesame.php |
 | SESAME_SAML_ATTRIBUTE_ACCESSID | The SAML attribute names for the AccessID, comma-separated; the first present wins | `urn:oid:0.9.2342.19200300.100.1.1,uid` | config/sesame.php |
 | SESAME_SAML_ATTRIBUTE_AFFILIATIONS | The SAML attribute names for the affiliations, comma-separated | `urn:oid:1.3.6.1.4.1.5923.1.1.1.1,eduPersonAffiliation` | config/sesame.php |

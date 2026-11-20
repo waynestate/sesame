@@ -51,6 +51,12 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
+<ul>
+<li>Added: <code>FileRevocationStore</code>, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache.</li>
+<li>Added: the Laravel adapter passes a <code>RevocationStore</code> to SESAME: the app's own binding, or a <code>FileRevocationStore</code> on <code>SESAME_REVOCATION_PATH</code> (<code>SESAME_REVOCATION_TTL</code>, default 30 days). Without either, nothing changes.</li>
+<li>Added: <code>SESAME_ROUTE_PREFIX</code> puts the login, logout and status routes under a prefix (<code>/_laravel/login</code>), for Booster's Laravel strangler, where the old half owns <code>/login</code>. The route names stay, and the cas, oidc and saml URLs default to the prefixed routes.</li>
+<li>Added: <code>WayneAuth::boot()</code> takes an optional <code>RevocationStore</code>, so a bridged app shares a logout too.</li>
+</ul>
 <h2 id="0-9-0-2026-11-19">[0.9.0] - <span class="docs-heading-tail"><span>2026-11-19</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-9-0-2026-11-19">#</a></span></h2>
 <ul>
 <li>Added: CakePHP 5 adapter (<code>CakeSession</code>, <code>SesameAuthenticator</code> for cakephp/authentication 3), so CakePHP apps sign in through SESAME.</li>
