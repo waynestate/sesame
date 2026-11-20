@@ -83,6 +83,10 @@
                     "path": "guides/laravel"
                 },
                 {
+                    "title": "CakePHP",
+                    "path": "guides/cakephp"
+                },
+                {
                     "title": "Counting sign-ins (metrics)",
                     "path": "guides/metrics"
                 },

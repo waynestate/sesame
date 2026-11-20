@@ -29,6 +29,8 @@ If your app looks like that, read on. Other Wayne Auth shapes need a hand move t
 - An app that reads the `validUser` cookie itself and posts it to a cookie validator, or to the Wayne Auth HTTP gateway.
 - An app that asks Wayne Auth for the user's **password** (`_parseSSOCookie('d')`, or a client built with `'d'`). CAS never gives an app the password, so no bridge can; that app needs a different design (a service account, or the target system's own SSO).
 
+A CakePHP 5 app signs in through the [CakePHP](cakephp.md) adapter instead of the bridge: its login route calls `Sesame::login()`, which replaces the old `validUser` check.
+
 SESAME needs PHP 8.3 or newer. An app on older PHP moves its PHP first ([Booster](https://github.com/waynestate/booster) does that part).
 
 ## The one-line swap

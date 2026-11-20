@@ -3,6 +3,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://sesame.apps.wayne.edu/</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/changelog.html</loc></url>
+  <url><loc>https://sesame.apps.wayne.edu/docs/guides/cakephp.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-cas.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-gateway.html</loc></url>
   <url><loc>https://sesame.apps.wayne.edu/docs/guides/driver-oauth2-entra.html</loc></url>
