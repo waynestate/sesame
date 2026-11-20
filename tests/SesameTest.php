@@ -603,7 +603,7 @@ final class SesameTest extends TestCase
             'driver' => 'fake',
             'at' => $clock->now()->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM),
         ], $failures[0]['context']);
-        self::assertStringNotContainsString('hunter2', json_encode($logger->records), 'The store\'s message never reaches the log.');
+        self::assertStringNotContainsString('hunter2', (string) json_encode($logger->records), 'The store\'s message never reaches the log.');
     }
 
     public function testAThrowingStoreDoesNotBreakTheUserCheck(): void
@@ -639,7 +639,7 @@ final class SesameTest extends TestCase
         self::assertSame('the-user', $sesame->user(), 'A failed read counts as no cutoff.');
 
         self::assertCount(1, $logger->withMessage('sesame.revocation_failed'));
-        self::assertStringNotContainsString('hunter2', json_encode($logger->records), 'The store\'s message never reaches the log.');
+        self::assertStringNotContainsString('hunter2', (string) json_encode($logger->records), 'The store\'s message never reaches the log.');
     }
 
     public function testCheckingTheSessionNeverBuildsTheDriver(): void

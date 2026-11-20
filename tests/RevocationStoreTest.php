@@ -96,6 +96,9 @@ final class RevocationStoreTest extends TestCase
                 return [];
             }
 
+            /**
+             * @param iterable<mixed> $values
+             */
             public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
             {
                 return true;
