@@ -173,6 +173,10 @@ The adapter passes the app's PSR-3 logger to the core, so a Laravel app gets the
 
 Set `sesame.metrics.enabled` (env `SESAME_METRICS_ENABLED`) to `true` and the adapter counts every finished sign-in as `sesame_logins_total`, by driver and outcome. It writes to the app's `Prometheus\Storage\Adapter` binding when there is one, else to the store HELMET's request metrics use, so turn those on too (`HELMET_METRICS_ENABLED=true` and `HELMET_METRICS_STORAGE`) and the counter shows on HELMET's `/metrics`. The store is opened on the first sign-in of a request, never before. Off by default. See [Counting sign-ins](metrics.md).
 
+## Shared logout across two apps
+
+Pass the same `RevocationStore` to both halves of a strangler and logging out of one ends the user's sessions in both; the rule and the two stores are described in [Raw PHP](raw-php.md), "Shared logout across two apps". The adapter does not wire a store from `config/sesame.php` yet: until it does, register your own `Sesame` singleton in the app's service provider — the adapter's binding, with the store added as the final constructor argument — and give both apps a store over the same PSR-16 cache.
+
 ## Check before a deploy
 
 In Laravel, SESAME rides on the app's own session, so `config/session.php` decides whether sign-in works at all. `php artisan sesame:check` reads those settings and SESAME's own, prints one line for each, and exits `1` when anything fails, so a deploy job can run it first:
