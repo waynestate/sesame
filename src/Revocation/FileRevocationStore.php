@@ -7,6 +7,7 @@ namespace Waynestate\Sesame\Revocation;
 use Psr\Clock\ClockInterface;
 use Waynestate\Sesame\Clock\SystemClock;
 use Waynestate\Sesame\RevocationStore;
+use Waynestate\Sesame\Support\Setting;
 
 /**
  * The file revocation store: one directory both apps can read and write.
@@ -37,6 +38,29 @@ final class FileRevocationStore implements RevocationStore
         ?ClockInterface $clock = null,
     ) {
         $this->clock = $clock ?? new SystemClock();
+    }
+
+    /**
+     * The store `SESAME_REVOCATION_PATH` names, or null when it is not set.
+     *
+     * For raw-PHP, CakePHP and Slim apps, which build their own Sesame: the
+     * same two environment keys the Laravel adapter reads, so one `.env`
+     * line points both halves of a strangler at one directory.
+     * `SESAME_REVOCATION_TTL` (seconds, default 30 days) sets the TTL; a
+     * value that is not a positive whole number keeps the default.
+     */
+    public static function fromEnvironment(?ClockInterface $clock = null): ?self
+    {
+        $path = Setting::env('SESAME_REVOCATION_PATH');
+
+        if ($path === null || trim($path) === '') {
+            return null;
+        }
+
+        $ttl = Setting::env('SESAME_REVOCATION_TTL');
+        $ttlSeconds = $ttl !== null && ctype_digit(trim($ttl)) && (int) trim($ttl) > 0 ? (int) trim($ttl) : 2_592_000;
+
+        return new self(trim($path), $ttlSeconds, $clock);
     }
 
     public function revokeBefore(string $username, int $at): void

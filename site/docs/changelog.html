@@ -52,7 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
-<li>Added: <code>FileRevocationStore</code>, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache.</li>
+<li>Added: <code>FileRevocationStore</code>, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache. <code>FileRevocationStore::fromEnvironment()</code> builds it from <code>SESAME_REVOCATION_PATH</code> and <code>SESAME_REVOCATION_TTL</code>.</li>
 <li>Added: the Laravel adapter passes a <code>RevocationStore</code> to SESAME: the app's own binding, or a <code>FileRevocationStore</code> on <code>SESAME_REVOCATION_PATH</code> (<code>SESAME_REVOCATION_TTL</code>, default 30 days). Without either, nothing changes.</li>
 <li>Added: <code>SESAME_ROUTE_PREFIX</code> puts the login, logout and status routes under a prefix (<code>/_laravel/login</code>), for Booster's Laravel strangler, where the old half owns <code>/login</code>. The route names stay, and the cas, oidc and saml URLs default to the prefixed routes.</li>
 <li>Added: <code>WayneAuth::boot()</code> takes an optional <code>RevocationStore</code>, so a bridged app shares a logout too.</li>

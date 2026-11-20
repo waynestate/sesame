@@ -81,6 +81,37 @@ final class FileRevocationStoreTest extends TestCase
         self::assertSame([], $this->files(), 'The expired file is removed.');
     }
 
+    public function testFromEnvironmentReadsThePathAndTheTtl(): void
+    {
+        putenv('SESAME_REVOCATION_PATH');
+        putenv('SESAME_REVOCATION_TTL');
+        self::assertNull(FileRevocationStore::fromEnvironment(), 'No path, no store.');
+
+        try {
+            putenv('SESAME_REVOCATION_PATH=' . $this->dir);
+            putenv('SESAME_REVOCATION_TTL=60');
+            $clock = new FakeClock();
+            $store = FileRevocationStore::fromEnvironment($clock);
+            self::assertNotNull($store);
+
+            $store->revokeBefore('jdoe', 100);
+            self::assertSame(100, (new FileRevocationStore($this->dir, 60, $clock))->revokedBefore('jdoe'), 'It writes to the named directory.');
+
+            $clock->advance(61);
+            self::assertNull($store->revokedBefore('jdoe'), 'SESAME_REVOCATION_TTL sets the TTL.');
+
+            putenv('SESAME_REVOCATION_TTL=soon');
+            $store = FileRevocationStore::fromEnvironment($clock);
+            self::assertNotNull($store);
+            $store->revokeBefore('jdoe', 200);
+            $clock->advance(61);
+            self::assertSame(200, $store->revokedBefore('jdoe'), 'A TTL that is not a positive whole number keeps the 30-day default.');
+        } finally {
+            putenv('SESAME_REVOCATION_PATH');
+            putenv('SESAME_REVOCATION_TTL');
+        }
+    }
+
     public function testABrokenFileOrAnUnwritableDirectoryNeverThrows(): void
     {
         mkdir($this->dir, 0o777, true);
