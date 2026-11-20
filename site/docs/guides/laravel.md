@@ -59,7 +59,9 @@ Config keys (in `config/sesame.php`):
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
 | `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login and logout routes. |
-| `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
+| `route_prefix` | `SESAME_ROUTE_PREFIX` | empty | A path prefix for those routes, such as `_laravel` (`/_laravel/login`), for an app whose other half still owns `/login` (Booster's Laravel strangler). The route names stay the same, and the cas `service_url`, the oidc `redirect_uri` and the saml URLs default to the prefixed routes. |
+| `revocation.path` | `SESAME_REVOCATION_PATH` | empty | A directory this app shares with another app on the same disk. A logout in either one writes a cutoff there, and both sign out any session made at or before it (`FileRevocationStore`). An app that binds its own `Waynestate\Sesame\RevocationStore` uses that instead. |
+| `revocation.ttl_seconds` | `SESAME_REVOCATION_TTL` | `2592000` | How long a cutoff is kept, in seconds: at least the absolute session lifetime. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. For a model with a static `findOrImportUser`, use the ready-made `\Waynestate\Sesame\Laravel\ModelUserResolver`. |
 
 A missing `user_resolver` fails with an error that names `ModelUserResolver`, the ready-made resolver for a model with a static `findOrImportUser`. The driver is built lazily: resolving SESAME does not build it, so guests on http, artisan commands, queue workers and tests can ask who is signed in; the driver (and its https check) is built when someone signs in or out, and an app with a broken config still boots and answers signed-out requests.
@@ -178,7 +180,7 @@ Set `sesame.metrics.enabled` (env `SESAME_METRICS_ENABLED`) to `true` and the ad
 
 ## Shared logout across two apps [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#shared-logout-across-two-apps)
 
-Pass the same `RevocationStore` to both halves of a strangler and logging out of one ends the user's sessions in both; the rule and the two stores are described in [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html), "Shared logout across two apps". The adapter does not wire a store from `config/sesame.php` yet: until it does, register your own `Sesame` singleton in the app's service provider — the adapter's binding, with the store added as the final constructor argument — and give both apps a store over the same PSR-16 cache.
+Pass the same `RevocationStore` to both halves of a strangler and logging out of one ends the user's sessions in both; the rule and the stores are described in [Raw PHP](https://sesame.apps.wayne.edu/docs/guides/raw-php.html), "Shared logout across two apps". The adapter wires the store for you: bind your own `Waynestate\Sesame\RevocationStore` in a service provider (for example a `Psr16RevocationStore` over a cache both apps reach), or set `SESAME_REVOCATION_PATH` to a directory both apps can write, and the adapter passes a `FileRevocationStore` on it to SESAME. A bound store wins over the path. For Booster's strangler, where the old half still owns `/login`, set `SESAME_ROUTE_PREFIX=_laravel` too: the Laravel half signs in at `/_laravel/login` and logs out at `POST /_laravel/logout`.
 
 ## Check before a deploy [#](https://sesame.apps.wayne.edu/docs/guides/laravel.html#check-before-a-deploy)
 

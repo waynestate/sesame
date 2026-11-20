@@ -459,9 +459,27 @@
 <td>config/sesame.php</td>
 </tr>
 <tr>
+<td>SESAME_REVOCATION_PATH</td>
+<td>A directory shared with another app on the same disk: a logout in either writes a cutoff there and both sign out any session made at or before it (<code>FileRevocationStore</code>); a bound <code>RevocationStore</code> wins</td>
+<td>empty (no shared sign-out)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_REVOCATION_TTL</td>
+<td>How long a shared sign-out cutoff is kept, in seconds; at least the absolute session lifetime</td>
+<td><code>2592000</code> (30 days)</td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
 <td>SESAME_ROUTES</td>
 <td>Register GET <code>/login</code>, POST <code>/logout</code>, (for oidc) GET <code>/login/callback</code> and (for saml) POST <code>/login/saml/acs</code> and GET <code>/login/saml/metadata</code>; false keeps the routes in the app's own route file</td>
 <td><code>true</code></td>
+<td>config/sesame.php</td>
+</tr>
+<tr>
+<td>SESAME_ROUTE_PREFIX</td>
+<td>A path prefix for those routes, such as <code>_laravel</code> (<code>/_laravel/login</code>), for an app whose other half still owns <code>/login</code> (Booster's Laravel strangler); the route names stay, and the cas, oidc and saml URLs default to the prefixed routes</td>
+<td>empty (no prefix)</td>
 <td>config/sesame.php</td>
 </tr>
 <tr>

@@ -36,6 +36,8 @@ use Waynestate\Sesame\Laravel\Http\SesameController;
 use Waynestate\Sesame\Metrics\LoginMetrics;
 use Waynestate\Sesame\Metrics\PrometheusLoginMetrics;
 use Waynestate\Sesame\Metrics\UnavailableLoginMetrics;
+use Waynestate\Sesame\Revocation\FileRevocationStore;
+use Waynestate\Sesame\RevocationStore;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\UserResolver;
 
@@ -116,6 +118,7 @@ class SesameServiceProvider extends ServiceProvider
                 $this->clock($app),
                 $this->logger($app),
                 $this->loginMetrics($app),
+                $this->revocations($app),
             );
         });
     }
@@ -181,12 +184,14 @@ class SesameServiceProvider extends ServiceProvider
 
         $config['environment'] = $app->environment();
 
+        $prefix = self::routePrefix($app);
+
         if (($config['cas']['service_url'] ?? null) === null) {
-            $config['cas']['service_url'] = $app->make(UrlGenerator::class)->to('/login');
+            $config['cas']['service_url'] = $app->make(UrlGenerator::class)->to($prefix . '/login');
         }
 
         if (($config['driver'] ?? null) === 'oidc' && ($config['oidc']['redirect_uri'] ?? null) === null) {
-            $config['oidc']['redirect_uri'] = $app->make(UrlGenerator::class)->to('/login/callback');
+            $config['oidc']['redirect_uri'] = $app->make(UrlGenerator::class)->to($prefix . '/login/callback');
         }
 
         // The saml driver's URLs default to the routes this adapter
@@ -194,9 +199,9 @@ class SesameServiceProvider extends ServiceProvider
         // is the SP's entity ID, as Shibboleth does it).
         if (($config['driver'] ?? null) === 'saml') {
             $urls = $app->make(UrlGenerator::class);
-            $config['saml']['service_url'] ??= $urls->to('/login');
-            $config['saml']['sp']['acs_url'] ??= $urls->to('/login/saml/acs');
-            $config['saml']['sp']['entity_id'] ??= $urls->to('/login/saml/metadata');
+            $config['saml']['service_url'] ??= $urls->to($prefix . '/login');
+            $config['saml']['sp']['acs_url'] ??= $urls->to($prefix . '/login/saml/acs');
+            $config['saml']['sp']['entity_id'] ??= $urls->to($prefix . '/login/saml/metadata');
         }
 
         return Config::fromArray($config);
@@ -345,11 +350,13 @@ class SesameServiceProvider extends ServiceProvider
         $driver = $this->app->make(Repository::class)->get('sesame.driver');
         $oidc = $driver === 'oidc';
 
+        $prefix = self::routePrefix($this->app);
+
         if ($driver === 'saml') {
-            $this->samlRoutes($router);
+            $router->group(['prefix' => $prefix], fn() => $this->samlRoutes($router));
         }
 
-        $router->group(['middleware' => 'web'], function () use ($router, $oidc) {
+        $router->group(['middleware' => 'web', 'prefix' => $prefix], function () use ($router, $oidc) {
             $router->get('/login', [SesameController::class, 'login'])->name('sesame.login');
 
             if ($oidc) {
@@ -366,6 +373,42 @@ class SesameServiceProvider extends ServiceProvider
             // reads as no extra fields, not an error.
             $router->get('/sesame/status', [SesameController::class, 'status'])->name('sesame.status');
         });
+    }
+
+    /**
+     * The routes' path prefix, "" or "/<prefix>" (sesame.route_prefix, for
+     * an app whose other half still owns /login: Booster's strangler).
+     */
+    private static function routePrefix(Application $app): string
+    {
+        $prefix = trim((string) $app->make(Repository::class)->get('sesame.route_prefix', ''), '/');
+
+        return $prefix === '' ? '' : '/' . $prefix;
+    }
+
+    /**
+     * The shared sign-out store (Booster ADR-0024): the app's own
+     * RevocationStore binding when there is one, a FileRevocationStore on
+     * sesame.revocation.path when that is set, and none otherwise.
+     */
+    private function revocations(Application $app): ?RevocationStore
+    {
+        if ($app->bound(RevocationStore::class)) {
+            return $app->make(RevocationStore::class);
+        }
+
+        $config = $app->make(Repository::class);
+        $path = $config->get('sesame.revocation.path');
+
+        if (! is_string($path) || trim($path) === '') {
+            return null;
+        }
+
+        return new FileRevocationStore(
+            $path,
+            max(1, (int) $config->get('sesame.revocation.ttl_seconds', 2592000)),
+            $this->clock($app),
+        );
     }
 
     /**

@@ -1348,7 +1348,9 @@ Config keys (in `config/sesame.php`):
 | `mfa.max_age` | `SESAME_MFA_MAX_AGE` | `28800` | The longest a user's last MFA sign-in may be, in seconds. |
 | `mfa.on_failure` | `SESAME_MFA_ON_FAILURE` | `deny` | `deny` answers a 403; `reauth` redirects to the login route. |
 | `routes` | `SESAME_ROUTES` | `true` | Register the login, logout and status routes. |
-| `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
+| `route_prefix` | `SESAME_ROUTE_PREFIX` | empty | A path prefix for those routes, such as `_laravel` (`/_laravel/login`), for an app whose other half still owns `/login` (Booster's Laravel strangler). The route names stay the same, and the cas `service_url`, the oidc `redirect_uri` and the saml URLs default to the prefixed routes. |
+| `revocation.path` | `SESAME_REVOCATION_PATH` | empty | A directory this app shares with another app on the same disk. A logout in either one writes a cutoff there, and both sign out any session made at or before it (`FileRevocationStore`). An app that binds its own `Waynestate\Sesame\RevocationStore` uses that instead. |
+| `revocation.ttl_seconds` | `SESAME_REVOCATION_TTL` | `2592000` | How long a cutoff is kept, in seconds: at least the absolute session lifetime. || `log` | `SESAME_LOG` | `true` | Log the sign-in and sign-out events through the app's PSR-3 logger. Set to `false` to turn them off. |
 | `user_resolver` | `SESAME_USER_RESOLVER` | none | The class that resolves a verified identity to the app's user. Required. |
 
 **Check before a deploy.** SESAME rides on the app's own session in Laravel,

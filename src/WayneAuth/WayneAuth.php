@@ -20,6 +20,7 @@ use Waynestate\Sesame\Exception\ProviderUnavailable;
 use Waynestate\Sesame\Identity;
 use Waynestate\Sesame\Metrics\LoginMetrics;
 use Waynestate\Sesame\Redirect;
+use Waynestate\Sesame\RevocationStore;
 use Waynestate\Sesame\Sesame;
 use Waynestate\Sesame\Session\NativeSession;
 use Waynestate\Sesame\Support\JsonGuest;
@@ -159,6 +160,9 @@ class WayneAuth
      *        sign-in and sign-out events.
      * @param LoginMetrics|null $metrics Optional sign-in counter, for
      *        example a PrometheusLoginMetrics on HELMET's metrics store.
+     * @param RevocationStore|null $revocations Optional shared sign-out
+     *        store, so a logout in another app (the Laravel half of a
+     *        Booster strangler) ends this app's session too.
      *
      * @throws InvalidConfig When the config or an option is not valid, or
      *         no PSR-18 client can be found.
@@ -174,6 +178,7 @@ class WayneAuth
         array $options = [],
         ?LoggerInterface $logger = null,
         ?LoginMetrics $metrics = null,
+        ?RevocationStore $revocations = null,
     ): Sesame {
         $config = $config instanceof Config ? $config : Config::fromArray($config);
 
@@ -195,6 +200,7 @@ class WayneAuth
             null,
             $logger,
             $metrics,
+            $revocations,
         );
 
         self::$defaults = [

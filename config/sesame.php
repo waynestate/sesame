@@ -352,6 +352,33 @@ return [
 
     'routes' => env('SESAME_ROUTES', true),
 
+    // A path prefix for those routes, such as "_laravel": /_laravel/login and
+    // POST /_laravel/logout, for an app whose other half still owns /login
+    // (Booster's Laravel strangler). The route names stay the same, and the
+    // cas service_url, oidc redirect_uri and saml URLs default to the
+    // prefixed routes. Empty (the default) means no prefix.
+    'route_prefix' => env('SESAME_ROUTE_PREFIX', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shared sign-out
+    |--------------------------------------------------------------------------
+    |
+    | A directory this app shares with another app on the same disk (the two
+    | halves of a Booster strangler): a logout in either one writes a cutoff
+    | there, and both sign out any session made at or before it. Empty (the
+    | default) means no shared sign-out. An app that binds its own
+    | Waynestate\Sesame\RevocationStore in the container uses that instead.
+    | ttl_seconds is how long a cutoff is kept: at least the absolute session
+    | lifetime.
+    |
+    */
+
+    'revocation' => [
+        'path' => env('SESAME_REVOCATION_PATH', ''),
+        'ttl_seconds' => env('SESAME_REVOCATION_TTL', 2592000),
+    ],
+
     // Log sign-in and sign-out events through the app's PSR-3 logger; false turns it off.
     'log' => env('SESAME_LOG', true),
 
