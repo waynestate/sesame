@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-20
+
 - Added: `FileRevocationStore`, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache. `FileRevocationStore::fromEnvironment()` builds it from `SESAME_REVOCATION_PATH` and `SESAME_REVOCATION_TTL`.
 - Added: the Laravel adapter passes a `RevocationStore` to SESAME: the app's own binding, or a `FileRevocationStore` on `SESAME_REVOCATION_PATH` (`SESAME_REVOCATION_TTL`, default 30 days). Without either, nothing changes.
 - Added: `SESAME_ROUTE_PREFIX` puts the login, logout and status routes under a prefix (`/_laravel/login`), for Booster's Laravel strangler, where the old half owns `/login`. The route names stay, and the cas, oidc and saml URLs default to the prefixed routes.

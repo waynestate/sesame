@@ -10,6 +10,10 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.10.0 (2026-11-20) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-10-0-2026-11-20)
+
+No break. This release adds `FileRevocationStore`, the `SESAME_ROUTE_PREFIX` setting and Laravel adapter support for a shared `RevocationStore`, for Booster's Laravel strangler. Run `composer require waynestate/sesame:^0.10`; an app on 0.9.x changes nothing else, because every new setting is off unless set.
+
 ## 0.9.0 (2026-11-19) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-9-0-2026-11-19)
 
 No break. This release adds the CakePHP 5 adapter and the `RevocationStore`. Run `composer require waynestate/sesame:^0.9`; an app on 0.8.x changes nothing else.
