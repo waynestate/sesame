@@ -135,15 +135,43 @@ The facade takes an optional sixth constructor argument: a PSR-3 logger (`Psr\Lo
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
 | `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps` or `bad_session_ref`. |
 
-Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`, `absolute_timeout`, `no_timestamps` or `user_gone`). `sesame.session_anomaly` adds `reason` (`missing_timestamps`, a user stored without the session's timestamps, or `bad_session_ref`, a stored reference that is not the 16-character lowercase hex value login created) and carries `session_ref` when the stored value is still a valid 16-character lowercase hex string; when you see one, look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`: an opaque 16-character hex reference SESAME creates on every login (stored in the session under `sesame.session_ref`) that ties the login, timeouts and logout of one sign-in together in the log. It is not the session ID and never derived from it, and a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text. The logger stays optional: without one, nothing is logged and nothing else changes.
+Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`, `absolute_timeout`, `no_timestamps`, `user_gone` or `revoked`, a session signed in before another app's shared logout cutoff). `sesame.session_anomaly` adds `reason` (`missing_timestamps`, a user stored without the session's timestamps, or `bad_session_ref`, a stored reference that is not the 16-character lowercase hex value login created) and carries `session_ref` when the stored value is still a valid 16-character lowercase hex string; when you see one, look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`: an opaque 16-character hex reference SESAME creates on every login (stored in the session under `sesame.session_ref`) that ties the login, timeouts and logout of one sign-in together in the log. It is not the session ID and never derived from it, and a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text. The logger stays optional: without one, nothing is logged and nothing else changes.
 
 SESAME never logs tickets, session IDs, tokens or failure messages: a failed login records only the event, the driver and the time. Usernames have every control character replaced with `?` and are cut at 128 characters, so a username cannot forge an extra log line or flood the log. A logger that throws never changes what the facade returns or throws.
 
 With the sign-in counter on, one more event can appear: `sesame.metrics_failed` (`warning`), when a count could not be written. It carries `event`, `driver` and `at`, plus `reason` when the cause is SESAME's own setup; the store's own error is never logged.
 
+With a shared sign-out store set, one more event can appear: `sesame.revocation_failed` (`warning`), when a cutoff could not be read or written. It carries `event`, `driver` and `at`; the store's own error is never logged.
+
 ## Metrics
 
 The facade takes an optional seventh constructor argument, a `LoginMetrics`. `PrometheusLoginMetrics` counts every finished sign-in as `sesame_logins_total{driver, outcome}` in a promphp store; on the store HELMET's request metrics use, it shows on HELMET's `/metrics`. Off by default. The setup, the labels and the queries are in [Counting sign-ins](metrics.md).
+
+## Shared logout across two apps
+
+Two apps on one domain each keep their own SESAME session, so no session key can be shared between them; what can be shared is a time. The facade takes an optional eighth constructor argument, a `RevocationStore`:
+
+```php
+use Waynestate\Sesame\Revocation\Psr16RevocationStore;
+
+// Any PSR-16 cache both apps can reach (Redis, memcached, ...).
+$store = new Psr16RevocationStore($psr16Cache, 30 * 24 * 60 * 60);
+
+$sesame = new Sesame(
+    DriverFactory::make($config),
+    $resolver,
+    new NativeSession(),
+    $config,
+    null,   // clock
+    null,   // logger
+    null,   // metrics
+    $store,
+);
+```
+
+When the user logs out of either app, that app records a cutoff for the user's username — every sign-in at or before now counts as signed out — and every app that shares the store signs such a session out on its next request (the sign-out's reason is `revoked`). A sign-in after the cutoff is untouched, and only a real logout writes a cutoff: a timeout, a deleted user, missing timestamps or a discovered revocation ends only the session that had them. Without a store, nothing changes: each app signs the user out of its own session only.
+
+SESAME ships two stores. `InMemoryRevocationStore` keeps the cutoffs in an array for one process, so it cannot share a logout between two apps on its own; it is what the tests use. `Psr16RevocationStore` takes a PSR-16 cache and a TTL in seconds, and keeps each cutoff under `sesame.revoked.` plus the SHA-256 of the username, so no plain username touches the cache; give both apps a store over the same cache and they share the cutoffs. Called twice for the same user, both stores keep the later cutoff, so a logout can never un-revoke an earlier one. A store that throws never changes what sign-in or sign-out returns or throws: a failed read counts as no cutoff, a failed write is dropped, and the failure is logged once as `sesame.revocation_failed` when a logger is set.
 
 ## Related
 

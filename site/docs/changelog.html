@@ -52,6 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
+<li>Added: <code>RevocationStore</code> (in-memory and PSR-16): pass the same store to two apps' SESAME and logging out of one ends the user's sessions in both, for the Laravel strangler (Booster ADR-0024).</li>
 <li>Docs: the README and the wayne-cas guide say Booster 1.19.0's hop writes <code>^0.8</code> (they said <code>^0.7</code>, what Booster 1.14.0 to 1.18.0 wrote), and which upgrade steps an app hopped by an older Booster takes. Content only.</li>
 <li>Fixed: the a11y script comments name Preflight 0.9.0, the tag tests/A11yCheckerPinTest.php pins, where they still said 0.4.0. Comments only.</li>
 <li>Changed: the dev dependency Pinstripe is <code>^0.4</code> (was <code>^0.3</code>, which does not allow 0.4.0); 0.4.0 adds two opt-in Rector presets and changes no rule this repo uses.</li>
