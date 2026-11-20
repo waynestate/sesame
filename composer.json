@@ -29,6 +29,7 @@
         "symfony/http-foundation": "^6.4 || ^7.4"
     },
     "require-dev": {
+        "cakephp/authentication": "^3.0",
         "guzzlehttp/guzzle": "^7.9 || ^8.0",
         "laravel/pint": "^1.32",
         "league/commonmark": "^2.10",
