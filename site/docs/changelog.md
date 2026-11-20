@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.9.0\] - 2026-11-19 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-9-0-2026-11-19)
+
 - Added: CakePHP 5 adapter (`CakeSession`, `SesameAuthenticator` for cakephp/authentication 3), so CakePHP apps sign in through SESAME.
 - Added: `RevocationStore` (in-memory and PSR-16): pass the same store to two apps' SESAME and logging out of one ends the user's sessions in both, for the Laravel strangler (Booster ADR-0024).
 - Docs: the README and the wayne-cas guide say Booster 1.19.0's hop writes `^0.8` (they said `^0.7`, what Booster 1.14.0 to 1.18.0 wrote), and which upgrade steps an app hopped by an older Booster takes. Content only.

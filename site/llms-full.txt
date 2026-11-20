@@ -1708,7 +1708,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.8.0
+Keys cut while you wait · `waynestate/sesame` 0.9.0
 
 ## SESAME
 
@@ -2083,6 +2083,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+### \[0.9.0\] - 2026-11-19 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-9-0-2026-11-19)
 
 - Added: CakePHP 5 adapter (`CakeSession`, `SesameAuthenticator` for cakephp/authentication 3), so CakePHP apps sign in through SESAME.
 - Added: `RevocationStore` (in-memory and PSR-16): pass the same store to two apps' SESAME and logging out of one ends the user's sessions in both, for the Laravel strangler (Booster ADR-0024).
@@ -6394,6 +6396,10 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.9.0 (2026-11-19) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-9-0-2026-11-19)
+
+No break. This release adds the CakePHP 5 adapter and the `RevocationStore`. Run `composer require waynestate/sesame:^0.9`; an app on 0.8.x changes nothing else.
 
 ### 0.8.0 (2026-11-14) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-8-0-2026-11-14)
 
