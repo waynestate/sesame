@@ -176,7 +176,7 @@ final class CheckCommandTest extends LaravelTestCase
         $this->production();
 
         $this->check()
-            ->expectsOutput('[FAIL] Driver: The fake driver only runs in local, development and testing environments.')
+            ->expectsOutput('[FAIL] Driver: The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.')
             ->assertExitCode(1);
     }
 

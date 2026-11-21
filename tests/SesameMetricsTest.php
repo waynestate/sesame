@@ -77,7 +77,7 @@ final class SesameMetricsTest extends TestCase
         : new RecordingDriver($step, null, $log);
 
         $config = $driver === 'fake'
-            ? new Config(driver: 'fake', environment: 'testing', fakeUsername: 'jdoe')
+            ? new Config(driver: 'fake', environment: 'testing', fakeUsername: 'jdoe', fakeAllowed: true)
             : new Config(...['driver' => $driver, 'environment' => 'testing']);
 
         $sesame = new Sesame(

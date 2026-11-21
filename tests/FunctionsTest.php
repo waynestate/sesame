@@ -29,13 +29,14 @@ final class FunctionsTest extends TestCase
             driver: 'fake',
             environment: 'local',
             fakeUsername: 'jdoe',
+            fakeAllowed: true,
         );
     }
 
     public function testSesameReturnsTheInstanceItWasGiven(): void
     {
         $instance = new Sesame(
-            new FakeDriver('local', 'jdoe', []),
+            new FakeDriver('local', 'jdoe', [], true),
             new RecordingResolver(),
             new RecordingSession(new EventLog()),
             $this->config(),
@@ -228,7 +229,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Redirect('http://idp.local/login?service=x'), null, $log),
     new RecordingResolver(),
     new RecordingSession($log),
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -275,7 +276,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Redirect('http://idp.local/login?service=x'), null, $log),
     new RecordingResolver(),
     new RecordingSession($log),
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -457,7 +458,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), 'http://idp.local/logout', $log),
     new RecordingResolver(),
     new RecordingSession($log),
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -505,7 +506,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), null, $log),
     new RecordingResolver(),
     new RecordingSession($log),
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -808,10 +809,10 @@ use Waynestate\Sesame\Tests\Support\RecordingResolver;
 use Waynestate\Sesame\Tests\Support\RecordingSession;
 
 $sesame = new Sesame(
-    new FakeDriver('local', 'jdoe', []),
+    new FakeDriver('local', 'jdoe', [], true),
     new RecordingResolver('the-user'),
     new RecordingSession(new EventLog()),
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -898,7 +899,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), 'http://idp.local/logout', $log),
     new RecordingResolver(),
     $session,
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 
@@ -948,7 +949,7 @@ $sesame = new Sesame(
     new RecordingDriver(new Authenticated($identity), null, $log),
     new RecordingResolver(),
     $session,
-    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe'),
+    new Config(driver: 'fake', environment: 'local', fakeUsername: 'jdoe', fakeAllowed: true),
 );
 sesame($sesame);
 

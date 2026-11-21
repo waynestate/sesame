@@ -28,7 +28,7 @@ final class DriverFactoryTest extends TestCase
         $config = Config::fromArray([
             'driver' => 'fake',
             'environment' => 'local',
-            'fake' => ['username' => 'jdoe'],
+            'fake' => ['username' => 'jdoe', 'allowed' => true],
         ]);
 
         $driver = DriverFactory::make($config);
