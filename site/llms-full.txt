@@ -1708,6 +1708,8 @@ CI for this repo runs on git.wayne.edu, on the instance runner. Every product
 in the stack strongly recommends the same for apps on git.wayne.edu: one
 shared runner, one less surprise per pipeline.
 
+Found a security problem? See [SECURITY.md](https://github.com/waynestate/sesame/blob/HEAD/SECURITY.md); please do not open a public issue.
+
 ---
 
 Source: https://sesame.apps.wayne.edu/
@@ -2091,6 +2093,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
 - Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: `parity up` in `deploy/`.
+- Docs: SECURITY.md says how to report a vulnerability privately.
 
 ### \[0.11.0\] - 2026-11-21 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-11-0-2026-11-21)
 

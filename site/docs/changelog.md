@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
 - Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: `parity up` in `deploy/`.
+- Docs: SECURITY.md says how to report a vulnerability privately.
 
 ## \[0.11.0\] - 2026-11-21 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-11-0-2026-11-21)
 
