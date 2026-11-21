@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-21
+
 - Changed (breaking): the fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true (config fake.allowed). development, dev and test no longer boot it, so a mistyped server environment can no longer turn sign-in off.
 - Docs: the gateway driver example trusts one proxy address instead of a whole private network, and the trusted_proxies docs say why.
 
