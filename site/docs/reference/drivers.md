@@ -14,7 +14,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 
 | Driver | Status |
 | --- | --- |
-| `fake` | Now. Local development and tests only. Refuses to boot in production. |
+| `fake` | Now. Local development and tests only: it boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
@@ -65,17 +65,18 @@ When a required argument or config value is missing, the factory throws `Invalid
 
 ## fake [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#fake)
 
-A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct outside the allowed development environments: it throws, it never silently falls back. The check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver.
+A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct unless the environment is `local` or `testing` **and** the opt-in is on: it throws, it never silently falls back. The environment check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver, and an opted-in app whose environment is mistyped cannot either.
 
 | Value | Exact |
 | --- | --- |
 | Name | `fake` |
-| Allowed environments | `local`, `development`, `dev`, `testing`, `test` (an allowlist, matched after lowercasing and trimming) |
+| Allowed environments | `local` and `testing` (an allowlist, matched after lowercasing and trimming) |
+| Opt-in | `SESAME_FAKE_ALLOWED` (config `fake.allowed`) must be true; without it the driver throws even in local and testing |
 | Identity | The username and attributes it was built with, every time |
-| Outside the allowlist | Throws `FakeDriverInProduction` with `The fake driver only runs in local, development and testing environments.` |
+| Missing the environment or the opt-in | Throws `FakeDriverInProduction` with `The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.` |
 | `logoutUrl()`, `serviceUrl()` | `null` |
 
-The factory builds it from the `fakeUsername` and `fakeAttributes` config properties, with the username defaulting to the empty string.
+The factory builds it from the `fakeUsername`, `fakeAllowed` and `fakeAttributes` config properties, with the username defaulting to the empty string and the opt-in defaulting to off.
 
 ## cas [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#cas)
 
@@ -90,7 +91,7 @@ CAS 2.0 against Academica by default.
 | Value | Exact |
 | --- | --- |
 | Protocol | `2.0` by default; only `2.0` or `3.0` are accepted |
-| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (the fake driver's list) |
+| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (`local`, `development`, `dev`, `testing` or `test`) |
 | Ticket | An `ST-` service ticket, at most 256 characters (`^ST-[A-Za-z0-9._\-]{1,253}$`) |
 | Validation path | `/serviceValidate` for 2.0, `/p3/serviceValidate` for 3.0 |
 | Login query | `service=` always; `renew=true` when `renew` is on |

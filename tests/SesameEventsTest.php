@@ -45,6 +45,7 @@ final class SesameEventsTest extends TestCase
             'driver' => 'fake',
             'environment' => 'testing',
             'fakeUsername' => 'jdoe',
+            'fakeAllowed' => true,
             ...$overrides,
         ]);
     }

@@ -20,6 +20,8 @@ One lock, any key: this page matches your situation to the right SESAME driver a
 | App that must sign in through a SAML IdP (Shibboleth-style), opt-in | `saml` | None; the IdP's administrators register the app's SP metadata instead. |
 | Local development | `fake` | None. |
 
+The `fake` driver boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`; it refuses every other environment, so a mistyped server environment cannot turn sign-in off.
+
 ## The recommended path on Citadel [#](https://sesame.apps.wayne.edu/docs/guides/which-driver.html#the-recommended-path-on-citadel)
 
 The recommended path on Citadel is the `gateway` driver behind Drawbridge. Drawbridge is Wayne State's auth gateway: the browser signs in once at the gateway, which passes the app a signed assertion that the `gateway` driver verifies. Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the `cas` driver) is today's option for a Citadel app, and it needs no per-app Entra registration.

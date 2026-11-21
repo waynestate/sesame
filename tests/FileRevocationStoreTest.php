@@ -129,11 +129,11 @@ final class FileRevocationStoreTest extends TestCase
     public function testALogoutInOneHalfSignsTheOtherHalfOut(): void
     {
         $clock = new FakeClock();
-        $config = Config::fromArray(['driver' => 'fake', 'environment' => 'testing', 'fake' => ['username' => 'jdoe']]);
+        $config = Config::fromArray(['driver' => 'fake', 'environment' => 'testing', 'fake' => ['username' => 'jdoe', 'allowed' => true]]);
         $legacySession = new RecordingSession(new EventLog());
         $laravelSession = new RecordingSession(new EventLog());
-        $legacy = new Sesame(new FakeDriver('testing', 'jdoe', []), new RecordingResolver(), $legacySession, $config, $clock, null, null, new FileRevocationStore($this->dir, 3600, $clock));
-        $laravel = new Sesame(new FakeDriver('testing', 'jdoe', []), new RecordingResolver(), $laravelSession, $config, $clock, null, null, new FileRevocationStore($this->dir, 3600, $clock));
+        $legacy = new Sesame(new FakeDriver('testing', 'jdoe', [], true), new RecordingResolver(), $legacySession, $config, $clock, null, null, new FileRevocationStore($this->dir, 3600, $clock));
+        $laravel = new Sesame(new FakeDriver('testing', 'jdoe', [], true), new RecordingResolver(), $laravelSession, $config, $clock, null, null, new FileRevocationStore($this->dir, 3600, $clock));
 
         $legacy->login(new ServerRequest('GET', '/login'));
         $clock->advance(5);

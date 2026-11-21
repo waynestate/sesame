@@ -357,7 +357,7 @@ final class WayneAuthBridgeTest extends TestCase
     public function testBootRegistersSesameAndTheOldGlobalName(): void
     {
         $sesame = WayneAuth::boot(
-            ['driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'jdoe']],
+            ['driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'jdoe', 'allowed' => true]],
             options: ['on_guest' => 'deny', 'accessid_case' => 'upper'],
         );
 
@@ -376,7 +376,7 @@ final class WayneAuthBridgeTest extends TestCase
         $this->expectException(InvalidConfig::class);
 
         WayneAuth::boot(
-            ['driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'jdoe']],
+            ['driver' => 'fake', 'environment' => 'local', 'fake' => ['username' => 'jdoe', 'allowed' => true]],
             options: ['accessid_case' => 'title'],
         );
     }

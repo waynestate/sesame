@@ -10,6 +10,26 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.11.0 (2026-11-21)
+
+**Changed (breaking).** The `fake` driver boots only when the environment is
+`local` or `testing` **and** the opt-in `SESAME_FAKE_ALLOWED` is `true`
+(config key `fake.allowed`, off unless set). An app on the fake driver sets
+`SESAME_FAKE_ALLOWED=true` in its local and test environments only, and its
+environment (`APP_ENV` in Laravel, the `environment` config key in raw PHP)
+must be `local` or `testing`: `development`, `dev` and `test` no longer boot
+the driver, so a mistyped server environment can no longer turn sign-in off.
+
+What a user sees if the opt-in is forgotten, or the environment is not
+`local` or `testing`: the driver throws `FakeDriverInProduction` with `The
+fake driver runs only when the environment is local or testing and
+SESAME_FAKE_ALLOWED is true.` at boot; in Laravel, `php artisan sesame:check`
+fails its Driver line with the same text.
+
+**How to verify.** In a local or testing environment with
+`SESAME_FAKE_ALLOWED=true`, the fake driver signs in as before; without it, or
+under any other environment, building the driver fails with the message above.
+
 ## 0.10.1 (2026-11-20)
 
 No break, and a security fix: upgrade now if any Laravel app on 0.10.0 sets `'serialization' => 'json'` in `config/session.php` (Sourdough's apps do). On those apps 0.10.0 read the stored identity back as an array, so a shared logout from another app did not sign the session out, a logout wrote no shared cutoff, and `requireMfa()` and `hasAuthContext()` found no identity. Run `composer require waynestate/sesame:^0.10.1`; nothing else changes in the app.

@@ -57,6 +57,7 @@ final class SesameAuthenticatorTest extends TestCase
             'driver' => 'fake',
             'environment' => 'testing',
             'fakeUsername' => 'jdoe',
+            'fakeAllowed' => true,
         ]);
     }
 
@@ -87,7 +88,7 @@ final class SesameAuthenticatorTest extends TestCase
     private function sesameOver(Session $session): Sesame
     {
         return new Sesame(
-            new FakeDriver('testing', 'jdoe', ['cn' => ['John Doe']]),
+            new FakeDriver('testing', 'jdoe', ['cn' => ['John Doe']], true),
             new RecordingResolver(),
             new CakeSession($session),
             $this->config(),

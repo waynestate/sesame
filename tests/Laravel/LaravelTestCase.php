@@ -39,6 +39,7 @@ abstract class LaravelTestCase extends TestCase
 
         $config->set('sesame.driver', 'fake');
         $config->set('sesame.fake.username', 'jdoe');
+        $config->set('sesame.fake.allowed', true);
         $config->set('sesame.user_resolver', TestUserResolver::class);
     }
 }

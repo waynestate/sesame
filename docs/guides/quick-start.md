@@ -58,13 +58,15 @@ driver, which needs no server and no registration. Every snippet below is the
        'environment' => 'local',
        'fake' => [
            'username' => 'jdoe',
+           // The fake driver boots only in local or testing, and only when opted in.
+           'allowed' => true,
            'attributes' => ['cn' => ['John Doe']],
        ],
    ]);
    ```
 
-   Expected: `$config` names the `fake` driver, the local environment, and the
-   identity the driver will return.
+   Expected: `$config` names the `fake` driver, the local environment, the
+   opt-in that lets it boot, and the identity the driver will return.
 
 4. **Build the facade and hand it to the functions.**
 

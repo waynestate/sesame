@@ -59,6 +59,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
 | SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them; https, or `http://localhost` or `http://127.0.0.1` in a local environment | none (the app's `/login` route) | config/sesame.php |
 | SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc`, `saml` (opt-in) or `fake` | `cas` | config/sesame.php |
+| SESAME_FAKE_ALLOWED | Turns the fake driver on; honoured only when the environment is local or testing | false | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |
 | SESAME_GATEWAY_ALGORITHM | The assertion's signature algorithm (`ES256`, `RS256` or `EdDSA`) | `ES256` | config/sesame.php |
 | SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD | Skip the replay guard entirely; local development only, never in production | `false` | config/sesame.php |

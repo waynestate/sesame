@@ -85,6 +85,39 @@ final class ConfigTest extends TestCase
         ]);
     }
 
+    public function test_fake_allowed_reads_bools_and_strings(): void
+    {
+        $configFor = static fn(mixed $allowed): Config => Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe', 'allowed' => $allowed],
+        ]);
+
+        self::assertTrue($configFor(true)->fakeAllowed);
+        self::assertTrue($configFor('true')->fakeAllowed);
+        self::assertTrue($configFor('TRUE')->fakeAllowed);
+        self::assertTrue($configFor(' true ')->fakeAllowed);
+        self::assertTrue($configFor('1')->fakeAllowed);
+        self::assertFalse($configFor(false)->fakeAllowed);
+        self::assertFalse($configFor(null)->fakeAllowed);
+        self::assertFalse($configFor('false')->fakeAllowed);
+        self::assertFalse($configFor('0')->fakeAllowed);
+        self::assertFalse($configFor('yes')->fakeAllowed);
+
+        $missing = Config::fromArray([
+            'driver' => 'fake',
+            'environment' => 'local',
+            'fake' => ['username' => 'jdoe'],
+        ]);
+
+        self::assertFalse($missing->fakeAllowed);
+
+        $this->expectException(InvalidConfig::class);
+        $this->expectExceptionMessage('The config key "fake.allowed" must be a boolean, a string or null.');
+
+        $configFor(1);
+    }
+
     public function testReadsTheCasSettings(): void
     {
         $config = Config::fromArray([

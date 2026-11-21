@@ -72,6 +72,7 @@ final class DriverFactory
                 $config->environment,
                 $config->fakeUsername ?? '',
                 $config->fakeAttributes,
+                $config->fakeAllowed,
             ),
             'cas' => new CasDriver(
                 $config->casBaseUrl ?? '',

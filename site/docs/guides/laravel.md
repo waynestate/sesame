@@ -32,6 +32,7 @@ Config keys (in `config/sesame.php`):
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `fake.allowed` | `SESAME_FAKE_ALLOWED` | `false` | Turns the fake driver on; honoured only when the environment is local or testing. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
 | `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
@@ -203,7 +204,7 @@ $ php artisan sesame:check
 
 | Line | OK | WARN | FAIL |
 | --- | --- | --- | --- |
-| Driver | the driver builds from `config/sesame.php` |  | it does not (the line gives the reason; the fake driver outside local, development and testing is one) |
+| Driver | the driver builds from `config/sesame.php` |  | it does not (the line gives the reason; the fake driver outside local or testing, or without `SESAME_FAKE_ALLOWED`, is one) |
 | User resolver | `sesame.user_resolver` names a class that implements `Waynestate\Sesame\UserResolver` |  | it is empty, or names something else |
 | Session driver | `file`, `database`, `redis` or any other store | `cookie` (the whole session lives in the browser) | `array` (the session ends with the request, so a sign-in never sticks) |
 | HttpOnly | `session.http_only` is `true` |  | anything else |

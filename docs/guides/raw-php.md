@@ -33,6 +33,8 @@ $config = Config::fromArray([
     'environment' => 'local',
     'fake' => [
         'username' => 'jdoe',
+        // The fake driver boots only in local or testing, and only when opted in.
+        'allowed' => true,
         'attributes' => ['cn' => ['John Doe']],
     ],
 ]);
