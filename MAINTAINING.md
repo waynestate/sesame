@@ -53,7 +53,7 @@ if tests fail oddly after a Docker install, delete `vendor/` and install again.
 
 - **GitLab:** Preflight's `php-test` (the test matrix on PHP 8.3, 8.4, 8.5), `composer-audit` (the dependency
   audit), `proctor` (PROCTOR checks `deploy/` against CREED's policy), `a11y` (axe-core over every page of
-  `site/`) and `secret-detection` (Gitleaks over the checked-out tree) components, all pinned to Preflight 0.9.0,
+  `site/`) and `secret-detection` (Gitleaks over the checked-out tree) components, all pinned to Preflight 0.12.0,
   plus SESAME's own `wayneui-copies` (installs the deploy layer and runs PROCTOR on the repo), `composer-ci`
   (runs `composer ci`) and `vue` (the Vue adapter's tests and type check) jobs. The Gitleaks allowlist lives in
   `.gitleaks.toml` and is limited to the documented test fixtures and sample tokens by exact path and rule; a new

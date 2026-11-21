@@ -18,13 +18,13 @@ final class A11yCheckerPinTest extends TestCase
     private const ROOT = __DIR__ . '/..';
 
     /** The Preflight tag the a11y component runs at in .gitlab-ci.yml. */
-    private const PREFLIGHT_TAG = '0.9.0';
+    private const PREFLIGHT_TAG = '0.12.0';
 
     /** SHA-256 of templates/a11y/check.mjs at that tag, LF line endings. */
     private const CHECKER_SHA256 = '8f11379ac03cee8b52e39835639430abe1c749eeb5ffb2abb43aeaa300f1c663';
 
     /** The image default of the a11y component at that tag, digest included. */
-    private const IMAGE = 'mcr.microsoft.com/playwright:v1.65.0-noble@sha256:6e3fb709361521eb27161606e6da6d2674e5e89fa16516cb37d6fdd91372273d';
+    private const IMAGE = 'mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe';
 
     /** The template defaults the checker packages must pin. */
     private const AXE_PLAYWRIGHT_VERSION = '4.14.0';

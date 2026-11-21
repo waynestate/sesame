@@ -318,7 +318,7 @@ How the stack holds it: `Enforced`. `CasDriver` reads `authenticationDate` from 
 Include pipeline components by a full release tag, never a branch, a partial version or `~latest`.
 Why: a moving component can change what your pipeline runs, or what it skips, with no change in your repo. GitLab says components are used at your own risk.
 Sources: [GitLab CI/CD components](https://docs.gitlab.com/ci/components/) (it prefers a commit SHA pin and says "Avoid using `latest`"). The stack pins a release tag instead, because published stack tags are never moved or deleted.
-How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its five Preflight components at one release tag, `@0.9.0` (php-test, composer-audit, proctor, a11y and secret-detection), and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (a rule across the stack), so a pin bump is one readable version across every repo. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
+How the stack holds it: `Checked`. `.gitlab-ci.yml` includes its five Preflight components at one release tag, `@0.12.0` (php-test, composer-audit, proctor, a11y and secret-detection), and says never to use `~latest`. A full release tag counts as a pin because published stack tags are never moved or deleted (a rule across the stack), so a pin bump is one readable version across every repo. PROCTOR's `preflight-pinned` check, which the `proctor` job runs on every pipeline, warns on a branch, `~latest` or a partial version such as `0.3`.
 
 ## 8. MFA
 
