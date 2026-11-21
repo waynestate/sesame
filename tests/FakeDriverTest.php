@@ -36,7 +36,7 @@ final class FakeDriverTest extends TestCase
     #[DataProvider('nonProductionEnvironments')]
     public function testAcceptsNonProduction(string $environment): void
     {
-        $driver = new FakeDriver($environment, 'jdoe', []);
+        $driver = new FakeDriver($environment, 'jdoe', [], true);
 
         self::assertSame('fake', $driver->name());
     }
@@ -75,11 +75,11 @@ final class FakeDriverTest extends TestCase
     }
 
     #[DataProvider('developmentEnvironments')]
-    public function testAcceptsDevelopmentEnvironments(string $environment): void
+    public function testRefusesDevelopmentEnvironmentsEvenWithOptIn(string $environment): void
     {
-        $driver = new FakeDriver($environment, 'jdoe', []);
+        $this->expectException(FakeDriverInProduction::class);
 
-        self::assertSame('fake', $driver->name());
+        new FakeDriver($environment, 'jdoe', [], true);
     }
 
     /**
@@ -94,9 +94,45 @@ final class FakeDriverTest extends TestCase
         ];
     }
 
+    public function test_refuses_without_opt_in(): void
+    {
+        $this->expectException(FakeDriverInProduction::class);
+        $this->expectExceptionMessage('The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.');
+
+        new FakeDriver('local', 'jdoe', []);
+    }
+
+    public function test_refuses_development_even_with_opt_in(): void
+    {
+        $this->expectException(FakeDriverInProduction::class);
+
+        new FakeDriver('development', 'jdoe', [], true);
+    }
+
+    public function test_refuses_production_with_opt_in(): void
+    {
+        $this->expectException(FakeDriverInProduction::class);
+
+        new FakeDriver('production', 'jdoe', [], true);
+    }
+
+    public function test_boots_in_local_with_opt_in(): void
+    {
+        $driver = new FakeDriver('local', 'jdoe', [], true);
+
+        self::assertSame('fake', $driver->name());
+    }
+
+    public function test_boots_in_testing_with_opt_in(): void
+    {
+        $driver = new FakeDriver('testing', 'jdoe', [], true);
+
+        self::assertSame('fake', $driver->name());
+    }
+
     public function testLoginAlwaysReturnsAuthenticated(): void
     {
-        $driver = new FakeDriver('local', 'jdoe', ['cn' => ['John Doe']]);
+        $driver = new FakeDriver('local', 'jdoe', ['cn' => ['John Doe']], true);
 
         $step = $driver->login(new ServerRequest('GET', 'http://app.local/login'));
 
@@ -108,7 +144,7 @@ final class FakeDriverTest extends TestCase
 
     public function testLogoutUrlIsNull(): void
     {
-        $driver = new FakeDriver('local', 'jdoe', []);
+        $driver = new FakeDriver('local', 'jdoe', [], true);
 
         self::assertNull($driver->logoutUrl('http://app.local/'));
     }
