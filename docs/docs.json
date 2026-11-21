@@ -44,6 +44,10 @@
                     "The identity the `fake` driver returns, for local development",
                     "none"
                 ],
+                "SESAME_FAKE_ALLOWED": [
+                    "Turns the fake driver on; honoured only when the environment is local or testing",
+                    "false"
+                ],
                 "SESAME_GATEWAY_HEADER": [
                     "The header the Drawbridge gateway sends its signed JWT assertion in",
                     "`X-Sesame-Assertion`"

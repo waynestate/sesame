@@ -154,6 +154,8 @@ $config = Config::fromArray([
     'environment' => 'local',
     'fake' => [
         'username' => 'jdoe',
+        // The fake driver boots only in local or testing, and only when opted in.
+        'allowed' => true,
         'attributes' => ['cn' => ['John Doe']],
     ],
 ]);
@@ -484,7 +486,7 @@ ships in [`docs/grafana/sesame.json`](docs/grafana/sesame.json). More in
 
 | Driver | Status |
 |---|---|
-| `fake` | Now. Local development and tests only. Refuses to boot in production. |
+| `fake` | Now. Local development and tests only: it boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
@@ -573,11 +575,10 @@ request's Host or X-Forwarded-* headers to build it.
 
 Both addresses must be https, with one exception for a developer's own machine:
 when the app environment is local (`local`, `development`, `dev`, `testing` or
-`test`, the same list the fake driver checks), plain `http://localhost` and
-`http://127.0.0.1` are accepted too. In any other environment, production
-included, they are refused with the same `must be an absolute https:// URL`
-error as before. In Laravel the environment is `APP_ENV`; in raw PHP it is the
-`environment` config key.
+`test`), plain `http://localhost` and `http://127.0.0.1` are accepted too. In
+any other environment, production included, they are refused with the same
+`must be an absolute https:// URL` error as before. In Laravel the environment
+is `APP_ENV`; in raw PHP it is the `environment` config key.
 
 Protocol 2.0 is the default because Academica is believed to redirect
 cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol`
@@ -1323,6 +1324,7 @@ Config keys (in `config/sesame.php`):
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `fake.allowed` | `SESAME_FAKE_ALLOWED` | `false` | Turns the fake driver on; honoured only when the environment is local or testing. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
 | `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
