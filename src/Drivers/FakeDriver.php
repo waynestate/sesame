@@ -16,14 +16,21 @@ use Waynestate\Sesame\LoginStep;
  * A driver for local development and tests only.
  *
  * It returns the identity it was built with, every time. It refuses to
- * construct outside the allowed development environments: it throws, it never
- * silently falls back. The check is an allowlist, so an environment that is
- * not explicitly a development one (production, staging, or anything unknown)
- * can never boot the fake driver. The list lives in LocalEnvironments, which
- * the CAS driver shares.
+ * construct unless the environment is local or testing AND the caller opted
+ * in ($allowed, from SESAME_FAKE_ALLOWED): it throws, it never silently falls
+ * back. The check is an allowlist, so an environment that is not explicitly
+ * one of those two (development, production, staging, or anything unknown)
+ * can never boot the fake driver, no matter what the opt-in says.
  */
 final class FakeDriver implements Driver
 {
+    /**
+     * The environments the fake driver may boot in, when opted in.
+     *
+     * @var list<string>
+     */
+    public const ENVIRONMENTS = ['local', 'testing'];
+
     /**
      * @param  array<string, list<string>>  $attributes
      */
@@ -31,9 +38,10 @@ final class FakeDriver implements Driver
         private readonly string $environment,
         private readonly string $username,
         private readonly array $attributes,
+        private readonly bool $allowed = false,
     ) {
-        if (! LocalEnvironments::isLocal($environment)) {
-            throw new FakeDriverInProduction('The fake driver only runs in local, development and testing environments.');
+        if (! in_array(strtolower(trim($environment)), self::ENVIRONMENTS, true) || ! $this->allowed) {
+            throw new FakeDriverInProduction('The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.');
         }
     }
 

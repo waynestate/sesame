@@ -13,7 +13,9 @@ use Waynestate\Sesame\Exception\InvalidConfig;
  * The library's config, read from a plain array.
  *
  * `driver` and `environment` are always required. The `fake` driver adds
- * `fake.username` (required) and `fake.attributes` (default `[]`). The
+ * `fake.username` (required), `fake.allowed` (default `false`; `true`, or
+ * the string `true` or `1`, allows the driver to boot in local or testing)
+ * and `fake.attributes` (default `[]`). The
  * `cas` driver adds `cas.base_url` (required), `cas.service_url` (required),
  * `cas.protocol` (default `2.0`, only `3.0` or `2.0`), `cas.renew` (default
  * `false`), `cas.assume_mfa` (default `false`) and
@@ -127,6 +129,7 @@ final readonly class Config
         #[\SensitiveParameter]
         public ?string $oauth2IntrospectionClientSecret = null,
         public int $oauth2IntrospectionCacheTtlSeconds = 60,
+        public bool $fakeAllowed = false,
     ) {}
 
     /**
@@ -149,6 +152,7 @@ final readonly class Config
 
         $fakeUsername = null;
         $fakeAttributes = [];
+        $fakeAllowed = false;
         $casBaseUrl = null;
         $casServiceUrl = null;
         $casProtocol = '2.0';
@@ -182,6 +186,8 @@ final readonly class Config
 
         if ($driver === 'fake') {
             $fakeUsername = self::requiredString($config, 'fake.username');
+
+            $fakeAllowed = self::optionalFakeAllowed($config);
 
             $fakeAttributes = $config['fake']['attributes'] ?? [];
 
@@ -416,6 +422,7 @@ final readonly class Config
             $oauth2IntrospectionClientId,
             $oauth2IntrospectionClientSecret,
             $oauth2IntrospectionCacheTtlSeconds,
+            $fakeAllowed,
         );
     }
 
@@ -445,6 +452,33 @@ final readonly class Config
         }
 
         return $value;
+    }
+
+    /**
+     * Read the fake driver's opt-in from the config.
+     *
+     * The driver boots only in local and testing, and only when this is on:
+     * a mistyped server environment must not be able to turn sign-in off.
+     *
+     * @param array<string, mixed> $config
+     */
+    private static function optionalFakeAllowed(array $config): bool
+    {
+        $value = $config['fake']['allowed'] ?? null;
+
+        if ($value === true) {
+            return true;
+        }
+
+        if ($value === null || $value === false) {
+            return false;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower(trim($value)), ['true', '1'], true);
+        }
+
+        throw new InvalidConfig('The config key "fake.allowed" must be a boolean, a string or null.');
     }
 
     /**

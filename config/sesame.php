@@ -75,6 +75,8 @@ return [
 
     'fake' => [
         'username' => env('SESAME_FAKE_USERNAME'),
+        // Off unless set; honoured only when the environment is local or testing.
+        'allowed' => env('SESAME_FAKE_ALLOWED', false),
         'attributes' => [],
     ],
 
