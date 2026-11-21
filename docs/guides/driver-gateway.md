@@ -37,7 +37,7 @@ $config = Config::fromArray([
         'public_key' => file_get_contents('/etc/sesame/gateway.pub'),
         'issuer' => 'https://drawbridge.wayne.edu',
         'audience' => 'sesame',
-        'trusted_proxies' => ['10.0.0.0/8'],
+        'trusted_proxies' => ['192.0.2.10'], // only the proxy in front of this app, never a whole network
     ],
 ]);
 
@@ -63,7 +63,7 @@ Then build the Sesame facade with the driver, as in the Raw PHP section of the R
 | `gateway.issuer` | Yes | none | The `iss` claim the assertion must carry. |
 | `gateway.audience` | Yes | none | The `aud` claim the assertion must carry. |
 | `gateway.leeway_seconds` | No | `30` | Clock skew allowed on the `iat`, `nbf` and `exp` checks, in seconds. |
-| `gateway.trusted_proxies` | Yes | none | A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind. |
+| `gateway.trusted_proxies` | Yes | none | A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind. List only that proxy's address (or its smallest range); every address listed can claim to be the gateway. |
 | `gateway.max_lifetime` | No | `300` | The longest an assertion may live (`exp` minus `iat`), in seconds. Longer assertions are refused, so a stolen long-lived token is useless. |
 | `gateway.replay_store` | No | the app's default cache store | The cache store the used `jti`s are kept in (Laravel only; raw PHP passes its own PSR-16 cache to the guard). |
 | `gateway.allow_without_replay_guard` | No | `false` | Skip the replay guard entirely. Local development only: a production app must keep replay protection on. |
