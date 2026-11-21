@@ -10,7 +10,7 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
-## Unreleased (0.11.0)
+## 0.11.0 (2026-11-21)
 
 **Changed (breaking).** The `fake` driver boots only when the environment is
 `local` or `testing` **and** the opt-in `SESAME_FAKE_ALLOWED` is `true`
