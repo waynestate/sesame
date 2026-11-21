@@ -1723,6 +1723,8 @@ CI for this repo runs on git.wayne.edu, on the instance runner. Every product
 in the stack strongly recommends the same for apps on git.wayne.edu: one
 shared runner, one less surprise per pipeline.
 
+Found a security problem? See [SECURITY.md](SECURITY.md); please do not open a public issue.
+
 <details>
 <summary><b>The brand board</b>: the mark, lockups, palette and type</summary>
 <br>
