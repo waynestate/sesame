@@ -58,7 +58,7 @@
 <tbody>
 <tr>
 <td><code>fake</code></td>
-<td>Now. Local development and tests only. Refuses to boot in production.</td>
+<td>Now. Local development and tests only: it boots only when the environment is <code>local</code> or <code>testing</code> and <code>SESAME_FAKE_ALLOWED</code> is <code>true</code>.</td>
 </tr>
 <tr>
 <td><code>cas</code></td>
@@ -195,7 +195,7 @@
 </tbody>
 </table></div>
 <h2 id="fake"><span class="docs-heading-tail"><span>fake</span><a class="docs-heading-link" aria-label="Link to this section" href="#fake">#</a></span></h2>
-<p>A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct outside the allowed development environments: it throws, it never silently falls back. The check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver.</p>
+<p>A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct unless the environment is <code>local</code> or <code>testing</code> <strong>and</strong> the opt-in is on: it throws, it never silently falls back. The environment check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver, and an opted-in app whose environment is mistyped cannot either.</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -210,15 +210,19 @@
 </tr>
 <tr>
 <td>Allowed environments</td>
-<td><code>local</code>, <code>development</code>, <code>dev</code>, <code>testing</code>, <code>test</code> (an allowlist, matched after lowercasing and trimming)</td>
+<td><code>local</code> and <code>testing</code> (an allowlist, matched after lowercasing and trimming)</td>
+</tr>
+<tr>
+<td>Opt-in</td>
+<td><code>SESAME_FAKE_ALLOWED</code> (config <code>fake.allowed</code>) must be true; without it the driver throws even in local and testing</td>
 </tr>
 <tr>
 <td>Identity</td>
 <td>The username and attributes it was built with, every time</td>
 </tr>
 <tr>
-<td>Outside the allowlist</td>
-<td>Throws <code>FakeDriverInProduction</code> with <code>The fake driver only runs in local, development and testing environments.</code></td>
+<td>Missing the environment or the opt-in</td>
+<td>Throws <code>FakeDriverInProduction</code> with <code>The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.</code></td>
 </tr>
 <tr>
 <td><code>logoutUrl()</code>, <code>serviceUrl()</code></td>
@@ -226,7 +230,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>The factory builds it from the <code>fakeUsername</code> and <code>fakeAttributes</code> config properties, with the username defaulting to the empty string.</p>
+<p>The factory builds it from the <code>fakeUsername</code>, <code>fakeAllowed</code> and <code>fakeAttributes</code> config properties, with the username defaulting to the empty string and the opt-in defaulting to off.</p>
 <h2 id="cas"><span class="docs-heading-tail"><span>cas</span><a class="docs-heading-link" aria-label="Link to this section" href="#cas">#</a></span></h2>
 <p>CAS 2.0 against Academica by default.</p>
 <ul>
@@ -250,7 +254,7 @@
 </tr>
 <tr>
 <td><code>cas.base_url</code>, <code>cas.service_url</code></td>
-<td>Must be absolute <code>https://</code> URLs; <code>http://localhost</code> and <code>http://127.0.0.1</code> pass only when the environment is local (the fake driver's list)</td>
+<td>Must be absolute <code>https://</code> URLs; <code>http://localhost</code> and <code>http://127.0.0.1</code> pass only when the environment is local (<code>local</code>, <code>development</code>, <code>dev</code>, <code>testing</code> or <code>test</code>)</td>
 </tr>
 <tr>
 <td>Ticket</td>

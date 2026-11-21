@@ -122,13 +122,13 @@ vendor/bin/phpunit
 
 **Check.** Boot the app; it starts, and a logout clears the app session and sends `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"`.
 
-### The `fake` driver refuses to boot in production [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-fake-driver-refuses-to-boot-in-production)
+### The `fake` driver refuses to boot [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-fake-driver-refuses-to-boot)
 
-**Cause.** The `fake` driver is for local development and tests only; it refuses to boot in production.
+**Cause.** The `fake` driver is for local development and tests only, and it boots only when the environment is `local` or `testing` **and** `SESAME_FAKE_ALLOWED` is `true`; otherwise it throws `FakeDriverInProduction` with `The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.`
 
-**Fix.** Use a real driver in production: `cas` for a Citadel app today, `gateway` once Drawbridge is live, or `oidc` or `oauth2` for apps off Citadel. See [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html).
+**Fix.** In production, use a real driver: `cas` for a Citadel app today, `gateway` once Drawbridge is live, or `oidc` or `oauth2` for apps off Citadel. See [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html). For local development, set `SESAME_FAKE_ALLOWED=true` and make sure the environment is `local` or `testing`: `development`, `dev` and `test` no longer boot the driver.
 
-**Check.** In the local environment the `fake` driver signs in; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
+**Check.** With the opt-in on, the `fake` driver signs in in the local environment; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
 
 ### The log has `SESAME: the session was started with session.use_strict_mode off` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off)
 

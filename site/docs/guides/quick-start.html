@@ -91,12 +91,14 @@ $config = Config::fromArray([
     'environment' =&gt; 'local',
     'fake' =&gt; [
         'username' =&gt; 'jdoe',
+        // The fake driver boots only in local or testing, and only when opted in.
+        'allowed' =&gt; true,
         'attributes' =&gt; ['cn' =&gt; ['John Doe']],
     ],
 ]);
 </code></pre>
-<p>Expected: <code>$config</code> names the <code>fake</code> driver, the local environment, and the
-identity the driver will return.</p>
+<p>Expected: <code>$config</code> names the <code>fake</code> driver, the local environment, the
+opt-in that lets it boot, and the identity the driver will return.</p>
 </li>
 <li>
 <p><strong>Build the facade and hand it to the functions.</strong></p>

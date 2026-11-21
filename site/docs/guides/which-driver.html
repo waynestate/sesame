@@ -84,6 +84,7 @@
 </tr>
 </tbody>
 </table></div>
+<p>The <code>fake</code> driver boots only when the environment is <code>local</code> or <code>testing</code> and <code>SESAME_FAKE_ALLOWED</code> is <code>true</code>; it refuses every other environment, so a mistyped server environment cannot turn sign-in off.</p>
 <h2 id="the-recommended-path-on-citadel">The recommended path on <span class="docs-heading-tail"><span>Citadel</span><a class="docs-heading-link" aria-label="Link to this section" href="#the-recommended-path-on-citadel">#</a></span></h2>
 <p>The recommended path on Citadel is the <code>gateway</code> driver behind Drawbridge. Drawbridge is Wayne State's auth gateway: the browser signs in once at the gateway, which passes the app a signed assertion that the <code>gateway</code> driver verifies. Drawbridge is not live yet, so there is no production gateway to point at today. Until it is, CAS (the <code>cas</code> driver) is today's option for a Citadel app, and it needs no per-app Entra registration.</p>
 <h2 id="related"><span class="docs-heading-tail"><span>Related</span><a class="docs-heading-link" aria-label="Link to this section" href="#related">#</a></span></h2>

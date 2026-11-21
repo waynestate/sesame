@@ -101,6 +101,12 @@
 <td>The fake driver's username.</td>
 </tr>
 <tr>
+<td><code>fake.allowed</code></td>
+<td><code>SESAME_FAKE_ALLOWED</code></td>
+<td><code>false</code></td>
+<td>Turns the fake driver on; honoured only when the environment is local or testing.</td>
+</tr>
+<tr>
 <td><code>gateway.header</code></td>
 <td><code>SESAME_GATEWAY_HEADER</code></td>
 <td><code>X-Sesame-Assertion</code></td>
@@ -418,7 +424,7 @@
 <td>Driver</td>
 <td>the driver builds from <code>config/sesame.php</code></td>
 <td></td>
-<td>it does not (the line gives the reason; the fake driver outside local, development and testing is one)</td>
+<td>it does not (the line gives the reason; the fake driver outside local or testing, or without <code>SESAME_FAKE_ALLOWED</code>, is one)</td>
 </tr>
 <tr>
 <td>User resolver</td>

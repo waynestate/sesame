@@ -52,6 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
+<li>Changed (breaking): the fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true (config fake.allowed). development, dev and test no longer boot it, so a mistyped server environment can no longer turn sign-in off.</li>
 <li>Docs: the gateway driver example trusts one proxy address instead of a whole private network, and the trusted_proxies docs say why.</li>
 </ul>
 <h2 id="0-10-1-2026-11-20">[0.10.1] - <span class="docs-heading-tail"><span>2026-11-20</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-10-1-2026-11-20">#</a></span></h2>

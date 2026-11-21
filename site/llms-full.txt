@@ -156,6 +156,8 @@ $config = Config::fromArray([
     'environment' => 'local',
     'fake' => [
         'username' => 'jdoe',
+        // The fake driver boots only in local or testing, and only when opted in.
+        'allowed' => true,
         'attributes' => ['cn' => ['John Doe']],
     ],
 ]);
@@ -486,7 +488,7 @@ ships in [`docs/grafana/sesame.json`](https://github.com/waynestate/sesame/blob/
 
 | Driver | Status |
 |---|---|
-| `fake` | Now. Local development and tests only. Refuses to boot in production. |
+| `fake` | Now. Local development and tests only: it boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
@@ -558,11 +560,10 @@ request's Host or X-Forwarded-* headers to build it.
 
 Both addresses must be https, with one exception for a developer's own machine:
 when the app environment is local (`local`, `development`, `dev`, `testing` or
-`test`, the same list the fake driver checks), plain `http://localhost` and
-`http://127.0.0.1` are accepted too. In any other environment, production
-included, they are refused with the same `must be an absolute https:// URL`
-error as before. In Laravel the environment is `APP_ENV`; in raw PHP it is the
-`environment` config key.
+`test`), plain `http://localhost` and `http://127.0.0.1` are accepted too. In
+any other environment, production included, they are refused with the same
+`must be an absolute https:// URL` error as before. In Laravel the environment
+is `APP_ENV`; in raw PHP it is the `environment` config key.
 
 Protocol 2.0 is the default because Academica is believed to redirect
 cookieless `/p3/serviceValidate` calls to the login page. Set `cas.protocol`
@@ -1308,6 +1309,7 @@ Config keys (in `config/sesame.php`):
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `fake.allowed` | `SESAME_FAKE_ALLOWED` | `false` | Turns the fake driver on; honoured only when the environment is local or testing. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
 | `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
@@ -2088,6 +2090,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Changed (breaking): the fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true (config fake.allowed). development, dev and test no longer boot it, so a mistyped server environment can no longer turn sign-in off.
 - Docs: the gateway driver example trusts one proxy address instead of a whole private network, and the trusted_proxies docs say why.
 
 ### \[0.10.1\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-1-2026-11-20)
@@ -3398,6 +3401,7 @@ Config keys (in `config/sesame.php`):
 | `cas.protocol` | `SESAME_CAS_PROTOCOL` | `2.0` | `3.0` or `2.0`. |
 | `cas.assume_mfa` | `SESAME_CAS_ASSUME_MFA` | `false` | A successful validation counts as an MFA sign-in. On only when the CAS server enforces MFA for every sign-in. |
 | `fake.username` | `SESAME_FAKE_USERNAME` | none | The fake driver's username. |
+| `fake.allowed` | `SESAME_FAKE_ALLOWED` | `false` | Turns the fake driver on; honoured only when the environment is local or testing. |
 | `gateway.header` | `SESAME_GATEWAY_HEADER` | `X-Sesame-Assertion` | The one header that holds the signed assertion. |
 | `gateway.algorithm` | `SESAME_GATEWAY_ALGORITHM` | `ES256` | `ES256`, `RS256` or `EdDSA`. |
 | `gateway.public_key` | `SESAME_GATEWAY_PUBLIC_KEY` | none | The gateway's public key. Required for the gateway driver. |
@@ -3569,7 +3573,7 @@ $ php artisan sesame:check
 
 | Line | OK | WARN | FAIL |
 | --- | --- | --- | --- |
-| Driver | the driver builds from `config/sesame.php` |  | it does not (the line gives the reason; the fake driver outside local, development and testing is one) |
+| Driver | the driver builds from `config/sesame.php` |  | it does not (the line gives the reason; the fake driver outside local or testing, or without `SESAME_FAKE_ALLOWED`, is one) |
 | User resolver | `sesame.user_resolver` names a class that implements `Waynestate\Sesame\UserResolver` |  | it is empty, or names something else |
 | Session driver | `file`, `database`, `redis` or any other store | `cookie` (the whole session lives in the browser) | `array` (the session ends with the request, so a sign-in never sticks) |
 | HttpOnly | `session.http_only` is `true` |  | anything else |
@@ -4175,11 +4179,13 @@ The shortest walk through the door: a framework-free PHP page and the `fake` dri
        'environment' => 'local',
        'fake' => [
            'username' => 'jdoe',
+           // The fake driver boots only in local or testing, and only when opted in.
+           'allowed' => true,
            'attributes' => ['cn' => ['John Doe']],
        ],
    ]);
    ```
-   Expected: `$config` names the `fake` driver, the local environment, and the identity the driver will return.
+   Expected: `$config` names the `fake` driver, the local environment, the opt-in that lets it boot, and the identity the driver will return.
 4. **Build the facade and hand it to the functions.**
    ```php
    use Waynestate\Sesame\DriverFactory;
@@ -4259,6 +4265,8 @@ $config = Config::fromArray([
     'environment' => 'local',
     'fake' => [
         'username' => 'jdoe',
+        // The fake driver boots only in local or testing, and only when opted in.
+        'allowed' => true,
         'attributes' => ['cn' => ['John Doe']],
     ],
 ]);
@@ -4762,6 +4770,8 @@ One lock, any key: this page matches your situation to the right SESAME driver a
 | App off Citadel or an API with its own audience | `oidc` or `oauth2` | Its own registration. |
 | App that must sign in through a SAML IdP (Shibboleth-style), opt-in | `saml` | None; the IdP's administrators register the app's SP metadata instead. |
 | Local development | `fake` | None. |
+
+The `fake` driver boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`; it refuses every other environment, so a mistyped server environment cannot turn sign-in off.
 
 ### The recommended path on Citadel [#](https://sesame.apps.wayne.edu/docs/guides/which-driver.html#the-recommended-path-on-citadel)
 
@@ -5486,6 +5496,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 | SESAME_CAS_REQUIRE_PENDING_LOGIN | Require that this browser started the sign-in before a CAS ticket is accepted (blocks login CSRF); turn off only for CAS-initiated entry | `true` | config/sesame.php |
 | SESAME_CAS_SERVICE_URL | The URL the CAS server sends the user back to after verifying them; https, or `http://localhost` or `http://127.0.0.1` in a local environment | none (the app's `/login` route) | config/sesame.php |
 | SESAME_DRIVER | The protocol SESAME uses to verify identities: `cas`, `gateway`, `oauth2`, `oidc`, `saml` (opt-in) or `fake` | `cas` | config/sesame.php |
+| SESAME_FAKE_ALLOWED | Turns the fake driver on; honoured only when the environment is local or testing | false | config/sesame.php |
 | SESAME_FAKE_USERNAME | The identity the `fake` driver returns, for local development | none | config/sesame.php |
 | SESAME_GATEWAY_ALGORITHM | The assertion's signature algorithm (`ES256`, `RS256` or `EdDSA`) | `ES256` | config/sesame.php |
 | SESAME_GATEWAY_ALLOW_WITHOUT_REPLAY_GUARD | Skip the replay guard entirely; local development only, never in production | `false` | config/sesame.php |
@@ -5736,7 +5747,7 @@ The drivers SESAME can build, their status, and the exact values each one ships 
 
 | Driver | Status |
 | --- | --- |
-| `fake` | Now. Local development and tests only. Refuses to boot in production. |
+| `fake` | Now. Local development and tests only: it boots only when the environment is `local` or `testing` and `SESAME_FAKE_ALLOWED` is `true`. |
 | `cas` | Now. CAS 2.0 against Academica by default. |
 | `gateway` | Now (built and tested). The recommended driver for apps on Citadel once Drawbridge is live: a signed JWT assertion from the auth gateway (on Citadel, that is `auth.apps.wayne.edu`, the first planned one), never a bare header. No Entra registration per app: Drawbridge holds it once. Drawbridge is released but has no production gateway yet, so a Citadel app uses `cas` today. |
 | `saml` | Now, opt-in. A SAML 2.0 service provider for a Shibboleth-style IdP; signed assertions required. No default IdP: the app names the IdP's metadata. Needs `onelogin/php-saml` 4.3.2 or later. |
@@ -5787,17 +5798,18 @@ When a required argument or config value is missing, the factory throws `Invalid
 
 ### fake [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#fake)
 
-A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct outside the allowed development environments: it throws, it never silently falls back. The check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver.
+A driver for local development and tests only. It returns the identity it was built with, every time. It refuses to construct unless the environment is `local` or `testing` **and** the opt-in is on: it throws, it never silently falls back. The environment check is an allowlist, so an environment that is not explicitly a development one (production, staging, or anything unknown) can never boot the fake driver, and an opted-in app whose environment is mistyped cannot either.
 
 | Value | Exact |
 | --- | --- |
 | Name | `fake` |
-| Allowed environments | `local`, `development`, `dev`, `testing`, `test` (an allowlist, matched after lowercasing and trimming) |
+| Allowed environments | `local` and `testing` (an allowlist, matched after lowercasing and trimming) |
+| Opt-in | `SESAME_FAKE_ALLOWED` (config `fake.allowed`) must be true; without it the driver throws even in local and testing |
 | Identity | The username and attributes it was built with, every time |
-| Outside the allowlist | Throws `FakeDriverInProduction` with `The fake driver only runs in local, development and testing environments.` |
+| Missing the environment or the opt-in | Throws `FakeDriverInProduction` with `The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.` |
 | `logoutUrl()`, `serviceUrl()` | `null` |
 
-The factory builds it from the `fakeUsername` and `fakeAttributes` config properties, with the username defaulting to the empty string.
+The factory builds it from the `fakeUsername`, `fakeAllowed` and `fakeAttributes` config properties, with the username defaulting to the empty string and the opt-in defaulting to off.
 
 ### cas [#](https://sesame.apps.wayne.edu/docs/reference/drivers.html#cas)
 
@@ -5812,7 +5824,7 @@ CAS 2.0 against Academica by default.
 | Value | Exact |
 | --- | --- |
 | Protocol | `2.0` by default; only `2.0` or `3.0` are accepted |
-| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (the fake driver's list) |
+| `cas.base_url`, `cas.service_url` | Must be absolute `https://` URLs; `http://localhost` and `http://127.0.0.1` pass only when the environment is local (`local`, `development`, `dev`, `testing` or `test`) |
 | Ticket | An `ST-` service ticket, at most 256 characters (`^ST-[A-Za-z0-9._\-]{1,253}$`) |
 | Validation path | `/serviceValidate` for 2.0, `/p3/serviceValidate` for 3.0 |
 | Login query | `service=` always; `renew=true` when `renew` is on |
@@ -6207,13 +6219,13 @@ vendor/bin/phpunit
 
 **Check.** Boot the app; it starts, and a logout clears the app session and sends `Cache-Control: no-store` and `Clear-Site-Data: "cache", "storage"`.
 
-#### The `fake` driver refuses to boot in production [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-fake-driver-refuses-to-boot-in-production)
+#### The `fake` driver refuses to boot [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-fake-driver-refuses-to-boot)
 
-**Cause.** The `fake` driver is for local development and tests only; it refuses to boot in production.
+**Cause.** The `fake` driver is for local development and tests only, and it boots only when the environment is `local` or `testing` **and** `SESAME_FAKE_ALLOWED` is `true`; otherwise it throws `FakeDriverInProduction` with `The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.`
 
-**Fix.** Use a real driver in production: `cas` for a Citadel app today, `gateway` once Drawbridge is live, or `oidc` or `oauth2` for apps off Citadel. See [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html).
+**Fix.** In production, use a real driver: `cas` for a Citadel app today, `gateway` once Drawbridge is live, or `oidc` or `oauth2` for apps off Citadel. See [Which driver for my app?](https://sesame.apps.wayne.edu/docs/guides/which-driver.html). For local development, set `SESAME_FAKE_ALLOWED=true` and make sure the environment is `local` or `testing`: `development`, `dev` and `test` no longer boot the driver.
 
-**Check.** In the local environment the `fake` driver signs in; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
+**Check.** With the opt-in on, the `fake` driver signs in in the local environment; in production the configured driver does. `tests/FakeDriverTest.php` covers the refusal.
 
 #### The log has `SESAME: the session was started with session.use_strict_mode off` [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-has-sesame-the-session-was-started-with-session-use-strict-mode-off)
 
@@ -6427,6 +6439,14 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### Unreleased (0.11.0) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#unreleased-0-11-0)
+
+**Changed (breaking).** The `fake` driver boots only when the environment is `local` or `testing` **and** the opt-in `SESAME_FAKE_ALLOWED` is `true` (config key `fake.allowed`, off unless set). An app on the fake driver sets `SESAME_FAKE_ALLOWED=true` in its local and test environments only, and its environment (`APP_ENV` in Laravel, the `environment` config key in raw PHP) must be `local` or `testing`: `development`, `dev` and `test` no longer boot the driver, so a mistyped server environment can no longer turn sign-in off.
+
+What a user sees if the opt-in is forgotten, or the environment is not `local` or `testing`: the driver throws `FakeDriverInProduction` with `The fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true.` at boot; in Laravel, `php artisan sesame:check` fails its Driver line with the same text.
+
+**How to verify.** In a local or testing environment with `SESAME_FAKE_ALLOWED=true`, the fake driver signs in as before; without it, or under any other environment, building the driver fails with the message above.
 
 ### 0.10.1 (2026-11-20) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-10-1-2026-11-20)
 
