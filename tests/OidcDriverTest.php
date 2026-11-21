@@ -127,8 +127,9 @@ final class OidcDriverTest extends TestCase
 
         self::assertNotNull($user);
         self::assertContains('regenerate', $this->log->events);
-        self::assertInstanceOf(Identity::class, $this->session->store['sesame.identity']);
-        self::assertSame([], $this->session->store['sesame.identity']->attributes, 'Raw claims are not kept in the session.');
+        $stored = $this->session->store['sesame.identity'];
+        self::assertIsArray($stored);
+        self::assertSame([], Identity::fromArray($stored)->attributes, 'Raw claims are not kept in the session.');
     }
 
     public function testTheAuthorizationRequestUsesPkceS256StateAndNonce(): void

@@ -59,7 +59,7 @@ final class GatewayLoginRouteTest extends LaravelTestCase
 
         $response->assertRedirect('/');
         self::assertSame('the-user', $app->make(Sesame::class)->user());
-        self::assertSame('gateway', $app['session']->get('sesame.identity')->driver);
+        self::assertSame('gateway', $app['session']->get('sesame.identity')['driver']);
     }
 
     public function testGatewayLoginRejectsAReplayedAssertion(): void

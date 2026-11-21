@@ -174,13 +174,16 @@ final class SesameTest extends TestCase
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $stored = $session->store['sesame.identity'];
+        $raw = $session->store['sesame.identity'];
 
-        self::assertInstanceOf(Identity::class, $stored);
+        // Plain data, never the object, so a JSON session keeps it (0.10.1).
+        self::assertIsArray($raw);
+        $stored = Identity::fromArray($raw);
         self::assertSame($identity->username, $stored->username);
         self::assertSame($identity->driver, $stored->driver);
         self::assertEquals($identity->authenticatedAt, $stored->authenticatedAt);
         self::assertSame([], $stored->attributes);
+        self::assertSame([], $raw['attributes']);
     }
 
     public function testLoginReturnsARedirectUnchanged(): void
@@ -262,6 +265,9 @@ final class SesameTest extends TestCase
                 'get:sesame.user',
                 'get:sesame.signed_in_at',
                 'get:sesame.last_seen',
+                // Every check reads the identity, so a tampered one signs
+                // out (0.10.1).
+                'get:sesame.identity',
                 'forget:sesame.user',
                 'forget:sesame.identity',
                 'invalidate',
@@ -795,9 +801,10 @@ final class SesameTest extends TestCase
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $stored = $session->store['sesame.identity'];
+        $raw = $session->store['sesame.identity'];
 
-        self::assertInstanceOf(Identity::class, $stored);
+        self::assertIsArray($raw);
+        $stored = Identity::fromArray($raw);
         self::assertEquals($identity->authTime, $stored->authTime);
         self::assertSame($identity->amr, $stored->amr);
     }
@@ -824,10 +831,10 @@ final class SesameTest extends TestCase
 
         $sesame->login(new ServerRequest('GET', 'http://app.local/login'));
 
-        $stored = $session->store['sesame.identity'];
+        $raw = $session->store['sesame.identity'];
 
-        self::assertInstanceOf(Identity::class, $stored);
-        self::assertSame(['c1', 'c10'], $stored->authContexts());
+        self::assertIsArray($raw);
+        self::assertSame(['c1', 'c10'], Identity::fromArray($raw)->authContexts());
     }
 
     public function testHasAuthContextIsFalseWhenThereIsNoUser(): void
@@ -1146,22 +1153,54 @@ final class SesameTest extends TestCase
         $log = new EventLog();
         $session = new RecordingSession($log);
         $session->put('sesame.user', 'the-user');
-        $session->put('sesame.identity', 'not-an-identity');
         $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
         $session->put('sesame.last_seen', $clock->now()->getTimestamp());
         $log->events = [];
+        $logger = new ArrayLogger();
         $sesame = new Sesame(
             new RecordingDriver(new Authenticated($this->identity()), null, $log),
             new RecordingResolver(),
             $session,
             $this->config(),
             $clock,
+            $logger,
         );
 
         self::assertSame(['signedIn' => false], $sesame->sessionStatus());
         self::assertSame('the-user', $session->store['sesame.user'], 'The session is left alone.');
-        self::assertSame('not-an-identity', $session->store['sesame.identity']);
         self::assertNotContains('invalidate', $log->events);
         self::assertNotContains('forget:sesame.user', $log->events);
+        self::assertSame('missing_identity', $logger->withMessage('sesame.session_anomaly')[0]['context']['reason']);
+    }
+
+    public function testTmpAStoredValueThatIsNotAnIdentitySignsTheSessionOut(): void
+    {
+        // Until 0.10.1 a value that was not an Identity object read as "no
+        // identity" and the session stayed signed in with every identity
+        // check skipped. Now anything that is not exactly the shape login()
+        // writes signs the session out as bad_identity.
+        $clock = new FakeClock();
+        $log = new EventLog();
+        $session = new RecordingSession($log);
+        $session->put('sesame.user', 'the-user');
+        $session->put('sesame.identity', 'not-an-identity');
+        $session->put('sesame.signed_in_at', $clock->now()->getTimestamp());
+        $session->put('sesame.last_seen', $clock->now()->getTimestamp());
+        $log->events = [];
+        $logger = new ArrayLogger();
+        $sesame = new Sesame(
+            new RecordingDriver(new Authenticated($this->identity()), null, $log),
+            new RecordingResolver(),
+            $session,
+            $this->config(),
+            $clock,
+            $logger,
+        );
+
+        self::assertSame(['signedIn' => false], $sesame->sessionStatus());
+        self::assertSame([], $session->store);
+        self::assertContains('invalidate', $log->events);
+        self::assertSame('bad_identity', $logger->withMessage('sesame.session_anomaly')[0]['context']['reason']);
+        self::assertSame('bad_identity', $logger->withMessage('sesame.logout')[0]['context']['reason']);
     }
 }

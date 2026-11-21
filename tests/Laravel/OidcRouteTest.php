@@ -77,8 +77,9 @@ final class OidcRouteTest extends LaravelTestCase
 
         $sesame = $app->make(Sesame::class);
         self::assertSame('the-user', $sesame->user());
-        $identity = $app['session.store']->get('sesame.identity');
-        self::assertInstanceOf(Identity::class, $identity);
+        $stored = $app['session.store']->get('sesame.identity');
+        self::assertIsArray($stored);
+        $identity = Identity::fromArray($stored);
         self::assertSame('ab1234', $identity->username);
     }
 

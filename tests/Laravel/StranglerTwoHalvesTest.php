@@ -32,14 +32,17 @@ use Waynestate\Sesame\Tests\Support\RecordingResolver;
  * single use and bound to their service URL, and /serviceValidate answers
  * the CAS XML. So the test proves the second half's sign-in is a silent
  * round trip and that a logout on either half ends both.
+ *
+ * Not final: StranglerTwoHalvesJsonSessionTest runs the same tests with
+ * the Laravel half on a JSON session, as Sourdough's apps are.
  */
-final class StranglerTwoHalvesTest extends LaravelTestCase
+class StranglerTwoHalvesTest extends LaravelTestCase
 {
     private string $dir;
 
     private FakeClock $clock;
 
-    private CasDouble $cas;
+    protected CasDouble $cas;
 
     protected function setUp(): void
     {

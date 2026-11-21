@@ -6,6 +6,7 @@ namespace Waynestate\Sesame;
 
 use Closure;
 use DateTimeZone;
+use InvalidArgumentException;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -143,7 +144,11 @@ final class Sesame
         // raw IdP attributes (S6), but keep the MFA facts (the sign-in time
         // and the methods) and the authentication contexts, because
         // requireMfa() and hasAuthContext() read them back from the session.
-        $this->session->put('sesame.identity', new Identity(
+        // It is stored as plain data (Identity::toArray()), never as the
+        // object: a JSON session (Laravel's 'serialization' => 'json') would
+        // hand an object back as an array, and every check that reads the
+        // identity would quietly skip. storedIdentity() rebuilds it.
+        $this->session->put('sesame.identity', (new Identity(
             $step->identity->username,
             [],
             $step->identity->driver,
@@ -151,7 +156,7 @@ final class Sesame
             $step->identity->authTime,
             $step->identity->amr,
             $step->identity->authContexts(),
-        ));
+        ))->toArray());
         $this->session->put('sesame.signed_in_at', $now);
         $this->session->put('sesame.last_seen', $now);
         // The session reference ties every auth event of this sign-in
@@ -209,7 +214,11 @@ final class Sesame
      * in from the next request on. A session whose state looks wrong or
      * tampered with (missing timestamps, a session reference that is not
      * the 16-character lowercase hex value login() stores) is logged as a
-     * `sesame.session_anomaly` warning when a logger is set. When a shared
+     * `sesame.session_anomaly` warning when a logger is set. A stored
+     * identity that is not exactly the shape login() writes (see
+     * storedIdentity()) signs the session out on the spot (reason and
+     * anomaly `bad_identity`), so a tampered or half-written identity is
+     * never partly trusted. When a shared
      * sign-out store is set, a session signed in at or before the user's
      * latest cutoff is signed out on the spot (reason `revoked`), so a
      * logout in another app sharing the store ends this session too; a
@@ -238,21 +247,29 @@ final class Sesame
             return null;
         }
 
-        if ($this->revocations !== null) {
-            $identity = $this->session->get('sesame.identity');
+        $identity = $this->storedIdentity();
 
-            if ($identity instanceof Identity) {
-                $cutoff = $this->revokedBefore($this->revocations, $identity->username);
+        if ($identity === false) {
+            // A stored identity that is not exactly the shape login()
+            // writes is never half trusted: the session is signed out, and
+            // the anomaly is logged first, while the session reference is
+            // still readable.
+            $this->logAnomaly('bad_identity');
+            $this->signOut('bad_identity');
 
-                if ($cutoff !== null && $cutoff >= $signedInAt) {
-                    // Another app sharing this store signed the user out
-                    // after this session was made, so this session is dead
-                    // from here on; a sign-in after the cutoff is
-                    // untouched.
-                    $this->signOut('revoked');
+            return null;
+        }
 
-                    return null;
-                }
+        if ($this->revocations !== null && $identity !== null) {
+            $cutoff = $this->revokedBefore($this->revocations, $identity->username);
+
+            if ($cutoff !== null && $cutoff >= $signedInAt) {
+                // Another app sharing this store signed the user out after
+                // this session was made, so this session is dead from here
+                // on; a sign-in after the cutoff is untouched.
+                $this->signOut('revoked');
+
+                return null;
             }
         }
 
@@ -320,7 +337,7 @@ final class Sesame
             return new MfaResult(false, MfaResult::NO_AUTH_TIME);
         }
 
-        $identity = $this->session->get('sesame.identity');
+        $identity = $this->storedIdentity();
 
         if (! $identity instanceof Identity) {
             return new MfaResult(false, MfaResult::NO_AUTH_TIME);
@@ -377,13 +394,14 @@ final class Sesame
             return ['signedIn' => false];
         }
 
-        $identity = $this->session->get('sesame.identity');
+        $identity = $this->storedIdentity();
 
         if (! $identity instanceof Identity) {
-            // A user with no readable identity is a tampered or half-built
-            // session. It is answered as signed out and logged as an
-            // anomaly, but the session is left alone: user() already ran
-            // the sign-out that belongs to it.
+            // A user with no identity stored is a half-built session. It is
+            // answered as signed out and logged as an anomaly, but the
+            // session is left alone: user() already ran the sign-out that
+            // belongs to it (a stored value that is not an identity was
+            // signed out there as bad_identity).
             $this->logAnomaly('missing_identity');
 
             return ['signedIn' => false];
@@ -441,7 +459,7 @@ final class Sesame
             return false;
         }
 
-        $identity = $this->session->get('sesame.identity');
+        $identity = $this->storedIdentity();
 
         if (! $identity instanceof Identity) {
             return false;
@@ -562,7 +580,10 @@ final class Sesame
 
         if ($this->logger !== null || $this->revocations !== null) {
             $user = $this->session->get('sesame.user');
-            $identity = $this->session->get('sesame.identity');
+            // A stored value that is not an identity names nobody: it keys
+            // no cutoff and puts no username in the log.
+            $stored = $this->storedIdentity();
+            $identity = $stored instanceof Identity ? $stored : null;
         }
 
         if ($this->logger !== null) {
@@ -602,6 +623,45 @@ final class Sesame
     }
 
     /**
+     * The identity login() stored, rebuilt; null when none is stored; false
+     * when the stored value is not an identity.
+     *
+     * Every read of `sesame.identity` goes through here, so the rule lives
+     * in one place. login() stores Identity::toArray(), plain data that
+     * survives any session serializer (a JSON session hands objects back as
+     * arrays), and the array is rebuilt strictly through
+     * Identity::fromArray(): the shipped driver names plus the configured
+     * one are accepted, nothing else. An Identity object, what 0.10.0 and
+     * earlier stored, still reads as it is, so a PHP-serialized session made
+     * before the upgrade stays signed in. Anything else (a tampered or
+     * half-written array, a string, an object of another class) is false,
+     * and user() signs that session out as bad_identity; this method never
+     * throws.
+     */
+    private function storedIdentity(): Identity|false|null
+    {
+        $stored = $this->session->get('sesame.identity');
+
+        if ($stored === null) {
+            return null;
+        }
+
+        if ($stored instanceof Identity) {
+            return $stored;
+        }
+
+        if (! is_array($stored)) {
+            return false;
+        }
+
+        try {
+            return Identity::fromArray($stored, [$this->config->driver]);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+    }
+
+    /**
      * The stored session reference when it is a valid 16-character
      * lowercase hex string, or null otherwise.
      *
@@ -633,7 +693,8 @@ final class Sesame
             return;
         }
 
-        $identity = $this->session->get('sesame.identity');
+        $stored = $this->storedIdentity();
+        $identity = $stored instanceof Identity ? $stored : null;
 
         $context = [
             'event' => 'session_anomaly',
