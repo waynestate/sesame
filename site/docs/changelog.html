@@ -53,6 +53,7 @@ and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
 <li>Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: <code>parity up</code> in <code>deploy/</code>.</li>
+</ul>
 <h2 id="0-11-0-2026-11-21">[0.11.0] - <span class="docs-heading-tail"><span>2026-11-21</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-11-0-2026-11-21">#</a></span></h2>
 <ul>
 <li>Changed (breaking): the fake driver runs only when the environment is local or testing and SESAME_FAKE_ALLOWED is true (config fake.allowed). development, dev and test no longer boot it, so a mistyped server environment can no longer turn sign-in off.</li>
