@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+- Docs: the gateway driver example trusts one proxy address instead of a whole private network, and the trusted_proxies docs say why.
+
 ## \[0.10.1\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-1-2026-11-20)
 
 - Security: on a Laravel app with JSON sessions (`'serialization' => 'json'`, Sourdough's default), 0.10.0 lost track of who was signed in from the second request on. A logout in another app sharing the revocation store did not sign the session out, `logout()` wrote no shared cutoff, so a Laravel logout did not end the legacy half of a Booster strangler, and the MFA and auth-context checks found no identity. Apps on PHP session serialization and raw-PHP apps were not affected. Upgrade every Laravel app on JSON sessions.

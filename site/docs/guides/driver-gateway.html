@@ -69,7 +69,7 @@ $config = Config::fromArray([
         'public_key' =&gt; file_get_contents('/etc/sesame/gateway.pub'),
         'issuer' =&gt; 'https://drawbridge.wayne.edu',
         'audience' =&gt; 'sesame',
-        'trusted_proxies' =&gt; ['10.0.0.0/8'],
+        'trusted_proxies' =&gt; ['192.0.2.10'], // only the proxy in front of this app, never a whole network
     ],
 ]);
 
@@ -144,7 +144,7 @@ $driver = DriverFactory::make($config, null, null, null, $guard);
 <td><code>gateway.trusted_proxies</code></td>
 <td>Yes</td>
 <td>none</td>
-<td>A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind.</td>
+<td>A non-empty array of CIDR ranges (or single IPs) the gateway proxy sits behind. List only that proxy's address (or its smallest range); every address listed can claim to be the gateway.</td>
 </tr>
 <tr>
 <td><code>gateway.max_lifetime</code></td>

@@ -51,6 +51,9 @@
 <p>The format is based on <a rel="noopener" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>,
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
+<ul>
+<li>Docs: the gateway driver example trusts one proxy address instead of a whole private network, and the trusted_proxies docs say why.</li>
+</ul>
 <h2 id="0-10-1-2026-11-20">[0.10.1] - <span class="docs-heading-tail"><span>2026-11-20</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-10-1-2026-11-20">#</a></span></h2>
 <ul>
 <li>Security: on a Laravel app with JSON sessions (<code>'serialization' =&gt; 'json'</code>, Sourdough's default), 0.10.0 lost track of who was signed in from the second request on. A logout in another app sharing the revocation store did not sign the session out, <code>logout()</code> wrote no shared cutoff, so a Laravel logout did not end the legacy half of a Booster strangler, and the MFA and auth-context checks found no identity. Apps on PHP session serialization and raw-PHP apps were not affected. Upgrade every Laravel app on JSON sessions.</li>
