@@ -10,6 +10,12 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.10.1 (2026-11-20)
+
+No break, and a security fix: upgrade now if any Laravel app on 0.10.0 sets `'serialization' => 'json'` in `config/session.php` (Sourdough's apps do). On those apps 0.10.0 read the stored identity back as an array, so a shared logout from another app did not sign the session out, a logout wrote no shared cutoff, and `requireMfa()` and `hasAuthContext()` found no identity. Run `composer require waynestate/sesame:^0.10.1`; nothing else changes in the app.
+
+What a user sees: on PHP session serialization, and in raw-PHP apps, nobody is signed out by the upgrade. On JSON sessions, each user who signed in under 0.10.0 is signed out once on the next request (logged as `bad_identity`) and signs in again, usually without a prompt through single sign-on; from then on the identity is stored as plain data. **How to verify:** sign in, then sign out in the other app (or the other half of the strangler) that shares the revocation store, and reload: the page asks for a sign-in.
+
 ## 0.10.0 (2026-11-20)
 
 No break. This release adds `FileRevocationStore`, the `SESAME_ROUTE_PREFIX` setting and Laravel adapter support for a shared `RevocationStore`, for Booster's Laravel strangler. Run `composer require waynestate/sesame:^0.10`; an app on 0.9.x changes nothing else, because every new setting is off unless set.

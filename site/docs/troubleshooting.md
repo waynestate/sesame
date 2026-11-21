@@ -174,7 +174,7 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 
 ### The log carries a `sesame.session_anomaly` warning [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-carries-a-sesame-session-anomaly-warning)
 
-**Cause.** The session state looks wrong or tampered with: `reason` is `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
+**Cause.** The session state looks wrong or tampered with: `reason` is `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`), `bad_identity` (a stored `sesame.identity` that is not exactly the plain data login wrote: a field missing, added or of the wrong type, or a driver SESAME does not know; the session is signed out right after, and a 0.10.0 Laravel session on JSON serialization reads this way once, after the upgrade) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
 
 **Fix.** Look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`, the opaque 16-character hex reference that ties the login, timeouts and logout of one sign-in together in the log.
 

@@ -415,13 +415,15 @@ authentication event through it:
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a logged-out session ID presented again inside the reuse window; see [Session timeouts](docs/guides/session-timeouts.md)). |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_identity` (a stored identity that is not the shape login writes; the session is signed out), `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a logged-out session ID presented again inside the reuse window; see [Session timeouts](docs/guides/session-timeouts.md)). |
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
-`absolute_timeout`, `no_timestamps` or `user_gone`). `sesame.session_anomaly`
-adds `reason` (`missing_timestamps`, a user stored without the session's
-timestamps, or `bad_session_ref`, a stored reference that is not the
+`absolute_timeout`, `no_timestamps`, `user_gone`, `revoked` or
+`bad_identity`). `sesame.session_anomaly` adds `reason` (`missing_timestamps`,
+a user stored without the session's timestamps; `bad_identity`, a stored
+identity that is not exactly the plain data login writes, which signs the
+session out; or `bad_session_ref`, a stored reference that is not the
 16-character lowercase hex value login created) and carries `session_ref`
 when the stored value is still a valid 16-character lowercase hex string;
 when you see one, look at the `session_ref` and the user around it in the

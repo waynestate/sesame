@@ -417,13 +417,15 @@ authentication event through it:
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a logged-out session ID presented again inside the reuse window; see [Session timeouts](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_identity` (a stored identity that is not the shape login writes; the session is signed out), `bad_session_ref`, `destroyed_session_reused` (an old session ID used after its grace) or `logged_out_session_reused` (a logged-out session ID presented again inside the reuse window; see [Session timeouts](https://github.com/waynestate/sesame/blob/HEAD/docs/guides/session-timeouts.md)). |
 
 Each record carries `event`, `driver`, `username` and `at` (the time in UTC)
 in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`,
-`absolute_timeout`, `no_timestamps` or `user_gone`). `sesame.session_anomaly`
-adds `reason` (`missing_timestamps`, a user stored without the session's
-timestamps, or `bad_session_ref`, a stored reference that is not the
+`absolute_timeout`, `no_timestamps`, `user_gone`, `revoked` or
+`bad_identity`). `sesame.session_anomaly` adds `reason` (`missing_timestamps`,
+a user stored without the session's timestamps; `bad_identity`, a stored
+identity that is not exactly the plain data login writes, which signs the
+session out; or `bad_session_ref`, a stored reference that is not the
 16-character lowercase hex value login created) and carries `session_ref`
 when the stored value is still a valid 16-character lowercase hex string;
 when you see one, look at the `session_ref` and the user around it in the
@@ -1710,7 +1712,7 @@ Source: https://sesame.apps.wayne.edu/
 
 ![SESAME logo: an arched door standing open, with a gold wedge of light between its leaves](https://sesame.apps.wayne.edu/brand/sesame-avatar-512.png)
 
-Keys cut while you wait · `waynestate/sesame` 0.10.0
+Keys cut while you wait · `waynestate/sesame` 0.10.1
 
 ## SESAME
 
@@ -2085,6 +2087,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
+
+### \[0.10.1\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-1-2026-11-20)
+
+- Security: on a Laravel app with JSON sessions (`'serialization' => 'json'`, Sourdough's default), 0.10.0 lost track of who was signed in from the second request on. A logout in another app sharing the revocation store did not sign the session out, `logout()` wrote no shared cutoff, so a Laravel logout did not end the legacy half of a Booster strangler, and the MFA and auth-context checks found no identity. Apps on PHP session serialization and raw-PHP apps were not affected. Upgrade every Laravel app on JSON sessions.
+- Fixed: `login()` stores the identity as plain data (`Identity::toArray()`), and every read rebuilds it through `Identity::fromArray()`, so it survives any session serializer. A session 0.10.0 made on PHP serialization (the `Identity` object itself) still reads, so nobody there is signed out by the upgrade.
+- Added: `Identity::toArray()` and `Identity::fromArray()`. `fromArray()` checks every field (the exact keys, a version, a non-empty username, a known driver, `DATE_ATOM` times, lists of strings) and throws `InvalidArgumentException` for anything else.
+- Changed: a stored identity that is not exactly that shape (tampered, half written, or a 0.10.0 JSON session's array) signs the session out, logged as the anomaly and logout reason `bad_identity`. Until now a value that was not an `Identity` object was read as no identity at all, and the session stayed signed in with the identity checks skipped. A session with no identity stored is unchanged.
 
 ### \[0.10.0\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-0-2026-11-20)
 
@@ -3478,6 +3487,8 @@ $user = app(\Waynestate\Sesame\Sesame::class)->user();
 
 SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements `Waynestate\Sesame\RefreshesUser`: its `refreshUser($user)` runs on every request, and a `null` answer signs the session out. `\Waynestate\Sesame\Laravel\ModelUserResolver` is the ready-made resolver for a model with a static `findOrImportUser`: it implements both interfaces, looks the user up through `auth.providers.users.model`, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. An app moving off wayne-cas points `user_resolver` at it as well; see [Moving from wayne-cas](https://sesame.apps.wayne.edu/docs/guides/moving-from-wayne-cas.html). A resolver that does not implement `RefreshesUser` keeps handing back the stored copy, as it always has.
 
+The identity SESAME keeps next to the user (`sesame.identity`, read by the shared logout check, `logout()`, `requireMfa()` and `hasAuthContext()`) is stored as plain data since 0.10.1, so it reads the same with `'serialization' => 'json'` (Sourdough's default) as with PHP serialization. On 0.10.0 a JSON session handed it back as an array and those checks quietly skipped it; upgrade.
+
 On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. `ModelUserResolver` looks the array up through the model itself, so an app on it needs no change. `refreshUser()` receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return `null` when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:
 
 ```php
@@ -4347,9 +4358,9 @@ The facade takes an optional sixth constructor argument: a PSR-3 logger (`Psr\Lo
 | `sesame.login_failed` | `warning` | The driver's login threw `AuthenticationFailed`. |
 | `sesame.login_refused` | `warning` | The resolver refused the identity and returned null. |
 | `sesame.logout` | `info` | The session was signed out (a logout, a timeout, or a deleted user). |
-| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps` or `bad_session_ref`. |
+| `sesame.session_anomaly` | `warning` | The session state looks wrong or tampered with: `reason` is `missing_timestamps`, `bad_identity` or `bad_session_ref`. |
 
-Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`, `absolute_timeout`, `no_timestamps`, `user_gone` or `revoked`, a session signed in before another app's shared logout cutoff). `sesame.session_anomaly` adds `reason` (`missing_timestamps`, a user stored without the session's timestamps, or `bad_session_ref`, a stored reference that is not the 16-character lowercase hex value login created) and carries `session_ref` when the stored value is still a valid 16-character lowercase hex string; when you see one, look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`: an opaque 16-character hex reference SESAME creates on every login (stored in the session under `sesame.session_ref`) that ties the login, timeouts and logout of one sign-in together in the log. It is not the session ID and never derived from it, and a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text. The logger stays optional: without one, nothing is logged and nothing else changes.
+Each record carries `event`, `driver`, `username` and `at` (the time in UTC) in its context, and `sesame.logout` adds `reason` (`logout`, `idle_timeout`, `absolute_timeout`, `no_timestamps`, `user_gone`, `revoked`, a session signed in before another app's shared logout cutoff, or `bad_identity`). `sesame.session_anomaly` adds `reason` (`missing_timestamps`, a user stored without the session's timestamps; `bad_identity`, a stored `sesame.identity` that is not exactly the plain data login wrote, which signs the session out; or `bad_session_ref`, a stored reference that is not the 16-character lowercase hex value login created) and carries `session_ref` when the stored value is still a valid 16-character lowercase hex string; when you see one, look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`: an opaque 16-character hex reference SESAME creates on every login (stored in the session under `sesame.session_ref`) that ties the login, timeouts and logout of one sign-in together in the log. It is not the session ID and never derived from it, and a value read back from the session that is not a 16-character lowercase hex string is ignored, so a tampered session cannot inject log text. The logger stays optional: without one, nothing is logged and nothing else changes.
 
 SESAME never logs tickets, session IDs, tokens or failure messages: a failed login records only the event, the driver and the time. Usernames have every control character replaced with `?` and are cut at 128 characters, so a username cannot forge an extra log line or flood the log. A logger that throws never changes what the facade returns or throws.
 
@@ -5119,10 +5130,10 @@ public function isLogoutToken(#[\SensitiveParameter] mixed $token): bool
 public function safeReturnTo(string $returnTo): string
 ```
 
-- `login()`: returns the `Redirect` unchanged when the user must go to the identity provider. Otherwise it resolves the user: when the resolver returns a user it regenerates the session ID before it stores anything, and returns the user. What it stores is the user, a trimmed identity (username, driver, time, the MFA facts and the authentication contexts, but not the raw IdP attributes, so the session stays small and plain), and the timestamps that start the session's clocks. When the resolver returns null the app has refused the identity: the session is left untouched, nothing is stored, and null is returned, so a refused identity never ends up signed in. An `AuthenticationFailed` from the driver is rethrown unchanged.
+- `login()`: returns the `Redirect` unchanged when the user must go to the identity provider. Otherwise it resolves the user: when the resolver returns a user it regenerates the session ID before it stores anything, and returns the user. What it stores is the user, a trimmed identity as plain data (`Identity::toArray()`: username, driver, time, the MFA facts and the authentication contexts, but not the raw IdP attributes, so the session stays small and plain and survives a JSON session), and the timestamps that start the session's clocks. When the resolver returns null the app has refused the identity: the session is left untouched, nothing is stored, and null is returned, so a refused identity never ends up signed in. An `AuthenticationFailed` from the driver is rethrown unchanged.
 - `returnTo()`: where to send the user after the sign-in that just completed, or null when the driver remembers none. Only drivers that implement `RemembersReturnTo` (the oidc and saml drivers) answer, and the value has already passed the `ReturnTo` rule.
 - `serviceUrl()`: the driver's configured service URL, or null when the driver has none.
-- `user()`: the app's user for the current session, or null when there is none. The session is checked against the timeouts before it is trusted, and a stale session is signed out on the spot, so a stale session can never pass one check and fail another. When the resolver implements `RefreshesUser`, the stored user is looked up again before the answer, and a null result signs the session out, so a deleted account stops reading as signed in from the next request on.
+- `user()`: the app's user for the current session, or null when there is none. The session is checked against the timeouts before it is trusted, and a stale session is signed out on the spot, so a stale session can never pass one check and fail another. When the resolver implements `RefreshesUser`, the stored user is looked up again before the answer, and a null result signs the session out, so a deleted account stops reading as signed in from the next request on. A stored identity that `Identity::fromArray()` refuses (tampered or half written) signs the session out on the spot, logged as the anomaly and the sign-out reason `bad_identity`; an `Identity` object stored by 0.10.0 or earlier still reads.
 - `requireMfa()`: decides whether the signed-in user's MFA is still good. The session is checked first, through `user()`, so a stale session is signed out before the MFA question is even asked; with no user, or no identity to read, the answer is `NO_AUTH_TIME`: the check fails closed.
 - `hasAuthContext()`: decides whether the signed-in identity has the given authentication context, with the same shape and the same fails-closed answer (`false`).
 - `logout()`: logs the user out of the app, then points at the identity provider. The app session is invalidated before the provider's URL is built, so a failed redirect can never leave a live session behind; the pointer goes out even when the session holds no user of its own, because the single sign-on session at the provider may still be alive there. Returns the provider's logout URL, or null when the driver has none.
@@ -5175,6 +5186,8 @@ public function __construct(
 - `usedLongTermToken(): ?bool`: the same shape, read from the CAS `longTermAuthenticationRequestTokenUsed` attribute.
 - `authContexts(): array`: the authentication contexts verified for this sign-in, in the order the driver reported them. Empty when no step-up was required.
 - `hasAuthContext(string $id): bool`: whether this sign-in verified the given authentication context: a membership test on the list, never an equality on the whole list.
+- `toArray(): array`: the identity as plain data (`v`, `username`, `attributes`, `driver`, `authenticatedAt`, `authTime`, `amr`, `authContexts`; the times as `DATE_ATOM` strings with their offset). `login()` stores this form under `sesame.identity`, so the identity survives any session serializer, Laravel's JSON one included.
+- `static fromArray(array $data, array $allowedDrivers = []): Identity`: rebuilds an identity from exactly that shape and refuses anything else with `InvalidArgumentException`: a missing or extra key, another version, an empty username, a driver that is not one of `Identity::DRIVERS` (or `$allowedDrivers`), a time that is not a `DATE_ATOM` string, or a list that is not a list of strings. The message names the field, never the value. The facade reads the session through it and signs a session whose identity it refuses out as `bad_identity`.
 
 #### LoginStep, Authenticated, Redirect [#](https://sesame.apps.wayne.edu/docs/reference/api.html#loginstep-authenticated-redirect)
 
@@ -6244,7 +6257,7 @@ Then sit a signed-in session for more than 24 quiet minutes; it stays signed in 
 
 #### The log carries a `sesame.session_anomaly` warning [#](https://sesame.apps.wayne.edu/docs/troubleshooting.html#the-log-carries-a-sesame-session-anomaly-warning)
 
-**Cause.** The session state looks wrong or tampered with: `reason` is `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
+**Cause.** The session state looks wrong or tampered with: `reason` is `missing_timestamps` (a user stored without the session's timestamps; the session is signed out right after, so the anomaly precedes the `sesame.logout`), `bad_identity` (a stored `sesame.identity` that is not exactly the plain data login wrote: a field missing, added or of the wrong type, or a driver SESAME does not know; the session is signed out right after, and a 0.10.0 Laravel session on JSON serialization reads this way once, after the upgrade) or `bad_session_ref` (a stored `sesame.session_ref` that is not a 16-character lowercase hex string; the user stays signed in and the bad value is never echoed into the log). A session without a reference at all is not an anomaly.
 
 **Fix.** Look at the `session_ref` and the user around it in the log to see what happened to the session. `sesame.login` and `sesame.logout` also carry `session_ref`, the opaque 16-character hex reference that ties the login, timeouts and logout of one sign-in together in the log.
 
@@ -6412,6 +6425,12 @@ Source: https://sesame.apps.wayne.edu/docs/upgrading.html
 ## Upgrading [#](https://sesame.apps.wayne.edu/docs/upgrading.html#upgrading)
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
+
+### 0.10.1 (2026-11-20) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-10-1-2026-11-20)
+
+No break, and a security fix: upgrade now if any Laravel app on 0.10.0 sets `'serialization' => 'json'` in `config/session.php` (Sourdough's apps do). On those apps 0.10.0 read the stored identity back as an array, so a shared logout from another app did not sign the session out, a logout wrote no shared cutoff, and `requireMfa()` and `hasAuthContext()` found no identity. Run `composer require waynestate/sesame:^0.10.1`; nothing else changes in the app.
+
+What a user sees: on PHP session serialization, and in raw-PHP apps, nobody is signed out by the upgrade. On JSON sessions, each user who signed in under 0.10.0 is signed out once on the next request (logged as `bad_identity`) and signs in again, usually without a prompt through single sign-on; from then on the identity is stored as plain data. **How to verify:** sign in, then sign out in the other app (or the other half of the strangler) that shares the revocation store, and reload: the page asks for a sign-in.
 
 ### 0.10.0 (2026-11-20) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-10-0-2026-11-20)
 

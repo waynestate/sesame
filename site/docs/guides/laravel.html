@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Laravel | SESAME docs</title>
 <meta name="description" content="The Laravel adapter binds the core into the container, registers the middleware aliases and the login and logout routes, and holds no rules of its own.">
-<meta name="docs-version" content="0.10.0">
+<meta name="docs-version" content="0.10.1">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
 <link rel="stylesheet" href="../../docs/theme/sesame.css">
@@ -350,6 +350,7 @@
 <pre tabindex="0"><code class="language-php">$user = app(\Waynestate\Sesame\Sesame::class)-&gt;user();
 </code></pre>
 <p>SESAME stores the user your resolver returned at sign-in and hands back that same copy until the session ends. When the app wants the signed-in user read back from its own store on every request, so a change made after the sign-in (a removed role, a deleted account) shows up from the next request on, the resolver also implements <code>Waynestate\Sesame\RefreshesUser</code>: its <code>refreshUser($user)</code> runs on every request, and a <code>null</code> answer signs the session out. <code>\Waynestate\Sesame\Laravel\ModelUserResolver</code> is the ready-made resolver for a model with a static <code>findOrImportUser</code>: it implements both interfaces, looks the user up through <code>auth.providers.users.model</code>, and an Eloquent model works as it is, with or without JSON session serialization, so an app needs no resolver of its own. An app moving off wayne-cas points <code>user_resolver</code> at it as well; see <a href="moving-from-wayne-cas.html">Moving from wayne-cas</a>. A resolver that does not implement <code>RefreshesUser</code> keeps handing back the stored copy, as it always has.</p>
+<p>The identity SESAME keeps next to the user (<code>sesame.identity</code>, read by the shared logout check, <code>logout()</code>, <code>requireMfa()</code> and <code>hasAuthContext()</code>) is stored as plain data since 0.10.1, so it reads the same with <code>'serialization' =&gt; 'json'</code> (Sourdough's default) as with PHP serialization. On 0.10.0 a JSON session handed it back as an array and those checks quietly skipped it; upgrade.</p>
 <p>On Laravel 13, a resolver of your own must implement it. Laravel 13 stores sessions as JSON, so the user SESAME saved at sign-in comes back on the next request as a plain array instead of the app's User model, and a resolver that hands the array back leaves the guard seeing nobody. <code>ModelUserResolver</code> looks the array up through the model itself, so an app on it needs no change. <code>refreshUser()</code> receives that array (or the model itself when the session is still PHP-serialized) and must return the app's User: look it up by a stable key such as the username or the primary key, and return <code>null</code> when the user is gone, which signs the session out. Sourdough's Laravel templates already ship this:</p>
 <pre tabindex="0"><code class="language-php">public function refreshUser(mixed $user): mixed
 {
@@ -474,7 +475,7 @@
   <nav class="docs-toc" aria-label="On this page"><h2 class="docs-toc__title">On this page</h2><ul class="docs-toc__list"><li class="docs-toc__item"><a href="#install-and-publish">Install and publish</a></li><li class="docs-toc__item"><a href="#config">Config</a></li><li class="docs-toc__item"><a href="#routes">Routes</a></li><li class="docs-toc__item"><a href="#middleware">Middleware</a></li><li class="docs-toc__item"><a href="#reading-the-user">Reading the user</a></li><li class="docs-toc__item"><a href="#http-client-and-caches">HTTP client and caches</a></li><li class="docs-toc__item"><a href="#logging">Logging</a></li><li class="docs-toc__item"><a href="#metrics">Metrics</a></li><li class="docs-toc__item"><a href="#shared-logout-across-two-apps">Shared logout across two apps</a></li><li class="docs-toc__item"><a href="#check-before-a-deploy">Check before a deploy</a></li><li class="docs-toc__item"><a href="#related">Related</a></li></ul></nav>
 </div>
 <footer class="docs-footer">
-  <span>Documents SESAME <span data-docs-version>0.10.0</span></span>
+  <span>Documents SESAME <span data-docs-version>0.10.1</span></span>
   <span><a rel="noopener" href="https://github.com/waynestate/sesame">Source</a> <a href="laravel.md">Markdown</a></span>
 </footer>
 </body>

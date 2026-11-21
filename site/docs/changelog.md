@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## \[Unreleased\] [#](https://sesame.apps.wayne.edu/docs/changelog.html#unreleased)
 
+## \[0.10.1\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-1-2026-11-20)
+
+- Security: on a Laravel app with JSON sessions (`'serialization' => 'json'`, Sourdough's default), 0.10.0 lost track of who was signed in from the second request on. A logout in another app sharing the revocation store did not sign the session out, `logout()` wrote no shared cutoff, so a Laravel logout did not end the legacy half of a Booster strangler, and the MFA and auth-context checks found no identity. Apps on PHP session serialization and raw-PHP apps were not affected. Upgrade every Laravel app on JSON sessions.
+- Fixed: `login()` stores the identity as plain data (`Identity::toArray()`), and every read rebuilds it through `Identity::fromArray()`, so it survives any session serializer. A session 0.10.0 made on PHP serialization (the `Identity` object itself) still reads, so nobody there is signed out by the upgrade.
+- Added: `Identity::toArray()` and `Identity::fromArray()`. `fromArray()` checks every field (the exact keys, a version, a non-empty username, a known driver, `DATE_ATOM` times, lists of strings) and throws `InvalidArgumentException` for anything else.
+- Changed: a stored identity that is not exactly that shape (tampered, half written, or a 0.10.0 JSON session's array) signs the session out, logged as the anomaly and logout reason `bad_identity`. Until now a value that was not an `Identity` object was read as no identity at all, and the session stayed signed in with the identity checks skipped. A session with no identity stored is unchanged.
+
 ## \[0.10.0\] - 2026-11-20 [#](https://sesame.apps.wayne.edu/docs/changelog.html#0-10-0-2026-11-20)
 
 - Added: `FileRevocationStore`, a shared sign-out store on a directory, for two apps (or the two halves of a Booster strangler) that share a disk but no cache. `FileRevocationStore::fromEnvironment()` builds it from `SESAME_REVOCATION_PATH` and `SESAME_REVOCATION_TTL`.
