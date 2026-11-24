@@ -64,6 +64,20 @@ class SesameServiceProvider extends ServiceProvider
             $store = $app['config']->get('sesame.gateway.replay_store');
             $leeway = (int) $app['config']->get('sesame.gateway.leeway_seconds', 30);
 
+            // The guard must remember used jtis across every replica, and an
+            // array store lives in one process's memory: a replayed assertion
+            // would pass on any other replica. Refuse it outside local and
+            // testing, where a single process is all there is.
+            $storeName = $store;
+            if (! is_string($storeName) || $storeName === '') {
+                $storeName = $app['config']->get('cache.default');
+            }
+            if (is_string($storeName)
+                && $app['config']->get('cache.stores.' . $storeName . '.driver') === 'array'
+                && ! in_array($app->environment(), ['local', 'testing'], true)) {
+                throw new \RuntimeException('SESAME: the array cache store cannot protect against replayed assertions; set sesame.gateway.replay_store to a shared store such as redis.');
+            }
+
             // The guard shares the driver's clock, so the record's TTL is
             // measured against the same "now" the driver uses to check the
             // assertion's time claims.

@@ -18,11 +18,14 @@ use Waynestate\Sesame\Clock\SystemClock;
  * guard's leeway has passed: after that, the assertion can no longer be
  * accepted, so its jti may be forgotten.
  *
- * PSR-16 has no atomic "add if absent" operation, so seen() checks has() and
- * then set(). That leaves a small window in which two requests carrying the
- * same jti could both pass has() before either set() lands. A replay is a
- * resend of a captured assertion, which is sequential, so the window does not
- * weaken the protection that matters; a burst of identical concurrent
+ * When the cache implements AtomicAddCache, seen() records the jti with one
+ * atomic add (Redis SET NX, Memcached add, Laravel Cache::add), so two
+ * simultaneous requests carrying the same jti cannot both pass. A plain
+ * PSR-16 cache has no such operation, so seen() checks has() and then set(),
+ * which leaves a small check-then-set window in which two requests carrying
+ * the same jti could both pass has() before either set() lands. A replay is
+ * a resend of a captured assertion, which is sequential, so the window does
+ * not weaken the protection that matters; a burst of identical concurrent
  * requests could let a few through, which is still far safer than no replay
  * protection at all.
  *
@@ -60,6 +63,12 @@ final class Psr16ReplayGuard implements ReplayGuard
         }
 
         $key = self::KEY_PREFIX . hash('sha256', $jti);
+
+        if ($this->cache instanceof AtomicAddCache) {
+            // One atomic add decides and records in the backing store, so a
+            // second request with the same jti finds the key already there.
+            return ! $this->cache->add($key, true, new DateInterval('PT' . $ttl . 'S'));
+        }
 
         if ($this->cache->has($key)) {
             return true;

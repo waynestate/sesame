@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Nyholm\Psr7\ServerRequest;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
+use RuntimeException;
 use Waynestate\Sesame\Driver;
 use Waynestate\Sesame\Drivers\OAuth2Driver;
 use Waynestate\Sesame\Exception\InvalidConfig;
@@ -144,6 +145,39 @@ final class SesameServiceProviderTest extends LaravelTestCase
         $app = $this->app;
         self::assertNotNull($app);
         $app['config']->set('cache.default', 'array');
+
+        self::assertInstanceOf(Psr16ReplayGuard::class, $app->make(ReplayGuard::class));
+    }
+
+    public function testArrayReplayStoreIsRefusedInProduction(): void
+    {
+        // An array store lives in one process's memory, so it cannot keep a
+        // shared record of used jtis across replicas; outside local and
+        // testing the provider refuses to build the guard on it.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('app.env', 'production');
+        $app->instance('env', 'production');
+        $app['config']->set('cache.default', 'array');
+        $app['config']->set('cache.stores.array.driver', 'array');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            'SESAME: the array cache store cannot protect against replayed assertions; set sesame.gateway.replay_store to a shared store such as redis.',
+        );
+
+        $app->make(ReplayGuard::class);
+    }
+
+    public function testArrayReplayStoreIsAllowedInTesting(): void
+    {
+        // The same store is fine where a single process is all there is.
+        $app = $this->app;
+        self::assertNotNull($app);
+        $app['config']->set('app.env', 'testing');
+        $app->instance('env', 'testing');
+        $app['config']->set('cache.default', 'array');
+        $app['config']->set('cache.stores.array.driver', 'array');
 
         self::assertInstanceOf(Psr16ReplayGuard::class, $app->make(ReplayGuard::class));
     }
