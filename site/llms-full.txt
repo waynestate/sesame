@@ -633,7 +633,13 @@ Every assertion is single-use. The driver requires a `jti` claim, refuses an
 assertion that lives longer than `gateway.max_lifetime` seconds, and remembers
 each `jti` it has seen in a replay guard, so a captured assertion cannot be
 played back a second time. The guard is a PSR-16 cache: the Laravel adapter
-wires one up for you, and a raw PHP app passes its own (below).
+wires one up for you, and a raw PHP app passes its own (below). When the
+cache implements `Waynestate\Sesame\Drivers\AtomicAddCache` (the Laravel
+adapter's cache does, through `Cache::add`), the guard records a first-seen
+`jti` with one atomic add, so two simultaneous requests carrying the same
+`jti` cannot both pass. A plain PSR-16 cache keeps a small check-then-set
+window in which a burst of identical concurrent requests could let a few
+through, though a replayed assertion is sequential and unaffected.
 
 ```php
 <?php
