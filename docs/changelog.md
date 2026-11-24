@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added: an atomic jti record for the replay guard. When the PSR-16 cache implements the new `Waynestate\Sesame\Drivers\AtomicAddCache` interface (the Laravel adapter's cache now does, through `Cache::add`), `Psr16ReplayGuard::seen()` records a first-seen jti with one atomic add instead of a has-then-set; a plain PSR-16 cache keeps the old path and its small check-then-set window. The Laravel provider refuses to build the guard on the per-request `array` cache store outside local and testing.
 - Changed: `deploy/` requires PROCTOR `^0.18` (was `^0.16`, which does not allow 0.18); 0.18.0 adds the update notice, the fake-driver check and the app-env warning (D-133).
 - Changed: CI pins Preflight 0.12.0 (components and the a11y checker copy). The php-test component now also runs an advisory PHP 8.6 job that may fail and never gates the pipeline.
 - Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: `parity up` in `deploy/`.
