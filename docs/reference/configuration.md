@@ -18,7 +18,7 @@ $config = Config::fromArray($configArray);
 - `driver` and `environment` are always required.
 - Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2`, `oidc` or `saml`. The `oidc` block is read into `OidcOptions`; see the oidc keys below. The `saml` block is read into `SamlOptions`; its keys are in [the saml driver guide](../guides/driver-saml.md#config-keys).
 - A truthy `slo` or `single_logout` key is rejected at boot: the identity provider does not support single logout, so asking for it is a mistake to fail on at boot, not at the first logout.
-- A missing or empty required value throws `InvalidConfig`. Five keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
+- A missing or empty required value throws `InvalidConfig`. Four keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
 
 | Config key | Environment setting |
 |---|---|
