@@ -10,6 +10,10 @@ version from the changelog that carries a break; sections without a break say
 so in one sentence and give the upgrade command. Start at the version you are
 on, work down toward the one you want, and run the checks after each hop.
 
+## 0.11.1 (2026-11-24)
+
+No break, and two security fixes. Run `composer require waynestate/sesame:^0.11.1`; nothing else changes in an app that already uses a same-origin return-to and a shared replay cache. Apps on the `gateway` driver whose replay store is the `array` cache must set `sesame.gateway.replay_store` (`SESAME_GATEWAY_REPLAY_STORE`) to a shared store such as redis, or the Laravel provider now refuses to build the replay guard outside local and testing. Drivers with no service URL (gateway, oauth2, fake) now send a return-to that is not a same-origin relative path to `/`. **How to verify:** call `sesame_logout('https://elsewhere.example/')` on a gateway app and confirm the redirect goes to `/`.
+
 ## 0.11.0 (2026-11-21)
 
 **Changed (breaking).** The `fake` driver boots only when the environment is

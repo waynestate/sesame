@@ -10,6 +10,10 @@ generator: Squire agent-ready
 
 How to move between SESAME versions. Each section below is one released version from the changelog that carries a break; sections without a break say so in one sentence and give the upgrade command. Start at the version you are on, work down toward the one you want, and run the checks after each hop.
 
+## 0.11.1 (2026-11-24) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-11-1-2026-11-24)
+
+No break, and two security fixes. Run `composer require waynestate/sesame:^0.11.1`; nothing else changes in an app that already uses a same-origin return-to and a shared replay cache. Apps on the `gateway` driver whose replay store is the `array` cache must set `sesame.gateway.replay_store` (`SESAME_GATEWAY_REPLAY_STORE`) to a shared store such as redis, or the Laravel provider now refuses to build the replay guard outside local and testing. Drivers with no service URL (gateway, oauth2, fake) now send a return-to that is not a same-origin relative path to `/`. **How to verify:** call `sesame_logout('https://elsewhere.example/')` on a gateway app and confirm the redirect goes to `/`.
+
 ## 0.11.0 (2026-11-21) [#](https://sesame.apps.wayne.edu/docs/upgrading.html#0-11-0-2026-11-21)
 
 **Changed (breaking).** The `fake` driver boots only when the environment is `local` or `testing` **and** the opt-in `SESAME_FAKE_ALLOWED` is `true` (config key `fake.allowed`, off unless set). An app on the fake driver sets `SESAME_FAKE_ALLOWED=true` in its local and test environments only, and its environment (`APP_ENV` in Laravel, the `environment` config key in raw PHP) must be `local` or `testing`: `development`, `dev` and `test` no longer boot the driver, so a mistyped server environment can no longer turn sign-in off.

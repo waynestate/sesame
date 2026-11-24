@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-24
+
+- Security: `ReturnTo::safe()` no longer passes a return-to through when the driver has no service URL (gateway, oauth2, fake drivers). It keeps only a same-origin relative path (one leading slash, no second slash or backslash, no control characters, no scheme or host) and sends the user to `/` for anything else, so `sesame_logout()` and `Sesame::safeReturnTo()` cannot be turned into an open redirect.
+- Security: the PSR-16 replay guard records a `jti` with one atomic add when the cache implements the new `AtomicAddCache` (the Laravel adapter does, through `Cache::add`), closing the check-then-set window. A plain PSR-16 cache keeps the small window, now documented. The Laravel provider refuses the `array` cache store for the replay guard outside local and testing.
 - Changed: `deploy/` requires PROCTOR `^0.18` (was `^0.16`, which does not allow 0.18); 0.18.0 adds the update notice, the fake-driver check and the app-env warning (D-133).
 - Changed: CI pins Preflight 0.12.0 (components and the a11y checker copy). The php-test component now also runs an advisory PHP 8.6 job that may fail and never gates the pipeline.
 - Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: `parity up` in `deploy/`.
