@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Changed: `gateway.jwks_file` resolves through `Setting::get()` like the other shared values, so a key set file from Playbook reaches the app; the environment still wins.
+
 ## [0.11.1] - 2026-11-24
 
 - Security: `ReturnTo::safe()` no longer passes a return-to through when the driver has no service URL (gateway, oauth2, fake drivers). It keeps only a same-origin relative path (one leading slash, no second slash or backslash, no control characters, no scheme or host) and sends the user to `/` for anything else, so `sesame_logout()` and `Sesame::safeReturnTo()` cannot be turned into an open redirect.
