@@ -1825,16 +1825,16 @@
         },
         {
             "name": "waynestate/creed",
-            "version": "0.1.8",
+            "version": "0.1.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waynestate/creed.git",
-                "reference": "ec325a4619d0ec33afee02cd975c868e18435585"
+                "reference": "c405284b0a91560e00000d41cf94cf6056255bbf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waynestate/creed/zipball/ec325a4619d0ec33afee02cd975c868e18435585",
-                "reference": "ec325a4619d0ec33afee02cd975c868e18435585",
+                "url": "https://api.github.com/repos/waynestate/creed/zipball/c405284b0a91560e00000d41cf94cf6056255bbf",
+                "reference": "c405284b0a91560e00000d41cf94cf6056255bbf",
                 "shasum": ""
             },
             "require": {
@@ -1846,7 +1846,7 @@
                 "opis/json-schema": "^2.4",
                 "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^11.5",
-                "waynestate/pinstripe": "^0.1"
+                "waynestate/pinstripe": "^0.4"
             },
             "type": "library",
             "extra": {
@@ -1874,8 +1874,8 @@
                 "issues": "https://git.wayne.edu/enterprise-apps/creed/-/issues",
                 "source": "https://github.com/waynestate/creed"
             },
-            "time": "2026-11-09T07:41:10+00:00",
-            "published-time": "2026-11-09T07:58:31+00:00"
+            "time": "2026-11-20T04:10:37+00:00",
+            "published-time": "2026-11-20T04:11:46+00:00"
         },
         {
             "name": "waynestate/helmet",
