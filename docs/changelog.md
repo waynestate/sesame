@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Security: `ReturnTo::safe()` no longer passes a return-to through when the driver has no service URL (gateway, oauth2, fake drivers): it now keeps only a same-origin relative path (one leading slash, no second slash or backslash, no ASCII control characters, no backslash anywhere, and no scheme, host, user or pass in its parse_url parts) and sends the user to `/` for anything else, so `sesame_logout()` and `Sesame::safeReturnTo()` can no longer be turned into an open redirect.
 - Changed: `deploy/` requires PROCTOR `^0.18` (was `^0.16`, which does not allow 0.18); 0.18.0 adds the update notice, the fake-driver check and the app-env warning (D-133).
 - Changed: CI pins Preflight 0.12.0 (components and the a11y checker copy). The php-test component now also runs an advisory PHP 8.6 job that may fail and never gates the pipeline.
 - Removed: Squire's local-running kit files (docker-compose.squire.yml, haproxy.cfg, parity scripts, env example; D-095). Parity runs the app locally: `parity up` in `deploy/`.

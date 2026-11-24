@@ -62,8 +62,34 @@ final class ReturnToTest extends TestCase
         self::assertSame($service, ReturnTo::safe($returnTo, $service));
     }
 
-    public function testWithoutAServiceUrlTheReturnToIsUsedAsIs(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function noServiceUrl(): iterable
     {
-        self::assertSame('https://anywhere.example.test/', ReturnTo::safe('https://anywhere.example.test/', null));
+        yield 'root' => ['/', '/'];
+        yield 'plain path' => ['/reports', '/reports'];
+        yield 'path with query and fragment' => ['/reports?id=3#top', '/reports?id=3#top'];
+        yield 'nested path' => ['/a/b', '/a/b'];
+        yield 'protocol relative' => ['//evil.test', '/'];
+        yield 'backslash after the slash' => ['/\evil.test', '/'];
+        yield 'absolute url' => ['https://evil.test/', '/'];
+        yield 'javascript scheme' => ['javascript:alert(1)', '/'];
+        yield 'empty' => ['', '/'];
+        yield 'no leading slash' => ['reports', '/'];
+        yield 'header injection' => ["/ok\r\nLocation: x", '/'];
+        yield 'backslash inside the path' => ['/a\b', '/'];
+        yield 'scheme with one slash' => ['http:/evil.test', '/'];
+    }
+
+    #[DataProvider('noServiceUrl')]
+    public function testNullServiceUrlKeepsOnlySameOriginRelativePaths(string $returnTo, string $expected): void
+    {
+        self::assertSame($expected, ReturnTo::safe($returnTo, null));
+    }
+
+    public function testWithoutAServiceUrlAnAbsoluteUrlSendsTheUserToTheRoot(): void
+    {
+        self::assertSame('/', ReturnTo::safe('https://anywhere.example.test/', null));
     }
 }
