@@ -5,8 +5,9 @@ declare(strict_types=1);
 use Waynestate\Sesame\Support\Setting;
 
 /*
-| The four shared WSU values (cas.base_url, gateway.issuer, oauth2.issuer
-| and oauth2.jwks_url) resolve through Setting::get(): the environment
+| The five shared WSU values (cas.base_url, gateway.issuer,
+| gateway.jwks_file, oauth2.issuer and oauth2.jwks_url) resolve through
+| Setting::get(): the environment
 | wins, and when it is empty the private waynestate/playbook package
 | supplies the university's values (see the README, "WSU values
 | (Playbook)"). Every other setting stays environment-only. The oidc
@@ -116,7 +117,7 @@ return [
         // kid => key, for a gateway rotating its signing key: set this,
         // public_key or jwks_file, only one.
         'public_keys' => [],
-        'jwks_file' => env('SESAME_GATEWAY_JWKS_FILE'),
+        'jwks_file' => Setting::get('SESAME_GATEWAY_JWKS_FILE'),
         'issuer' => Setting::get('SESAME_GATEWAY_ISSUER'),
         'audience' => env('SESAME_GATEWAY_AUDIENCE'),
         'leeway_seconds' => env('SESAME_GATEWAY_LEEWAY_SECONDS', 30),
