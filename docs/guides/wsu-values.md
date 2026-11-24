@@ -1,13 +1,13 @@
 ---
 title: WSU values (Playbook)
-description: Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
+description: Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
 ---
 
 # WSU values (Playbook)
 
-These four settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.
+These five settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.
 
-Open sesame, minus the incantation. Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
+Open sesame, minus the incantation. Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
 
 | Setting | Config key | Meaning |
 |---|---|---|
@@ -19,7 +19,7 @@ Open sesame, minus the incantation. Four settings carry Wayne State's shared val
 
 Set them in the environment, as with every other setting. When the environment is empty, the private [waynestate/playbook](https://git.wayne.edu/enterprise-apps/playbook) package supplies the university's values, so a fresh app boots against the real services without a `.env` full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset.
 
-The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these four from the environment alone.
+The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these five from the environment alone.
 
 <!-- playbook:wsu-values:begin -->
 ## Get Playbook with your own GitLab token

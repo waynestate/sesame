@@ -18,7 +18,7 @@ $config = Config::fromArray($configArray);
 - `driver` and `environment` are always required.
 - Each driver adds its own block: `fake`, `cas`, `gateway`, `oauth2`, `oidc` or `saml`. The `oidc` block is read into `OidcOptions`; see the oidc keys below. The `saml` block is read into `SamlOptions`; its keys are in [the saml driver guide](../guides/driver-saml.md#config-keys).
 - A truthy `slo` or `single_logout` key is rejected at boot: the identity provider does not support single logout, so asking for it is a mistake to fail on at boot, not at the first logout.
-- A missing or empty required value throws `InvalidConfig`. Four keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
+- A missing or empty required value throws `InvalidConfig`. Five keys are resolved from the environment or waynestate/playbook instead of the array, and their error message names the environment setting the developer actually sets:
 
 | Config key | Environment setting |
 |---|---|
@@ -144,7 +144,7 @@ Every environment variable SESAME reads, what it does, and its default. The tabl
 
 ## WSU values (Playbook)
 
-Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
+Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
 
 | Setting | Config key | Meaning |
 |---|---|---|
@@ -154,7 +154,7 @@ Four settings carry Wayne State's shared values: where the CAS server lives, and
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
 
-Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a `.env` full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in `suggest`, not `require`, and SESAME runs fine without it, reading these four from the environment alone. See the [WSU values guide](../guides/wsu-values.md) for how to get it.
+Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a `.env` full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in `suggest`, not `require`, and SESAME runs fine without it, reading these five from the environment alone. See the [WSU values guide](../guides/wsu-values.md) for how to get it.
 
 Raw-PHP apps that build their config by hand can resolve a value the same way the Laravel config does:
 
