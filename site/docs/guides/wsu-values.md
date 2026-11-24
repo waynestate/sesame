@@ -1,6 +1,6 @@
 ---
 title: "WSU values (Playbook) | SESAME docs"
-description: "Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions."
+description: "Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions."
 url: https://sesame.apps.wayne.edu/docs/guides/wsu-values.html
 llms: https://sesame.apps.wayne.edu/llms.txt
 generator: Squire agent-ready
@@ -8,20 +8,21 @@ generator: Squire agent-ready
 
 # WSU values (Playbook) [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#wsu-values-playbook)
 
-These four settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.
+These five settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.
 
-Open sesame, minus the incantation. Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
+Open sesame, minus the incantation. Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.
 
 | Setting | Config key | Meaning |
 | --- | --- | --- |
 | `SESAME_CAS_BASE_URL` | `cas.base_url` | The CAS server, an absolute https:// URL (`http://localhost` or `http://127.0.0.1` only in a local environment). |
 | `SESAME_GATEWAY_ISSUER` | `gateway.issuer` | The `iss` claim the gateway assertion must carry. |
+| `SESAME_GATEWAY_JWKS_FILE` | `gateway.jwks_file` | The path to the gateway's key set file (JWKS), read at boot. |
 | `SESAME_OAUTH2_ISSUER` | `oauth2.issuer` | The `iss` claim the bearer token must carry. |
 | `SESAME_OAUTH2_JWKS_URL` | `oauth2.jwks_url` | The URL of the issuer's key set. |
 
 Set them in the environment, as with every other setting. When the environment is empty, the private [waynestate/playbook](https://git.wayne.edu/enterprise-apps/playbook) package supplies the university's values, so a fresh app boots against the real services without a `.env` full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset.
 
-The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these four from the environment alone.
+The playbook is never required. It sits in `suggest`, not `require`, and SESAME runs fine without it, reading these five from the environment alone.
 
 ## Get Playbook with your own GitLab token [#](https://sesame.apps.wayne.edu/docs/guides/wsu-values.html#get-playbook-with-your-own-gitlab-token)
 

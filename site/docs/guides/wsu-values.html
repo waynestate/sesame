@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WSU values (Playbook) | SESAME docs</title>
-<meta name="description" content="Four settings carry Wayne State&#039;s shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.">
+<meta name="description" content="Five settings carry Wayne State&#039;s shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.">
 <meta name="docs-version" content="0.11.1">
 <link rel="stylesheet" href="../../assets/wayne-ui/wayne-ui.css">
 <link rel="stylesheet" href="../../assets/docs.css">
@@ -46,8 +46,8 @@
   <div class="docs-content">
     <main id="main">
       <article class="docs-article"><h1 id="wsu-values-playbook">WSU values <span class="docs-heading-tail"><span>(Playbook)</span><a class="docs-heading-link" aria-label="Link to this section" href="#wsu-values-playbook">#</a></span></h1>
-<p>These four settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.</p>
-<p>Open sesame, minus the incantation. Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
+<p>These five settings carry Wayne State's shared values. Set them in the environment, or let the private Playbook package supply them when the environment is empty, and a fresh app boots against the real services.</p>
+<p>Open sesame, minus the incantation. Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -68,6 +68,11 @@
 <td>The <code>iss</code> claim the gateway assertion must carry.</td>
 </tr>
 <tr>
+<td><code>SESAME_GATEWAY_JWKS_FILE</code></td>
+<td><code>gateway.jwks_file</code></td>
+<td>The path to the gateway's key set file (JWKS), read at boot.</td>
+</tr>
+<tr>
 <td><code>SESAME_OAUTH2_ISSUER</code></td>
 <td><code>oauth2.issuer</code></td>
 <td>The <code>iss</code> claim the bearer token must carry.</td>
@@ -80,7 +85,7 @@
 </tbody>
 </table></div>
 <p>Set them in the environment, as with every other setting. When the environment is empty, the private <a rel="noopener" href="https://git.wayne.edu/enterprise-apps/playbook">waynestate/playbook</a> package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset.</p>
-<p>The playbook is never required. It sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone.</p>
+<p>The playbook is never required. It sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these five from the environment alone.</p>
 <!-- playbook:wsu-values:begin -->
 <h2 id="get-playbook-with-your-own-gitlab-token">Get Playbook with your own GitLab <span class="docs-heading-tail"><span>token</span><a class="docs-heading-link" aria-label="Link to this section" href="#get-playbook-with-your-own-gitlab-token">#</a></span></h2>
 <p>The repository is private, so every path below authenticates with a personal

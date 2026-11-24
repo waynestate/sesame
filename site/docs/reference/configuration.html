@@ -654,7 +654,7 @@
 </table></div>
 <!-- /generated -->
 <h2 id="wsu-values-playbook">WSU values <span class="docs-heading-tail"><span>(Playbook)</span><a class="docs-heading-link" aria-label="Link to this section" href="#wsu-values-playbook">#</a></span></h2>
-<p>Four settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
+<p>Five settings carry Wayne State's shared values: where the CAS server lives, and who signs the gateway and oauth2 assertions.</p>
 <div class="docs-table" role="region" aria-label="Table" tabindex="0"><table>
 <thead>
 <tr>
@@ -675,6 +675,11 @@
 <td>The <code>iss</code> claim the gateway assertion must carry.</td>
 </tr>
 <tr>
+<td><code>SESAME_GATEWAY_JWKS_FILE</code></td>
+<td><code>gateway.jwks_file</code></td>
+<td>The path to the gateway's key set file (JWKS), read at boot.</td>
+</tr>
+<tr>
 <td><code>SESAME_OAUTH2_ISSUER</code></td>
 <td><code>oauth2.issuer</code></td>
 <td>The <code>iss</code> claim the bearer token must carry.</td>
@@ -686,7 +691,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these four from the environment alone. See the <a href="../guides/wsu-values.html">WSU values guide</a> for how to get it.</p>
+<p>Set them in the environment, as with every other setting. When the environment is empty, the private waynestate/playbook package supplies the university's values, so a fresh app boots against the real services without a <code>.env</code> full of addresses. The environment always wins: a set variable beats the playbook, and an empty one counts as unset. The playbook is never required: it sits in <code>suggest</code>, not <code>require</code>, and SESAME runs fine without it, reading these five from the environment alone. See the <a href="../guides/wsu-values.html">WSU values guide</a> for how to get it.</p>
 <p>Raw-PHP apps that build their config by hand can resolve a value the same way the Laravel config does:</p>
 <pre tabindex="0"><code class="language-php">use Waynestate\Sesame\Support\Setting;
 
