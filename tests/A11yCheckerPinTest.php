@@ -18,10 +18,10 @@ final class A11yCheckerPinTest extends TestCase
     private const ROOT = __DIR__ . '/..';
 
     /** The Preflight tag the a11y component runs at in .gitlab-ci.yml. */
-    private const PREFLIGHT_TAG = '0.12.0';
+    private const PREFLIGHT_TAG = '0.13.0';
 
     /** SHA-256 of templates/a11y/check.mjs at that tag, LF line endings. */
-    private const CHECKER_SHA256 = '8f11379ac03cee8b52e39835639430abe1c749eeb5ffb2abb43aeaa300f1c663';
+    private const CHECKER_SHA256 = '6157b304445d9d21079f12b99c1c610eeb53f16bfcb5b1b3c1bd391ddb1c8b9d';
 
     /** The image default of the a11y component at that tag, digest included. */
     private const IMAGE = 'mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe';
@@ -29,7 +29,7 @@ final class A11yCheckerPinTest extends TestCase
     /** The template defaults the checker packages must pin. */
     private const AXE_PLAYWRIGHT_VERSION = '4.14.0';
 
-    private const AXE_CORE_VERSION = '4.14.0';
+    private const AXE_CORE_VERSION = '4.14.1';
 
     /** How to bring a drifted pin back, in one commit. */
     private const UPDATE = 'To update the a11y pin, in one commit: bump the preflight/a11y tag in .gitlab-ci.yml, '
