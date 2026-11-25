@@ -52,6 +52,7 @@
 and this project adheres to <a rel="noopener" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><span class="docs-heading-tail"><span>[Unreleased]</span><a class="docs-heading-link" aria-label="Link to this section" href="#unreleased">#</a></span></h2>
 <ul>
+<li>Changed: CI follows the stack's D-176 pipeline shape on Preflight 0.13.0. A push runs the fast tier (composer ci, the audits, PROCTOR, the secret scan, the WayneUI copies and the Vue build), and the PHP matrix and the a11y check run nightly, on tags and on manual runs. Merge-request pipelines are gone (branch pipelines only), and a new commit cancels the pipeline it replaces. The a11y checker moves to Preflight 0.13.0 with axe-core 4.14.1.</li>
 <li>Changed: <code>gateway.jwks_file</code> resolves through <code>Setting::get()</code> like the other shared values, so a key set file from Playbook reaches the app; the environment still wins.</li>
 </ul>
 <h2 id="0-11-1-2026-11-24">[0.11.1] - <span class="docs-heading-tail"><span>2026-11-24</span><a class="docs-heading-link" aria-label="Link to this section" href="#0-11-1-2026-11-24">#</a></span></h2>
